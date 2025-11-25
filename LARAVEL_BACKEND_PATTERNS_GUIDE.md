@@ -107,6 +107,128 @@ class AnotherBadExample
 
 ---
 
+## Code Organization and Clean Code Principles
+
+### File Organization for Complex Features
+
+When a feature grows beyond a single service class, organize related classes into subdirectories:
+
+```
+app/Services/
+├── Task/
+│   ├── FileOrganizationMergeService.php       # Main service
+│   └── FileOrganization/                       # Supporting services
+│       ├── GroupConfidenceAnalyzer.php
+│       ├── GroupAbsorptionService.php
+│       └── NullGroupResolver.php
+```
+
+**When to create subdirectories:**
+- Feature has 3+ related service classes
+- Supporting classes are only used by the main service
+- Clear logical grouping exists
+
+### Class Size Limits
+
+**Maximum 300 lines per class** - Extract into smaller focused classes when exceeded.
+
+**Why extract:**
+- Violates Single Responsibility Principle (SRP)
+- Difficult to understand and maintain
+- Hard to test in isolation
+
+**How to extract:**
+1. Identify logical boundaries (distinct responsibilities)
+2. Create new service classes in subdirectory
+3. Move related methods to new classes
+4. Use `app()` helper to call extracted services
+
+### Method Size Limits
+
+**Maximum 50 lines per method** - Extract sub-methods or helper methods when exceeded.
+
+**Extraction strategies:**
+- Extract validation logic into `protected validate*()` methods
+- Extract data transformation into `protected transform*()` methods
+- Extract complex conditionals into `protected should*()` or `protected is*()` methods
+
+### DRY (Don't Repeat Yourself)
+
+**If logic appears 3+ times, extract to reusable method/class.**
+
+**Common patterns:**
+- Repeated validation → Extract to validation method
+- Repeated queries → Extract to repository method
+- Repeated transformations → Extract to service method
+- Repeated calculations → Extract to helper method
+
+### SOLID Principles
+
+**Single Responsibility Principle (SRP):**
+- Each class should have ONE clear purpose
+- Example: `GroupConfidenceAnalyzer` only analyzes confidence, doesn't merge groups
+
+**Open/Closed Principle:**
+- Extend behavior via new classes, not modifying existing ones
+- Use strategy pattern for varying behaviors
+
+**Liskov Substitution:**
+- Subclasses must be usable where parent class is expected
+- Common with ActionController, ActionRepository extensions
+
+**Interface Segregation:**
+- Keep interfaces small and focused
+- Don't force classes to implement unused methods
+
+**Dependency Inversion:**
+- Depend on abstractions (interfaces), not concrete classes
+- Use `app()` helper which respects Laravel's service container bindings
+
+### Self-Documenting Code
+
+**Code should explain itself without comments.**
+
+**Use descriptive names:**
+```php
+// ❌ BAD - Unclear names
+public function process($data) {
+    $result = $this->calc($data);
+    if ($result > 0) {
+        return true;
+    }
+}
+
+// ✅ GOOD - Self-explanatory
+public function hasHighConfidenceAssignments(array $fileToGroup): bool {
+    $avgConfidence = $this->calculateAverageConfidence($fileToGroup);
+    return $avgConfidence >= 4;
+}
+```
+
+**Extract magic numbers to constants:**
+```php
+// ❌ BAD
+if ($confidence < 3) { }
+
+// ✅ GOOD
+public const int LOW_CONFIDENCE_THRESHOLD = 3;
+
+if ($confidence < self::LOW_CONFIDENCE_THRESHOLD) { }
+```
+
+**Comments for WHY, not WHAT:**
+```php
+// ❌ BAD - States the obvious
+// Loop through files
+foreach ($files as $file) { }
+
+// ✅ GOOD - Explains business logic
+// Skip the last file to create 1-file overlap between windows
+$startIndex += $windowSize - 1;
+```
+
+---
+
 ## 1. Service Layer Patterns
 
 Services contain **ALL** business logic. They are the heart of the application architecture.
@@ -994,12 +1116,15 @@ WorkflowRunUpdatedEvent::broadcast($workflowRun);
 
 ### After Writing Code
 
-1. **Verify all dependency injection uses app() helper** - no constructor injection
-2. **Run Laravel Pint linter** - `./vendor/bin/sail pint <file>` on all modified PHP files
-3. Run `./vendor/bin/sail artisan fix` for permissions
-4. Run `./vendor/bin/sail test` to ensure all tests pass
-5. Verify no console errors
-6. Check for proper error handling
+1. **Check class size** - If > 300 lines, extract into smaller service classes
+2. **Check method size** - If > 50 lines, extract sub-methods or helper methods
+3. **Check for duplication** - If logic appears 3+ times, extract to reusable method/class
+4. **Verify dependency injection** - ALWAYS use `app()` helper for ALL dependencies, NEVER use constructor injection
+5. **Run Laravel Pint linter** - `./vendor/bin/sail pint <file>` on all modified PHP files
+6. Run `./vendor/bin/sail artisan fix` for permissions
+7. Run `./vendor/bin/sail test` to ensure all tests pass
+8. Verify no console errors
+9. Check for proper error handling
 
 ---
 

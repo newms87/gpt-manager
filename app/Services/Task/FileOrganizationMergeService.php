@@ -3,6 +3,9 @@
 namespace App\Services\Task;
 
 use App\Models\Task\Artifact;
+use App\Services\Task\FileOrganization\GroupAbsorptionService;
+use App\Services\Task\FileOrganization\GroupConfidenceAnalyzer;
+use App\Services\Task\FileOrganization\NullGroupResolver;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -54,10 +57,34 @@ class FileOrganizationMergeService
 
         static::logDebug('Created ' . count($finalGroups) . ' final groups');
 
-        // Return both groups and mapping (mapping needed for low-confidence detection)
+        // Handle null groups (empty string names) - reassign to adjacent groups
+        $nullGroupResolution = app(NullGroupResolver::class)->resolveNullGroups($fileToGroup);
+
+        // Apply auto-assignments from null group resolution
+        foreach ($nullGroupResolution['auto_assignments'] as $fileId => $groupName) {
+            $fileToGroup[$fileId]['group_name'] = $groupName;
+            static::logDebug("Auto-reassigned file $fileId (page {$fileToGroup[$fileId]['page_number']}) to group '$groupName'");
+        }
+
+        // Rebuild groups with null group auto-assignments applied
+        $finalGroups = $this->buildFinalGroups($fileToGroup);
+
+        // Absorb low-confidence groups into high-confidence groups when they overlap
+        $absorptions = app(GroupAbsorptionService::class)->identifyAbsorptions($fileToGroup, $finalGroups);
+
+        if (!empty($absorptions)) {
+            $filesAbsorbed = app(GroupAbsorptionService::class)->applyAbsorptions($absorptions, $fileToGroup);
+            static::logDebug("Absorbed $filesAbsorbed files via " . count($absorptions) . " group mergers");
+
+            // Rebuild groups after absorption
+            $finalGroups = $this->buildFinalGroups($fileToGroup);
+        }
+
+        // Return both groups, mapping, and null group resolution info
         return [
-            'groups'                => $finalGroups,
-            'file_to_group_mapping' => $fileToGroup,
+            'groups'                    => $finalGroups,
+            'file_to_group_mapping'     => $fileToGroup,
+            'null_groups_needing_llm'   => $nullGroupResolution['needs_llm_resolution'],
         ];
     }
 
@@ -145,10 +172,16 @@ class FileOrganizationMergeService
                 $description = $group['description'] ?? '';
                 $files       = $group['files']       ?? [];
 
-                if (!$groupName) {
-                    static::logDebug('Group missing name, skipping');
+                // Allow empty string for "no identifier" cases, but skip null
+                if ($groupName === null) {
+                    static::logDebug('Group has null name, skipping');
 
                     continue;
+                }
+
+                // Empty string means "no identifier found" - we'll handle these later
+                if ($groupName === '') {
+                    static::logDebug('Group has empty name (no identifier) with ' . count($files) . ' files - will process for adjacent group assignment');
                 }
 
                 static::logDebug("  Group '$groupName': " . count($files) . ' files');

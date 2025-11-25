@@ -24,6 +24,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     const string OPERATION_LOW_CONFIDENCE_RESOLUTION = 'Low Confidence Resolution';
 
+    const string OPERATION_NULL_GROUP_RESOLUTION = 'Null Group Resolution';
+
     public function run(): void
     {
         // Check if this is a comparison window process
@@ -47,6 +49,14 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         if ($this->taskProcess->operation === self::OPERATION_LOW_CONFIDENCE_RESOLUTION) {
             static::logDebug('Running low confidence resolution process');
             $this->runLowConfidenceResolution();
+
+            return;
+        }
+
+        // Check if this is a null group resolution process
+        if ($this->taskProcess->operation === self::OPERATION_NULL_GROUP_RESOLUTION) {
+            static::logDebug('Running null group resolution process');
+            $this->runNullGroupResolution();
 
             return;
         }
@@ -160,19 +170,32 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $mergeResult  = $mergeService->mergeWindowResults($windowArtifacts);
         $finalGroups  = $mergeResult['groups'];
         $fileToGroup  = $mergeResult['file_to_group_mapping'];
+        $nullGroupsNeedingLlm = $mergeResult['null_groups_needing_llm'] ?? [];
 
         static::logDebug('Merge completed: ' . count($finalGroups) . ' final groups');
+
+        if (!empty($nullGroupsNeedingLlm)) {
+            static::logDebug('Found ' . count($nullGroupsNeedingLlm) . ' null group files that need LLM resolution');
+        }
 
         // Check for low-confidence files
         $lowConfidenceFiles = $mergeService->identifyLowConfidenceFiles($fileToGroup);
 
+        // Store any issues that need resolution in task process meta
+        $metaUpdates = [];
+
         if (!empty($lowConfidenceFiles)) {
             static::logDebug('Found ' . count($lowConfidenceFiles) . ' low-confidence files - storing in task process meta');
+            $metaUpdates['low_confidence_files'] = $lowConfidenceFiles;
+        }
 
-            // Store low-confidence files in the merge process meta for later resolution
-            $this->taskProcess->meta = array_merge($this->taskProcess->meta ?? [], [
-                'low_confidence_files' => $lowConfidenceFiles,
-            ]);
+        if (!empty($nullGroupsNeedingLlm)) {
+            static::logDebug('Found ' . count($nullGroupsNeedingLlm) . ' null group files needing LLM resolution - storing in task process meta');
+            $metaUpdates['null_groups_needing_llm'] = $nullGroupsNeedingLlm;
+        }
+
+        if (!empty($metaUpdates)) {
+            $this->taskProcess->meta = array_merge($this->taskProcess->meta ?? [], $metaUpdates);
             $this->taskProcess->save();
         }
 
@@ -353,13 +376,17 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     {
         parent::afterAllProcessesCompleted();
 
-        // Check if a resolution process already exists
-        $hasResolutionProcess = $this->taskRun->taskProcesses()
+        // Check if resolution processes already exist
+        $hasLowConfidenceResolution = $this->taskRun->taskProcesses()
             ->where('operation', self::OPERATION_LOW_CONFIDENCE_RESOLUTION)
             ->exists();
 
-        if ($hasResolutionProcess) {
-            static::logDebug('Resolution process already exists or completed');
+        $hasNullGroupResolution = $this->taskRun->taskProcesses()
+            ->where('operation', self::OPERATION_NULL_GROUP_RESOLUTION)
+            ->exists();
+
+        if ($hasLowConfidenceResolution && $hasNullGroupResolution) {
+            static::logDebug('All resolution processes already exist or completed');
 
             return;
         }
@@ -369,7 +396,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             ->where('operation', self::OPERATION_MERGE)
             ->first();
 
-        if ($mergeProcess && isset($mergeProcess->meta['low_confidence_files'])) {
+        // Create low-confidence resolution process if needed
+        if (!$hasLowConfidenceResolution && $mergeProcess && isset($mergeProcess->meta['low_confidence_files'])) {
             $lowConfidenceFiles = $mergeProcess->meta['low_confidence_files'];
 
             if (!empty($lowConfidenceFiles)) {
@@ -400,7 +428,48 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
                 $this->taskRun->updateRelationCounter('taskProcesses');
 
-                static::logDebug("Created resolution process: $resolutionProcess");
+                static::logDebug("Created low confidence resolution process: $resolutionProcess");
+
+                // Dispatch the resolution process
+                TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
+
+                return;
+            }
+        }
+
+        // Create null group resolution process if needed
+        if (!$hasNullGroupResolution && $mergeProcess && isset($mergeProcess->meta['null_groups_needing_llm'])) {
+            $nullGroupFiles = $mergeProcess->meta['null_groups_needing_llm'];
+
+            if (!empty($nullGroupFiles)) {
+                static::logDebug('Creating null group resolution process for ' . count($nullGroupFiles) . ' files');
+
+                // Get the null group files' artifacts
+                $nullFileIds       = array_column($nullGroupFiles, 'file_id');
+                $nullFileArtifacts = $this->taskRun->inputArtifacts()
+                    ->whereIn('artifacts.id', $nullFileIds)
+                    ->get();
+
+                // Create the resolution process
+                $nullResolutionProcess = $this->taskRun->taskProcesses()->create([
+                    'name'      => 'Resolve Null Group Files',
+                    'operation' => self::OPERATION_NULL_GROUP_RESOLUTION,
+                    'activity'  => 'Determining group assignment for files with no clear identifier',
+                    'meta'      => [
+                        'null_groups_needing_llm' => $nullGroupFiles,
+                    ],
+                    'is_ready'  => true,
+                ]);
+
+                // Attach null group files as input artifacts
+                foreach ($nullFileArtifacts as $artifact) {
+                    $nullResolutionProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+                }
+                $nullResolutionProcess->updateRelationCounter('inputArtifacts');
+
+                $this->taskRun->updateRelationCounter('taskProcesses');
+
+                static::logDebug("Created null group resolution process: $nullResolutionProcess");
 
                 // Dispatch the resolution process
                 TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
@@ -476,7 +545,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                         'properties'           => [
                             'name'        => [
                                 'type'        => 'string',
-                                'description' => 'Name of this group (e.g., "Bills", "Medical Summary", "Contract")',
+                                'description' => 'Name of this group (e.g., "Section A", "Category 1", "Entity Name"). Use empty string "" if no clear identifier exists.',
                             ],
                             'description' => [
                                 'type'        => 'string',
@@ -596,26 +665,38 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             "Each file represents a page or document section.\n" .
             "Group files that belong together based on their content and context.\n\n" .
             "For each group:\n" .
-            "- 'name': A clear, descriptive name for the group (e.g., 'Bills', 'Medical Summary')\n" .
+            "- 'name': A clear, descriptive name for the group (e.g., 'Section A', 'Category 1', 'Entity Name')\n" .
             "- 'description': A high-level summary of what the group contains\n" .
             "- 'files': Array of file objects with page_number, confidence, and explanation\n\n" .
             "GROUPING STRATEGY - PRIORITIZE CONTINUITY:\n" .
             "Pages are presented in sequential order. Follow these rules:\n" .
             "1. DEFAULT TO SAME GROUP: When a page has no clear grouping indicators, keep it with the PREVIOUS page's group\n" .
-            "2. ONLY SPLIT when there is CLEAR EVIDENCE of a boundary (new document type, new provider, new topic)\n" .
+            "2. ONLY SPLIT when there is CLEAR EVIDENCE of a boundary\n" .
             "3. CONTINUATION PAGES: Multi-page documents, narratives, or related content should stay together\n" .
             "4. BLANK/SEPARATOR PAGES: These often belong to the FOLLOWING content, not the preceding content\n" .
             "5. AMBIGUOUS PAGES: When in doubt, assume continuity - use the same group as the previous page\n\n" .
             "Examples of CLEAR boundaries (split groups):\n" .
-            "- Different provider letterhead or billing entity\n" .
-            "- Different document type (e.g., clinical note → billing form)\n" .
-            "- Different patient or case number\n" .
-            "- Explicit \"end of section\" or new section headers\n\n" .
-            "Examples of CONTINUITY (same group):\n" .
-            "- Page 2, 3, 4 of a multi-page document\n" .
-            "- Narrative text continuing from previous page\n" .
-            "- Same provider, same date, same context\n" .
-            "- Generic forms or tables without clear headers (assume continuation)\n\n" .
+            "- Change in primary identifying header or logo at the top of the page\n" .
+            "- Explicit labels indicating a new entity, section, or category\n" .
+            "- Clear visual separators or end-of-section markers\n" .
+            "- Change in document structure, format, or template\n" .
+            "- Different identifying numbers, codes, or case references\n\n" .
+            "Examples of CONTINUITY (same group) - DO NOT SPLIT:\n" .
+            "- Page numbering (Page 2, 3, 4...) indicating a multi-page document\n" .
+            "- Same header/logo with different sub-headers, locations, or sections\n" .
+            "- Same primary identifier with additional secondary identifiers\n" .
+            "- Narrative text or data continuing from previous page\n" .
+            "- Forms or tables without distinct primary headers (assume continuation)\n" .
+            "- Individual names or sub-categories appearing within a larger entity\n\n" .
+            "IDENTIFICATION HIERARCHY:\n" .
+            "When you see multiple potential identifiers on a page, prioritize:\n" .
+            "1. PRIMARY HEADER/LOGO at the top of the page (most important)\n" .
+            "2. EXPLICIT LABELS that clearly identify the entity (e.g., labeled fields, titles)\n" .
+            "3. STRUCTURAL ELEMENTS that frame the content\n" .
+            "Lower priority (often NOT the group identifier):\n" .
+            "- Sub-headers, location names, or branch identifiers\n" .
+            "- Individual names or secondary references\n" .
+            "- Facility, department, or section labels within a larger entity\n\n" .
             "CONFIDENCE SCORING (0-5 scale):\n" .
             "- 5: Absolutely certain - clear evidence this file belongs in this group\n" .
             "- 4: Very confident - strong indicators support this grouping\n" .
@@ -630,11 +711,16 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             "- Only use LOW confidence (0-2) when genuinely conflicted between multiple different groups\n" .
             "- Only include page numbers that were provided in the input messages\n" .
             "- If a file should be ignored (e.g., completely blank page), simply don't include it in any group\n\n" .
+            "WHEN NO CLEAR IDENTIFIER EXISTS:\n" .
+            "- If you cannot find ANY clear identifier for a group, use an empty string \"\" for the name\n" .
+            "- For files with no identifier, use confidence score 0 or 1 (minimum)\n" .
+            "- Example: {\"name\": \"\", \"description\": \"No clear identifier found\", \"files\": [...]}\n" .
+            "- An empty name explicitly signals that no valid grouping could be determined\n\n" .
             "Example file object:\n" .
             "{\n" .
             "  \"page_number\": 98,\n" .
             "  \"confidence\": 4,\n" .
-            "  \"explanation\": \"Contains billing information consistent with other files in this group\"\n" .
+            "  \"explanation\": \"Contains content consistent with the primary header shown in this group\"\n" .
             '}'
         );
 
@@ -792,7 +878,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             "- Use ALL the context from previous windows to make informed decisions\n" .
             "- Consider the SEQUENCE: what came before and after this page?\n" .
             "- Aim for confidence >= 3 for all assignments\n" .
-            "- If still uncertain after review, explain WHY in detail\n\n" .
+            "- If still uncertain after review, explain WHY in detail\n" .
+            "- If NO clear identifier exists for a file, use empty string \"\" for name and confidence 0-1\n\n" .
             'Return your assignments using the same format as the comparison windows.'
         );
 
@@ -803,7 +890,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      * Validate that no page_number appears in multiple groups.
      * Each page must belong to exactly ONE group.
      *
-     * @param array $jsonContent The artifact's json_content with groups
+     * @param  array  $jsonContent  The artifact's json_content with groups
+     *
      * @throws ValidationError if any page appears in multiple groups
      */
     protected function validateNoDuplicatePages(array $jsonContent): void
@@ -818,7 +906,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $pageToGroup = [];
 
         foreach ($groups as $group) {
-            $groupName = $group['name'] ?? 'Unknown';
+            $groupName = $group['name']  ?? 'Unknown';
             $files     = $group['files'] ?? [];
 
             foreach ($files as $fileData) {
@@ -840,7 +928,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                         "Invalid file organization: Page $pageNumber appears in multiple groups.\n" .
                         "First group: '$firstGroup'\n" .
                         "Second group: '$groupName'\n\n" .
-                        "Each page must belong to exactly ONE group. Please revise the grouping so that each page appears in only one group.",
+                        'Each page must belong to exactly ONE group. Please revise the grouping so that each page appears in only one group.',
                         400
                     );
                 }
@@ -857,7 +945,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      * Apply resolution decisions to existing merged artifacts.
      * Moves files between groups based on the agent's final decisions.
      *
-     * @param array $resolutionContent The resolution artifact's json_content with final group assignments
+     * @param  array  $resolutionContent  The resolution artifact's json_content with final group assignments
      */
     protected function applyResolutionToMergedArtifacts(array $resolutionContent): void
     {
@@ -874,7 +962,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         // Build a map of file_id => group_name from resolution
         $fileToResolvedGroup = [];
         foreach ($resolutionGroups as $group) {
-            $groupName = $group['name'] ?? null;
+            $groupName = $group['name']  ?? null;
             $files     = $group['files'] ?? [];
 
             if (!$groupName) {
@@ -958,7 +1046,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
             // If file is already in the correct group, skip
             if (!$sourceArtifact && $targetArtifact) {
-                static::logDebug("  File already in correct group, skipping");
+                static::logDebug('  File already in correct group, skipping');
 
                 continue;
             }
@@ -984,7 +1072,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                 $targetArtifact->name = "Group: $targetGroupName";
                 $targetArtifact->meta = [
                     'group_name'  => $targetGroupName,
-                    'description' => "Group created during resolution",
+                    'description' => 'Group created during resolution',
                     'file_count'  => 1,
                 ];
                 $targetArtifact->save();
@@ -1010,7 +1098,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                 }
 
                 if (!$childArtifact) {
-                    static::logDebug("  ERROR: Could not find child artifact in source");
+                    static::logDebug('  ERROR: Could not find child artifact in source');
 
                     continue;
                 }
@@ -1042,10 +1130,164 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                 ]);
                 $targetArtifact->save();
 
-                static::logDebug("  Successfully moved file");
+                static::logDebug('  Successfully moved file');
             }
         }
 
         static::logDebug('Resolution application completed');
+    }
+
+    /**
+     * Run null group resolution process.
+     * These are files where no clear identifier was found, but they're between two different groups.
+     * Ask the LLM to decide which adjacent group they should belong to.
+     */
+    protected function runNullGroupResolution(): void
+    {
+        static::logDebug('Starting null group resolution');
+
+        $nullGroupFiles = $this->taskProcess->meta['null_groups_needing_llm'] ?? [];
+
+        if (empty($nullGroupFiles)) {
+            static::logDebug('No null group files to resolve');
+            $this->complete();
+
+            return;
+        }
+
+        static::logDebug('Resolving ' . count($nullGroupFiles) . ' null group files');
+
+        // Setup agent thread with null group files
+        $nullFileIds       = array_column($nullGroupFiles, 'file_id');
+        $nullFileArtifacts = $this->taskProcess->inputArtifacts()
+            ->whereIn('artifacts.id', $nullFileIds)
+            ->get();
+
+        $agentThread = $this->setupNullGroupResolutionAgentThread($nullFileArtifacts, $nullGroupFiles);
+
+        // Run the agent thread
+        $artifact = $this->runAgentThread($agentThread);
+
+        if (!$artifact || !$artifact->json_content) {
+            throw new ValidationError(static::class . ': No JSON content returned from null group resolution agent thread');
+        }
+
+        // Validate resolution has no duplicate pages
+        $this->validateNoDuplicatePages($artifact->json_content);
+
+        static::logDebug('Null group resolution completed successfully');
+
+        // Apply resolution decisions to existing merged artifacts
+        $this->applyResolutionToMergedArtifacts($artifact->json_content);
+
+        // Delete the temporary resolution artifact - we don't need it as output
+        $artifact->delete();
+
+        $this->complete();
+    }
+
+    /**
+     * Setup agent thread for null group resolution.
+     * Provides context about adjacent groups to help agent decide assignment.
+     */
+    protected function setupNullGroupResolutionAgentThread($artifacts, array $nullGroupFiles): AgentThread
+    {
+        $taskDefinition = $this->taskRun->taskDefinition;
+
+        if (!$taskDefinition->agent) {
+            throw new \Exception("Agent not found for TaskRun: $this->taskRun");
+        }
+
+        $this->activity("Setting up null group resolution agent thread for: {$taskDefinition->agent->name}", 5);
+
+        // Build the agent thread
+        $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+        $agentThread = $builder->build();
+
+        // Add file messages
+        foreach ($artifacts as $artifact) {
+            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
+            $pageNumber = $storedFile?->page_number ?? null;
+            $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
+
+            if ($pageNumber !== null) {
+                app(ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    "Page $pageNumber",
+                    $fileIds
+                );
+            } else {
+                app(ThreadRepository::class)->addMessageToThread(
+                    $agentThread,
+                    '',
+                    $fileIds
+                );
+            }
+        }
+
+        // Build context message explaining the situation
+        $contextMessage = "CONTEXT: Files with no clear identifier that need group assignment\n\n";
+        $contextMessage .= "These files had no clear identifying header or label during comparison.\n";
+        $contextMessage .= "Each file is positioned between two different groups.\n";
+        $contextMessage .= "Your task is to decide which adjacent group each file should belong to.\n\n";
+
+        foreach ($nullGroupFiles as $fileData) {
+            $pageNumber    = $fileData['page_number'];
+            $previousGroup = $fileData['previous_group'];
+            $nextGroup     = $fileData['next_group'];
+            $description   = $fileData['description'] ?? 'No identifier found';
+
+            $contextMessage .= "--- Page $pageNumber ---\n";
+            $contextMessage .= "Observation: $description\n";
+            $contextMessage .= "Previous group (pages before): '$previousGroup'\n";
+            $contextMessage .= "Next group (pages after): '$nextGroup'\n";
+            $contextMessage .= "Decision needed: Should this page belong to '$previousGroup' or '$nextGroup'?\n\n";
+        }
+
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
+
+        // Use the same schema as window comparisons
+        $schema = $this->getFileOrganizationSchema();
+
+        $schemaDefinition = SchemaDefinition::updateOrCreate([
+            'team_id' => $this->taskRun->taskDefinition->team_id,
+            'name'    => 'File Organization Response',
+            'type'    => 'FileOrganizationResponse',
+        ], [
+            'description'   => 'JSON schema for file organization task responses',
+            'schema'        => $schema,
+            'schema_format' => SchemaDefinition::FORMAT_JSON,
+        ]);
+
+        $this->taskDefinition->schema_definition_id = $schemaDefinition->id;
+        $this->taskDefinition->save();
+
+        $this->taskProcess->agentThread()->associate($agentThread)->save();
+
+        // Add null group resolution instructions
+        app(ThreadRepository::class)->addMessageToThread($agentThread,
+            "TASK: Assign files with no clear identifier to the correct adjacent group\n\n" .
+            "You have been provided with files that had NO CLEAR IDENTIFIER (empty string name) during windowing.\n" .
+            "Each file is positioned between two groups - a previous group and a next group.\n\n" .
+            "Your task:\n" .
+            "1. Review each file carefully\n" .
+            "2. Look at the content, layout, and visual characteristics\n" .
+            "3. Compare with the context of the previous and next groups\n" .
+            "4. Decide whether the file should belong to the PREVIOUS or NEXT group\n" .
+            "5. Assign confidence score 1-5 based on your decision certainty\n" .
+            "6. Provide explanation for your choice\n\n" .
+            "DECISION STRATEGY:\n" .
+            "- Consider: Does this page's content match the previous group or next group?\n" .
+            "- Consider: Is this a continuation page (page 2, 3, etc.) that follows the previous group?\n" .
+            "- Consider: Does this page show signs of starting something new (matches next group)?\n" .
+            "- When truly ambiguous, prefer assigning to the PREVIOUS group (maintains continuity)\n\n" .
+            "IMPORTANT:\n" .
+            "- You MUST assign each file to either the previous group or the next group\n" .
+            "- Use the exact group name provided in the context (don't create new names)\n" .
+            "- If genuinely uncertain, use confidence 1-2 and default to previous group\n" .
+            "- Provide clear explanation for your decision\n"
+        );
+
+        return $agentThread;
     }
 }

@@ -10,6 +10,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
+use App\Services\Task\Runners\BaseTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
@@ -26,7 +27,7 @@ class TaskProcessRunnerService
      * Prepare task processes for the task run. Each process will receive its own Artifacts / AgentThread
      * based on the input groups and the schema associations for the TaskDefinition
      */
-    public static function prepare(TaskRun $taskRun, ?SchemaAssociation $schemaAssociation = null, $artifacts = []): TaskProcess
+    public static function prepare(TaskRun $taskRun, ?SchemaAssociation $schemaAssociation = null, $artifacts = [], ?string $operation = null): TaskProcess
     {
         $artifacts = collect($artifacts);
         static::logDebug("Prepare task process for $taskRun w/ " . $artifacts->count() . ' artifacts' . ($schemaAssociation ? ' and schema association ' . $schemaAssociation->id : ''));
@@ -34,8 +35,9 @@ class TaskProcessRunnerService
         $taskDefinition = $taskRun->taskDefinition;
         $name           = ($schemaAssociation?->schemaFragment?->name ?: $taskDefinition->name);
         $taskProcess    = $taskRun->taskProcesses()->create([
-            'name'     => $name,
-            'activity' => "Preparing $name...",
+            'name'      => $name,
+            'operation' => $operation ?? BaseTaskRunner::OPERATION_DEFAULT,
+            'activity'  => "Preparing $name...",
         ]);
 
         LockHelper::acquire($taskProcess);

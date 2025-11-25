@@ -19,7 +19,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     {
         parent::setUp();
         $this->setUpTeam();
-        $this->service = new FileOrganizationMergeService();
+        $this->service = app(FileOrganizationMergeService::class);
     }
 
     #[Test]
