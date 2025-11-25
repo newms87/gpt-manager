@@ -12,11 +12,17 @@ class GroupAbsorptionService
     use HasDebugLogging;
 
     /**
-     * Absorb low-confidence groups into high-confidence groups when they share overlapping pages.
+     * Absorb groups based on relative confidence when they share conflict boundaries.
+     *
+     * This works based on RELATIVE confidence (not absolute thresholds), so even
+     * high-confidence groups can be absorbed if they conflict with HIGHER-confidence groups.
+     *
+     * Strategy 1: Direct overlap - groups share the same file (windowing overlap)
+     * Strategy 2: Conflict boundary - files grouped together follow the winner
      *
      * @param  array  $fileToGroup  Map from buildFileToGroupMapping
      * @param  array  $finalGroups  Groups from buildFinalGroups
-     * @return array Map of low_group => high_group for absorptions to apply
+     * @return array Map of losing_group => winning_group for absorptions to apply
      */
     public function identifyAbsorptions(array $fileToGroup, array $finalGroups): array
     {
@@ -24,68 +30,237 @@ class GroupAbsorptionService
             return [];
         }
 
-        static::logDebug('Checking for low-confidence groups to absorb into high-confidence groups');
+        static::logDebug('Checking for groups to absorb based on relative confidence');
 
         $analyzer = app(GroupConfidenceAnalyzer::class);
 
         $groupConfidenceSummary = $analyzer->calculateGroupConfidenceSummary($finalGroups, $fileToGroup);
         $lowConfidenceGroups    = $analyzer->identifyLowConfidenceGroups($groupConfidenceSummary);
+        $mediumConfidenceGroups = $analyzer->identifyMediumConfidenceGroups($groupConfidenceSummary);
         $highConfidenceGroups   = $analyzer->identifyHighConfidenceGroups($groupConfidenceSummary);
 
-        if (empty($lowConfidenceGroups) || empty($highConfidenceGroups)) {
-            static::logDebug('No absorption needed - no low-confidence or high-confidence groups found');
+        static::logDebug('Found ' . count($lowConfidenceGroups) . ' low-confidence groups, ' .
+                        count($mediumConfidenceGroups) . ' medium-confidence groups, and ' .
+                        count($highConfidenceGroups) . ' high-confidence groups');
 
-            return [];
-        }
-
-        static::logDebug('Found ' . count($lowConfidenceGroups) . ' low-confidence groups and ' . count($highConfidenceGroups) . ' high-confidence groups');
-
-        return $this->findAbsorptionPairs($lowConfidenceGroups, $highConfidenceGroups, $fileToGroup);
+        // Check for conflict boundary absorptions across ALL groups
+        // (not limited to low/medium, because relative confidence matters)
+        return $this->findConflictBoundaryAbsorptions(array_keys($groupConfidenceSummary), $fileToGroup);
     }
 
     /**
-     * Find which low-confidence groups should be absorbed into which high-confidence groups.
+     * Find absorptions based on conflict boundaries where a higher-confidence assignment
+     * won a conflict and the losing group has adjacent files from the same window.
      *
-     * @param  array  $lowConfidenceGroups  Array of low-confidence group names
-     * @param  array  $highConfidenceGroups  Array of high-confidence group names
+     * This works BIDIRECTIONALLY:
+     *
+     * FORWARD absorption example:
+     * - Window A: Pages 109-112 grouped as "Ivo DPT" (conf 3)
+     * - Window B: Page 109 gets reassigned to "ME PT" (conf 5)
+     * - Result: Absorb pages 110-112 from "Ivo DPT" into "ME PT" (forward from boundary)
+     *
+     * BACKWARD absorption example:
+     * - Window A: Pages 93-95 in group "X" (conf 4)
+     * - Window B: Pages 95-97 in group "Y" where 97 is conf 5
+     * - Page 95 gets absorbed into "Y" with inherited conf 5
+     * - Result: Absorb pages 93-94 from "X" into "Y" (backward from boundary)
+     *
+     * @param  array  $allGroups  Array of ALL group names to check
      * @param  array  $fileToGroup  Map of file_id => group data
-     * @return array Map of low_group => high_group
+     * @return array Map of losing_group => winning_group
      */
-    protected function findAbsorptionPairs(array $lowConfidenceGroups, array $highConfidenceGroups, array $fileToGroup): array
+    protected function findConflictBoundaryAbsorptions(array $allGroups, array $fileToGroup): array
     {
         $absorptions = [];
-        $analyzer    = app(GroupConfidenceAnalyzer::class);
 
-        foreach ($lowConfidenceGroups as $lowGroup) {
-            foreach ($highConfidenceGroups as $highGroup) {
-                $overlap = $analyzer->findOverlappingFiles($lowGroup, $highGroup, $fileToGroup);
+        // Find files where a higher-confidence assignment won
+        foreach ($fileToGroup as $fileId => $data) {
+            $winningGroup = $data['group_name'];
+            $winningConfidence = $data['confidence'];
+            $allExplanations = $data['all_explanations'] ?? [];
 
-                if (!empty($overlap)) {
-                    static::logDebug("OVERLAP DETECTED: Low-confidence group '$lowGroup' shares " . count($overlap) . " file(s) with high-confidence group '$highGroup'");
+            // Check ALL alternative assignments this file had (both forward and backward)
+            foreach ($allExplanations as $explanation) {
+                $losingGroup = $explanation['group_name'];
+                $losingConfidence = $explanation['confidence'];
 
-                    foreach ($overlap as $fileId) {
-                        $pageNumber = $fileToGroup[$fileId]['page_number'] ?? '?';
-                        static::logDebug("  Overlapping file: $fileId (page $pageNumber)");
-                    }
+                // Skip if the losing assignment is the same as current (not a conflict)
+                if ($losingGroup === $winningGroup) {
+                    continue;
+                }
 
-                    $absorptions[$lowGroup] = $highGroup;
-                    static::logDebug("  → Will absorb ALL files from '$lowGroup' into '$highGroup'");
-                    break; // Only need one overlap to trigger absorption
+                // Skip if the losing group isn't in our group list
+                if (!in_array($losingGroup, $allGroups)) {
+                    continue;
+                }
+
+                // Check if the winning confidence is actually HIGHER than the losing confidence
+                if ($winningConfidence <= $losingConfidence) {
+                    continue;
+                }
+
+                // We found a conflict boundary where higher confidence won!
+                static::logDebug("CONFLICT BOUNDARY DETECTED: File $fileId (page {$data['page_number']}) assigned to '$winningGroup' (conf $winningConfidence) beat '$losingGroup' (conf $losingConfidence)");
+
+                // FORWARD absorption: Check if the losing group has adjacent files from the same window
+                // (files that appear AFTER this boundary file in the losing group's window)
+                if ($this->hasAdjacentFilesFromSameWindow($fileId, $losingGroup, $explanation['window_id'], $fileToGroup)) {
+                    $absorptions[$losingGroup] = $winningGroup;
+                    static::logDebug("  → Will absorb '$losingGroup' into '$winningGroup' (FORWARD: has adjacent files from same window)");
+                }
+
+                // BACKWARD absorption: Check if this file (now in winning group) was grouped
+                // with other files in the LOSING group's window, and those files are still in the losing group
+                // This handles cases where the boundary file got absorbed but should pull in earlier files too
+                if ($this->shouldAbsorbBackward($fileId, $losingGroup, $explanation['window_id'], $winningGroup, $winningConfidence, $fileToGroup)) {
+                    $absorptions[$losingGroup] = $winningGroup;
+                    static::logDebug("  → Will absorb '$losingGroup' into '$winningGroup' (BACKWARD: boundary file connects them)");
                 }
             }
-        }
-
-        if (empty($absorptions)) {
-            static::logDebug('No overlaps found - no absorption needed');
         }
 
         return $absorptions;
     }
 
     /**
-     * Apply absorptions by reassigning all files from low-confidence groups to high-confidence groups.
+     * Check if we should absorb a group backward through a boundary file.
      *
-     * @param  array  $absorptions  Map of low_group => high_group
+     * Example:
+     * - Window A: Pages 93-95 in group "X" (conf 4)
+     * - Window B: Pages 95-97 in group "Y", page 97 has conf 5
+     * - Page 95 got absorbed into "Y" with conf 5
+     * - Page 95 was also in "X" with 93-94 → absorb "X" into "Y"
+     *
+     * @param  int  $boundaryFileId  The file that won the conflict
+     * @param  string  $losingGroup  The group that lost the conflict
+     * @param  int  $windowId  The window where the losing assignment occurred
+     * @param  string  $winningGroup  The current winning group
+     * @param  int  $winningConfidence  The winning confidence level
+     * @param  array  $fileToGroup  Map of file_id => group data
+     * @return bool True if we should absorb the losing group backward
+     */
+    protected function shouldAbsorbBackward(
+        int $boundaryFileId,
+        string $losingGroup,
+        int $windowId,
+        string $winningGroup,
+        int $winningConfidence,
+        array $fileToGroup
+    ): bool {
+        // Check if the losing group still exists (has files currently assigned to it)
+        $losingGroupFiles = $this->getGroupFiles($losingGroup, $fileToGroup);
+
+        if (empty($losingGroupFiles)) {
+            // Losing group already absorbed, nothing to do
+            return false;
+        }
+
+        // Check if any of those files were in the SAME window as the boundary file
+        // (meaning they were grouped together with the boundary file in the losing group's window)
+        foreach ($losingGroupFiles as $otherFileId => $otherData) {
+            // Skip the boundary file itself
+            if ($otherFileId === $boundaryFileId) {
+                continue;
+            }
+
+            // Check if this file was assigned to the losing group in the same window as the boundary file
+            $otherExplanations = $otherData['all_explanations'] ?? [];
+            foreach ($otherExplanations as $exp) {
+                if ($exp['group_name'] === $losingGroup && $exp['window_id'] === $windowId) {
+                    // This file was grouped with the boundary file in the losing group's window
+                    // and is currently still in the losing group → should absorb
+                    static::logDebug("    Found backward absorption candidate: file $otherFileId (page {$otherData['page_number']}) was in '$losingGroup' with boundary file in window $windowId");
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get all files currently assigned to a specific group.
+     *
+     * @param  string  $groupName  Group name
+     * @param  array  $fileToGroup  Map of file_id => group data
+     * @return array Map of file_id => file data for files in this group
+     */
+    protected function getGroupFiles(string $groupName, array $fileToGroup): array
+    {
+        $groupFiles = [];
+
+        foreach ($fileToGroup as $fileId => $data) {
+            if ($data['group_name'] === $groupName) {
+                $groupFiles[$fileId] = $data;
+            }
+        }
+
+        return $groupFiles;
+    }
+
+    /**
+     * Check if a group has files adjacent to a given file that were grouped together
+     * in the SAME WINDOW and have no competing assignments.
+     *
+     * This ensures we only absorb files that were part of the same original grouping
+     * that lost the conflict, not just any adjacent files.
+     *
+     * @param  int  $fileId  The boundary file ID
+     * @param  string  $groupName  Group name to check for adjacent files
+     * @param  int  $windowId  The window ID where the conflict occurred
+     * @param  array  $fileToGroup  Map of file_id => group data
+     * @return bool True if group has uncontested adjacent files from the same window
+     */
+    protected function hasAdjacentFilesFromSameWindow(int $fileId, string $groupName, int $windowId, array $fileToGroup): bool
+    {
+        $boundaryPageNumber = $fileToGroup[$fileId]['page_number'];
+
+        foreach ($fileToGroup as $otherFileId => $data) {
+            // Skip the boundary file itself
+            if ($otherFileId === $fileId) {
+                continue;
+            }
+
+            if ($data['group_name'] === $groupName) {
+                $pageNumber = $data['page_number'];
+                // Check if this file is adjacent (within 3 pages to allow for small gaps)
+                if (abs($pageNumber - $boundaryPageNumber) <= 3) {
+                    // Check if this file had multiple group assignments
+                    $allExplanations = $data['all_explanations'] ?? [];
+                    $uniqueGroups = array_unique(array_column($allExplanations, 'group_name'));
+
+                    // Only absorb if this file ONLY appeared in this one group (no conflicts of its own)
+                    if (count($uniqueGroups) === 1) {
+                        // Check if this file was assigned to this group in the SAME window as the conflict
+                        $wasInSameWindow = false;
+                        foreach ($allExplanations as $exp) {
+                            if ($exp['group_name'] === $groupName && $exp['window_id'] === $windowId) {
+                                $wasInSameWindow = true;
+                                break;
+                            }
+                        }
+
+                        if ($wasInSameWindow) {
+                            static::logDebug("    Found adjacent file in '$groupName' from same window: file $otherFileId (page $pageNumber) near boundary page $boundaryPageNumber (window $windowId)");
+                            return true;
+                        } else {
+                            static::logDebug("    Skipping adjacent file $otherFileId (page $pageNumber) - not from same window (window $windowId)");
+                        }
+                    } else {
+                        static::logDebug("    Skipping adjacent file $otherFileId (page $pageNumber) - had multiple assignments: " . implode(', ', $uniqueGroups));
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Apply absorptions by reassigning all files from low-confidence groups to high-confidence groups.
+     * Absorbed files inherit the winning group's confidence level to enable cascade absorption.
+     *
+     * @param  array  $absorptions  Map of low_group => high_group (or low_group => ['group' => high_group, 'confidence' => int])
      * @param  array  $fileToGroup  Map of file_id => group data (will be modified)
      * @return int Number of files absorbed
      */
@@ -93,15 +268,31 @@ class GroupAbsorptionService
     {
         $totalFilesAbsorbed = 0;
 
-        foreach ($absorptions as $lowGroup => $highGroup) {
-            static::logDebug("Absorbing group '$lowGroup' into '$highGroup'");
+        foreach ($absorptions as $lowGroup => $absorptionData) {
+            // Support both old format (string) and new format (array with confidence)
+            if (is_string($absorptionData)) {
+                $highGroup = $absorptionData;
+                $inheritConfidence = null; // Will calculate from group max
+            } else {
+                $highGroup = $absorptionData['group'];
+                $inheritConfidence = $absorptionData['confidence'];
+            }
+
+            // Calculate the confidence to inherit if not provided
+            if ($inheritConfidence === null) {
+                $inheritConfidence = $this->calculateGroupMaxConfidence($highGroup, $fileToGroup);
+            }
+
+            static::logDebug("Absorbing group '$lowGroup' into '$highGroup' (inherit confidence: $inheritConfidence)");
 
             $filesAbsorbed = 0;
             foreach ($fileToGroup as $fileId => $data) {
                 if ($data['group_name'] === $lowGroup) {
+                    $oldConfidence = $data['confidence'];
                     $fileToGroup[$fileId]['group_name'] = $highGroup;
+                    $fileToGroup[$fileId]['confidence'] = $inheritConfidence;
                     $filesAbsorbed++;
-                    static::logDebug("  Reassigned file $fileId (page {$data['page_number']}) from '$lowGroup' to '$highGroup'");
+                    static::logDebug("  Reassigned file $fileId (page {$data['page_number']}) from '$lowGroup' (conf $oldConfidence) to '$highGroup' (conf $inheritConfidence)");
                 }
             }
 
@@ -110,5 +301,25 @@ class GroupAbsorptionService
         }
 
         return $totalFilesAbsorbed;
+    }
+
+    /**
+     * Calculate the maximum confidence level in a group.
+     *
+     * @param  string  $groupName  Group name
+     * @param  array  $fileToGroup  Map of file_id => group data
+     * @return int Maximum confidence in the group
+     */
+    protected function calculateGroupMaxConfidence(string $groupName, array $fileToGroup): int
+    {
+        $maxConfidence = 0;
+
+        foreach ($fileToGroup as $data) {
+            if ($data['group_name'] === $groupName) {
+                $maxConfidence = max($maxConfidence, $data['confidence']);
+            }
+        }
+
+        return $maxConfidence ?: 3; // Default to 3 if group has no files
     }
 }

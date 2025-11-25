@@ -155,15 +155,16 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result = $mergeResult['groups'];
 
-        // Then: File 1 stays in group1 (only one assignment), files 2-3 move to group2 (higher confidence wins)
-        $this->assertCount(2, $result);
+        // Then: ALL files absorbed into group2 because files 1-2-3 were grouped together in window 1,
+        // and when files 2-3 got reassigned to group2 with higher confidence, file 1 should follow
+        // (conflict boundary absorption - files grouped together stay together when higher confidence wins)
+        $this->assertCount(1, $result);
 
-        // Find groups by name
-        $group1 = collect($result)->firstWhere('name', 'group1');
+        // Find group by name
         $group2 = collect($result)->firstWhere('name', 'group2');
 
-        $this->assertEquals([1], $group1['files']);
-        $this->assertEquals([2, 3, 4], $group2['files']);
+        $this->assertNotNull($group2);
+        $this->assertEquals([1, 2, 3, 4], $group2['files']);
     }
 
     #[Test]
@@ -825,5 +826,434 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $finalGroups = $mergeResult['groups'];
         $groupA = $finalGroups[0];
         $this->assertContains(2, $groupA['files'], 'Low-confidence file with single assignment should still be included in final groups');
+    }
+
+    #[Test]
+    public function cascade_absorption_two_level_chain(): void
+    {
+        // Given: 3 windows A, B, C where:
+        // A: pages 1-4 in "Tiger" (conf 5)
+        // B: pages 4-7 in "Lion" (conf 4) - page 4 overlaps with A
+        // C: pages 7-10 in "Bear" (conf 4) - page 7 overlaps with B
+        // Expected: A wins page 4, absorbs all of B, which then absorbs all of C
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name' => 'Tiger',
+                        'description' => 'High confidence group',
+                        'files' => [
+                            ['page_number' => 1, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'High conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name' => 'Lion',
+                        'description' => 'Medium confidence group',
+                        'files' => [
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 7,
+                windowEnd: 10,
+                windowFiles: [
+                    ['file_id' => 7, 'page_number' => 7],
+                    ['file_id' => 8, 'page_number' => 8],
+                    ['file_id' => 9, 'page_number' => 9],
+                    ['file_id' => 10, 'page_number' => 10],
+                ],
+                groups: [
+                    [
+                        'name' => 'Bear',
+                        'description' => 'Medium confidence group',
+                        'files' => [
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 8, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 9, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 10, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
+
+        // Then: All files should be in Tiger due to cascade absorption
+        $this->assertCount(1, $result, 'Should have only one group after cascade absorption');
+        $tiger = collect($result)->firstWhere('name', 'Tiger');
+        $this->assertNotNull($tiger);
+        $this->assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], $tiger['files'], 'All files should cascade into Tiger');
+    }
+
+    #[Test]
+    public function cascade_absorption_stops_at_split_group(): void
+    {
+        // Given: 4 windows A, B, C, D where:
+        // A: pages 1-4 in "Tiger" (conf 5)
+        // B: pages 4-7 in "Lion" (conf 4) - page 4 overlaps with A
+        // C: pages 7-10 in "Bear" (conf 4) - page 7 overlaps with B
+        // D: pages 10-13 with TWO groups: "Pig" (10-11) and "Wolf" (12-13)
+        // Expected: A absorbs B, B absorbs C, C absorbs only Pig (not Wolf because split)
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name' => 'Tiger',
+                        'description' => 'High confidence group',
+                        'files' => [
+                            ['page_number' => 1, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'High conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name' => 'Lion',
+                        'description' => 'Medium confidence group',
+                        'files' => [
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 7,
+                windowEnd: 10,
+                windowFiles: [
+                    ['file_id' => 7, 'page_number' => 7],
+                    ['file_id' => 8, 'page_number' => 8],
+                    ['file_id' => 9, 'page_number' => 9],
+                    ['file_id' => 10, 'page_number' => 10],
+                ],
+                groups: [
+                    [
+                        'name' => 'Bear',
+                        'description' => 'Medium confidence group',
+                        'files' => [
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 8, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 9, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 10, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 10,
+                windowEnd: 13,
+                windowFiles: [
+                    ['file_id' => 10, 'page_number' => 10],
+                    ['file_id' => 11, 'page_number' => 11],
+                    ['file_id' => 12, 'page_number' => 12],
+                    ['file_id' => 13, 'page_number' => 13],
+                ],
+                groups: [
+                    [
+                        'name' => 'Pig',
+                        'description' => 'First split group',
+                        'files' => [
+                            ['page_number' => 10, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 11, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                    [
+                        'name' => 'Wolf',
+                        'description' => 'Second split group',
+                        'files' => [
+                            ['page_number' => 12, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 13, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
+
+        // Then: Tiger should have pages 1-11, Wolf should remain separate
+        $this->assertCount(2, $result, 'Should have Tiger (with cascade absorption) and Wolf (separate)');
+
+        $tiger = collect($result)->firstWhere('name', 'Tiger');
+        $wolf = collect($result)->firstWhere('name', 'Wolf');
+
+        $this->assertNotNull($tiger);
+        $this->assertNotNull($wolf);
+        $this->assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], $tiger['files'], 'Tiger should cascade through to include Pig');
+        $this->assertEquals([12, 13], $wolf['files'], 'Wolf should remain separate (different group in window D)');
+    }
+
+    #[Test]
+    public function cascade_absorption_with_same_confidence_no_absorption(): void
+    {
+        // Given: 2 windows A, B with same confidence
+        // A: pages 1-4 in "Tiger" (conf 4)
+        // B: pages 4-7 in "Lion" (conf 4) - page 4 overlaps with A
+        // Expected: NO absorption because confidence is equal (not higher)
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name' => 'Tiger',
+                        'description' => 'First group',
+                        'files' => [
+                            ['page_number' => 1, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 2, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 3, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name' => 'Lion',
+                        'description' => 'Second group',
+                        'files' => [
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
+
+        // Then: Both groups should remain (no absorption with equal confidence - first wins)
+        $this->assertCount(2, $result, 'Should have both groups (no absorption with equal confidence)');
+
+        $tiger = collect($result)->firstWhere('name', 'Tiger');
+        $lion = collect($result)->firstWhere('name', 'Lion');
+
+        $this->assertNotNull($tiger);
+        $this->assertNotNull($lion);
+        $this->assertEquals([1, 2, 3, 4], $tiger['files'], 'Tiger keeps its original files (first wins on tie)');
+        $this->assertEquals([5, 6, 7], $lion['files'], 'Lion keeps non-overlapping files');
+    }
+
+    #[Test]
+    public function cascade_absorption_backward_direction(): void
+    {
+        // Given: Test backward absorption where later high-confidence group pulls in earlier files
+        // Window A: Pages 93-95 in group "X" (conf 3)
+        // Window B: Pages 95-97 in group "Y" where page 97 is conf 5, page 95 is conf 4
+        // Expected: Page 95 wins with GroupY (conf 4 > 3), absorbs pages 96-97
+        //           Then backward absorption pulls in pages 93-94 from GroupX
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 93,
+                windowEnd: 95,
+                windowFiles: [
+                    ['file_id' => 93, 'page_number' => 93],
+                    ['file_id' => 94, 'page_number' => 94],
+                    ['file_id' => 95, 'page_number' => 95],
+                ],
+                groups: [
+                    [
+                        'name' => 'GroupX',
+                        'description' => 'Earlier group',
+                        'files' => [
+                            ['page_number' => 93, 'confidence' => 3, 'explanation' => 'Low conf'],
+                            ['page_number' => 94, 'confidence' => 3, 'explanation' => 'Low conf'],
+                            ['page_number' => 95, 'confidence' => 3, 'explanation' => 'Low conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 95,
+                windowEnd: 97,
+                windowFiles: [
+                    ['file_id' => 95, 'page_number' => 95],
+                    ['file_id' => 96, 'page_number' => 96],
+                    ['file_id' => 97, 'page_number' => 97],
+                ],
+                groups: [
+                    [
+                        'name' => 'GroupY',
+                        'description' => 'Later group with high confidence',
+                        'files' => [
+                            ['page_number' => 95, 'confidence' => 4, 'explanation' => 'Med conf - wins!'],
+                            ['page_number' => 96, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 97, 'confidence' => 5, 'explanation' => 'High conf!'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
+
+        // Then: All files should be in GroupY due to backward cascade absorption
+        $this->assertCount(1, $result, 'Should have only GroupY after backward cascade absorption');
+
+        $groupY = collect($result)->firstWhere('name', 'GroupY');
+        $this->assertNotNull($groupY);
+        $this->assertEquals([93, 94, 95, 96, 97], $groupY['files'], 'All files absorbed into GroupY (page 95 wins, triggers backward absorption of 93-94)');
+    }
+
+    #[Test]
+    public function cascade_absorption_bidirectional_complex(): void
+    {
+        // Given: Test both forward and backward absorption in a complex chain
+        // Window A: Pages 1-3 in "Alpha" (conf 3)
+        // Window B: Pages 3-5 in "Beta" (conf 4) - page 3 overlaps
+        // Window C: Pages 5-7 in "Gamma" (conf 5) - page 5 overlaps
+        // Expected:
+        // 1. Page 5: Gamma (conf 5) beats Beta (conf 4) → forward absorb Beta pages 3-4
+        // 2. Page 3 now in Gamma (conf 5) → backward absorb Alpha pages 1-2
+        // Result: All pages in Gamma
+        $artifacts = new Collection([
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 3,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                ],
+                groups: [
+                    [
+                        'name' => 'Alpha',
+                        'description' => 'Low confidence group',
+                        'files' => [
+                            ['page_number' => 1, 'confidence' => 3, 'explanation' => 'Low conf'],
+                            ['page_number' => 2, 'confidence' => 3, 'explanation' => 'Low conf'],
+                            ['page_number' => 3, 'confidence' => 3, 'explanation' => 'Low conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 3,
+                windowEnd: 5,
+                windowFiles: [
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                ],
+                groups: [
+                    [
+                        'name' => 'Beta',
+                        'description' => 'Medium confidence group',
+                        'files' => [
+                            ['page_number' => 3, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
+                        ],
+                    ],
+                ]
+            ),
+            $this->createWindowArtifact(
+                windowStart: 5,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name' => 'Gamma',
+                        'description' => 'High confidence group',
+                        'files' => [
+                            ['page_number' => 5, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 6, 'confidence' => 5, 'explanation' => 'High conf'],
+                            ['page_number' => 7, 'confidence' => 5, 'explanation' => 'High conf'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result = $mergeResult['groups'];
+
+        // Then: All files should be in Gamma due to bidirectional cascade
+        $this->assertCount(1, $result, 'Should have only Gamma after bidirectional cascade');
+
+        $gamma = collect($result)->firstWhere('name', 'Gamma');
+        $this->assertNotNull($gamma);
+        $this->assertEquals([1, 2, 3, 4, 5, 6, 7], $gamma['files'], 'All files absorbed into Gamma (forward from page 5, then backward through page 3)');
     }
 }

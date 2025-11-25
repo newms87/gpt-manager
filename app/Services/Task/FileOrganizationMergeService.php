@@ -69,15 +69,36 @@ class FileOrganizationMergeService
         // Rebuild groups with null group auto-assignments applied
         $finalGroups = $this->buildFinalGroups($fileToGroup);
 
-        // Absorb low-confidence groups into high-confidence groups when they overlap
-        $absorptions = app(GroupAbsorptionService::class)->identifyAbsorptions($fileToGroup, $finalGroups);
+        // Iteratively absorb groups until no more absorptions occur (cascade/chain reaction)
+        // This handles cases where absorbing one group creates new absorption opportunities
+        $iteration = 0;
+        $maxIterations = 10; // Safety limit to prevent infinite loops
+        $totalAbsorptions = 0;
 
-        if (!empty($absorptions)) {
-            $filesAbsorbed = app(GroupAbsorptionService::class)->applyAbsorptions($absorptions, $fileToGroup);
-            static::logDebug("Absorbed $filesAbsorbed files via " . count($absorptions) . " group mergers");
+        do {
+            $iteration++;
+            $absorptions = app(GroupAbsorptionService::class)->identifyAbsorptions($fileToGroup, $finalGroups);
 
-            // Rebuild groups after absorption
-            $finalGroups = $this->buildFinalGroups($fileToGroup);
+            if (!empty($absorptions)) {
+                $filesAbsorbed = app(GroupAbsorptionService::class)->applyAbsorptions($absorptions, $fileToGroup);
+                $totalAbsorptions += count($absorptions);
+                static::logDebug("Iteration $iteration: Absorbed $filesAbsorbed files via " . count($absorptions) . " group mergers");
+
+                // Rebuild groups after absorption for next iteration
+                $finalGroups = $this->buildFinalGroups($fileToGroup);
+            } else {
+                static::logDebug("Iteration $iteration: No more absorptions found");
+                break;
+            }
+
+            if ($iteration >= $maxIterations) {
+                static::logDebug("WARNING: Reached maximum iterations ($maxIterations) for absorption - stopping to prevent infinite loop");
+                break;
+            }
+        } while (!empty($absorptions));
+
+        if ($totalAbsorptions > 0) {
+            static::logDebug("Total cascade absorptions: $totalAbsorptions groups absorbed across $iteration iterations");
         }
 
         // Return both groups, mapping, and null group resolution info

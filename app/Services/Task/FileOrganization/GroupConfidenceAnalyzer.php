@@ -66,6 +66,29 @@ class GroupConfidenceAnalyzer
     }
 
     /**
+     * Identify medium-confidence groups (max = 3, not low enough for "low" category).
+     * These groups are candidates for absorption into high-confidence groups when
+     * there are conflict boundaries or adjacency.
+     *
+     * @param  array  $groupConfidenceSummary  Summary from calculateGroupConfidenceSummary
+     * @return array Array of group names
+     */
+    public function identifyMediumConfidenceGroups(array $groupConfidenceSummary): array
+    {
+        $mediumConfidenceGroups = [];
+
+        foreach ($groupConfidenceSummary as $groupName => $summary) {
+            // Medium: max is exactly 3 (not low enough for < 3, not high enough for >= 4)
+            if ($summary['max'] === 3) {
+                $mediumConfidenceGroups[] = $groupName;
+                static::logDebug("Identified MEDIUM confidence group: '$groupName' (max={$summary['max']})");
+            }
+        }
+
+        return $mediumConfidenceGroups;
+    }
+
+    /**
      * Identify high-confidence groups (ALL files >= 4).
      *
      * @param  array  $groupConfidenceSummary  Summary from calculateGroupConfidenceSummary
