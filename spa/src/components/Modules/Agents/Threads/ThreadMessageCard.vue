@@ -128,10 +128,20 @@ import {
 } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     message: AgentThreadMessage;
-    thread?: AgentThread,
+    thread?: AgentThread;
     readonly?: boolean;
+    isMessageExpanded?: boolean;
+    isFilesExpanded?: boolean;
+}>(), {
+    isMessageExpanded: undefined,
+    isFilesExpanded: undefined
+});
+
+const emit = defineEmits<{
+    'update:messageExpanded': [value: boolean];
+    'update:filesExpanded': [value: boolean];
 }>();
 
 const showMetaFields = ref(false);
@@ -141,6 +151,29 @@ const files = ref<UploadedFile[]>(props.message.files || []);
 
 const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);
+
+// Sync local showMessage with parent prop when provided
+watch(() => props.isMessageExpanded, (value) => {
+    if (value !== undefined) {
+        showMessage.value = value;
+    }
+}, { immediate: true });
+
+// Sync local showFiles with parent prop when provided
+watch(() => props.isFilesExpanded, (value) => {
+    if (value !== undefined) {
+        showFiles.value = value;
+    }
+}, { immediate: true });
+
+// Emit changes when local state changes
+watch(showMessage, (value) => {
+    emit('update:messageExpanded', value);
+});
+
+watch(showFiles, (value) => {
+    emit('update:filesExpanded', value);
+});
 const isUserMessage = computed(() => props.message.role === "user");
 const nextRole = {
     user: "assistant",

@@ -1,6 +1,12 @@
 <template>
 	<div class="task-process-agent-thread-card bg-transparent text-slate-300 flex flex-col flex-nowrap h-full">
 		<div class="flex items-center justify-end flex-nowrap space-x-2">
+			<ThreadMessageControls
+				:all-messages-expanded="allMessagesExpanded"
+				:all-files-expanded="allFilesExpanded"
+				@toggle-messages="toggleAllMessages"
+				@toggle-files="toggleAllFiles"
+			/>
 			<AiTokenUsageButton v-if="agentThread.usage" :usage="agentThread.usage" class="py-3" />
 			<ShowHideButton
 				v-model="isShowingJobDispatch"
@@ -21,7 +27,11 @@
 				:message="message"
 				:thread="agentThread"
 				:readonly="!agentThread.can.edit"
+				:is-message-expanded="expandedMessages.has(message.id)"
+				:is-files-expanded="expandedFiles.has(message.id)"
 				class="mb-5"
+				@update:message-expanded="updateMessageExpanded(message.id, $event)"
+				@update:files-expanded="updateFilesExpanded(message.id, $event)"
 			/>
 			<div class="flex-x space-x-4">
 				<AgentThreadResponseField v-model="agentResponse" class="flex-grow" />
@@ -61,6 +71,8 @@ import { AgentThreadResponseField } from "@/components/Modules/Agents/Fields";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { refreshAgentThread } from "@/components/Modules/Agents/Threads/store";
 import ThreadMessageCard from "@/components/Modules/Agents/Threads/ThreadMessageCard";
+import ThreadMessageControls from "@/components/Modules/Agents/Threads/ThreadMessageControls.vue";
+import { useThreadMessageExpansion } from "@/components/Modules/Agents/Threads/useThreadMessageExpansion";
 import JobDispatchCard from "@/components/Modules/Audits/JobDispatches/JobDispatchCard";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { usePusher } from "@/helpers/pusher";
@@ -75,6 +87,19 @@ const props = defineProps<{
 
 const isShowingJobDispatch = ref(false);
 const isLoadingJobDispatch = ref(false);
+
+// Use the shared expansion composable
+const messages = computed(() => props.agentThread.messages);
+const {
+	expandedMessages,
+	expandedFiles,
+	allMessagesExpanded,
+	allFilesExpanded,
+	toggleAllMessages,
+	toggleAllFiles,
+	updateMessageExpanded,
+	updateFilesExpanded
+} = useThreadMessageExpansion(messages);
 // Actions
 const createMessageAction = dxAgentThread.getAction("create-message");
 const runAction = dxAgentThread.getAction("run");

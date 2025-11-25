@@ -53,7 +53,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Both groups preserved with all files
         $this->assertCount(2, $result);
@@ -96,7 +96,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Single group with all files in order
         $this->assertCount(1, $result);
@@ -119,9 +119,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'group1',
+                        'name'        => 'group1',
                         'description' => 'First group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 0, 'confidence' => 3, 'explanation' => 'Low confidence'],
                             ['page_number' => 1, 'confidence' => 2, 'explanation' => 'Uncertain'],
                             ['page_number' => 2, 'confidence' => 2, 'explanation' => 'Uncertain'],
@@ -139,9 +139,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'group2',
+                        'name'        => 'group2',
                         'description' => 'Second group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 1, 'confidence' => 4, 'explanation' => 'High confidence'],
                             ['page_number' => 2, 'confidence' => 4, 'explanation' => 'High confidence'],
                             ['page_number' => 3, 'confidence' => 4, 'explanation' => 'High confidence'],
@@ -153,7 +153,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: ALL files absorbed into group2 because files 1-2-3 were grouped together in window 1,
         // and when files 2-3 got reassigned to group2 with higher confidence, file 1 should follow
@@ -190,7 +190,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Files ordered by position
         $this->assertEquals([1, 2, 3, 4, 5], $result[0]['files']);
@@ -217,7 +217,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Single group with all files
         $this->assertCount(1, $result);
@@ -246,7 +246,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Only valid group with files
         $this->assertCount(1, $result);
@@ -287,7 +287,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: With same confidence (default 3), first assignment wins - file 2 stays in 'first'
         $this->assertCount(2, $result);
@@ -322,7 +322,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: All 5 files grouped correctly
         $this->assertCount(1, $result);
@@ -349,7 +349,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Both files grouped correctly
         $this->assertCount(1, $result);
@@ -401,7 +401,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: One continuous group with all files
         $this->assertCount(1, $result);
@@ -452,7 +452,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: With same confidence, first assignment wins - creates split
         $this->assertCount(2, $result);
@@ -472,7 +472,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Empty result
         $this->assertEmpty($result);
@@ -500,7 +500,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Only valid artifact processed
         $this->assertCount(1, $result);
@@ -524,7 +524,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Artifact skipped due to missing metadata
         $this->assertEmpty($result);
@@ -618,7 +618,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         // Given: Artifacts with StoredFiles that have different page_numbers
         $artifacts = new Collection();
         foreach ([2, 0, 1] as $pageNum) {
-            $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+            $artifact   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
             $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
                 'page_number' => $pageNum,
                 'filename'    => "page-$pageNum.jpg",
@@ -644,7 +644,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
     public function gets_file_list_from_artifacts_uses_artifact_id_as_file_id(): void
     {
         // Given: Artifacts with StoredFiles
-        $artifact1 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact1   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile1 = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
             'page_number' => 0,
             'filename'    => 'page-0.jpg',
@@ -654,7 +654,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         ]);
         $artifact1->storedFiles()->attach($storedFile1->id);
 
-        $artifact2 = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $artifact2   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $storedFile2 = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
             'page_number' => 1,
             'filename'    => 'page-1.jpg',
@@ -824,7 +824,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // Verify File 2 is still in the final groups (not discarded)
         $finalGroups = $mergeResult['groups'];
-        $groupA = $finalGroups[0];
+        $groupA      = $finalGroups[0];
         $this->assertContains(2, $groupA['files'], 'Low-confidence file with single assignment should still be included in final groups');
     }
 
@@ -848,9 +848,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Tiger',
+                        'name'        => 'Tiger',
                         'description' => 'High confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 1, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 2, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 3, 'confidence' => 5, 'explanation' => 'High conf'],
@@ -870,9 +870,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Lion',
+                        'name'        => 'Lion',
                         'description' => 'Medium confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -892,9 +892,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Bear',
+                        'name'        => 'Bear',
                         'description' => 'Medium confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 8, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 9, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -907,7 +907,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: All files should be in Tiger due to cascade absorption
         $this->assertCount(1, $result, 'Should have only one group after cascade absorption');
@@ -937,9 +937,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Tiger',
+                        'name'        => 'Tiger',
                         'description' => 'High confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 1, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 2, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 3, 'confidence' => 5, 'explanation' => 'High conf'],
@@ -959,9 +959,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Lion',
+                        'name'        => 'Lion',
                         'description' => 'Medium confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -981,9 +981,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Bear',
+                        'name'        => 'Bear',
                         'description' => 'Medium confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 8, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 9, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -1003,17 +1003,17 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Pig',
+                        'name'        => 'Pig',
                         'description' => 'First split group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 10, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 11, 'confidence' => 4, 'explanation' => 'Med conf'],
                         ],
                     ],
                     [
-                        'name' => 'Wolf',
+                        'name'        => 'Wolf',
                         'description' => 'Second split group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 12, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 13, 'confidence' => 4, 'explanation' => 'Med conf'],
                         ],
@@ -1024,13 +1024,13 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Tiger should have pages 1-11, Wolf should remain separate
         $this->assertCount(2, $result, 'Should have Tiger (with cascade absorption) and Wolf (separate)');
 
         $tiger = collect($result)->firstWhere('name', 'Tiger');
-        $wolf = collect($result)->firstWhere('name', 'Wolf');
+        $wolf  = collect($result)->firstWhere('name', 'Wolf');
 
         $this->assertNotNull($tiger);
         $this->assertNotNull($wolf);
@@ -1057,9 +1057,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Tiger',
+                        'name'        => 'Tiger',
                         'description' => 'First group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 1, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 2, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 3, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -1079,9 +1079,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Lion',
+                        'name'        => 'Lion',
                         'description' => 'Second group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -1094,13 +1094,13 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: Both groups should remain (no absorption with equal confidence - first wins)
         $this->assertCount(2, $result, 'Should have both groups (no absorption with equal confidence)');
 
         $tiger = collect($result)->firstWhere('name', 'Tiger');
-        $lion = collect($result)->firstWhere('name', 'Lion');
+        $lion  = collect($result)->firstWhere('name', 'Lion');
 
         $this->assertNotNull($tiger);
         $this->assertNotNull($lion);
@@ -1127,9 +1127,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'GroupX',
+                        'name'        => 'GroupX',
                         'description' => 'Earlier group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 93, 'confidence' => 3, 'explanation' => 'Low conf'],
                             ['page_number' => 94, 'confidence' => 3, 'explanation' => 'Low conf'],
                             ['page_number' => 95, 'confidence' => 3, 'explanation' => 'Low conf'],
@@ -1147,9 +1147,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'GroupY',
+                        'name'        => 'GroupY',
                         'description' => 'Later group with high confidence',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 95, 'confidence' => 4, 'explanation' => 'Med conf - wins!'],
                             ['page_number' => 96, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 97, 'confidence' => 5, 'explanation' => 'High conf!'],
@@ -1161,7 +1161,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: All files should be in GroupY due to backward cascade absorption
         $this->assertCount(1, $result, 'Should have only GroupY after backward cascade absorption');
@@ -1193,9 +1193,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Alpha',
+                        'name'        => 'Alpha',
                         'description' => 'Low confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 1, 'confidence' => 3, 'explanation' => 'Low conf'],
                             ['page_number' => 2, 'confidence' => 3, 'explanation' => 'Low conf'],
                             ['page_number' => 3, 'confidence' => 3, 'explanation' => 'Low conf'],
@@ -1213,9 +1213,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Beta',
+                        'name'        => 'Beta',
                         'description' => 'Medium confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 3, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Med conf'],
                             ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Med conf'],
@@ -1233,9 +1233,9 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                 ],
                 groups: [
                     [
-                        'name' => 'Gamma',
+                        'name'        => 'Gamma',
                         'description' => 'High confidence group',
-                        'files' => [
+                        'files'       => [
                             ['page_number' => 5, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 6, 'confidence' => 5, 'explanation' => 'High conf'],
                             ['page_number' => 7, 'confidence' => 5, 'explanation' => 'High conf'],
@@ -1247,7 +1247,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
 
         // When
         $mergeResult = $this->service->mergeWindowResults($artifacts);
-        $result = $mergeResult['groups'];
+        $result      = $mergeResult['groups'];
 
         // Then: All files should be in Gamma due to bidirectional cascade
         $this->assertCount(1, $result, 'Should have only Gamma after bidirectional cascade');

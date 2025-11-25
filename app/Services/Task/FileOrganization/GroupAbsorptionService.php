@@ -75,13 +75,13 @@ class GroupAbsorptionService
 
         // Find files where a higher-confidence assignment won
         foreach ($fileToGroup as $fileId => $data) {
-            $winningGroup = $data['group_name'];
+            $winningGroup      = $data['group_name'];
             $winningConfidence = $data['confidence'];
-            $allExplanations = $data['all_explanations'] ?? [];
+            $allExplanations   = $data['all_explanations'] ?? [];
 
             // Check ALL alternative assignments this file had (both forward and backward)
             foreach ($allExplanations as $explanation) {
-                $losingGroup = $explanation['group_name'];
+                $losingGroup      = $explanation['group_name'];
                 $losingConfidence = $explanation['confidence'];
 
                 // Skip if the losing assignment is the same as current (not a conflict)
@@ -101,6 +101,18 @@ class GroupAbsorptionService
 
                 // We found a conflict boundary where higher confidence won!
                 static::logDebug("CONFLICT BOUNDARY DETECTED: File $fileId (page {$data['page_number']}) assigned to '$winningGroup' (conf $winningConfidence) beat '$losingGroup' (conf $losingConfidence)");
+
+                // Before adding absorption, check for circular conflict
+                // If the winning group is already set to absorb into the losing group, this is a bidirectional conflict
+                // Both groups have winning boundaries over each other, so they should remain separate
+                if (isset($absorptions[$winningGroup]) && $absorptions[$winningGroup] === $losingGroup) {
+                    // Circular absorption detected - both groups have winning boundaries
+                    // Remove the existing absorption and don't add this one
+                    unset($absorptions[$winningGroup]);
+                    static::logDebug("  → CIRCULAR ABSORPTION DETECTED: '$losingGroup' ↔ '$winningGroup' - keeping both groups separate");
+
+                    continue; // Skip to next explanation
+                }
 
                 // FORWARD absorption: Check if the losing group has adjacent files from the same window
                 // (files that appear AFTER this boundary file in the losing group's window)
@@ -170,6 +182,7 @@ class GroupAbsorptionService
                     // This file was grouped with the boundary file in the losing group's window
                     // and is currently still in the losing group → should absorb
                     static::logDebug("    Found backward absorption candidate: file $otherFileId (page {$otherData['page_number']}) was in '$losingGroup' with boundary file in window $windowId");
+
                     return true;
                 }
             }
@@ -227,7 +240,7 @@ class GroupAbsorptionService
                 if (abs($pageNumber - $boundaryPageNumber) <= 3) {
                     // Check if this file had multiple group assignments
                     $allExplanations = $data['all_explanations'] ?? [];
-                    $uniqueGroups = array_unique(array_column($allExplanations, 'group_name'));
+                    $uniqueGroups    = array_unique(array_column($allExplanations, 'group_name'));
 
                     // Only absorb if this file ONLY appeared in this one group (no conflicts of its own)
                     if (count($uniqueGroups) === 1) {
@@ -242,6 +255,7 @@ class GroupAbsorptionService
 
                         if ($wasInSameWindow) {
                             static::logDebug("    Found adjacent file in '$groupName' from same window: file $otherFileId (page $pageNumber) near boundary page $boundaryPageNumber (window $windowId)");
+
                             return true;
                         } else {
                             static::logDebug("    Skipping adjacent file $otherFileId (page $pageNumber) - not from same window (window $windowId)");
@@ -271,10 +285,10 @@ class GroupAbsorptionService
         foreach ($absorptions as $lowGroup => $absorptionData) {
             // Support both old format (string) and new format (array with confidence)
             if (is_string($absorptionData)) {
-                $highGroup = $absorptionData;
+                $highGroup         = $absorptionData;
                 $inheritConfidence = null; // Will calculate from group max
             } else {
-                $highGroup = $absorptionData['group'];
+                $highGroup         = $absorptionData['group'];
                 $inheritConfidence = $absorptionData['confidence'];
             }
 
@@ -288,7 +302,7 @@ class GroupAbsorptionService
             $filesAbsorbed = 0;
             foreach ($fileToGroup as $fileId => $data) {
                 if ($data['group_name'] === $lowGroup) {
-                    $oldConfidence = $data['confidence'];
+                    $oldConfidence                      = $data['confidence'];
                     $fileToGroup[$fileId]['group_name'] = $highGroup;
                     $fileToGroup[$fileId]['confidence'] = $inheritConfidence;
                     $filesAbsorbed++;

@@ -48,6 +48,70 @@ You are a specialized Vue.js frontend engineer for the GPT Manager application.
 
 You implement Vue.js frontend code (components, composables, stores) using Vue 3 Composition API, TypeScript, Tailwind CSS, and quasar-ui-danx library following the patterns defined in the guides above.
 
+## Button Usage Patterns
+
+**CRITICAL: Never use raw Quasar components like `QBtn` or `QTooltip` directly.**
+
+Always use the standardized button components from `quasar-ui-danx`:
+
+### ActionButton (Primary Choice)
+```vue
+import { ActionButton } from "quasar-ui-danx";
+
+<!-- Icon-only button with tooltip -->
+<ActionButton
+  :icon="MyIcon"
+  color="slate"
+  size="sm"
+  tooltip="Help text here"
+  @click="handleClick"
+/>
+
+<!-- Button with label -->
+<ActionButton
+  :icon="MyIcon"
+  label="Click Me"
+  color="sky"
+  size="sm"
+  @click="handleClick"
+/>
+
+<!-- Preset type button -->
+<ActionButton
+  type="refresh"
+  color="sky"
+  size="sm"
+  tooltip="Refresh"
+  @click="refresh"
+/>
+```
+
+**Props:**
+- `type`: Preset icons - "save", "trash", "play", "stop", "refresh", "export", etc.
+- `color`: "slate", "sky", "green", "red", "orange", "purple", "blue", etc.
+- `size`: "xxs", "xs", "sm", "md", "lg"
+- `icon`: Custom icon component
+- `label`: Button text (omit for icon-only)
+- `tooltip`: Hover help text
+
+### ShowHideButton (For Toggle States)
+```vue
+import { ShowHideButton } from "quasar-ui-danx";
+
+<ShowHideButton
+  v-model="isVisible"
+  :show-icon="ShowIcon"
+  :hide-icon="HideIcon"
+  icon-class="w-4"
+  tooltip="Toggle visibility"
+/>
+```
+
+### DO NOT USE:
+- `QBtn` - Use `ActionButton` instead
+- `QTooltip` - Use `tooltip` prop on ActionButton instead
+- Custom button styling - Use the `color` and `size` props
+
 ## Common Commands
 
 - `yarn build` - Build and validate (MANDATORY after non-trivial changes)

@@ -16,6 +16,13 @@
 			:label="thread.messages.length + ' messages'"
 			class="bg-slate-700 text-slate-300 py-2 mr-3"
 		/>
+		<ThreadMessageControls
+			v-if="active"
+			:all-messages-expanded="allMessagesExpanded"
+			:all-files-expanded="allFilesExpanded"
+			@toggle-messages="$emit('toggle-messages')"
+			@toggle-files="$emit('toggle-files')"
+		/>
 		<ShowHideButton
 			v-model="showLogs"
 			class="bg-slate-700 text-slate-300 !p-[.7rem] mr-3"
@@ -52,14 +59,20 @@
 
 <script setup lang="ts">
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
+import ThreadMessageControls from "@/components/Modules/Agents/Threads/ThreadMessageControls.vue";
 import { AiTokenUsageButton } from "@/components/Shared";
 import { AgentThread } from "@/types";
-import { FaSolidFileCircleCheck as ShowLogsIcon, FaSolidFileCircleXmark as HideLogsIcon } from "danx-icon";
+import {
+	FaSolidFileCircleCheck as ShowLogsIcon,
+	FaSolidFileCircleXmark as HideLogsIcon
+} from "danx-icon";
 import { ActionButton, ActionMenu, EditOnClickTextField, fDateTime, ShowHideButton } from "quasar-ui-danx";
 
-defineEmits(["toggle", "close"]);
+defineEmits(["toggle", "close", "toggle-messages", "toggle-files"]);
 defineProps<{
 	thread: AgentThread;
+	allMessagesExpanded: boolean;
+	allFilesExpanded: boolean;
 }>();
 
 const active = defineModel<boolean>("active", { default: false });
