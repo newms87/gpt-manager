@@ -10,7 +10,6 @@ import {
 	LoginView,
 	PageNotFoundView,
 	SchemaDefinitionsView,
-	TaskDefinitionsView,
 	TeamObjectsDemoView,
 	WorkflowDefinitionsView,
 	WorkflowInputsView
@@ -53,12 +52,6 @@ const router = createRouter({
 					name: "workflow-definitions",
 					component: WorkflowDefinitionsView,
 					meta: { title: "Workflow Definitions", type: "WorkflowDefinitionResource" }
-				},
-				{
-					path: "/task-definitions/:id?/:panel?",
-					name: "task-definitions",
-					component: TaskDefinitionsView,
-					meta: { title: "Task Definitions", type: "TaskDefinitionResource" }
 				},
 				{
 					path: "/schemas/definitions/:id?/:panel?",

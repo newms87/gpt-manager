@@ -1256,4 +1256,295 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($gamma);
         $this->assertEquals([1, 2, 3, 4, 5, 6, 7], $gamma['files'], 'All files absorbed into Gamma (forward from page 5, then backward through page 3)');
     }
+
+    #[Test]
+    public function test_high_confidence_file_not_absorbed_when_adjacent_null_group_is_absorbed(): void
+    {
+        // Given: 3 agent responses (windows) that reproduce the bug
+        //
+        // Agent A (pages 105-109): All in single high confidence group "ME Physical Therapy"
+        // Agent B (pages 109-113): 2 groups:
+        //   - Group 1: pages 109-112 in "" (null/low confidence group)
+        //   - Group 2: page 113 in "Mountain View Pain Specialists" (high confidence 5)
+        // Agent C (pages 113-117): All in single high confidence group "Mountain View Pain Specialists"
+        //
+        // Expected correct behavior:
+        // - Pages 105-109: "ME Physical Therapy" (from Agent A)
+        // - Pages 110-112: Should be absorbed into "ME Physical Therapy" (null group absorbed to previous)
+        // - Pages 113-117: "Mountain View Pain Specialists" (page 113 has conf 5, should NOT be absorbed)
+        //
+        // The bug: Page 113 (confidence 5 in "Mountain View Pain Specialists") is incorrectly
+        // absorbed into "ME Physical Therapy" along with subsequent pages 114-117, even though
+        // page 113 was in a DIFFERENT group than the null group pages in Agent B's response.
+
+        $artifacts = new Collection([
+            // Agent A: Pages 105-109 all in "ME Physical Therapy" (conf 5)
+            $this->createWindowArtifact(
+                windowStart: 105,
+                windowEnd: 109,
+                windowFiles: [
+                    ['file_id' => 105, 'page_number' => 105],
+                    ['file_id' => 106, 'page_number' => 106],
+                    ['file_id' => 107, 'page_number' => 107],
+                    ['file_id' => 108, 'page_number' => 108],
+                    ['file_id' => 109, 'page_number' => 109],
+                ],
+                groups: [
+                    [
+                        'name'        => 'ME Physical Therapy',
+                        'description' => 'High confidence medical group',
+                        'files'       => [
+                            ['page_number' => 105, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 106, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 107, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 108, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 109, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                        ],
+                    ],
+                ]
+            ),
+            // Agent B: Pages 109-113 with 2 groups
+            // - Group 1: pages 109-112 in null group (low confidence)
+            // - Group 2: page 113 in "Mountain View Pain Specialists" (high confidence)
+            $this->createWindowArtifact(
+                windowStart: 109,
+                windowEnd: 113,
+                windowFiles: [
+                    ['file_id' => 109, 'page_number' => 109],
+                    ['file_id' => 110, 'page_number' => 110],
+                    ['file_id' => 111, 'page_number' => 111],
+                    ['file_id' => 112, 'page_number' => 112],
+                    ['file_id' => 113, 'page_number' => 113],
+                ],
+                groups: [
+                    [
+                        'name'        => '',
+                        'description' => 'Unknown - no clear identifier found on these pages',
+                        'files'       => [
+                            ['page_number' => 109, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 110, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 111, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 112, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                        ],
+                    ],
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'CMS-1500 claim form with explicit Billing Provider',
+                        'files'       => [
+                            ['page_number' => 113, 'confidence' => 5, 'explanation' => 'Clear Mountain View Pain Specialists identifier on claim form'],
+                        ],
+                    ],
+                ]
+            ),
+            // Agent C: Pages 113-117 all in "Mountain View Pain Specialists" (conf 4-5)
+            $this->createWindowArtifact(
+                windowStart: 113,
+                windowEnd: 117,
+                windowFiles: [
+                    ['file_id' => 113, 'page_number' => 113],
+                    ['file_id' => 114, 'page_number' => 114],
+                    ['file_id' => 115, 'page_number' => 115],
+                    ['file_id' => 116, 'page_number' => 116],
+                    ['file_id' => 117, 'page_number' => 117],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'Complete visit record for Mountain View Pain Specialists',
+                        'files'       => [
+                            ['page_number' => 113, 'confidence' => 5, 'explanation' => 'Health Insurance Claim Form with Billing Provider'],
+                            ['page_number' => 114, 'confidence' => 4, 'explanation' => 'Clinical note with Mountain View header'],
+                            ['page_number' => 115, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                            ['page_number' => 116, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                            ['page_number' => 117, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+        $fileToGroup = $mergeResult['file_to_group_mapping'];
+
+        // Then: Expected correct behavior
+        // The null group (pages 110-112) should be absorbed into "ME Physical Therapy"
+        // Page 109 stays in "ME Physical Therapy" (higher confidence from Agent A wins)
+        // Page 113 should stay in "Mountain View Pain Specialists" (high confidence, different group)
+        $this->assertCount(2, $result, 'Should have 2 distinct groups (ME Physical Therapy and Mountain View Pain Specialists)');
+
+        $mePhysicalTherapy = collect($result)->firstWhere('name', 'ME Physical Therapy');
+        $mountainView      = collect($result)->firstWhere('name', 'Mountain View Pain Specialists');
+
+        // Verify ME Physical Therapy group includes absorbed null group pages
+        $this->assertNotNull($mePhysicalTherapy, 'ME Physical Therapy group should exist');
+        $this->assertEquals(
+            [105, 106, 107, 108, 109, 110, 111, 112],
+            $mePhysicalTherapy['files'],
+            'ME Physical Therapy should include pages 105-112 (including absorbed null group pages 110-112)'
+        );
+
+        // Verify Mountain View Pain Specialists group is separate and NOT absorbed
+        $this->assertNotNull($mountainView, 'Mountain View Pain Specialists group should exist');
+        $this->assertEquals(
+            [113, 114, 115, 116, 117],
+            $mountainView['files'],
+            'Mountain View Pain Specialists should include pages 113-117 (page 113 should NOT be absorbed by ME Physical Therapy)'
+        );
+    }
+
+
+    #[Test]
+    public function equal_confidence_groups_should_not_absorb_each_other(): void
+    {
+        // Given: Two groups with EQUAL group-level confidence (both 5)
+        // Even though they overlap, equal confidence means NO absorption (first wins on tie)
+        $artifacts = new Collection([
+            // Window 1: Pages 1-4 in "GroupA" - mixed confidence but MAX is 5
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name'        => 'GroupA',
+                        'description' => 'First group with max confidence 5',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 3, 'explanation' => 'Lower confidence item'],
+                            ['page_number' => 2, 'confidence' => 3, 'explanation' => 'Lower confidence item'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'High confidence item - defines group confidence'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'High confidence item'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 2: Pages 4-7 in "GroupB" - all confidence 5
+            // Group-level confidence: GroupA = 5 (max), GroupB = 5 (max) → EQUAL, no absorption
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name'        => 'GroupB',
+                        'description' => 'Second group with all confidence 5',
+                        'files'       => [
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'High confidence'],
+                            ['page_number' => 5, 'confidence' => 5, 'explanation' => 'High confidence'],
+                            ['page_number' => 6, 'confidence' => 5, 'explanation' => 'High confidence'],
+                            ['page_number' => 7, 'confidence' => 5, 'explanation' => 'High confidence'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+
+        // Then: Both groups should remain separate (equal group-level confidence = no absorption)
+        $this->assertCount(2, $result, 'Should have 2 separate groups (equal confidence = no absorption)');
+
+        $groupA = collect($result)->firstWhere('name', 'GroupA');
+        $groupB = collect($result)->firstWhere('name', 'GroupB');
+
+        $this->assertNotNull($groupA, 'GroupA should exist');
+        $this->assertNotNull($groupB, 'GroupB should exist');
+
+        $this->assertEquals(
+            [1, 2, 3, 4],
+            $groupA['files'],
+            'GroupA should keep page 4 (first assignment wins on tie, both groups have max confidence 5)'
+        );
+
+        $this->assertEquals(
+            [5, 6, 7],
+            $groupB['files'],
+            'GroupB should only have non-overlapping pages 5-7'
+        );
+    }
+
+    #[Test]
+    public function group_confidence_based_on_max_item_confidence(): void
+    {
+        // Given: Group A has mixed confidence (1,1,5), Group B has uniform confidence (4,4,4)
+        // Group-level confidence: A = 5 (max of items), B = 4 (max of items)
+        // Expected: A (conf 5) absorbs B (conf 4) on overlapping page
+        $artifacts = new Collection([
+            // Window 1: Pages 1-4 in "GroupA" - mostly low confidence but one HIGH confidence item
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name'        => 'GroupA',
+                        'description' => 'Mixed confidence group',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 1, 'explanation' => 'Very low confidence'],
+                            ['page_number' => 2, 'confidence' => 1, 'explanation' => 'Very low confidence'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'VERY HIGH confidence - defines group!'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'VERY HIGH confidence'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 2: Pages 4-7 in "GroupB" - all uniform medium confidence
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name'        => 'GroupB',
+                        'description' => 'Uniform medium confidence group',
+                        'files'       => [
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+
+        // Then: GroupA (max conf 5) should absorb ALL of GroupB (max conf 4)
+        $this->assertCount(1, $result, 'Should have only GroupA after absorption (group conf 5 > 4)');
+
+        $groupA = collect($result)->firstWhere('name', 'GroupA');
+
+        $this->assertNotNull($groupA, 'GroupA should exist');
+        $this->assertEquals(
+            [1, 2, 3, 4, 5, 6, 7],
+            $groupA['files'],
+            'GroupA (group-level conf 5 from max item) should absorb ALL of GroupB (group-level conf 4)'
+        );
+    }
 }

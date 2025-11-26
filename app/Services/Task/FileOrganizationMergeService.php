@@ -4,7 +4,6 @@ namespace App\Services\Task;
 
 use App\Models\Task\Artifact;
 use App\Services\Task\FileOrganization\GroupAbsorptionService;
-use App\Services\Task\FileOrganization\GroupConfidenceAnalyzer;
 use App\Services\Task\FileOrganization\NullGroupResolver;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
@@ -71,8 +70,8 @@ class FileOrganizationMergeService
 
         // Iteratively absorb groups until no more absorptions occur (cascade/chain reaction)
         // This handles cases where absorbing one group creates new absorption opportunities
-        $iteration = 0;
-        $maxIterations = 10; // Safety limit to prevent infinite loops
+        $iteration        = 0;
+        $maxIterations    = 10; // Safety limit to prevent infinite loops
         $totalAbsorptions = 0;
 
         do {
@@ -82,7 +81,7 @@ class FileOrganizationMergeService
             if (!empty($absorptions)) {
                 $filesAbsorbed = app(GroupAbsorptionService::class)->applyAbsorptions($absorptions, $fileToGroup);
                 $totalAbsorptions += count($absorptions);
-                static::logDebug("Iteration $iteration: Absorbed $filesAbsorbed files via " . count($absorptions) . " group mergers");
+                static::logDebug("Iteration $iteration: Absorbed $filesAbsorbed files via " . count($absorptions) . ' group mergers');
 
                 // Rebuild groups after absorption for next iteration
                 $finalGroups = $this->buildFinalGroups($fileToGroup);
@@ -292,7 +291,7 @@ class FileOrganizationMergeService
             if ($data['confidence'] < 3) {
                 // Count how many DIFFERENT groups this file appeared in
                 $allExplanations = $data['all_explanations'] ?? [];
-                $uniqueGroups = array_unique(array_column($allExplanations, 'group_name'));
+                $uniqueGroups    = array_unique(array_column($allExplanations, 'group_name'));
 
                 // Only include if file appeared in MULTIPLE different groups
                 if (count($uniqueGroups) > 1) {
@@ -307,7 +306,7 @@ class FileOrganizationMergeService
                         'all_explanations'  => $allExplanations,
                     ];
 
-                    static::logDebug("Low confidence file with MULTIPLE assignments: page {$data['page_number']} (confidence {$data['confidence']}) - appeared in " . count($uniqueGroups) . " different groups");
+                    static::logDebug("Low confidence file with MULTIPLE assignments: page {$data['page_number']} (confidence {$data['confidence']}) - appeared in " . count($uniqueGroups) . ' different groups');
                 } else {
                     static::logDebug("Low confidence file with SINGLE assignment: page {$data['page_number']} (confidence {$data['confidence']}) assigned to '{$data['group_name']}' - keeping as-is (only answer available)");
                 }

@@ -45,18 +45,25 @@
                 </div>
             </div>
         </div>
-        <div class="mt-2 flex justify-center">
-            <div>
-                <div class="node-title text-center">{{ node.data.name }}</div>
-                <div class="flex justify-center mt-2">
-                    <WorkflowStatusTimerPill
-                        v-if="taskRun"
-                        :runner="taskRun"
-                        class="text-xs"
-                        status-class="rounded-full px-4"
-                        timer-class="bg-slate-800 px-4 rounded-full"
-                    />
-                </div>
+        <div class="mt-2 flex flex-col items-center">
+            <EditableDiv
+                v-if="taskDefinition"
+                :model-value="taskDefinition.name"
+                :readonly="readonly"
+                class="node-title nodrag nopan"
+                color="slate-700"
+                text-color="slate-200"
+                content-class="text-center"
+                @update:model-value="name => updateTaskDefinitionAction.trigger(taskDefinition, { name })"
+            />
+            <div class="flex justify-center mt-2">
+                <WorkflowStatusTimerPill
+                    v-if="taskRun"
+                    :runner="taskRun"
+                    class="text-xs"
+                    status-class="rounded-full px-4"
+                    timer-class="bg-slate-800 px-4 rounded-full"
+                />
             </div>
         </div>
     </div>
@@ -64,6 +71,7 @@
 
 <script setup lang="ts">
 import LoadingSandLottie from "@/assets/dotlottie/LoadingSandLottie";
+import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { BaseTaskRunnerNode } from "@/components/Modules/TaskDefinitions/TaskRunners/Nodes";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
@@ -72,6 +80,7 @@ import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinition
 import ErrorBadge from "@/components/Shared/ErrorBadge.vue";
 import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { Node } from "@vue-flow/core";
+import { EditableDiv } from "quasar-ui-danx";
 import { computed } from "vue";
 
 defineEmits<{
@@ -93,7 +102,10 @@ const props = defineProps<{
 const isTemporary = computed(() => !!props.node.id.match(/^td-/));
 
 const workflowNode = computed(() => props.workflowDefinition.nodes?.find((wn) => wn.id == +props.node.id));
+const taskDefinition = computed(() => workflowNode.value?.taskDefinition);
 const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.node.id));
+
+const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
 
 const {
     taskRunner,

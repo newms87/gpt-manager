@@ -82,7 +82,18 @@ class WorkflowNode extends Model implements AuditableContract, ResourcePackageab
         $this->connectionsAsSource()->delete();
         $this->connectionsAsTarget()->delete();
 
-        return parent::delete();
+        // Delete the associated TaskDefinition since it becomes an orphan
+        $taskDefinition = $this->taskDefinition;
+
+        // Delete the node first
+        $result = parent::delete();
+
+        // Then delete the task definition if it exists
+        if ($result && $taskDefinition) {
+            $taskDefinition->delete();
+        }
+
+        return $result;
     }
 
     public function __toString()

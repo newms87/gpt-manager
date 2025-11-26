@@ -28,7 +28,6 @@
 </template>
 <script setup lang="ts">
 import { TaskDefinitionConfigDialog } from "@/components/Modules/TaskDefinitions";
-import { loadTaskDefinitions } from "@/components/Modules/WorkflowCanvas/helpers";
 import WorkflowCanvas from "@/components/Modules/WorkflowCanvas/WorkflowCanvas";
 import WorkflowCanvasSidebar from "@/components/Modules/WorkflowCanvas/WorkflowCanvasSidebar";
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
@@ -51,7 +50,7 @@ const props = withDefaults(defineProps<{
 
 const nodeToEdit = ref<WorkflowNode>(null);
 
-const copyNodeAction = dxWorkflowNode.getAction("copy", { onFinish: () => Promise.all([refreshActiveWorkflowDefinition(), loadTaskDefinitions()]) });
+const copyNodeAction = dxWorkflowNode.getAction("copy", { onFinish: refreshActiveWorkflowDefinition });
 const updateNodeAction = dxWorkflowNode.getAction("update");
 const removeNodeAction = dxWorkflowNode.getAction("delete", {
     onFinish: refreshActiveWorkflowDefinition,

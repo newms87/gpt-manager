@@ -6,6 +6,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
+use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -16,6 +17,12 @@ class TaskProcessRepository extends ActionRepository
     const int PENDING_PROCESS_TIMEOUT = 120; // 2 minutes
 
     public static string $model = TaskProcess::class;
+
+    public function listQuery(): Builder
+    {
+        return parent::listQuery()
+            ->orderByDesc('id');
+    }
 
     public function applyAction(string $action, $model = null, ?array $data = null)
     {

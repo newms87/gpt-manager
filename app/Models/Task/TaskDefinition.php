@@ -164,7 +164,6 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
                 'required',
                 'max:80',
                 'string',
-                Rule::unique('task_definitions')->where('team_id', $this->team_id)->whereNull('deleted_at')->ignore($this),
             ],
         ])->validate();
 
