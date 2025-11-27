@@ -11,6 +11,50 @@ If you see yourself described as `vue-spa-engineer`, `laravel-backend-engineer`,
 
 ---
 
+## 🚨 MANDATORY TODO LIST REQUIREMENT
+
+**BEFORE DOING ANYTHING, YOU MUST:**
+
+1. **ALWAYS CREATE A TODO LIST** using the TodoWrite tool
+2. **THE FIRST TODO ITEM MUST ALWAYS BE:**
+   - Content: "I WILL NOT write any code myself - I will delegate ALL code writing to specialized sub-agents"
+   - Status: "in_progress"
+   - ActiveForm: "Delegating all code work to specialized agents"
+
+3. **Mark this first item as completed ONLY after:**
+   - You have delegated ALL code work to appropriate agents
+   - You have NOT used Edit, Write, or any code-writing tools yourself
+   - ALL code changes are done by sub-agents, not you
+
+**Example TODO List (REQUIRED FORMAT):**
+
+```json
+[
+  {
+    "content": "I WILL NOT write any code myself - I will delegate ALL code writing to specialized sub-agents",
+    "status": "in_progress",
+    "activeForm": "Delegating all code work to specialized agents"
+  },
+  {
+    "content": "Investigate duplicate group detection requirements",
+    "status": "pending",
+    "activeForm": "Investigating duplicate group detection"
+  },
+  {
+    "content": "Delegate Laravel backend implementation to laravel-backend-engineer",
+    "status": "pending",
+    "activeForm": "Delegating to laravel-backend-engineer"
+  },
+  {
+    "content": "Delegate test creation to laravel-backend-qa-tester",
+    "status": "pending",
+    "activeForm": "Delegating to laravel-backend-qa-tester"
+  }
+]
+```
+
+**If you write code yourself, you have FAILED your primary responsibility as orchestrator.**
+
 ## 🚨 MANDATORY AGENT DELEGATION (NO EXCEPTIONS!)
 
 **YOU MUST DELEGATE ALL TECHNICAL WORK TO SPECIALIZED AGENTS**
@@ -204,6 +248,37 @@ The preamble is required because:
 - Team-based access control for all data operations
 - Vue 3 Composition API with quasar-ui-danx components
 - Zero tech debt policy with immediate replacement requirements
+
+---
+
+## 🚨 CONVERSATION COMPACTING RULES
+
+**When compacting/summarizing conversations:**
+
+1. **PRESERVE 100% of agent instructions from .md files**
+   - ❌ NEVER reduce or summarize instructions from ORCHESTRATOR_GUIDE.md
+   - ❌ NEVER reduce or summarize instructions from AGENT_CORE_BEHAVIORS.md
+   - ❌ NEVER reduce or summarize instructions from PROJECT_POLICIES.md
+   - ❌ NEVER reduce or summarize instructions from LARAVEL_BACKEND_PATTERNS_GUIDE.md
+   - ❌ NEVER reduce or summarize instructions from spa/SPA_PATTERNS_GUIDE.md
+   - ✅ Include ALL rules, examples, and details EXACTLY as written
+   - ✅ These are CRITICAL INSTRUCTIONS, not just "context"
+
+2. **What to compact:**
+   - ✅ User conversation history (can be summarized)
+   - ✅ File contents that were read (can reference by path)
+   - ✅ Investigation results (can be summarized)
+   - ✅ Agent outputs (can be summarized)
+
+3. **What NEVER to compact:**
+   - ❌ The mandatory TODO list requirement section
+   - ❌ The mandatory agent delegation rules
+   - ❌ The anti-agent-calling preamble
+   - ❌ Agent selection rules
+   - ❌ File type delegation mappings
+   - ❌ Any section starting with "🚨"
+
+**If orchestrator guide instructions are reduced/summarized during compacting, the orchestrator WILL write code themselves and violate delegation rules.**
 
 ---
 

@@ -122,7 +122,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     public function initial_process_validates_window_size_constraints(): void
     {
         // Given: TaskDefinition with invalid window size
-        $this->taskDefinition->task_runner_config = ['comparison_window_size' => 10]; // Invalid: > 5
+        $this->taskDefinition->task_runner_config = ['comparison_window_size' => 101]; // Invalid: > 100
         $this->taskDefinition->save();
 
         $taskRun = TaskRun::factory()->create([
@@ -140,7 +140,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         // When/Then: Initial process run throws validation error
         $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
-        $this->expectExceptionMessage('comparison_window_size must be between 2 and 5');
+        $this->expectExceptionMessage('comparison_window_size must be between 2 and 100');
 
         $this->runner->setTaskRun($taskRun)->setTaskProcess($initialProcess);
         $this->runner->run();
