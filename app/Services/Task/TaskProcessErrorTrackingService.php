@@ -49,16 +49,22 @@ class TaskProcessErrorTrackingService
     {
         $totalErrors = 0;
 
-        // Count all errors from all job dispatches for this task process
-        foreach ($taskProcess->jobDispatches as $jobDispatch) {
-            if ($auditRequest = $jobDispatch->runningAuditRequest) {
-                $totalErrors += $auditRequest->errorLogEntries()->count();
+        // Only count errors if the process has exhausted retries or is permanently failed
+        // This prevents transient retry errors from being surfaced to users
+        if (!$taskProcess->canBeRetried() || $taskProcess->isFailed()) {
+            // Count all errors from all job dispatches for this task process
+            foreach ($taskProcess->jobDispatches as $jobDispatch) {
+                if ($auditRequest = $jobDispatch->runningAuditRequest) {
+                    $totalErrors += $auditRequest->errorLogEntries()->count();
+                }
             }
         }
+        // If process can still be retried, totalErrors stays 0 (errors suppressed)
 
         // Update if changed
         if ($taskProcess->error_count !== $totalErrors) {
-            static::logDebug("Updating TaskProcess {$taskProcess->id} error_count from {$taskProcess->error_count} to {$totalErrors}");
+            $suppressedMsg = ($totalErrors === 0 && $taskProcess->canBeRetried()) ? ' (suppressed - can retry)' : '';
+            static::logDebug("Updating TaskProcess {$taskProcess->id} error_count: {$taskProcess->error_count} → {$totalErrors}" . $suppressedMsg);
             $taskProcess->update(['error_count' => $totalErrors]);
 
             // Update the parent task run's aggregate error count

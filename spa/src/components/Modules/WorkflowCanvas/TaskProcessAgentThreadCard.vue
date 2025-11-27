@@ -79,7 +79,7 @@ import { usePusher } from "@/helpers/pusher";
 import { AgentThread, AgentThreadResponseFormat, AgentThreadRun } from "@/types";
 import { FaRegularMessage as CreateIcon, FaSolidBusinessTime as JobDispatchIcon } from "danx-icon";
 import { ActionButton, ShowHideButton } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
 const props = defineProps<{
 	agentThread: AgentThread;
@@ -87,6 +87,9 @@ const props = defineProps<{
 
 const isShowingJobDispatch = ref(false);
 const isLoadingJobDispatch = ref(false);
+
+// Initialize pusher
+const pusher = usePusher();
 
 // Use the shared expansion composable
 const messages = computed(() => props.agentThread.messages);
@@ -127,11 +130,26 @@ async function refreshJobDispatch() {
 	isLoadingJobDispatch.value = false;
 }
 
-onMounted(() => {
-	usePusher().onEvent("AgentThreadRun", "updated", async (data: AgentThreadRun) => {
+onMounted(async () => {
+	// Subscribe to AgentThread updates
+	await pusher?.subscribeToModel("AgentThread", ["updated"], props.agentThread.id);
+
+	// Listen for AgentThread updates (is_running, usage, etc.)
+	pusher?.onEvent("AgentThread", "updated", async (data: Partial<AgentThread>) => {
+		if (data.id === props.agentThread.id) {
+			await refreshAgentThread(props.agentThread);
+		}
+	});
+
+	// Keep existing AgentThreadRun listener for run status updates
+	pusher?.onEvent("AgentThreadRun", "updated", async (data: AgentThreadRun) => {
 		if (data.agent_thread_id === props.agentThread.id) {
 			await refreshAgentThread(props.agentThread);
 		}
 	});
+});
+
+onUnmounted(async () => {
+	await pusher?.unsubscribeFromModel("AgentThread", ["updated"], props.agentThread.id);
 });
 </script>

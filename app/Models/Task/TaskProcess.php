@@ -8,6 +8,7 @@ use App\Models\Schema\SchemaAssociation;
 use App\Models\Traits\HasUsageTracking;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\TaskRunnerContract;
+use App\Services\Task\TaskProcessErrorTrackingService;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -273,6 +274,14 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
                     TaskProcessUpdatedEvent::broadcast($taskProcess);
                 } else {
                     TaskProcessUpdatedEvent::dispatch($taskProcess);
+                }
+            }
+
+            // When a process transitions to permanently failed (exhausted retries), re-count errors to surface them
+            if ($taskProcess->wasChanged(['failed_at', 'restart_count'])) {
+                if (!$taskProcess->canBeRetried() || $taskProcess->isFailed()) {
+                    app(TaskProcessErrorTrackingService::class)
+                        ->updateTaskProcessErrorCount($taskProcess);
                 }
             }
         });

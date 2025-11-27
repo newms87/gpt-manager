@@ -517,7 +517,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
                     ['name' => 'test', 'description' => 'Test group', 'files' => [0]],
                 ],
             ],
-            'meta' => ['other' => 'metadata'],
+            'meta'         => ['other' => 'metadata'],
         ]);
 
         $artifacts = new Collection([$artifact]);
@@ -683,7 +683,7 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
             'json_content' => [
                 'groups' => $groups,
             ],
-            'meta' => [
+            'meta'         => [
                 'window_start' => $windowStart,
                 'window_end'   => $windowEnd,
                 'window_files' => $windowFiles,
@@ -1394,6 +1394,212 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         );
     }
 
+    #[Test]
+    public function test_production_bug_page_113_absorbed_incorrectly(): void
+    {
+        // This test reproduces the ACTUAL bug from production
+        // The difference: After null group resolution, the absorption logic incorrectly
+        // absorbs page 113 into "ME Physical Therapy" even though it was in a DIFFERENT
+        // group within Agent B's window
+
+        $artifacts = collect([
+            // Agent A: Pages 105-109 all in "ME Physical Therapy" (conf 5)
+            $this->createWindowArtifact(
+                windowStart: 105,
+                windowEnd: 109,
+                windowFiles: [
+                    ['file_id' => 105, 'page_number' => 105],
+                    ['file_id' => 106, 'page_number' => 106],
+                    ['file_id' => 107, 'page_number' => 107],
+                    ['file_id' => 108, 'page_number' => 108],
+                    ['file_id' => 109, 'page_number' => 109],
+                ],
+                groups: [
+                    [
+                        'name'        => 'ME Physical Therapy',
+                        'description' => 'Physical therapy records with clear ME PT letterhead',
+                        'files'       => [
+                            ['page_number' => 105, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 106, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 107, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 108, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                            ['page_number' => 109, 'confidence' => 5, 'explanation' => 'Clear ME Physical Therapy identifier'],
+                        ],
+                    ],
+                ]
+            ),
+            // Agent B: Pages 109-113 with 2 groups
+            // - Group 1: pages 109-112 in null/"" group (confidence 1)
+            // - Group 2: page 113 in "Mountain View Pain Specialists" (confidence 5)
+            // KEY: Page 113 is in a DIFFERENT group than 109-112 within this window
+            $this->createWindowArtifact(
+                windowStart: 109,
+                windowEnd: 113,
+                windowFiles: [
+                    ['file_id' => 109, 'page_number' => 109],
+                    ['file_id' => 110, 'page_number' => 110],
+                    ['file_id' => 111, 'page_number' => 111],
+                    ['file_id' => 112, 'page_number' => 112],
+                    ['file_id' => 113, 'page_number' => 113],
+                ],
+                groups: [
+                    [
+                        'name'        => '',
+                        'description' => 'Unknown - no clear identifier found on these pages',
+                        'files'       => [
+                            ['page_number' => 109, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 110, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 111, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                            ['page_number' => 112, 'confidence' => 1, 'explanation' => 'No clear group identifier found'],
+                        ],
+                    ],
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'CMS-1500 claim form with explicit Billing Provider',
+                        'files'       => [
+                            ['page_number' => 113, 'confidence' => 5, 'explanation' => 'Clear Mountain View Pain Specialists identifier on claim form'],
+                        ],
+                    ],
+                ]
+            ),
+            // Agent C: Pages 114-118 all in "Mountain View Pain Specialists" (conf 4)
+            // KEY BUG TRIGGER: Page 113 is NOT in this window, so it only has ONE assignment
+            // This creates a single-confidence file that is adjacent to the null group
+            $this->createWindowArtifact(
+                windowStart: 114,
+                windowEnd: 118,
+                windowFiles: [
+                    ['file_id' => 114, 'page_number' => 114],
+                    ['file_id' => 115, 'page_number' => 115],
+                    ['file_id' => 116, 'page_number' => 116],
+                    ['file_id' => 117, 'page_number' => 117],
+                    ['file_id' => 118, 'page_number' => 118],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'Complete visit record for Mountain View Pain Specialists',
+                        'files'       => [
+                            ['page_number' => 114, 'confidence' => 4, 'explanation' => 'Clinical note with Mountain View header'],
+                            ['page_number' => 115, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                            ['page_number' => 116, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                            ['page_number' => 117, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                            ['page_number' => 118, 'confidence' => 4, 'explanation' => 'Clinical note continuation'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+        $fileToGroup = $mergeResult['file_to_group_mapping'];
+
+        // Expected: This test should FAIL because of the bug
+        // The bug causes page 113 (and 114-118) to be absorbed into "ME Physical Therapy"
+        // when it should stay in "Mountain View Pain Specialists"
+
+        // What SHOULD happen:
+        $mePhysicalTherapy = collect($result)->firstWhere('name', 'ME Physical Therapy');
+        $mountainView      = collect($result)->firstWhere('name', 'Mountain View Pain Specialists');
+
+        // ME Physical Therapy should include pages 105-112 (null group absorbed)
+        $this->assertNotNull($mePhysicalTherapy, 'ME Physical Therapy group should exist');
+        $this->assertEquals(
+            [105, 106, 107, 108, 109, 110, 111, 112],
+            $mePhysicalTherapy['files'],
+            'ME Physical Therapy should include pages 105-112 (null group pages 110-112 absorbed)'
+        );
+
+        // Mountain View Pain Specialists should include pages 113-118 (NOT absorbed)
+        // THE BUG: Page 113 only appears in Agent B with conf 5
+        // But it's adjacent to page 112 which was in the null group (now absorbed into ME PT)
+        // The hasAdjacentFilesFromSameWindow check might incorrectly absorb page 113
+        // because it's adjacent and was in the same window (Agent B) as the null group pages
+        $this->assertNotNull($mountainView, 'Mountain View Pain Specialists group should exist');
+        $this->assertEquals(
+            [113, 114, 115, 116, 117, 118],
+            $mountainView['files'],
+            'BUG: Mountain View Pain Specialists should include pages 113-118, but page 113 gets incorrectly absorbed into ME Physical Therapy'
+        );
+    }
+
+    #[Test]
+    public function confidence_5_group_should_absorb_overlapping_confidence_4_group(): void
+    {
+        // Given: Two overlapping windows where Group A has confidence 5 and Group B has confidence 4
+        // Since they overlap (page 4), Group A (conf 5) should ABSORB ALL of Group B (conf 4)
+        // This tests the CORRECT direction of absorption - higher confidence absorbs lower
+        $artifacts = new Collection([
+            // Window 1: Pages 1-4 in "HighConf" with confidence 5
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 4,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                ],
+                groups: [
+                    [
+                        'name'        => 'HighConf',
+                        'description' => 'High confidence group',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 5, 'explanation' => 'Very high confidence'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'Very high confidence'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'Very high confidence'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'Very high confidence'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 2: Pages 4-7 in "MedConf" with confidence 4 (page 4 overlaps)
+            // MedConf should be ABSORBED into HighConf because:
+            // 1. They overlap on page 4
+            // 2. HighConf group confidence (5) > MedConf group confidence (4)
+            $this->createWindowArtifact(
+                windowStart: 4,
+                windowEnd: 7,
+                windowFiles: [
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                    ['file_id' => 6, 'page_number' => 6],
+                    ['file_id' => 7, 'page_number' => 7],
+                ],
+                groups: [
+                    [
+                        'name'        => 'MedConf',
+                        'description' => 'Medium confidence group',
+                        'files'       => [
+                            ['page_number' => 4, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 5, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 6, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                            ['page_number' => 7, 'confidence' => 4, 'explanation' => 'Medium confidence'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+
+        // Then: HighConf (conf 5) should absorb ALL of MedConf (conf 4) because they overlap
+        $this->assertCount(1, $result, 'Should have only HighConf after absorption (group conf 5 > 4 with overlap)');
+
+        $highConf = collect($result)->firstWhere('name', 'HighConf');
+
+        $this->assertNotNull($highConf, 'HighConf group should exist');
+
+        $this->assertEquals(
+            [1, 2, 3, 4, 5, 6, 7],
+            $highConf['files'],
+            'HighConf (group conf 5) should absorb ALL of MedConf (group conf 4) because they overlap on page 4'
+        );
+    }
 
     #[Test]
     public function equal_confidence_groups_should_not_absorb_each_other(): void
@@ -1545,6 +1751,340 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
             [1, 2, 3, 4, 5, 6, 7],
             $groupA['files'],
             'GroupA (group-level conf 5 from max item) should absorb ALL of GroupB (group-level conf 4)'
+        );
+    }
+
+    #[Test]
+    public function production_bug_page_113_confidence_5_absorbed_into_wrong_group(): void
+    {
+        // CRITICAL BUG: Page 113 with confidence 5 for Mountain View gets absorbed into ME Physical Therapy
+        //
+        // This test uses EXACTLY 3 agent responses from production:
+        //
+        // Agent 1 - Window 109-113 with 2 groups:
+        //   - "Ivo Milic-Strkalj, DPT": pages 109-112 (conf 3,3,3,2)
+        //   - "Mountain View Pain Specialists": page 113 (conf 5 - BILLING PROVIDER!)
+        //
+        // Agent 2 - Window 113-117 with 1 group:
+        //   - "Mountain View Pain Specialists": pages 113-117 (conf 5,4,4,4,4)
+        //
+        // Agent 3 - Window 105-109 with 1 group:
+        //   - "ME Physical Therapy": pages 105-109 (all conf 5)
+        //
+        // Expected result:
+        //   - ME Physical Therapy: pages 105-112 (absorbed Ivo DPT via page 109 boundary)
+        //   - Mountain View: pages 113-117 (MUST keep page 113 with conf 5!)
+        //
+        // Actual bug:
+        //   - Page 113 gets absorbed into ME Physical Therapy (WRONG!)
+        //   - Confidence 5 = Billing Provider absolute authority - should NEVER be absorbed
+
+        $artifacts = new Collection([
+            // Agent Response 0: Window 1-5 with 1 group (prior high confidence ME PT group)
+            // This creates a high confidence base for ME Physical Therapy
+            $this->createWindowArtifact(
+                windowStart: 1,
+                windowEnd: 5,
+                windowFiles: [
+                    ['file_id' => 1, 'page_number' => 1],
+                    ['file_id' => 2, 'page_number' => 2],
+                    ['file_id' => 3, 'page_number' => 3],
+                    ['file_id' => 4, 'page_number' => 4],
+                    ['file_id' => 5, 'page_number' => 5],
+                ],
+                groups: [
+                    [
+                        'name'        => 'ME Physical Therapy',
+                        'description' => 'Early PT records',
+                        'files'       => [
+                            ['page_number' => 1, 'confidence' => 5, 'explanation' => 'PT documentation'],
+                            ['page_number' => 2, 'confidence' => 5, 'explanation' => 'PT documentation'],
+                            ['page_number' => 3, 'confidence' => 5, 'explanation' => 'PT documentation'],
+                            ['page_number' => 4, 'confidence' => 5, 'explanation' => 'PT documentation'],
+                            ['page_number' => 5, 'confidence' => 5, 'explanation' => 'PT documentation'],
+                        ],
+                    ],
+                ]
+            ),
+
+            // Agent Response 1: Window 105-109 with 1 group
+            $this->createWindowArtifact(
+                windowStart: 105,
+                windowEnd: 109,
+                windowFiles: [
+                    ['file_id' => 105, 'page_number' => 105],
+                    ['file_id' => 106, 'page_number' => 106],
+                    ['file_id' => 107, 'page_number' => 107],
+                    ['file_id' => 108, 'page_number' => 108],
+                    ['file_id' => 109, 'page_number' => 109],
+                ],
+                groups: [
+                    [
+                        'name'        => 'ME Physical Therapy',
+                        'description' => 'PT visit packet with CMS-1500',
+                        'files'       => [
+                            ['page_number' => 105, 'confidence' => 5, 'explanation' => 'PT flowsheet'],
+                            ['page_number' => 106, 'confidence' => 5, 'explanation' => 'PT note with signatures'],
+                            ['page_number' => 107, 'confidence' => 5, 'explanation' => 'CMS-1500 with ME Physical Therapy Billing Provider'],
+                            ['page_number' => 108, 'confidence' => 5, 'explanation' => 'Header with ME PT logo'],
+                            ['page_number' => 109, 'confidence' => 5, 'explanation' => 'Patient history'],
+                        ],
+                    ],
+                ]
+            ),
+
+            // Agent Response 2: Window 109-113 with 2 groups
+            $this->createWindowArtifact(
+                windowStart: 109,
+                windowEnd: 113,
+                windowFiles: [
+                    ['file_id' => 109, 'page_number' => 109],
+                    ['file_id' => 110, 'page_number' => 110],
+                    ['file_id' => 111, 'page_number' => 111],
+                    ['file_id' => 112, 'page_number' => 112],
+                    ['file_id' => 113, 'page_number' => 113],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Ivo Milic-Strkalj, DPT',
+                        'description' => 'Physical therapy progress note',
+                        'files'       => [
+                            ['page_number' => 109, 'confidence' => 3, 'explanation' => 'Start of PT note, no Billing Provider'],
+                            ['page_number' => 110, 'confidence' => 3, 'explanation' => 'Continuation PT note'],
+                            ['page_number' => 111, 'confidence' => 3, 'explanation' => 'PT note with DPT signature'],
+                            ['page_number' => 112, 'confidence' => 2, 'explanation' => 'Blank page'],
+                        ],
+                    ],
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'CMS-1500 claim form',
+                        'files'       => [
+                            ['page_number' => 113, 'confidence' => 5, 'explanation' => 'CMS-1500 with explicit Billing Provider - ABSOLUTE AUTHORITY'],
+                        ],
+                    ],
+                ]
+            ),
+
+            // Agent Response 3: Window 113-117 with 1 group
+            $this->createWindowArtifact(
+                windowStart: 113,
+                windowEnd: 117,
+                windowFiles: [
+                    ['file_id' => 113, 'page_number' => 113],
+                    ['file_id' => 114, 'page_number' => 114],
+                    ['file_id' => 115, 'page_number' => 115],
+                    ['file_id' => 116, 'page_number' => 116],
+                    ['file_id' => 117, 'page_number' => 117],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'CMS-1500 claim form with clinical notes',
+                        'files'       => [
+                            ['page_number' => 113, 'confidence' => 5, 'explanation' => 'CMS-1500 with explicit Billing Provider'],
+                            ['page_number' => 114, 'confidence' => 4, 'explanation' => 'Clinical note page 1'],
+                            ['page_number' => 115, 'confidence' => 4, 'explanation' => 'Clinical note page 2'],
+                            ['page_number' => 116, 'confidence' => 4, 'explanation' => 'Clinical note page 3'],
+                            ['page_number' => 117, 'confidence' => 4, 'explanation' => 'Clinical note page 4'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+
+        // DEBUG
+        dump('Expected 2 groups, got ' . count($result));
+        foreach ($result as $group) {
+            dump($group['name'] . ': pages ' . implode(',', $group['files']));
+        }
+
+        // Then: Should have 2 groups
+        $this->assertCount(2, $result, 'Should have ME Physical Therapy and Mountain View Pain Specialists');
+
+        $mePT         = collect($result)->firstWhere('name', 'ME Physical Therapy');
+        $mountainView = collect($result)->firstWhere('name', 'Mountain View Pain Specialists');
+
+        $this->assertNotNull($mePT, 'ME Physical Therapy should exist');
+        $this->assertNotNull($mountainView, 'Mountain View Pain Specialists should exist');
+
+        // ME PT should have pages 1-5 (prior group) and 105-112 (absorbed Ivo DPT via page 109)
+        $this->assertEquals(
+            [1, 2, 3, 4, 5, 105, 106, 107, 108, 109, 110, 111, 112],
+            $mePT['files'],
+            'ME Physical Therapy should have pages 1-5 and 105-112'
+        );
+
+        // Mountain View MUST have pages 113-117
+        $this->assertEquals(
+            [113, 114, 115, 116, 117],
+            $mountainView['files'],
+            'CRITICAL BUG: Mountain View MUST keep page 113 (confidence 5 = Billing Provider absolute authority)!'
+        );
+
+        // CRITICAL: Verify page 113 is in Mountain View
+        $page113Assignment = null;
+        foreach ($result as $group) {
+            if (in_array(113, $group['files'])) {
+                $page113Assignment = $group['name'];
+                break;
+            }
+        }
+
+        $this->assertEquals(
+            'Mountain View Pain Specialists',
+            $page113Assignment,
+            'CRITICAL BUG: Page 113 (confidence 5) was absorbed into wrong group!'
+        );
+    }
+
+    #[Test]
+    public function production_bug_page_73_scenario_mixed_confidence_mountain_view(): void
+    {
+        // This reproduces the EXACT bug from production logs where Mountain View has MIXED confidence:
+        //
+        // From logs:
+        // - ME Physical Therapy: min=4, max=5 (high confidence group)
+        // - Mountain View Pain Specialists: min=2, max=5 (NOT high confidence due to min=2!)
+        //
+        // Window 1 (pages 69-73): "ME Physical Therapy" with all confidence 5
+        // Window 2 (pages 73-76): "Mountain View Pain Specialists" with page 73 conf 4, pages 74-76 conf 4
+        // PLUS other windows gave Mountain View some files with confidence 2 (making group min=2)
+        //
+        // What happened:
+        // - Page 73 correctly stayed in ME Physical Therapy (conf 5 > 4)
+        // - BUT pages 74-76 were NOT absorbed into ME Physical Therapy
+        // - They should have been absorbed because:
+        //   1. They were grouped WITH page 73 in Window 2
+        //   2. Page 73 lost the conflict (stayed in ME PT)
+        //   3. Mountain View group has max=5, ME PT has max=5, so equal - NO absorption!
+        //
+        // THIS IS THE BUG: When groups have EQUAL max confidence, we should still check
+        // the CONFLICT BOUNDARY - page 73 had conf 4 in Mountain View but conf 5 in ME PT
+        //
+        // Expected: ME Physical Therapy should absorb pages 74-76 from the Mountain View window
+        // Actual: Mountain View kept pages 74-76 (WRONG!)
+
+        $artifacts = new Collection([
+            // Window 1: Pages 69-73 in "ME Physical Therapy" (all confidence 5)
+            $this->createWindowArtifact(
+                windowStart: 69,
+                windowEnd: 73,
+                windowFiles: [
+                    ['file_id' => 69, 'page_number' => 69],
+                    ['file_id' => 70, 'page_number' => 70],
+                    ['file_id' => 71, 'page_number' => 71],
+                    ['file_id' => 72, 'page_number' => 72],
+                    ['file_id' => 73, 'page_number' => 73],
+                ],
+                groups: [
+                    [
+                        'name'        => 'ME Physical Therapy',
+                        'description' => 'Physical therapy records',
+                        'files'       => [
+                            ['page_number' => 69, 'confidence' => 5, 'explanation' => 'Clear ME PT identifier'],
+                            ['page_number' => 70, 'confidence' => 5, 'explanation' => 'Clear ME PT identifier'],
+                            ['page_number' => 71, 'confidence' => 5, 'explanation' => 'Clear ME PT identifier'],
+                            ['page_number' => 72, 'confidence' => 5, 'explanation' => 'Clear ME PT identifier'],
+                            ['page_number' => 73, 'confidence' => 5, 'explanation' => 'Clear ME PT identifier'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 2: Pages 73-76 in "Mountain View Pain Specialists" (all confidence 4)
+            // Page 73 overlaps with Window 1 - this creates the conflict boundary
+            $this->createWindowArtifact(
+                windowStart: 73,
+                windowEnd: 76,
+                windowFiles: [
+                    ['file_id' => 73, 'page_number' => 73],
+                    ['file_id' => 74, 'page_number' => 74],
+                    ['file_id' => 75, 'page_number' => 75],
+                    ['file_id' => 76, 'page_number' => 76],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'Pain management records',
+                        'files'       => [
+                            ['page_number' => 73, 'confidence' => 4, 'explanation' => 'Possible Mountain View'],
+                            ['page_number' => 74, 'confidence' => 4, 'explanation' => 'Possible Mountain View'],
+                            ['page_number' => 75, 'confidence' => 4, 'explanation' => 'Possible Mountain View'],
+                            ['page_number' => 76, 'confidence' => 4, 'explanation' => 'Possible Mountain View'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 3: Pages 137-140 in "Mountain View Pain Specialists" (confidence 2!)
+            // This makes Mountain View have min=2, even though it also has files with conf 5 elsewhere
+            $this->createWindowArtifact(
+                windowStart: 137,
+                windowEnd: 140,
+                windowFiles: [
+                    ['file_id' => 137, 'page_number' => 137],
+                    ['file_id' => 138, 'page_number' => 138],
+                    ['file_id' => 139, 'page_number' => 139],
+                    ['file_id' => 140, 'page_number' => 140],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'Uncertain pages',
+                        'files'       => [
+                            ['page_number' => 137, 'confidence' => 2, 'explanation' => 'Uncertain if Mountain View'],
+                            ['page_number' => 138, 'confidence' => 2, 'explanation' => 'Uncertain if Mountain View'],
+                            ['page_number' => 139, 'confidence' => 2, 'explanation' => 'Uncertain if Mountain View'],
+                            ['page_number' => 140, 'confidence' => 2, 'explanation' => 'Uncertain if Mountain View'],
+                        ],
+                    ],
+                ]
+            ),
+            // Window 4: Some files with conf 5 for Mountain View (makes max=5)
+            $this->createWindowArtifact(
+                windowStart: 141,
+                windowEnd: 144,
+                windowFiles: [
+                    ['file_id' => 141, 'page_number' => 141],
+                    ['file_id' => 142, 'page_number' => 142],
+                    ['file_id' => 143, 'page_number' => 143],
+                    ['file_id' => 144, 'page_number' => 144],
+                ],
+                groups: [
+                    [
+                        'name'        => 'Mountain View Pain Specialists',
+                        'description' => 'Clear Mountain View',
+                        'files'       => [
+                            ['page_number' => 141, 'confidence' => 5, 'explanation' => 'Clear Mountain View'],
+                            ['page_number' => 142, 'confidence' => 5, 'explanation' => 'Clear Mountain View'],
+                            ['page_number' => 143, 'confidence' => 5, 'explanation' => 'Clear Mountain View'],
+                            ['page_number' => 144, 'confidence' => 5, 'explanation' => 'Clear Mountain View'],
+                        ],
+                    ],
+                ]
+            ),
+        ]);
+
+        // When
+        $mergeResult = $this->service->mergeWindowResults($artifacts);
+        $result      = $mergeResult['groups'];
+
+        // Then: ME Physical Therapy should absorb ALL of Mountain View
+        // Even though both groups have max=5, the CONFLICT BOUNDARY shows ME PT won page 73
+        // with conf 5 vs Mountain View's conf 4, proving ME PT is the winner
+        // When a group loses at ANY boundary, the ENTIRE group gets absorbed
+        $this->assertCount(1, $result, 'Should have only ME Physical Therapy after absorbing ALL of Mountain View');
+
+        $mePT = collect($result)->firstWhere('name', 'ME Physical Therapy');
+
+        $this->assertNotNull($mePT, 'ME Physical Therapy should exist');
+
+        $this->assertEquals(
+            [69, 70, 71, 72, 73, 74, 75, 76, 137, 138, 139, 140, 141, 142, 143, 144],
+            $mePT['files'],
+            'ME Physical Therapy should absorb ALL of Mountain View because page 73 conflict boundary shows ME PT (file conf 5) > Mountain View (file conf 4), proving ME PT wins even though groups have equal max'
         );
     }
 }

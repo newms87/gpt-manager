@@ -26,6 +26,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     const string OPERATION_NULL_GROUP_RESOLUTION = 'Null Group Resolution';
 
+    const string OPERATION_DUPLICATE_GROUP_RESOLUTION = 'Duplicate Group Resolution';
+
     public function run(): void
     {
         // Check if this is a comparison window process
@@ -57,6 +59,14 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         if ($this->taskProcess->operation === self::OPERATION_NULL_GROUP_RESOLUTION) {
             static::logDebug('Running null group resolution process');
             $this->runNullGroupResolution();
+
+            return;
+        }
+
+        // Check if this is a duplicate group resolution process
+        if ($this->taskProcess->operation === self::OPERATION_DUPLICATE_GROUP_RESOLUTION) {
+            static::logDebug('Running duplicate group resolution process');
+            $this->runDuplicateGroupResolution();
 
             return;
         }
@@ -166,10 +176,10 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         }
 
         // Merge the windows
-        $mergeService = app(FileOrganizationMergeService::class);
-        $mergeResult  = $mergeService->mergeWindowResults($windowArtifacts);
-        $finalGroups  = $mergeResult['groups'];
-        $fileToGroup  = $mergeResult['file_to_group_mapping'];
+        $mergeService         = app(FileOrganizationMergeService::class);
+        $mergeResult          = $mergeService->mergeWindowResults($windowArtifacts);
+        $finalGroups          = $mergeResult['groups'];
+        $fileToGroup          = $mergeResult['file_to_group_mapping'];
         $nullGroupsNeedingLlm = $mergeResult['null_groups_needing_llm'] ?? [];
 
         static::logDebug('Merge completed: ' . count($finalGroups) . ' final groups');
@@ -180,6 +190,10 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Check for low-confidence files
         $lowConfidenceFiles = $mergeService->identifyLowConfidenceFiles($fileToGroup);
+
+        // Check for duplicate groups
+        $duplicateDetector   = app(\App\Services\Task\FileOrganization\DuplicateGroupDetector::class);
+        $duplicateCandidates = $duplicateDetector->identifyDuplicateCandidates($finalGroups);
 
         // Store any issues that need resolution in task process meta
         $metaUpdates = [];
@@ -192,6 +206,16 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         if (!empty($nullGroupsNeedingLlm)) {
             static::logDebug('Found ' . count($nullGroupsNeedingLlm) . ' null group files needing LLM resolution - storing in task process meta');
             $metaUpdates['null_groups_needing_llm'] = $nullGroupsNeedingLlm;
+        }
+
+        if (!empty($duplicateCandidates)) {
+            static::logDebug('Found ' . count($duplicateCandidates) . ' duplicate group candidates - storing in task process meta');
+            // Prepare duplicate candidates with full context for LLM resolution
+            $duplicatesWithContext = [];
+            foreach ($duplicateCandidates as $candidate) {
+                $duplicatesWithContext[] = $duplicateDetector->prepareDuplicateForResolution($candidate, $finalGroups, $fileToGroup);
+            }
+            $metaUpdates['duplicate_group_candidates'] = $duplicatesWithContext;
         }
 
         if (!empty($metaUpdates)) {
@@ -272,8 +296,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $windowSize = $this->config('comparison_window_size', 3);
 
         // Validate window size
-        if ($windowSize < 2 || $windowSize > 5) {
-            throw new ValidationError('comparison_window_size must be between 2 and 5');
+        if ($windowSize < 2 || $windowSize > 100) {
+            throw new ValidationError('comparison_window_size must be between 2 and 100');
         }
 
         static::logDebug("Using comparison window size: $windowSize");
@@ -385,7 +409,11 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             ->where('operation', self::OPERATION_NULL_GROUP_RESOLUTION)
             ->exists();
 
-        if ($hasLowConfidenceResolution && $hasNullGroupResolution) {
+        $hasDuplicateGroupResolution = $this->taskRun->taskProcesses()
+            ->where('operation', self::OPERATION_DUPLICATE_GROUP_RESOLUTION)
+            ->exists();
+
+        if ($hasLowConfidenceResolution && $hasNullGroupResolution && $hasDuplicateGroupResolution) {
             static::logDebug('All resolution processes already exist or completed');
 
             return;
@@ -470,6 +498,35 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
                 $this->taskRun->updateRelationCounter('taskProcesses');
 
                 static::logDebug("Created null group resolution process: $nullResolutionProcess");
+
+                // Dispatch the resolution process
+                TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
+
+                return;
+            }
+        }
+
+        // Create duplicate group resolution process if needed
+        if (!$hasDuplicateGroupResolution && $mergeProcess && isset($mergeProcess->meta['duplicate_group_candidates'])) {
+            $duplicateCandidates = $mergeProcess->meta['duplicate_group_candidates'];
+
+            if (!empty($duplicateCandidates)) {
+                static::logDebug('Creating duplicate group resolution process for ' . count($duplicateCandidates) . ' duplicate candidates');
+
+                // Create the resolution process (no specific artifacts needed, this is group-level)
+                $duplicateResolutionProcess = $this->taskRun->taskProcesses()->create([
+                    'name'      => 'Resolve Duplicate Groups',
+                    'operation' => self::OPERATION_DUPLICATE_GROUP_RESOLUTION,
+                    'activity'  => 'Determining if similar group names represent the same entity',
+                    'meta'      => [
+                        'duplicate_group_candidates' => $duplicateCandidates,
+                    ],
+                    'is_ready'  => true,
+                ]);
+
+                $this->taskRun->updateRelationCounter('taskProcesses');
+
+                static::logDebug("Created duplicate group resolution process: $duplicateResolutionProcess");
 
                 // Dispatch the resolution process
                 TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
@@ -1157,13 +1214,30 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         static::logDebug('Resolving ' . count($nullGroupFiles) . ' null group files');
 
-        // Setup agent thread with null group files
-        $nullFileIds       = array_column($nullGroupFiles, 'file_id');
-        $nullFileArtifacts = $this->taskProcess->inputArtifacts()
-            ->whereIn('artifacts.id', $nullFileIds)
-            ->get();
+        // Get null file IDs and page numbers
+        $nullFileIds     = array_column($nullGroupFiles, 'file_id');
+        $nullPageNumbers = array_column($nullGroupFiles, 'page_number');
 
-        $agentThread = $this->setupNullGroupResolutionAgentThread($nullFileArtifacts, $nullGroupFiles);
+        // Gather context pages (2 before and 2 after each null file)
+        $contextPageNumbers = $this->gatherContextPageNumbers($nullPageNumbers);
+
+        static::logDebug('Including ' . count($contextPageNumbers) . ' context pages for better LLM decision making');
+
+        // Fetch all artifacts (null files + context pages)
+        $allPageNumbers = array_unique(array_merge($nullPageNumbers, $contextPageNumbers));
+        $allArtifacts   = $this->taskProcess->inputArtifacts()
+            ->join('stored_file_storables', function ($join) {
+                $join->on('artifacts.id', '=', 'stored_file_storables.storable_id')
+                    ->where('stored_file_storables.storable_type', '=', 'App\Models\Task\Artifact');
+            })
+            ->join('stored_files', 'stored_file_storables.stored_file_id', '=', 'stored_files.id')
+            ->whereIn('stored_files.page_number', $allPageNumbers)
+            ->select('artifacts.*', 'stored_files.page_number')
+            ->orderBy('stored_files.page_number')
+            ->get()
+            ->unique('id');
+
+        $agentThread = $this->setupNullGroupResolutionAgentThread($allArtifacts, $nullGroupFiles, $nullFileIds);
 
         // Run the agent thread
         $artifact = $this->runAgentThread($agentThread);
@@ -1187,10 +1261,39 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
+     * Gather context page numbers (2 before and 2 after each null page).
+     * Deduplicates overlapping ranges.
+     */
+    protected function gatherContextPageNumbers(array $nullPageNumbers): array
+    {
+        $contextPages = [];
+
+        foreach ($nullPageNumbers as $pageNumber) {
+            // Add 2 pages before
+            for ($i = 2; $i >= 1; $i--) {
+                $beforePage = $pageNumber - $i;
+                if ($beforePage > 0 && !in_array($beforePage, $nullPageNumbers)) {
+                    $contextPages[] = $beforePage;
+                }
+            }
+
+            // Add 2 pages after
+            for ($i = 1; $i <= 2; $i++) {
+                $afterPage = $pageNumber + $i;
+                if (!in_array($afterPage, $nullPageNumbers)) {
+                    $contextPages[] = $afterPage;
+                }
+            }
+        }
+
+        return array_unique($contextPages);
+    }
+
+    /**
      * Setup agent thread for null group resolution.
      * Provides context about adjacent groups to help agent decide assignment.
      */
-    protected function setupNullGroupResolutionAgentThread($artifacts, array $nullGroupFiles): AgentThread
+    protected function setupNullGroupResolutionAgentThread($artifacts, array $nullGroupFiles, array $nullFileIds): AgentThread
     {
         $taskDefinition = $this->taskRun->taskDefinition;
 
@@ -1204,16 +1307,18 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
         $agentThread = $builder->build();
 
-        // Add file messages
+        // Add file messages with context/resolution markers
         foreach ($artifacts as $artifact) {
             $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
             $pageNumber = $storedFile?->page_number ?? null;
             $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
+            $isNullFile = in_array($artifact->id, $nullFileIds);
 
             if ($pageNumber !== null) {
+                $label = $isNullFile ? "Page $pageNumber [NEEDS RESOLUTION]" : "Page $pageNumber [CONTEXT PAGE]";
                 app(ThreadRepository::class)->addMessageToThread(
                     $agentThread,
-                    "Page $pageNumber",
+                    $label,
                     $fileIds
                 );
             } else {
@@ -1227,9 +1332,11 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Build context message explaining the situation
         $contextMessage = "CONTEXT: Files with no clear identifier that need group assignment\n\n";
-        $contextMessage .= "These files had no clear identifying header or label during comparison.\n";
-        $contextMessage .= "Each file is positioned between two different groups.\n";
-        $contextMessage .= "Your task is to decide which adjacent group each file should belong to.\n\n";
+        $contextMessage .= "You have been provided with pages that need resolution and surrounding context pages.\n";
+        $contextMessage .= "Pages marked [NEEDS RESOLUTION] had no clear identifying header or label during comparison.\n";
+        $contextMessage .= "Pages marked [CONTEXT PAGE] are provided to give you visual context of adjacent groups.\n\n";
+        $contextMessage .= "Each file needing resolution is positioned between two different groups.\n";
+        $contextMessage .= "Your task is to decide which adjacent group each [NEEDS RESOLUTION] page should belong to.\n\n";
 
         foreach ($nullGroupFiles as $fileData) {
             $pageNumber    = $fileData['page_number'];
@@ -1237,7 +1344,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
             $nextGroup     = $fileData['next_group'];
             $description   = $fileData['description'] ?? 'No identifier found';
 
-            $contextMessage .= "--- Page $pageNumber ---\n";
+            $contextMessage .= "--- Page $pageNumber [NEEDS RESOLUTION] ---\n";
             $contextMessage .= "Observation: $description\n";
             $contextMessage .= "Previous group (pages before): '$previousGroup'\n";
             $contextMessage .= "Next group (pages after): '$nextGroup'\n";
@@ -1267,27 +1374,371 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         // Add null group resolution instructions
         app(ThreadRepository::class)->addMessageToThread($agentThread,
             "TASK: Assign files with no clear identifier to the correct adjacent group\n\n" .
-            "You have been provided with files that had NO CLEAR IDENTIFIER (empty string name) during windowing.\n" .
-            "Each file is positioned between two groups - a previous group and a next group.\n\n" .
+            "You have been provided with files marked [NEEDS RESOLUTION] and surrounding [CONTEXT PAGE] files.\n" .
+            "The [CONTEXT PAGE] files are provided to help you understand the visual context of adjacent groups.\n" .
+            "Files marked [NEEDS RESOLUTION] had NO CLEAR IDENTIFIER (empty string name) during windowing.\n" .
+            "Each file needing resolution is positioned between two groups - a previous group and a next group.\n\n" .
             "Your task:\n" .
-            "1. Review each file carefully\n" .
+            "1. Review each [NEEDS RESOLUTION] file carefully\n" .
             "2. Look at the content, layout, and visual characteristics\n" .
-            "3. Compare with the context of the previous and next groups\n" .
+            "3. Compare with the surrounding [CONTEXT PAGE] files to understand adjacent groups\n" .
             "4. Decide whether the file should belong to the PREVIOUS or NEXT group\n" .
             "5. Assign confidence score 1-5 based on your decision certainty\n" .
             "6. Provide explanation for your choice\n\n" .
             "DECISION STRATEGY:\n" .
+            "- Use the [CONTEXT PAGE] files to see examples of the previous and next groups\n" .
             "- Consider: Does this page's content match the previous group or next group?\n" .
             "- Consider: Is this a continuation page (page 2, 3, etc.) that follows the previous group?\n" .
             "- Consider: Does this page show signs of starting something new (matches next group)?\n" .
             "- When truly ambiguous, prefer assigning to the PREVIOUS group (maintains continuity)\n\n" .
             "IMPORTANT:\n" .
-            "- You MUST assign each file to either the previous group or the next group\n" .
+            "- ONLY include [NEEDS RESOLUTION] pages in your response\n" .
+            "- DO NOT include [CONTEXT PAGE] files in your response - they are for reference only\n" .
+            "- You MUST assign each [NEEDS RESOLUTION] file to either the previous group or the next group\n" .
             "- Use the exact group name provided in the context (don't create new names)\n" .
             "- If genuinely uncertain, use confidence 1-2 and default to previous group\n" .
             "- Provide clear explanation for your decision\n"
         );
 
         return $agentThread;
+    }
+
+    /**
+     * Run the duplicate group resolution process.
+     * Asks LLM to decide if similar group names represent the same entity.
+     */
+    protected function runDuplicateGroupResolution(): void
+    {
+        static::logDebug('Starting duplicate group resolution');
+
+        $duplicateCandidates = $this->taskProcess->meta['duplicate_group_candidates'] ?? [];
+
+        if (empty($duplicateCandidates)) {
+            static::logDebug('No duplicate group candidates to resolve');
+            $this->complete();
+
+            return;
+        }
+
+        static::logDebug('Resolving ' . count($duplicateCandidates) . ' duplicate group candidates');
+
+        // Setup agent thread for duplicate group resolution
+        $agentThread = $this->setupDuplicateGroupResolutionAgentThread($duplicateCandidates);
+
+        // Run the agent thread
+        $artifact = $this->runAgentThread($agentThread);
+
+        if (!$artifact || !$artifact->json_content) {
+            throw new ValidationError(static::class . ': No JSON content returned from duplicate group resolution agent thread');
+        }
+
+        static::logDebug('Duplicate group resolution completed successfully');
+
+        // Apply resolution decisions to merge duplicate groups
+        $this->applyDuplicateGroupResolution($artifact->json_content);
+
+        // Delete the temporary resolution artifact - we don't need it as output
+        $artifact->delete();
+
+        $this->complete();
+    }
+
+    /**
+     * Setup agent thread for duplicate group resolution.
+     * Presents potentially duplicate groups side-by-side for LLM to decide.
+     */
+    protected function setupDuplicateGroupResolutionAgentThread(array $duplicateCandidates): AgentThread
+    {
+        $taskDefinition = $this->taskRun->taskDefinition;
+
+        if (!$taskDefinition->agent) {
+            throw new \Exception("Agent not found for TaskRun: $this->taskRun");
+        }
+
+        $this->activity("Setting up duplicate group resolution agent thread for: {$taskDefinition->agent->name}", 5);
+
+        // Build the agent thread
+        $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $this->taskRun);
+        $agentThread = $builder->build();
+
+        // Build context message explaining the situation
+        $contextMessage = "CONTEXT: Potential duplicate groups detected\n\n";
+        $contextMessage .= "During file organization, we found groups with similar names that might represent the same entity.\n";
+        $contextMessage .= "Your task is to determine whether each pair of groups is actually the same entity with slightly different names,\n";
+        $contextMessage .= "or if they are legitimately different entities that should remain separate.\n\n";
+
+        $candidateIndex = 1;
+        foreach ($duplicateCandidates as $candidate) {
+            $group1 = $candidate['group1'];
+            $group2 = $candidate['group2'];
+
+            $contextMessage .= "--- CANDIDATE PAIR {$candidateIndex} ---\n";
+            $contextMessage .= 'Similarity Score: ' . round($candidate['similarity'] * 100, 1) . "%\n\n";
+
+            $contextMessage .= "GROUP A:\n";
+            $contextMessage .= "  Name: \"{$group1['name']}\"\n";
+            $contextMessage .= "  Description: {$group1['description']}\n";
+            $contextMessage .= "  File Count: {$group1['file_count']}\n";
+            if (!empty($group1['sample_files'])) {
+                $contextMessage .= "  Sample Files:\n";
+                foreach ($group1['sample_files'] as $file) {
+                    $contextMessage .= "    - Page {$file['page_number']}: {$file['description']} (confidence: {$file['confidence']})\n";
+                }
+            }
+
+            $contextMessage .= "\nGROUP B:\n";
+            $contextMessage .= "  Name: \"{$group2['name']}\"\n";
+            $contextMessage .= "  Description: {$group2['description']}\n";
+            $contextMessage .= "  File Count: {$group2['file_count']}\n";
+            if (!empty($group2['sample_files'])) {
+                $contextMessage .= "  Sample Files:\n";
+                foreach ($group2['sample_files'] as $file) {
+                    $contextMessage .= "    - Page {$file['page_number']}: {$file['description']} (confidence: {$file['confidence']})\n";
+                }
+            }
+
+            $contextMessage .= "\nQUESTION: Are these the same entity?\n";
+            $contextMessage .= "If YES, which name should be the canonical (primary) name?\n\n";
+
+            $candidateIndex++;
+        }
+
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
+
+        // Create schema for duplicate group resolution
+        $schema = $this->getDuplicateGroupResolutionSchema();
+
+        $schemaDefinition = SchemaDefinition::updateOrCreate([
+            'team_id' => $this->taskRun->taskDefinition->team_id,
+            'name'    => 'Duplicate Group Resolution Response',
+            'type'    => 'DuplicateGroupResolutionResponse',
+        ], [
+            'description'   => 'JSON schema for duplicate group resolution responses',
+            'schema'        => $schema,
+            'schema_format' => SchemaDefinition::FORMAT_JSON,
+        ]);
+
+        $this->taskDefinition->schema_definition_id = $schemaDefinition->id;
+        $this->taskDefinition->save();
+
+        $this->taskProcess->agentThread()->associate($agentThread)->save();
+
+        // Add duplicate group resolution instructions
+        app(ThreadRepository::class)->addMessageToThread($agentThread,
+            "TASK: Determine if groups with similar names represent the same entity\n\n" .
+            "You have been provided with pairs of groups that have similar names.\n" .
+            "Your task is to analyze each pair and determine if they represent the SAME entity or DIFFERENT entities.\n\n" .
+            "DECISION CRITERIA:\n" .
+            "1. SAME ENTITY if:\n" .
+            "   - One name is clearly a variant of the other (e.g., 'ABC Medical' vs 'ABC Medical (Denver)')\n" .
+            "   - One name includes a location/qualifier but otherwise identical (e.g., 'XYZ Clinic' vs 'XYZ Clinic (Northglenn)')\n" .
+            "   - Minor spelling differences or abbreviations (e.g., 'PT Services' vs 'Physical Therapy Services')\n" .
+            "   - The descriptions and sample files clearly indicate the same organization/entity\n\n" .
+            "2. DIFFERENT ENTITIES if:\n" .
+            "   - Names refer to genuinely different organizations despite similarity\n" .
+            "   - Different locations/branches of the same company that should be tracked separately\n" .
+            "   - Sample files show clearly different content/providers\n\n" .
+            "CANONICAL NAME SELECTION:\n" .
+            "If you determine they are the SAME entity, choose the canonical (primary) name based on:\n" .
+            "   - Prefer the more complete/descriptive name\n" .
+            "   - Prefer names without location qualifiers (unless location is essential)\n" .
+            "   - Prefer names that appear in more files (higher file_count)\n" .
+            "   - Prefer names with higher confidence scores\n\n" .
+            "OUTPUT FORMAT:\n" .
+            "For each candidate pair, provide:\n" .
+            "   - are_duplicates: true if same entity, false if different\n" .
+            "   - canonical_group: the name to use if duplicates (must be exactly one of the two names provided)\n" .
+            "   - confidence: 1-5 score for your decision certainty\n" .
+            "   - reason: clear explanation of your decision\n\n" .
+            "IMPORTANT:\n" .
+            "- When in doubt, prefer keeping groups SEPARATE (are_duplicates: false)\n" .
+            "- The canonical_group MUST be exactly one of the two original names (don't create new names)\n" .
+            "- Provide detailed reasoning to help understand your decision\n"
+        );
+
+        return $agentThread;
+    }
+
+    /**
+     * Get JSON schema for duplicate group resolution responses.
+     *
+     * @return array JSON schema definition
+     */
+    protected function getDuplicateGroupResolutionSchema(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'decisions' => [
+                    'type'        => 'array',
+                    'description' => 'Array of decisions for each duplicate candidate pair',
+                    'items'       => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'group1_name'      => [
+                                'type'        => 'string',
+                                'description' => 'First group name from the pair',
+                            ],
+                            'group2_name'      => [
+                                'type'        => 'string',
+                                'description' => 'Second group name from the pair',
+                            ],
+                            'are_duplicates'   => [
+                                'type'        => 'boolean',
+                                'description' => 'True if these groups represent the same entity and should be merged',
+                            ],
+                            'canonical_group'  => [
+                                'type'        => 'string',
+                                'description' => 'If are_duplicates is true, which group name to use as the canonical (primary) name. Must be exactly one of the two group names.',
+                            ],
+                            'confidence'       => [
+                                'type'        => 'integer',
+                                'description' => 'Confidence level for this decision (1=very uncertain, 5=absolutely certain)',
+                                'minimum'     => 1,
+                                'maximum'     => 5,
+                            ],
+                            'reason'           => [
+                                'type'        => 'string',
+                                'description' => 'Detailed explanation of why you determined these are duplicates or different entities',
+                            ],
+                        ],
+                        'required'   => ['group1_name', 'group2_name', 'are_duplicates', 'confidence', 'reason'],
+                    ],
+                ],
+            ],
+            'required'   => ['decisions'],
+        ];
+    }
+
+    /**
+     * Apply duplicate group resolution decisions to merge groups.
+     *
+     * @param  array  $resolutionData  LLM response data
+     */
+    protected function applyDuplicateGroupResolution(array $resolutionData): void
+    {
+        static::logDebug('Applying duplicate group resolution decisions');
+
+        $decisions = $resolutionData['decisions'] ?? [];
+
+        if (empty($decisions)) {
+            static::logDebug('No decisions to apply');
+
+            return;
+        }
+
+        // Get the merge process and its artifacts
+        $mergeProcess = $this->taskRun->taskProcesses()
+            ->where('operation', self::OPERATION_MERGE)
+            ->first();
+
+        if (!$mergeProcess) {
+            static::logDebug('No merge process found');
+
+            return;
+        }
+
+        $mergedArtifacts = $mergeProcess->outputArtifacts;
+
+        if ($mergedArtifacts->isEmpty()) {
+            static::logDebug('No merged artifacts found');
+
+            return;
+        }
+
+        $groupsToMerge = [];
+
+        // Process each decision
+        foreach ($decisions as $decision) {
+            $areDuplicates  = $decision['are_duplicates']  ?? false;
+            $group1Name     = $decision['group1_name']     ?? '';
+            $group2Name     = $decision['group2_name']     ?? '';
+            $canonicalGroup = $decision['canonical_group'] ?? '';
+            $confidence     = $decision['confidence']      ?? 0;
+            $reason         = $decision['reason']          ?? '';
+
+            if (!$areDuplicates) {
+                static::logDebug("Groups '$group1Name' and '$group2Name' are NOT duplicates - keeping separate. Reason: $reason");
+
+                continue;
+            }
+
+            if (!$canonicalGroup) {
+                static::logDebug('Decision marked as duplicates but no canonical group specified - skipping');
+
+                continue;
+            }
+
+            // Determine which group to merge into which
+            $sourceGroup = ($canonicalGroup === $group1Name) ? $group2Name : $group1Name;
+            $targetGroup = $canonicalGroup;
+
+            static::logDebug("Merging '$sourceGroup' INTO '$targetGroup' (confidence: $confidence). Reason: $reason");
+
+            $groupsToMerge[$sourceGroup] = $targetGroup;
+        }
+
+        if (empty($groupsToMerge)) {
+            static::logDebug('No groups to merge after processing decisions');
+
+            return;
+        }
+
+        // Apply the merges
+        foreach ($groupsToMerge as $sourceGroup => $targetGroup) {
+            // Find source and target artifacts
+            $sourceArtifact = null;
+            $targetArtifact = null;
+
+            foreach ($mergedArtifacts as $artifact) {
+                $meta = $artifact->meta ?? [];
+                if (($meta['group_name'] ?? '') === $sourceGroup) {
+                    $sourceArtifact = $artifact;
+                }
+                if (($meta['group_name'] ?? '') === $targetGroup) {
+                    $targetArtifact = $artifact;
+                }
+            }
+
+            if (!$sourceArtifact || !$targetArtifact) {
+                static::logDebug("Could not find artifacts for '$sourceGroup' or '$targetGroup' - skipping merge");
+
+                continue;
+            }
+
+            // Get stored files from both artifacts
+            $sourceFiles = $sourceArtifact->storedFiles ?? collect();
+            $targetFiles = $targetArtifact->storedFiles ?? collect();
+
+            static::logDebug("Merging {$sourceFiles->count()} files from '$sourceGroup' into '$targetGroup' ({$targetFiles->count()} existing files)");
+
+            // Attach source files to target artifact
+            foreach ($sourceFiles as $file) {
+                // Check if file is already attached to avoid duplicates
+                $alreadyAttached = $targetArtifact->storedFiles()
+                    ->where('stored_files.id', $file->id)
+                    ->exists();
+
+                if (!$alreadyAttached) {
+                    $targetArtifact->storedFiles()->attach($file->id, [
+                        'category' => 'input',
+                    ]);
+                }
+            }
+
+            $targetArtifact->updateRelationCounter('storedFiles');
+
+            // Update target artifact name to reflect merged content
+            $mergedFileCount      = $targetArtifact->storedFiles->count();
+            $targetArtifact->name = "$targetGroup ($mergedFileCount files)";
+            $targetArtifact->save();
+
+            // Delete source artifact (it's been merged)
+            $sourceArtifact->delete();
+
+            static::logDebug("Successfully merged '$sourceGroup' into '$targetGroup' - total files now: $mergedFileCount");
+        }
+
+        static::logDebug('Duplicate group resolution application complete');
     }
 }

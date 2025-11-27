@@ -45,44 +45,52 @@ class GroupAbsorptionService
 
         // Check for conflict boundary absorptions across ALL groups
         // (not limited to low/medium, because relative confidence matters)
-        return $this->findConflictBoundaryAbsorptions(array_keys($groupConfidenceSummary), $fileToGroup);
+        // Pass the group confidence summary so we can compare GROUP-level confidences
+        return $this->findConflictBoundaryAbsorptions(array_keys($groupConfidenceSummary), $fileToGroup, $groupConfidenceSummary);
     }
 
     /**
-     * Find absorptions based on conflict boundaries where a higher-confidence assignment
+     * Find absorptions based on conflict boundaries where a higher-confidence GROUP
      * won a conflict and the losing group has adjacent files from the same window.
+     *
+     * IMPORTANT: Compares GROUP-level confidence (max confidence in group), not individual file confidence.
+     * This ensures we only absorb when the ENTIRE winning group is more confident than the ENTIRE losing group.
      *
      * This works BIDIRECTIONALLY:
      *
      * FORWARD absorption example:
-     * - Window A: Pages 109-112 grouped as "Ivo DPT" (conf 3)
-     * - Window B: Page 109 gets reassigned to "ME PT" (conf 5)
+     * - Window A: Pages 109-112 grouped as "Ivo DPT" (group conf 3)
+     * - Window B: Page 109 gets reassigned to "ME PT" (group conf 5)
      * - Result: Absorb pages 110-112 from "Ivo DPT" into "ME PT" (forward from boundary)
      *
      * BACKWARD absorption example:
-     * - Window A: Pages 93-95 in group "X" (conf 4)
-     * - Window B: Pages 95-97 in group "Y" where 97 is conf 5
-     * - Page 95 gets absorbed into "Y" with inherited conf 5
+     * - Window A: Pages 93-95 in group "X" (group conf 4)
+     * - Window B: Pages 95-97 in group "Y" (group conf 5)
+     * - Page 95 gets absorbed into "Y"
      * - Result: Absorb pages 93-94 from "X" into "Y" (backward from boundary)
      *
      * @param  array  $allGroups  Array of ALL group names to check
      * @param  array  $fileToGroup  Map of file_id => group data
+     * @param  array  $groupConfidenceSummary  Map of group_name => ['max' => int, ...]
      * @return array Map of losing_group => winning_group
      */
-    protected function findConflictBoundaryAbsorptions(array $allGroups, array $fileToGroup): array
+    protected function findConflictBoundaryAbsorptions(array $allGroups, array $fileToGroup, array $groupConfidenceSummary): array
     {
         $absorptions = [];
 
-        // Find files where a higher-confidence assignment won
+        // Find files where a higher-confidence GROUP assignment won
         foreach ($fileToGroup as $fileId => $data) {
             $winningGroup      = $data['group_name'];
-            $winningConfidence = $data['confidence'];
             $allExplanations   = $data['all_explanations'] ?? [];
+
+            // Get the GROUP-level confidence (max confidence in the winning group)
+            $winningGroupConfidence = $groupConfidenceSummary[$winningGroup]['max'] ?? 3;
 
             // Check ALL alternative assignments this file had (both forward and backward)
             foreach ($allExplanations as $explanation) {
                 $losingGroup      = $explanation['group_name'];
-                $losingConfidence = $explanation['confidence'];
+                $losingFileConf   = $explanation['confidence']; // The ACTUAL confidence this file had in the losing group
+                $winningFileConf  = $data['confidence'];        // The ACTUAL confidence this file has in the winning group
 
                 // Skip if the losing assignment is the same as current (not a conflict)
                 if ($losingGroup === $winningGroup) {
@@ -94,13 +102,40 @@ class GroupAbsorptionService
                     continue;
                 }
 
-                // Check if the winning confidence is actually HIGHER than the losing confidence
-                if ($winningConfidence <= $losingConfidence) {
-                    continue;
+                // Get the GROUP-level confidence (max confidence in each group)
+                $losingGroupConfidence = $groupConfidenceSummary[$losingGroup]['max'] ?? 3;
+
+                // CRITICAL FIX: We need to check BOTH:
+                // 1. Group-level confidence comparison (prevents absorbing high-conf groups into low-conf groups)
+                // 2. File-level confidence at the boundary (handles cases where groups have equal max but different boundary conf)
+                //
+                // Example where file-level matters:
+                // - ME PT group: max=5 (from other files)
+                // - Mountain View group: max=5 (from other files)
+                // - But at page 73 boundary: ME PT has conf 5, Mountain View has conf 4
+                // - Group max is equal (5=5), but boundary shows ME PT won (5>4)
+                // - So we SHOULD absorb Mountain View's window into ME PT
+                //
+                // Priority order:
+                // 1. If winning group max > losing group max: Always absorb (higher confidence group wins)
+                // 2. If winning group max == losing group max: Check file-level boundary confidence
+                // 3. If winning group max < losing group max: Never absorb (would be wrong direction)
+
+                $shouldAbsorb = false;
+
+                if ($winningGroupConfidence > $losingGroupConfidence) {
+                    // Case 1: Winning group has higher max confidence - always absorb
+                    $shouldAbsorb = true;
+                    static::logDebug("CONFLICT BOUNDARY DETECTED: File $fileId (page {$data['page_number']}) - '$winningGroup' (group max $winningGroupConfidence) > '$losingGroup' (group max $losingGroupConfidence)");
+                } elseif ($winningGroupConfidence === $losingGroupConfidence && $winningFileConf > $losingFileConf) {
+                    // Case 2: Groups have equal max, but winning file has higher confidence at boundary
+                    $shouldAbsorb = true;
+                    static::logDebug("CONFLICT BOUNDARY DETECTED: File $fileId (page {$data['page_number']}) - Groups have equal max ($winningGroupConfidence), but '$winningGroup' file conf ($winningFileConf) > '$losingGroup' file conf ($losingFileConf) at boundary");
                 }
 
-                // We found a conflict boundary where higher confidence won!
-                static::logDebug("CONFLICT BOUNDARY DETECTED: File $fileId (page {$data['page_number']}) assigned to '$winningGroup' (conf $winningConfidence) beat '$losingGroup' (conf $losingConfidence)");
+                if (!$shouldAbsorb) {
+                    continue;
+                }
 
                 // Before adding absorption, check for circular conflict
                 // If the winning group is already set to absorb into the losing group, this is a bidirectional conflict
@@ -124,7 +159,7 @@ class GroupAbsorptionService
                 // BACKWARD absorption: Check if this file (now in winning group) was grouped
                 // with other files in the LOSING group's window, and those files are still in the losing group
                 // This handles cases where the boundary file got absorbed but should pull in earlier files too
-                if ($this->shouldAbsorbBackward($fileId, $losingGroup, $explanation['window_id'], $winningGroup, $winningConfidence, $fileToGroup)) {
+                if ($this->shouldAbsorbBackward($fileId, $losingGroup, $explanation['window_id'], $winningGroup, $winningGroupConfidence, $fileToGroup)) {
                     $absorptions[$losingGroup] = $winningGroup;
                     static::logDebug("  → Will absorb '$losingGroup' into '$winningGroup' (BACKWARD: boundary file connects them)");
                 }

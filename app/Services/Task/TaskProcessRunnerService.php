@@ -169,7 +169,12 @@ class TaskProcessRunnerService
             $taskProcess->getRunner()->run();
             static::logDebug("TaskProcess finished running: $taskProcess");
         } catch (Throwable $throwable) {
-            static::logDebug("TaskProcess failed: $taskProcess\n" . $throwable->getMessage());
+            $maxRetries = $taskProcess->taskRun?->taskDefinition?->max_process_retries ?? 0;
+            $canRetry   = $taskProcess->canBeRetried();
+            $retryInfo  = $canRetry
+                ? " (will retry: {$taskProcess->restart_count}/{$maxRetries})"
+                : " (retries exhausted: {$taskProcess->restart_count}/{$maxRetries})";
+            static::logDebug("TaskProcess failed: $taskProcess" . $retryInfo . "\n" . $throwable->getMessage());
 
             // Update error counts before setting failure status (fallback in case JobDispatch event doesn't catch it)
             app(TaskProcessErrorTrackingService::class)->updateTaskProcessErrorCount($taskProcess);
