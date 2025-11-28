@@ -59,6 +59,10 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_it_tracks_errors_for_task_process_with_errors()
     {
+        // Mark task process as failed to surface errors
+        $this->taskProcess->update(['failed_at' => now()]);
+        $this->taskProcess->refresh();
+
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
             'ref'    => 'test-job-' . uniqid(),
@@ -85,6 +89,9 @@ class TaskProcessErrorTrackingTest extends TestCase
         ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Test error 1');
         ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Test error 2');
 
+        // Refresh the task process to reload relationships
+        $this->taskProcess->refresh();
+
         // Update error count
         $this->service->updateTaskProcessErrorCount($this->taskProcess);
 
@@ -97,11 +104,18 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Initially no errors
         $this->assertEquals(0, $this->taskProcess->error_count);
 
+        // Mark task process as failed to surface errors
+        $this->taskProcess->update(['failed_at' => now()]);
+        $this->taskProcess->refresh();
+
         // Create a job dispatch with errors
         $jobDispatch = $this->createJobDispatchWithErrors(3);
 
         // Associate the job dispatch with the task process
         $this->taskProcess->jobDispatches()->attach($jobDispatch->id);
+
+        // Refresh the task process to reload relationships
+        $this->taskProcess->refresh();
 
         // Update error count
         $this->service->updateTaskProcessErrorCount($this->taskProcess);
@@ -114,6 +128,9 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_it_updates_error_count_from_job_dispatch()
     {
+        // Mark task process as failed to surface errors
+        $this->taskProcess->update(['failed_at' => now()]);
+
         // Create a job dispatch with errors
         $jobDispatch = $this->createJobDispatchWithErrors(2);
 
@@ -133,14 +150,20 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_task_run_aggregates_error_counts_from_multiple_task_processes()
     {
+        // Mark task processes as failed to surface errors
+        $this->taskProcess->update(['failed_at' => now()]);
+        $this->taskProcess->refresh();
+
         // Create additional task processes
         $taskProcess2 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'name'        => 'Test Process 2',
+            'failed_at'   => now(),
         ]);
         $taskProcess3 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'name'        => 'Test Process 3',
+            'failed_at'   => now(),
         ]);
 
         // Create job dispatches with different error counts
@@ -152,6 +175,11 @@ class TaskProcessErrorTrackingTest extends TestCase
         $this->taskProcess->jobDispatches()->attach($jobDispatch1->id);
         $taskProcess2->jobDispatches()->attach($jobDispatch2->id);
         $taskProcess3->jobDispatches()->attach($jobDispatch3->id);
+
+        // Refresh to reload relationships
+        $this->taskProcess->refresh();
+        $taskProcess2->refresh();
+        $taskProcess3->refresh();
 
         // Update error counts for all task processes
         $this->service->updateTaskProcessErrorCount($this->taskProcess);
@@ -167,6 +195,9 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_error_count_updates_on_job_dispatch_status_change()
     {
+        // Mark task process as failed to surface errors
+        $this->taskProcess->update(['failed_at' => now()]);
+
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
             'ref'    => 'test-job-' . uniqid(),
@@ -231,10 +262,10 @@ class TaskProcessErrorTrackingTest extends TestCase
             'workflow_node_id'   => $workflowNode->id,
         ]);
 
-        // Create task processes with errors for each task run
-        $taskProcess1 = TaskProcess::factory()->create(['task_run_id' => $taskRun1->id]);
-        $taskProcess2 = TaskProcess::factory()->create(['task_run_id' => $taskRun2->id]);
-        $taskProcess3 = TaskProcess::factory()->create(['task_run_id' => $taskRun3->id]);
+        // Create task processes with errors for each task run (mark as failed to surface errors)
+        $taskProcess1 = TaskProcess::factory()->create(['task_run_id' => $taskRun1->id, 'failed_at' => now()]);
+        $taskProcess2 = TaskProcess::factory()->create(['task_run_id' => $taskRun2->id, 'failed_at' => now()]);
+        $taskProcess3 = TaskProcess::factory()->create(['task_run_id' => $taskRun3->id, 'failed_at' => now()]);
 
         // Create job dispatches with errors
         $jobDispatch1 = $this->createJobDispatchWithErrors(2);
@@ -291,8 +322,8 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Initially no errors
         $this->assertEquals(0, $workflowRun->error_count);
 
-        // Create task process with errors
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
+        // Create task process with errors (mark as failed to surface errors)
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id, 'failed_at' => now()]);
         $jobDispatch = $this->createJobDispatchWithErrors(5);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
 

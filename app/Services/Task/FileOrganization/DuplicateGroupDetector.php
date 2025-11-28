@@ -102,7 +102,7 @@ class DuplicateGroupDetector
         }
 
         // Use Levenshtein distance for fuzzy matching
-        $maxLen  = max(strlen($normalized1), strlen($normalized2));
+        $maxLen   = max(strlen($normalized1), strlen($normalized2));
         $distance = levenshtein($normalized1, $normalized2);
 
         // Convert distance to similarity (0 distance = 1.0 similarity)
@@ -195,18 +195,18 @@ class DuplicateGroupDetector
 
         return [
             'group1' => [
-                'name'        => $group1['name'],
-                'description' => $group1['description'],
-                'file_count'  => count($group1['files']),
+                'name'         => $group1['name'],
+                'description'  => $group1['description'],
+                'file_count'   => count($group1['files']),
                 'sample_files' => $this->getSampleFiles($group1['files'], $fileToGroup, 3),
-                'confidence'  => $group1['confidence_summary'] ?? null,
+                'confidence'   => $group1['confidence_summary'] ?? null,
             ],
             'group2' => [
-                'name'        => $group2['name'],
-                'description' => $group2['description'],
-                'file_count'  => count($group2['files']),
+                'name'         => $group2['name'],
+                'description'  => $group2['description'],
+                'file_count'   => count($group2['files']),
                 'sample_files' => $this->getSampleFiles($group2['files'], $fileToGroup, 3),
-                'confidence'  => $group2['confidence_summary'] ?? null,
+                'confidence'   => $group2['confidence_summary'] ?? null,
             ],
             'similarity' => $candidate['similarity'],
         ];

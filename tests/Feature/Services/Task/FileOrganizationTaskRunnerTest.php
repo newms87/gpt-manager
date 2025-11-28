@@ -1317,13 +1317,8 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $this->expectExceptionMessage('Second group: \'Mountain View Pain Center\'');
         $this->expectExceptionMessage('Each page must belong to exactly ONE group');
 
-        // Call the protected method directly using reflection
-        $reflection = new \ReflectionClass($this->runner);
-        $method     = $reflection->getMethod('validateNoDuplicatePages');
-        $method->setAccessible(true);
-
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
-        $method->invoke($this->runner, $invalidJsonContent);
+        // Call the ValidationService directly
+        app(\App\Services\Task\FileOrganization\ValidationService::class)->validateNoDuplicatePages($invalidJsonContent);
     }
 
     #[Test]
@@ -1368,15 +1363,10 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         ];
 
         // WHEN: Calling validation
-        $reflection = new \ReflectionClass($this->runner);
-        $method     = $reflection->getMethod('validateNoDuplicatePages');
-        $method->setAccessible(true);
-
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
+        // Call the ValidationService directly
+        app(\App\Services\Task\FileOrganization\ValidationService::class)->validateNoDuplicatePages($validJsonContent);
 
         // THEN: No exception should be thrown
-        $method->invoke($this->runner, $validJsonContent);
-
         // If we get here, validation passed
         $this->assertTrue(true);
     }
@@ -1415,12 +1405,8 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
         $this->expectExceptionMessage('Page 3 appears in multiple groups');
 
-        $reflection = new \ReflectionClass($this->runner);
-        $method     = $reflection->getMethod('validateNoDuplicatePages');
-        $method->setAccessible(true);
-
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
-        $method->invoke($this->runner, $oldFormatWithDuplicate);
+        // Call the ValidationService directly
+        app(\App\Services\Task\FileOrganization\ValidationService::class)->validateNoDuplicatePages($oldFormatWithDuplicate);
     }
 
     #[Test]

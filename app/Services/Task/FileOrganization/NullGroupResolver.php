@@ -137,7 +137,7 @@ class NullGroupResolver
         // Decision logic
         if ($prevGroup && $nextGroup && $prevGroup !== $nextGroup) {
             // Both adjacent groups exist and are different - needs LLM resolution
-            static::logDebug("  → Needs LLM resolution (both prev and next exist)");
+            static::logDebug('  → Needs LLM resolution (both prev and next exist)');
 
             return [
                 'type'           => 'llm',
@@ -167,7 +167,7 @@ class NullGroupResolver
         }
 
         // No adjacent groups - keep as null (edge case)
-        static::logDebug("  → No adjacent groups found, keeping as null");
+        static::logDebug('  → No adjacent groups found, keeping as null');
 
         return ['type' => 'keep'];
     }

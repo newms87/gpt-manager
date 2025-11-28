@@ -84,11 +84,12 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
             'workflow_node_id'   => $workflowNode->id,
         ]);
 
-        // Create a ready task process
+        // Create a ready task process and mark as FAILED to surface errors
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'is_ready'    => true,
             'status'      => WorkflowStatesContract::STATUS_PENDING,
+            'failed_at'   => now(), // Mark as failed to surface errors
         ]);
 
         // Create a job dispatch to simulate job execution
@@ -121,13 +122,13 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // When - Mark job as complete (this triggers the event listener)
         $jobDispatch->update(['status' => JobDispatch::STATUS_COMPLETE]);
 
-        // Then - Verify error counts cascade correctly
+        // Then - Verify error counts cascade correctly (errors are surfaced because process is failed)
         $taskProcess->refresh();
         $taskRun->refresh();
         $workflowRun->refresh();
 
         $this->assertEquals(3, $taskProcess->error_count,
-            'TaskProcess error_count should be 3');
+            'TaskProcess error_count should be 3 (failed process surfaces errors)');
         $this->assertEquals(3, $taskRun->task_process_error_count,
             'TaskRun task_process_error_count should be 3');
         $this->assertEquals(3, $workflowRun->error_count,
@@ -188,7 +189,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
     public function test_job_dispatch_status_changes_trigger_error_count_updates()
     {
-        // Given - Create task process with associated job dispatch
+        // Given - Create task process with associated job dispatch and mark as FAILED to surface errors
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
@@ -197,6 +198,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
             'task_run_id' => $taskRun->id,
             'is_ready'    => true,
             'status'      => WorkflowStatesContract::STATUS_RUNNING,
+            'failed_at'   => now(), // Mark as failed to surface errors
         ]);
 
         $jobDispatch = JobDispatch::create([
@@ -226,12 +228,12 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // When - Change job status (simulating completion/failure)
         $jobDispatch->update(['status' => JobDispatch::STATUS_FAILED]);
 
-        // Then - Error counts should be updated via event listener
+        // Then - Error counts should be updated via event listener (errors surfaced because process is failed)
         $taskProcess->refresh();
         $taskRun->refresh();
 
         $this->assertEquals(2, $taskProcess->error_count,
-            'TaskProcess error_count should be updated when JobDispatch status changes');
+            'TaskProcess error_count should be updated when JobDispatch status changes (failed process surfaces errors)');
         $this->assertEquals(2, $taskRun->task_process_error_count,
             'TaskRun error_count should cascade from TaskProcess');
     }
@@ -271,13 +273,14 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // Initially no errors
         $this->assertEquals(0, $taskProcess->error_count);
 
-        // When - Errors occur and job completes
+        // When - Errors occur and job completes successfully
         ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Runtime error');
         $jobDispatch->update(['status' => JobDispatch::STATUS_COMPLETE, 'completed_at' => now()]);
 
-        // Then - Error counts should be updated
+        // Then - Errors should be SUPPRESSED (process can still be retried, not failed)
         $taskProcess->refresh();
-        $this->assertEquals(1, $taskProcess->error_count);
+        $this->assertEquals(0, $taskProcess->error_count,
+            'Errors should be suppressed for processes that can still be retried');
     }
 
     public function test_fallback_error_tracking_when_exception_thrown_in_runner()
@@ -339,7 +342,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
     public function test_error_count_resets_on_task_process_restart()
     {
-        // Given - Task process with errors
+        // Given - Task process with errors (failed)
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
@@ -354,26 +357,27 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $jobDispatch = $this->createJobDispatchWithErrors(5);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
 
-        // Update error count
+        // Update error count (should be 5 because process is failed)
         app(\App\Services\Task\TaskProcessErrorTrackingService::class)
             ->updateTaskProcessErrorCount($taskProcess);
 
         $taskProcess->refresh();
-        $this->assertEquals(5, $taskProcess->error_count);
+        $this->assertEquals(5, $taskProcess->error_count, 'Failed process should surface errors');
 
-        // When - Restart the task process
+        // When - Restart the task process (clears failed_at)
         TaskProcessRunnerService::restart($taskProcess);
 
-        // Then - Task process should be reset but error count remains (historical errors)
+        // Then - Error count should be SUPPRESSED after restart (process can now be retried)
         $taskProcess->refresh();
-        $this->assertEquals(5, $taskProcess->error_count,
-            'Error count should remain after restart to maintain historical record');
+        $this->assertEquals(0, $taskProcess->error_count,
+            'Errors should be suppressed after restart (process can now be retried)');
         $this->assertTrue($taskProcess->is_ready, 'Task process should be ready after restart');
         $this->assertNull($taskProcess->failed_at, 'Failed timestamp should be cleared');
     }
 
     /**
      * Helper method to create a task process with errors
+     * Mark as failed to surface errors (new behavior: errors suppressed for retriable processes)
      */
     private function createTaskProcessWithErrors(TaskRun $taskRun, int $errorCount): TaskProcess
     {
@@ -381,6 +385,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
             'task_run_id' => $taskRun->id,
             'is_ready'    => true,
             'status'      => WorkflowStatesContract::STATUS_RUNNING,
+            'failed_at'   => now(), // Mark as failed to surface errors
         ]);
 
         $jobDispatch = $this->createJobDispatchWithErrors($errorCount);
