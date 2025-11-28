@@ -142,11 +142,12 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      */
     protected function createWindowProcesses(): void
     {
-        // Get comparison window size from config
+        // Get comparison window size and overlap from config
         $windowSize = $this->config('comparison_window_size', 3);
+        $overlap    = $this->config('comparison_window_overlap', 1);
 
         // Use WindowProcessService to create window processes
-        app(WindowProcessService::class)->createWindowProcesses($this->taskRun, $windowSize);
+        app(WindowProcessService::class)->createWindowProcesses($this->taskRun, $windowSize, $overlap);
 
         // Dispatch the window processes
         TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);

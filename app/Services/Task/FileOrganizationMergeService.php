@@ -419,18 +419,21 @@ class FileOrganizationMergeService
 
     /**
      * Create overlapping windows from a list of files.
-     * Each window overlaps by one file - the last file of window N is the first file of window N+1.
+     * Windows overlap by the specified number of files.
      *
-     * Examples:
-     * - 10 files, size 5 → 3 windows: [1-5], [5-9], [9-10]
-     * - 6 files, size 5 → 2 windows: [1-5], [5-6]
-     * - 4 files, size 5 → 1 window: [1-4]
+     * Examples with different overlaps:
+     * - 10 files, size 5, overlap 1 → windows: [1-5], [5-9], [9-10]
+     * - 10 files, size 5, overlap 2 → windows: [1-5], [4-8], [7-10]
+     * - 10 files, size 5, overlap 3 → windows: [1-5], [3-7], [5-9], [7-10]
+     * - 6 files, size 5, overlap 1 → windows: [1-5], [5-6]
+     * - 4 files, size 5, overlap 1 → window: [1-4]
      *
      * @param  array  $files  Array of ['file_id' => id, 'page_number' => int]
      * @param  int  $windowSize  Maximum number of files per window
+     * @param  int  $windowOverlap  Number of files to overlap between windows (default: 1)
      * @return array Array of windows with metadata
      */
-    public function createOverlappingWindows(array $files, int $windowSize): array
+    public function createOverlappingWindows(array $files, int $windowSize, int $windowOverlap = 1): array
     {
         if (empty($files)) {
             static::logDebug('No files to create windows from');
@@ -444,12 +447,19 @@ class FileOrganizationMergeService
             return [];
         }
 
+        if ($windowOverlap < 1 || $windowOverlap >= $windowSize) {
+            throw new ValidationError(
+                "Window overlap must be >= 1 and < window size ($windowSize). Got: $windowOverlap",
+                400
+            );
+        }
+
         $windows   = [];
         $fileCount = count($files);
 
-        static::logDebug("Creating overlapping windows from $fileCount files with max window size $windowSize");
+        static::logDebug("Creating overlapping windows from $fileCount files with max window size $windowSize and overlap $windowOverlap");
 
-        // Create overlapping windows where last file of window N = first file of window N+1
+        // Create overlapping windows with configurable overlap
         $windowIndex = 0;
         $startIndex  = 0;
 
@@ -480,8 +490,8 @@ class FileOrganizationMergeService
             static::logDebug("Window $windowIndex: page numbers " . min($pageNumbers) . '-' . max($pageNumbers) . ' (' . count($windowFiles) . ' files)');
             $windowIndex++;
 
-            // Move to next window starting at the LAST file of current window (overlap by 1)
-            $startIndex += $windowSize - 1;
+            // Move to next window with configured overlap
+            $startIndex += $windowSize - $windowOverlap;
         }
 
         static::logDebug('Created ' . count($windows) . ' overlapping windows');

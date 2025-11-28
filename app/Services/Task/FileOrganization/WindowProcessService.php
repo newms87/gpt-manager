@@ -21,8 +21,9 @@ class WindowProcessService
      *
      * @param  TaskRun  $taskRun  The task run to create windows for
      * @param  int  $windowSize  Size of each comparison window
+     * @param  int  $overlap  Number of files to overlap between windows (default: 1)
      */
-    public function createWindowProcesses(TaskRun $taskRun, int $windowSize): void
+    public function createWindowProcesses(TaskRun $taskRun, int $windowSize, int $overlap = 1): void
     {
         static::logDebug('Creating file organization window processes');
 
@@ -31,7 +32,12 @@ class WindowProcessService
             throw new ValidationError('comparison_window_size must be between 2 and 100');
         }
 
-        static::logDebug("Using comparison window size: $windowSize");
+        // Validate overlap
+        if ($overlap < 1 || $overlap >= $windowSize) {
+            throw new ValidationError("comparison_window_overlap must be >= 1 and < comparison_window_size ($windowSize). Got: $overlap");
+        }
+
+        static::logDebug("Using comparison window size: $windowSize, overlap: $overlap");
 
         // Get all input artifacts
         $inputArtifacts = $taskRun->inputArtifacts()
@@ -50,8 +56,8 @@ class WindowProcessService
         $mergeService = app(FileOrganizationMergeService::class);
         $files        = $mergeService->getFileListFromArtifacts($inputArtifacts);
 
-        // Create overlapping windows
-        $windows = $mergeService->createOverlappingWindows($files, $windowSize);
+        // Create overlapping windows with configured overlap
+        $windows = $mergeService->createOverlappingWindows($files, $windowSize, $overlap);
 
         static::logDebug('Created ' . count($windows) . ' comparison windows');
 

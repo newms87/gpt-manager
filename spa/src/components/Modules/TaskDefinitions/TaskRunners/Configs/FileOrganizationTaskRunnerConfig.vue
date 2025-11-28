@@ -42,6 +42,26 @@
                     <li class="mt-1 text-gray-600"><b>Recommended:</b> Start with 3-5, increase if documents have clear patterns</li>
                 </ul>
             </div>
+
+            <!-- Comparison Window Overlap Field -->
+            <NumberField
+                v-model="comparisonWindowOverlap"
+                label="Comparison Window Overlap"
+                placeholder="Enter overlap size..."
+                :min="1"
+                :max="99"
+                prepend-label
+                class="mb-2"
+                @update:model-value="debounceChange"
+            />
+            <div class="text-xs text-gray-500 mb-6 ml-1">
+                <p>Number of files that overlap between consecutive windows (1-windowSize-1):</p>
+                <ul class="list-disc pl-5 mt-1">
+                    <li><b>Small overlap (1-2):</b> Faster processing with fewer windows, good for distinct documents</li>
+                    <li><b>Large overlap (3+):</b> More context for boundary decisions, better for similar/ambiguous documents</li>
+                    <li class="mt-1 text-gray-600"><b>Recommended:</b> Start with 1, increase if documents at window boundaries are being misclassified</li>
+                </ul>
+            </div>
         </div>
     </BaseTaskRunnerConfig>
 </template>
@@ -57,6 +77,7 @@ import { TaskDefinitionAgentConfigField, TaskDefinitionPromptField } from "./Fie
 
 export interface FileOrganizationTaskRunnerConfig {
     comparison_window_size: number;
+    comparison_window_overlap: number;
 }
 
 const props = defineProps<{
@@ -66,6 +87,7 @@ const props = defineProps<{
 
 const config = computed(() => (props.taskDefinition.task_runner_config || {}) as FileOrganizationTaskRunnerConfig);
 const comparisonWindowSize = ref(config.value.comparison_window_size ?? 3);
+const comparisonWindowOverlap = ref(config.value.comparison_window_overlap ?? 1);
 
 const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
 
@@ -73,7 +95,8 @@ const debounceChange = useDebounceFn(() => {
     updateTaskDefinitionAction.trigger(props.taskDefinition, {
         task_runner_config: {
             ...config.value,
-            comparison_window_size: Number(comparisonWindowSize.value) || 3
+            comparison_window_size: Number(comparisonWindowSize.value) || 3,
+            comparison_window_overlap: Number(comparisonWindowOverlap.value) || 1
         }
     });
 }, 500);
