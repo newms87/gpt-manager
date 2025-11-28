@@ -1896,12 +1896,6 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // DEBUG
-        dump('Expected 2 groups, got ' . count($result));
-        foreach ($result as $group) {
-            dump($group['name'] . ': pages ' . implode(',', $group['files']));
-        }
-
         // Then: Should have 2 groups
         $this->assertCount(2, $result, 'Should have ME Physical Therapy and Mountain View Pain Specialists');
 

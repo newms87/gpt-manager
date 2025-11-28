@@ -270,8 +270,9 @@ class AgentThreadService
         $instructions = "You are comparing adjacent files to organize them into logical groups.\n" .
             "Each file represents a page or document section.\n" .
             "Group files that belong together based on their content and context.\n\n" .
+            "IMPORTANT: The task instructions provided by the user define how groups should be named. Follow those instructions for naming groups.\n\n" .
             "For each group:\n" .
-            "- 'name': A clear, descriptive name for the group (e.g., 'Section A', 'Category 1', 'Entity Name')\n" .
+            "- 'name': Use the naming convention specified in the task instructions. If the user says 'group by patient name', use patient names. If no naming convention is specified, use a clear, descriptive identifier from the document content.\n" .
             "- 'description': A high-level summary of what the group contains\n" .
             "- 'files': Array of file objects with page_number, confidence, and explanation\n\n" .
             "GROUPING STRATEGY - PRIORITIZE CONTINUITY:\n" .
