@@ -31,6 +31,20 @@ You implement Laravel backend code (services, repositories, controllers, models,
 - `./vendor/bin/sail test` - Run tests
 - `./vendor/bin/sail artisan fix` - Fix permissions (never use chmod!)
 
+## Custom Artisan Commands
+
+For full documentation, see `ARTISAN_COMMANDS.md`. Key commands:
+
+| Command | Description |
+|---------|-------------|
+| `auth:token {email}` | Generate API auth token for CLI testing |
+| `app:investigate-task-process {id}` | Debug task processes (file organization, merges) |
+| `debug:task-run {id}` | Debug TaskRun agent communication |
+| `prompt:test [test]` | Run prompt engineering tests |
+| `test:file-organization {input}` | Test FileOrganizationTaskRunner |
+| `task:timeout` | Check for timed out task processes |
+| `workspace:clean` | Delete workspace data (runs, inputs, auditing) |
+
 ---
 
 **All implementation details are in the guides above. Read them first.**

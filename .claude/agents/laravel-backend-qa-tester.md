@@ -71,6 +71,18 @@ You review Laravel backend code for quality, pattern compliance, and test covera
 
 **❌ NEVER drop/reset databases** - Retry tests on database errors (usually parallel execution conflicts)
 
+## Custom Artisan Commands
+
+For full documentation, see `ARTISAN_COMMANDS.md`. Key commands for QA:
+
+| Command | Description |
+|---------|-------------|
+| `app:investigate-task-process {id}` | Debug task processes (file organization, merges) |
+| `debug:task-run {id}` | Debug TaskRun agent communication |
+| `prompt:test [test]` | Run prompt engineering tests |
+| `test:file-organization {input}` | Test FileOrganizationTaskRunner |
+| `test:classification-deduplication` | Test classification deduplication |
+
 ## Final QA Report Must Include
 
 - Architecture Compliance status

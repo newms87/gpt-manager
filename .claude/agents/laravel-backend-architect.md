@@ -64,6 +64,18 @@ Your architectural plans should include:
 4. **Implementation Roadmap** - Phased steps (Database → Models → Repository → Service → API → Testing)
 5. **Naming and Organization** - File paths, namespaces, table names
 
+## Custom Artisan Commands
+
+For full documentation, see `ARTISAN_COMMANDS.md`. Key commands for architects:
+
+| Command | Description |
+|---------|-------------|
+| `app:investigate-task-process {id}` | Debug task processes (file organization, merges) |
+| `debug:task-run {id}` | Debug TaskRun agent communication |
+| `workflow:build` | Interactive AI-powered workflow builder |
+| `prompt:test [test]` | Run prompt engineering tests |
+| `workspace:clean` | Delete workspace data (runs, inputs, auditing) |
+
 ---
 
 **All implementation details and patterns are in the guides above. Read them first.**
