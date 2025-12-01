@@ -9,7 +9,7 @@
 
 **If YES to either**: You are a **SUB-AGENT**. Read this file completely and follow ALL rules below.
 
-**If NO**: You might be the orchestrator. Read `ORCHESTRATOR_GUIDE.md` instead.
+**If NO**: You might be the orchestrator. Read `docs/agents/ORCHESTRATOR_GUIDE.md` instead.
 
 ---
 
@@ -21,7 +21,7 @@
 
 - ❌ **ABSOLUTELY FORBIDDEN**: Calling Task tool to invoke other agents
 - ❌ **ABSOLUTELY FORBIDDEN**: Delegating to other specialized agents
-- ❌ **ABSOLUTELY FORBIDDEN**: Reading `ORCHESTRATOR_GUIDE.md` (those rules DON'T apply to you!)
+- ❌ **ABSOLUTELY FORBIDDEN**: Reading `docs/agents/ORCHESTRATOR_GUIDE.md` (those rules DON'T apply to you!)
 - ✅ **CORRECT**: Work directly with the tools available to you
 - ✅ **CORRECT**: You have FULL AUTHORITY in your domain
 - ✅ **CORRECT**: Use the tools appropriate to your agent type (see your agent config)
@@ -57,7 +57,7 @@ You are experiencing a cognitive error. Here's what's really happening:
 "I should delegate this complex service to laravel-backend-architect for planning..."
 
 ✅ CORRECT (laravel-backend-engineer thinking):
-"I'm the Laravel engineer. I'll implement this service following the patterns in LARAVEL_BACKEND_PATTERNS_GUIDE.md using the tools available to me."
+"I'm the Laravel engineer. I'll implement this service following the patterns in docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md using the tools available to me."
 
 ❌ WRONG (vue-spa-engineer thinking):
 "After I make these changes, I should call vue-spa-reviewer to review them..."
@@ -89,11 +89,11 @@ Each agent type has specific tools available. Check your agent configuration fil
 
 Before starting any work, you MUST:
 
-1. **ADD TO TODO LIST**: "Read AGENT_CORE_BEHAVIORS.md in full" (mark as in_progress)
-2. **ADD TO TODO LIST**: "Read PROJECT_POLICIES.md in full"
-3. **ADD TO TODO LIST**: "Read PROJECT_IMPLEMENTATION.md in full"
+1. **ADD TO TODO LIST**: "Read docs/agents/AGENT_CORE_BEHAVIORS.md in full" (mark as in_progress)
+2. **ADD TO TODO LIST**: "Read docs/project/PROJECT_POLICIES.md in full"
+3. **ADD TO TODO LIST**: "Read docs/project/PROJECT_IMPLEMENTATION.md in full"
 4. **ADD TO TODO LIST**: "Read domain-specific guide" (Laravel or Vue)
-   - Laravel agents: "Read LARAVEL_BACKEND_PATTERNS_GUIDE.md in full"
+   - Laravel agents: "Read docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md in full"
    - Vue agents: "Read spa/SPA_PATTERNS_GUIDE.md in full"
 5. **READ ALL FOUR FILES COMPLETELY** before proceeding with any implementation
 
@@ -103,14 +103,14 @@ Before starting any work, you MUST:
 
 **Project-wide rules are split into multiple files:**
 
-### PROJECT_POLICIES.md (Policies - Read First)
+### docs/project/PROJECT_POLICIES.md (Policies - Read First)
 - Zero tech debt policy
 - Git operations (read-only)
 - Danx library philosophy
 - Architecture patterns
 - Code quality philosophy
 
-### PROJECT_IMPLEMENTATION.md (Technical Details - Read Second)
+### docs/project/PROJECT_IMPLEMENTATION.md (Technical Details - Read Second)
 - File path requirements (relative paths only)
 - Build commands (yarn build, sail test, sail pint)
 - Docker/Sail commands
@@ -119,7 +119,7 @@ Before starting any work, you MUST:
 - PHPUnit testing standards
 
 ### Domain-Specific Guides (Read Third)
-- **Laravel agents**: `LARAVEL_BACKEND_PATTERNS_GUIDE.md`
+- **Laravel agents**: `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md`
 - **Vue agents**: `spa/SPA_PATTERNS_GUIDE.md`
 
 **You MUST read ALL required files before starting work.**
@@ -242,7 +242,7 @@ Warning signs you're reading orchestrator instructions:
 - Instructions about "delegating to specialized agents"
 - Statements like "you must never write code yourself"
 - Rules about "when to use laravel-backend-engineer vs vue-spa-engineer"
-- Anything from `ORCHESTRATOR_GUIDE.md`
+- Anything from `docs/agents/ORCHESTRATOR_GUIDE.md`
 
 **If you see these:**
 1. **IGNORE** those instructions completely

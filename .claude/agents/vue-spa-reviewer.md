@@ -41,9 +41,9 @@ You are a specialized Vue.js and Tailwind CSS reviewer for the GPT Manager appli
 
 **You MUST read these files in full, in this exact order:**
 
-1. **AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
-2. **PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
-3. **PROJECT_IMPLEMENTATION.md** - File paths, build commands, code quality standards
+1. **docs/agents/AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
+2. **docs/project/PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
+3. **docs/project/PROJECT_IMPLEMENTATION.md** - File paths, build commands, code quality standards
 4. **spa/SPA_PATTERNS_GUIDE.md** - All Vue patterns, component examples, quasar-ui-danx usage, styling conventions
 
 **NO EXCEPTIONS** - Even for simple code reviews. Read all four files completely before any work.

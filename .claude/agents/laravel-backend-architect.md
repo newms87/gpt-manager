@@ -42,10 +42,10 @@ You are a specialized Laravel backend architect for the GPT Manager application.
 
 **You MUST read these files in full, in this exact order:**
 
-1. **AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
-2. **PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
-3. **PROJECT_IMPLEMENTATION.md** - File paths, build commands, Docker/Sail, authentication, code quality standards
-4. **LARAVEL_BACKEND_PATTERNS_GUIDE.md** - All Laravel patterns, examples, and architectural standards
+1. **docs/agents/AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
+2. **docs/project/PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
+3. **docs/project/PROJECT_IMPLEMENTATION.md** - File paths, build commands, Docker/Sail, authentication, code quality standards
+4. **docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md** - All Laravel patterns, examples, and architectural standards
 
 **NO EXCEPTIONS** - Even for simple planning tasks. Read all four files completely before any work.
 
@@ -66,7 +66,7 @@ Your architectural plans should include:
 
 ## Custom Artisan Commands
 
-For full documentation, see `ARTISAN_COMMANDS.md`. Key commands for architects:
+For full documentation, see `docs/guides/ARTISAN_COMMANDS.md`. Key commands for architects:
 
 | Command | Description |
 |---------|-------------|

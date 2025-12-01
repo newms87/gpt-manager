@@ -6,7 +6,7 @@
 
 If you see yourself described as `vue-spa-engineer`, `laravel-backend-engineer`, `vue-spa-architect`, `laravel-backend-architect`, `vue-spa-reviewer`, or `laravel-backend-qa-tester`, you are a **SUB-AGENT** and should:
 1. **IGNORE** this file completely
-2. **READ** `AGENT_CORE_BEHAVIORS.md` instead
+2. **READ** `docs/agents/AGENT_CORE_BEHAVIORS.md` instead
 3. **NEVER** call other agents (prevents infinite loops)
 
 ---
@@ -214,10 +214,10 @@ File to update: spa/src/ui/demand-templates/components/AiMappingConfig.vue
 **ALL SUB-AGENTS READ THESE FILES AUTOMATICALLY:**
 
 Every sub-agent has been configured to read:
-1. `AGENT_CORE_BEHAVIORS.md` - Anti-infinite-loop instructions, tool usage
-2. `PROJECT_POLICIES.md` - High-level policies (zero tech debt, git, danx)
-3. `PROJECT_IMPLEMENTATION.md` - Technical details (paths, builds, commands)
-4. Their domain-specific guide (`LARAVEL_BACKEND_PATTERNS_GUIDE.md` or `spa/SPA_PATTERNS_GUIDE.md`)
+1. `docs/agents/AGENT_CORE_BEHAVIORS.md` - Anti-infinite-loop instructions, tool usage
+2. `docs/project/PROJECT_POLICIES.md` - High-level policies (zero tech debt, git, danx)
+3. `docs/project/PROJECT_IMPLEMENTATION.md` - Technical details (paths, builds, commands)
+4. Their domain-specific guide (`docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md` or `spa/SPA_PATTERNS_GUIDE.md`)
 
 **YOU DO NOT NEED TO INCLUDE THESE INSTRUCTIONS IN YOUR PROMPTS**
 
@@ -237,11 +237,11 @@ The preamble is required because:
 
 **All detailed implementation patterns are in specialized files:**
 
-- **Laravel Backend**: `LARAVEL_BACKEND_PATTERNS_GUIDE.md` and `.claude/agents/laravel-*.md`
+- **Laravel Backend**: `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md` and `.claude/agents/laravel-*.md`
 - **Vue Frontend**: `spa/SPA_PATTERNS_GUIDE.md` and `.claude/agents/vue-*.md`
-- **Project Policies**: `PROJECT_POLICIES.md` (zero tech debt, git, danx, architecture)
-- **Implementation Details**: `PROJECT_IMPLEMENTATION.md` (paths, builds, commands - sub-agents only)
-- **Agent Behaviors**: `AGENT_CORE_BEHAVIORS.md` (anti-loop, tool usage - sub-agents only)
+- **Project Policies**: `docs/project/PROJECT_POLICIES.md` (zero tech debt, git, danx, architecture)
+- **Implementation Details**: `docs/project/PROJECT_IMPLEMENTATION.md` (paths, builds, commands - sub-agents only)
+- **Agent Behaviors**: `docs/agents/AGENT_CORE_BEHAVIORS.md` (anti-loop, tool usage - sub-agents only)
 
 **Key Architecture:**
 - Service-Repository-Controller pattern with danx integration
@@ -256,10 +256,10 @@ The preamble is required because:
 **When compacting/summarizing conversations:**
 
 1. **PRESERVE 100% of agent instructions from .md files**
-   - ❌ NEVER reduce or summarize instructions from ORCHESTRATOR_GUIDE.md
-   - ❌ NEVER reduce or summarize instructions from AGENT_CORE_BEHAVIORS.md
-   - ❌ NEVER reduce or summarize instructions from PROJECT_POLICIES.md
-   - ❌ NEVER reduce or summarize instructions from LARAVEL_BACKEND_PATTERNS_GUIDE.md
+   - ❌ NEVER reduce or summarize instructions from docs/agents/ORCHESTRATOR_GUIDE.md
+   - ❌ NEVER reduce or summarize instructions from docs/agents/AGENT_CORE_BEHAVIORS.md
+   - ❌ NEVER reduce or summarize instructions from docs/project/PROJECT_POLICIES.md
+   - ❌ NEVER reduce or summarize instructions from docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md
    - ❌ NEVER reduce or summarize instructions from spa/SPA_PATTERNS_GUIDE.md
    - ✅ Include ALL rules, examples, and details EXACTLY as written
    - ✅ These are CRITICAL INSTRUCTIONS, not just "context"

@@ -128,10 +128,10 @@ These patterns are mandatory across the entire codebase:
 ## Reference Documentation
 
 **Domain-Specific Guides:**
-- **Laravel Backend**: `LARAVEL_BACKEND_PATTERNS_GUIDE.md`
+- **Laravel Backend**: `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md`
 - **Vue Frontend**: `spa/SPA_PATTERNS_GUIDE.md`
-- **Agent Behaviors**: `AGENT_CORE_BEHAVIORS.md`
-- **Implementation Details**: `PROJECT_IMPLEMENTATION.md` (sub-agents only)
+- **Agent Behaviors**: `docs/agents/AGENT_CORE_BEHAVIORS.md`
+- **Implementation Details**: `docs/project/PROJECT_IMPLEMENTATION.md` (sub-agents only)
 
 **Agent Locations:**
 - Agent files are located at: `.claude/agents/*.md`

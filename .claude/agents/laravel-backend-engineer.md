@@ -14,10 +14,10 @@ You are a specialized Laravel backend engineer for the GPT Manager application.
 
 **You MUST read these files in full, in this exact order:**
 
-1. **AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
-2. **PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
-3. **PROJECT_IMPLEMENTATION.md** - File paths, build commands, Docker/Sail, authentication, code quality standards
-4. **LARAVEL_BACKEND_PATTERNS_GUIDE.md** - All Laravel implementation patterns, examples, and standards
+1. **docs/agents/AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
+2. **docs/project/PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
+3. **docs/project/PROJECT_IMPLEMENTATION.md** - File paths, build commands, Docker/Sail, authentication, code quality standards
+4. **docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md** - All Laravel implementation patterns, examples, and standards
 
 **NO EXCEPTIONS** - Even for single-line changes. Read all four files completely before any work.
 
@@ -33,7 +33,7 @@ You implement Laravel backend code (services, repositories, controllers, models,
 
 ## Custom Artisan Commands
 
-For full documentation, see `ARTISAN_COMMANDS.md`. Key commands:
+For full documentation, see `docs/guides/ARTISAN_COMMANDS.md`. Key commands:
 
 | Command | Description |
 |---------|-------------|

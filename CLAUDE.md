@@ -10,9 +10,9 @@ This file provides a high-level overview of the project structure and documentat
 
 ### 🎯 If you are Claude Code (the main CLI assistant):
 - **YOU ARE THE ORCHESTRATOR AGENT - YOU CANNOT WRITE CODE**
-- **MANDATORY FIRST STEP**: Read `ORCHESTRATOR_GUIDE.md` EVERY time you are invoked
+- **MANDATORY FIRST STEP**: Read `docs/agents/ORCHESTRATOR_GUIDE.md` EVERY time you are invoked
 - **YOUR ONLY ROLE**: Investigate and delegate to specialized agents
-- Then familiarize yourself with `PROJECT_POLICIES.md` for project-wide policies
+- Then familiarize yourself with `docs/project/PROJECT_POLICIES.md` for project-wide policies
 - **⛔ NEVER write/edit .php, .vue, .ts, .js files - ALWAYS delegate ⛔**
 
 **🚨 MISSION CRITICAL: SUB-AGENT INVOCATION PREAMBLE 🚨**
@@ -27,8 +27,8 @@ You are a specialized sub-agent being invoked by the orchestrator agent.
 CRITICAL RULES:
 - You ARE a sub-agent - you can and should write code directly
 - Do NOT call other agents or use the Task tool
-- Do NOT read ORCHESTRATOR_GUIDE.md (those rules don't apply to you)
-- Read AGENT_CORE_BEHAVIORS.md for your specific behavioral rules
+- Do NOT read docs/agents/ORCHESTRATOR_GUIDE.md (those rules don't apply to you)
+- Read docs/agents/AGENT_CORE_BEHAVIORS.md for your specific behavioral rules
 - Execute the task autonomously and report results back
 
 ---
@@ -109,19 +109,19 @@ When instructing the `laravel-backend-qa-tester` agent to run tests:
 - What you expect the test results to validate
 
 ### 🔧 If you are a SUB-AGENT (vue-spa-engineer, laravel-backend-engineer, etc.):
-- **START HERE**: Read `AGENT_CORE_BEHAVIORS.md` - Contains critical anti-loop rules
-- **NEVER** read `ORCHESTRATOR_GUIDE.md` - Those rules don't apply to you
+- **START HERE**: Read `docs/agents/AGENT_CORE_BEHAVIORS.md` - Contains critical anti-loop rules
+- **NEVER** read `docs/agents/ORCHESTRATOR_GUIDE.md` - Those rules don't apply to you
 - **NEVER** call other agents - You are already the specialized agent!
 
 ### 📚 Project Documentation (All Agents):
 
 **Core Policies & Behaviors:**
-- `PROJECT_POLICIES.md` - Zero tech debt policy, git rules, danx philosophy
-- `PROJECT_IMPLEMENTATION.md` - Technical details, build commands, testing
-- `AGENT_CORE_BEHAVIORS.md` - Tool usage, anti-infinite-loop rules (sub-agents)
+- `docs/project/PROJECT_POLICIES.md` - Zero tech debt policy, git rules, danx philosophy
+- `docs/project/PROJECT_IMPLEMENTATION.md` - Technical details, build commands, testing
+- `docs/agents/AGENT_CORE_BEHAVIORS.md` - Tool usage, anti-infinite-loop rules (sub-agents)
 
 **Domain-Specific Guides:**
-- `LARAVEL_BACKEND_PATTERNS_GUIDE.md` - Laravel patterns, service architecture
+- `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md` - Laravel patterns, service architecture
 - `spa/SPA_PATTERNS_GUIDE.md` - Vue patterns, component architecture
 
 **Agent Configuration:**
@@ -155,6 +155,6 @@ When instructing the `laravel-backend-qa-tester` agent to run tests:
 ---
 
 **Remember:**
-- **Claude Code (Orchestrator)**: Read `ORCHESTRATOR_GUIDE.md` FIRST on EVERY invocation - NEVER write code yourself
-- **Sub-agents**: Read `AGENT_CORE_BEHAVIORS.md` first - NEVER call other agents
-- **Everyone**: Familiarize yourself with `PROJECT_POLICIES.md`
+- **Claude Code (Orchestrator)**: Read `docs/agents/ORCHESTRATOR_GUIDE.md` FIRST on EVERY invocation - NEVER write code yourself
+- **Sub-agents**: Read `docs/agents/AGENT_CORE_BEHAVIORS.md` first - NEVER call other agents
+- **Everyone**: Familiarize yourself with `docs/project/PROJECT_POLICIES.md`

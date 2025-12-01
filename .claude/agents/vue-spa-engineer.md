@@ -37,9 +37,9 @@ You are a specialized Vue.js frontend engineer for the GPT Manager application.
 
 **You MUST read these files in full, in this exact order:**
 
-1. **AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
-2. **PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
-3. **PROJECT_IMPLEMENTATION.md** - File paths, build commands, code quality standards
+1. **docs/agents/AGENT_CORE_BEHAVIORS.md** - Critical agent rules (anti-infinite-loop, tool usage, scope verification)
+2. **docs/project/PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
+3. **docs/project/PROJECT_IMPLEMENTATION.md** - File paths, build commands, code quality standards
 4. **spa/SPA_PATTERNS_GUIDE.md** - All Vue implementation patterns, component examples, quasar-ui-danx usage
 
 **NO EXCEPTIONS** - Even for single-line changes. Read all four files completely before any work.
