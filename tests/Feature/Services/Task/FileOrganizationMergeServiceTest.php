@@ -155,16 +155,20 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // Then: ALL files absorbed into group2 because files 1-2-3 were grouped together in window 1,
-        // and when files 2-3 got reassigned to group2 with higher confidence, file 1 should follow
-        // (conflict boundary absorption - files grouped together stay together when higher confidence wins)
-        $this->assertCount(1, $result);
+        // Then: File-level absorption - only files in the SAME WINDOW can be absorbed
+        // File 1 (page 0) was NOT in window 1, so it stays in group1
+        // Files 2-3 get reassigned to group2 (higher confidence)
+        // File 4 (page 3) stays in group2
+        $this->assertCount(2, $result);
 
-        // Find group by name
+        // Find groups by name
+        $group1 = collect($result)->firstWhere('name', 'group1');
         $group2 = collect($result)->firstWhere('name', 'group2');
 
+        $this->assertNotNull($group1);
         $this->assertNotNull($group2);
-        $this->assertEquals([1, 2, 3, 4], $group2['files']);
+        $this->assertEquals([1], $group1['files']);
+        $this->assertEquals([2, 3, 4], $group2['files']);
     }
 
     #[Test]
@@ -909,11 +913,23 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // Then: All files should be in Tiger due to cascade absorption
-        $this->assertCount(1, $result, 'Should have only one group after cascade absorption');
+        // Then: NO cascade absorption with the new file-level absorption behavior
+        // - Tiger wins page 4 (conf 5 > 4), absorbs Lion's pages 5,6 from window B
+        // - Page 7 has conflict (appears in both Lion and Bear windows), so it's NOT absorbed
+        // - Page 7 stays with Lion (first window processed)
+        // - Bear keeps pages 8,9,10 (page 7 was not absorbed, creating a gap)
+        $this->assertCount(3, $result, 'Should have 3 separate groups (no cascade absorption)');
+
         $tiger = collect($result)->firstWhere('name', 'Tiger');
+        $lion  = collect($result)->firstWhere('name', 'Lion');
+        $bear  = collect($result)->firstWhere('name', 'Bear');
+
         $this->assertNotNull($tiger);
-        $this->assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], $tiger['files'], 'All files should cascade into Tiger');
+        $this->assertNotNull($lion);
+        $this->assertNotNull($bear);
+        $this->assertEquals([1, 2, 3, 4, 5, 6], $tiger['files'], 'Tiger gets its files plus absorbed files from Lion window');
+        $this->assertEquals([7], $lion['files'], 'Lion keeps page 7 (has conflict, not absorbed)');
+        $this->assertEquals([8, 9, 10], $bear['files'], 'Bear keeps pages 8-10 (gap at page 7 stops absorption)');
     }
 
     #[Test]
@@ -1026,16 +1042,29 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // Then: Tiger should have pages 1-11, Wolf should remain separate
-        $this->assertCount(2, $result, 'Should have Tiger (with cascade absorption) and Wolf (separate)');
+        // Then: NO cascade absorption - each conflict creates separation
+        // - Tiger wins page 4, absorbs Lion's pages 5,6 (page 7 has conflict, stops chain)
+        // - Page 7 conflict: Lion vs Bear (equal conf) → Lion wins, no absorption
+        // - Page 10 conflict: Bear vs Pig (equal conf) → Bear wins, no absorption
+        // Result: 5 separate groups
+        $this->assertCount(5, $result, 'Should have 5 separate groups (no cascade absorption)');
 
         $tiger = collect($result)->firstWhere('name', 'Tiger');
+        $lion  = collect($result)->firstWhere('name', 'Lion');
+        $bear  = collect($result)->firstWhere('name', 'Bear');
+        $pig   = collect($result)->firstWhere('name', 'Pig');
         $wolf  = collect($result)->firstWhere('name', 'Wolf');
 
         $this->assertNotNull($tiger);
+        $this->assertNotNull($lion);
+        $this->assertNotNull($bear);
+        $this->assertNotNull($pig);
         $this->assertNotNull($wolf);
-        $this->assertEquals([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], $tiger['files'], 'Tiger should cascade through to include Pig');
-        $this->assertEquals([12, 13], $wolf['files'], 'Wolf should remain separate (different group in window D)');
+        $this->assertEquals([1, 2, 3, 4, 5, 6], $tiger['files'], 'Tiger gets pages 1-6 (absorbed from Lion window)');
+        $this->assertEquals([7], $lion['files'], 'Lion keeps page 7 (conflict with Bear)');
+        $this->assertEquals([8, 9, 10], $bear['files'], 'Bear keeps pages 8-10 (conflict with Pig at page 10)');
+        $this->assertEquals([11], $pig['files'], 'Pig keeps page 11 (page 10 went to Bear)');
+        $this->assertEquals([12, 13], $wolf['files'], 'Wolf remains separate (different group in window D)');
     }
 
     #[Test]
@@ -1249,12 +1278,21 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // Then: All files should be in Gamma due to bidirectional cascade
-        $this->assertCount(1, $result, 'Should have only Gamma after bidirectional cascade');
+        // Then: NO cascade absorption - pages with conflicts stop the chain
+        // - Page 3 conflict: Beta (conf 4) vs Alpha (conf 3) → Beta wins
+        // - Beta absorbs Alpha's pages 1,2 (no conflicts, same window A)
+        // - Page 5 conflict: Gamma (conf 5) vs Beta (conf 4) → Gamma wins
+        // - Gamma absorbs Beta's page 4 (no conflict), but NOT page 3 (has conflict with Alpha)
+        // Result: 2 groups
+        $this->assertCount(2, $result, 'Should have 2 groups (Beta and Gamma, no cascade)');
 
+        $beta  = collect($result)->firstWhere('name', 'Beta');
         $gamma = collect($result)->firstWhere('name', 'Gamma');
+
+        $this->assertNotNull($beta);
         $this->assertNotNull($gamma);
-        $this->assertEquals([1, 2, 3, 4, 5, 6, 7], $gamma['files'], 'All files absorbed into Gamma (forward from page 5, then backward through page 3)');
+        $this->assertEquals([1, 2, 3], $beta['files'], 'Beta gets pages 1-3 (absorbed 1,2 from Alpha window)');
+        $this->assertEquals([4, 5, 6, 7], $gamma['files'], 'Gamma gets pages 4-7 (absorbed page 4 from Beta window, page 3 stopped chain)');
     }
 
     #[Test]
@@ -2065,20 +2103,28 @@ class FileOrganizationMergeServiceTest extends AuthenticatedTestCase
         $mergeResult = $this->service->mergeWindowResults($artifacts);
         $result      = $mergeResult['groups'];
 
-        // Then: ME Physical Therapy should absorb ALL of Mountain View
-        // Even though both groups have max=5, the CONFLICT BOUNDARY shows ME PT won page 73
-        // with conf 5 vs Mountain View's conf 4, proving ME PT is the winner
-        // When a group loses at ANY boundary, the ENTIRE group gets absorbed
-        $this->assertCount(1, $result, 'Should have only ME Physical Therapy after absorbing ALL of Mountain View');
+        // Then: File-level absorption - only files from the SAME WINDOW are absorbed
+        // - Both groups have max=5, but at page 73 conflict boundary: ME PT (file conf 5) > Mountain View (file conf 4)
+        // - ME PT wins page 73, absorbs Mountain View's pages 74-76 from window 2 (same window)
+        // - Mountain View keeps pages 137-144 from windows 3-4 (different windows, no connection to conflict)
+        $this->assertCount(2, $result, 'Should have 2 groups (ME PT and Mountain View)');
 
-        $mePT = collect($result)->firstWhere('name', 'ME Physical Therapy');
+        $mePT         = collect($result)->firstWhere('name', 'ME Physical Therapy');
+        $mountainView = collect($result)->firstWhere('name', 'Mountain View Pain Specialists');
 
         $this->assertNotNull($mePT, 'ME Physical Therapy should exist');
+        $this->assertNotNull($mountainView, 'Mountain View should exist');
 
         $this->assertEquals(
-            [69, 70, 71, 72, 73, 74, 75, 76, 137, 138, 139, 140, 141, 142, 143, 144],
+            [69, 70, 71, 72, 73, 74, 75, 76],
             $mePT['files'],
-            'ME Physical Therapy should absorb ALL of Mountain View because page 73 conflict boundary shows ME PT (file conf 5) > Mountain View (file conf 4), proving ME PT wins even though groups have equal max'
+            'ME Physical Therapy gets pages 69-76 (absorbed 74-76 from Mountain View window 2 where conflict occurred)'
+        );
+
+        $this->assertEquals(
+            [137, 138, 139, 140, 141, 142, 143, 144],
+            $mountainView['files'],
+            'Mountain View keeps pages 137-144 from different windows (not absorbed because not in same window as conflict)'
         );
     }
 }
