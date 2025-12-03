@@ -198,14 +198,14 @@ class DuplicateGroupDetector
                 'name'         => $group1['name'],
                 'description'  => $group1['description'],
                 'file_count'   => count($group1['files']),
-                'sample_files' => $this->getSampleFiles($group1['files'], $fileToGroup, 3),
+                'sample_files' => $this->getSampleFiles($group1['files'], $fileToGroup, 2),
                 'confidence'   => $group1['confidence_summary'] ?? null,
             ],
             'group2' => [
                 'name'         => $group2['name'],
                 'description'  => $group2['description'],
                 'file_count'   => count($group2['files']),
-                'sample_files' => $this->getSampleFiles($group2['files'], $fileToGroup, 3),
+                'sample_files' => $this->getSampleFiles($group2['files'], $fileToGroup, 2),
                 'confidence'   => $group2['confidence_summary'] ?? null,
             ],
             'similarity' => $candidate['similarity'],
@@ -232,32 +232,67 @@ class DuplicateGroupDetector
 
     /**
      * Get sample files from a group for LLM context.
+     * Sorts by confidence descending and returns up to $limit highest confidence samples.
      *
      * @param  array  $fileIds  Array of file IDs
      * @param  array  $fileToGroup  File-to-group mapping
      * @param  int  $limit  Maximum number of samples
      * @return array Array of file data
      */
-    protected function getSampleFiles(array $fileIds, array $fileToGroup, int $limit = 3): array
+    protected function getSampleFiles(array $fileIds, array $fileToGroup, int $limit = 2): array
     {
         $samples = [];
-        $count   = 0;
 
         foreach ($fileIds as $fileId) {
-            if ($count >= $limit) {
-                break;
-            }
-
             if (isset($fileToGroup[$fileId])) {
                 $samples[] = [
                     'page_number' => $fileToGroup[$fileId]['page_number'],
                     'description' => $fileToGroup[$fileId]['description'] ?? '',
                     'confidence'  => $fileToGroup[$fileId]['confidence'],
                 ];
-                $count++;
             }
         }
 
-        return $samples;
+        // Sort by confidence descending
+        usort($samples, fn($a, $b) => $b['confidence'] <=> $a['confidence']);
+
+        // Take top N
+        return array_slice($samples, 0, $limit);
+    }
+
+    /**
+     * Prepare ALL groups for deduplication resolution (not just similar pairs).
+     * This allows the LLM to review all group names for spelling corrections and merges.
+     *
+     * @param  array  $finalGroups  All final groups
+     * @param  array  $fileToGroup  File-to-group mapping
+     * @return array Array of all groups with sample files
+     */
+    public function prepareAllGroupsForResolution(array $finalGroups, array $fileToGroup): array
+    {
+        static::logDebug('Preparing all ' . count($finalGroups) . ' groups for deduplication resolution');
+
+        $groupsForResolution = [];
+
+        foreach ($finalGroups as $group) {
+            $groupName = $group['name'];
+
+            // Skip empty group names
+            if ($groupName === '') {
+                continue;
+            }
+
+            $groupsForResolution[] = [
+                'name'         => $groupName,
+                'description'  => $group['description'] ?? '',
+                'file_count'   => count($group['files']),
+                'sample_files' => $this->getSampleFiles($group['files'], $fileToGroup, 2),
+                'confidence'   => $group['confidence_summary'] ?? null,
+            ];
+        }
+
+        static::logDebug('Prepared ' . count($groupsForResolution) . ' non-empty groups for deduplication');
+
+        return $groupsForResolution;
     }
 }

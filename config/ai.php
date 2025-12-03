@@ -33,6 +33,12 @@ return [
         'content_preview_length' => 500,
     ],
 
+    // File organization schema description generation
+    'file_organization_schema'     => [
+        'model'   => env('AI_FILE_ORG_SCHEMA_MODEL', 'gpt-5-mini'),
+        'timeout' => env('AI_FILE_ORG_SCHEMA_TIMEOUT', 30),
+    ],
+
     'variable_extraction' => [
         'name'        => 'Variable Extraction Agent',
         'model'       => 'gpt-5-mini',

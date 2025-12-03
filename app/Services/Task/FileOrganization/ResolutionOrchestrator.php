@@ -171,39 +171,44 @@ class ResolutionOrchestrator
     }
 
     /**
-     * Create duplicate group resolution process if needed.
+     * Create duplicate group resolution process.
+     * This always runs to deduplicate and correct group names across all groups.
      *
      * @param  TaskRun  $taskRun  The task run
      * @param  TaskProcess  $mergeProcess  The merge process
      */
     protected function createDuplicateGroupResolutionProcess(TaskRun $taskRun, TaskProcess $mergeProcess): void
     {
-        if (!isset($mergeProcess->meta['duplicate_group_candidates'])) {
+        if (!isset($mergeProcess->meta['groups_for_deduplication'])) {
+            static::logDebug('No groups_for_deduplication metadata found');
+
             return;
         }
 
-        $duplicateCandidates = $mergeProcess->meta['duplicate_group_candidates'];
+        $groupsForDeduplication = $mergeProcess->meta['groups_for_deduplication'];
 
-        if (empty($duplicateCandidates)) {
+        if (empty($groupsForDeduplication)) {
+            static::logDebug('No groups to deduplicate');
+
             return;
         }
 
-        static::logDebug('Creating duplicate group resolution process for ' . count($duplicateCandidates) . ' duplicate candidates');
+        static::logDebug('Creating group deduplication process for ' . count($groupsForDeduplication) . ' groups');
 
         // Create the resolution process (no specific artifacts needed, this is group-level)
         $duplicateResolutionProcess = $taskRun->taskProcesses()->create([
-            'name'      => 'Resolve Duplicate Groups',
+            'name'      => 'Deduplicate Group Names',
             'operation' => 'Duplicate Group Resolution',
-            'activity'  => 'Determining if similar group names represent the same entity',
+            'activity'  => 'Reviewing all group names for spelling corrections and merges',
             'meta'      => [
-                'duplicate_group_candidates' => $duplicateCandidates,
+                'groups_for_deduplication' => $groupsForDeduplication,
             ],
             'is_ready'  => true,
         ]);
 
         $taskRun->updateRelationCounter('taskProcesses');
 
-        static::logDebug("Created duplicate group resolution process: $duplicateResolutionProcess");
+        static::logDebug("Created group deduplication process: $duplicateResolutionProcess");
 
         // Dispatch the resolution process
         TaskProcessDispatcherService::dispatchForTaskRun($taskRun);

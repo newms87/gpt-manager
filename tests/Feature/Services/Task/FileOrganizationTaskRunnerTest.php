@@ -7,7 +7,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\Task\FileOrganizationMergeService;
+use App\Services\Task\FileOrganization\FileOrganizationMergeService;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
@@ -252,14 +252,31 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         }
 
         // Create window output artifacts (simulating completed window processes)
+        // NEW flat schema format - files with individual group assignments
         $windowArtifact1 = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => [
-                'groups' => [
+                'files' => [
                     [
-                        'name'        => 'group1',
-                        'description' => 'First group',
-                        'files'       => [0, 1],
+                        'page_number'            => 0,
+                        'group_name'             => 'group1',
+                        'group_name_confidence'  => 5,
+                        'group_explanation'      => 'First group',
+                        'belongs_to_previous'    => null,
+                    ],
+                    [
+                        'page_number'            => 1,
+                        'group_name'             => 'group1',
+                        'group_name_confidence'  => 5,
+                        'group_explanation'      => 'First group',
+                        'belongs_to_previous'    => 3,
+                    ],
+                    [
+                        'page_number'            => 2,
+                        'group_name'             => 'group1',
+                        'group_name_confidence'  => 5,
+                        'group_explanation'      => 'First group',
+                        'belongs_to_previous'    => 4,
                     ],
                 ],
             ],
@@ -277,11 +294,20 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowArtifact2 = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => [
-                'groups' => [
+                'files' => [
                     [
-                        'name'        => 'group2',
-                        'description' => 'Second group',
-                        'files'       => [3, 4],
+                        'page_number'            => 3,
+                        'group_name'             => 'group2',
+                        'group_name_confidence'  => 5,
+                        'group_explanation'      => 'Second group',
+                        'belongs_to_previous'    => 1,
+                    ],
+                    [
+                        'page_number'            => 4,
+                        'group_name'             => 'group2',
+                        'group_name_confidence'  => 5,
+                        'group_explanation'      => 'Second group',
+                        'belongs_to_previous'    => 3,
                     ],
                 ],
             ],

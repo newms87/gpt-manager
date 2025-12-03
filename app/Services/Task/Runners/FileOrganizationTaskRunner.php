@@ -24,6 +24,21 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         OPERATION_NULL_GROUP_RESOLUTION      = 'Null Group Resolution',
         OPERATION_DUPLICATE_GROUP_RESOLUTION = 'Duplicate Group Resolution';
 
+    // Configuration defaults
+    public const int DEFAULT_COMPARISON_WINDOW_SIZE = 5;
+
+    public const int DEFAULT_COMPARISON_WINDOW_OVERLAP = 2;
+
+    public const int DEFAULT_GROUP_CONFIDENCE_THRESHOLD = 3;
+
+    public const int DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD = 2;
+
+    public const int DEFAULT_MAX_SLIDING_ITERATIONS = 3;
+
+    public const float DEFAULT_NAME_SIMILARITY_THRESHOLD = 0.7;
+
+    public const string DEFAULT_BLANK_PAGE_HANDLING = 'join_previous';
+
     public function run(): void
     {
         // Check if this is a comparison window process
@@ -142,12 +157,12 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      */
     protected function createWindowProcesses(): void
     {
-        // Get comparison window size and overlap from config
-        $windowSize = $this->config('comparison_window_size', 3);
-        $overlap    = $this->config('comparison_window_overlap', 1);
-
         // Use WindowProcessService to create window processes
-        app(WindowProcessService::class)->createWindowProcesses($this->taskRun, $windowSize, $overlap);
+        app(WindowProcessService::class)->createWindowProcesses(
+            $this->taskRun,
+            $this->getComparisonWindowSize(),
+            $this->getComparisonWindowOverlap()
+        );
 
         // Dispatch the window processes
         TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
@@ -346,28 +361,28 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Run the duplicate group resolution process.
-     * Asks LLM to decide if similar group names represent the same entity.
+     * Reviews ALL group names for spelling corrections and potential merges.
      */
     protected function runDuplicateGroupResolution(): void
     {
-        static::logDebug('Starting duplicate group resolution');
+        static::logDebug('Starting group name deduplication');
 
-        $duplicateCandidates = $this->taskProcess->meta['duplicate_group_candidates'] ?? [];
+        $groupsForDeduplication = $this->taskProcess->meta['groups_for_deduplication'] ?? [];
 
-        if (empty($duplicateCandidates)) {
-            static::logDebug('No duplicate group candidates to resolve');
+        if (empty($groupsForDeduplication)) {
+            static::logDebug('No groups to deduplicate');
             $this->complete();
 
             return;
         }
 
-        static::logDebug('Resolving ' . count($duplicateCandidates) . ' duplicate group candidates');
+        static::logDebug('Deduplicating ' . count($groupsForDeduplication) . ' groups');
 
-        // Setup agent thread for duplicate group resolution
+        // Setup agent thread for group deduplication
         $agentThread = app(AgentThreadService::class)->setupDuplicateGroupResolutionThread(
             $this->taskRun->taskDefinition,
             $this->taskRun,
-            $duplicateCandidates
+            $groupsForDeduplication
         );
 
         $this->taskProcess->agentThread()->associate($agentThread)->save();
@@ -376,10 +391,10 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $artifact = $this->runAgentThread($agentThread);
 
         if (!$artifact || !$artifact->json_content) {
-            throw new ValidationError(static::class . ': No JSON content returned from duplicate group resolution agent thread');
+            throw new ValidationError(static::class . ': No JSON content returned from group deduplication agent thread');
         }
 
-        static::logDebug('Duplicate group resolution completed successfully');
+        static::logDebug('Group deduplication completed successfully');
 
         // Apply resolution decisions to merge duplicate groups
         app(MergeProcessService::class)->applyDuplicateGroupResolution($this->taskRun, $artifact->json_content);
@@ -388,5 +403,66 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $artifact->delete();
 
         $this->complete();
+    }
+
+    /**
+     * Get the comparison window size from configuration.
+     */
+    protected function getComparisonWindowSize(): int
+    {
+        return $this->config('comparison_window_size', self::DEFAULT_COMPARISON_WINDOW_SIZE);
+    }
+
+    /**
+     * Get the comparison window overlap from configuration.
+     */
+    protected function getComparisonWindowOverlap(): int
+    {
+        return $this->config('comparison_window_overlap', self::DEFAULT_COMPARISON_WINDOW_OVERLAP);
+    }
+
+    /**
+     * Get the group confidence threshold from configuration.
+     * Files with group_name_confidence BELOW this are candidates for adjacency-based resolution.
+     */
+    protected function getGroupConfidenceThreshold(): int
+    {
+        return $this->config('group_confidence_threshold', self::DEFAULT_GROUP_CONFIDENCE_THRESHOLD);
+    }
+
+    /**
+     * Get the adjacency boundary threshold from configuration.
+     * Files with belongs_to_previous <= this are considered potential boundaries.
+     */
+    protected function getAdjacencyBoundaryThreshold(): int
+    {
+        return $this->config('adjacency_boundary_threshold', self::DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD);
+    }
+
+    /**
+     * Get the maximum sliding iterations from configuration.
+     * Maximum agent calls per window (initial + slides).
+     */
+    protected function getMaxSlidingIterations(): int
+    {
+        return $this->config('max_sliding_iterations', self::DEFAULT_MAX_SLIDING_ITERATIONS);
+    }
+
+    /**
+     * Get the name similarity threshold from configuration.
+     * How similar group names must be (0.0-1.0) to be considered for auto-merge.
+     */
+    protected function getNameSimilarityThreshold(): float
+    {
+        return $this->config('name_similarity_threshold', self::DEFAULT_NAME_SIMILARITY_THRESHOLD);
+    }
+
+    /**
+     * Get the blank page handling strategy from configuration.
+     * Options: "join_previous", "create_blank_group", "discard"
+     */
+    protected function getBlankPageHandling(): string
+    {
+        return $this->config('blank_page_handling', self::DEFAULT_BLANK_PAGE_HANDLING);
     }
 }

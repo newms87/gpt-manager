@@ -3,6 +3,7 @@
 namespace App\Services\Task\FileOrganization;
 
 use App\Models\Agent\AgentThread;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
@@ -157,15 +158,15 @@ class AgentThreadService
 
     /**
      * Setup agent thread for duplicate group resolution.
-     * Presents potentially duplicate groups side-by-side for LLM to decide.
+     * Reviews ALL groups for spelling corrections and potential merges.
      *
      * @param  TaskDefinition  $taskDefinition  The task definition
      * @param  TaskRun  $taskRun  The task run
-     * @param  array  $duplicateCandidates  Duplicate candidate data
+     * @param  array  $groupsForDeduplication  All groups with sample files
      */
-    public function setupDuplicateGroupResolutionThread(TaskDefinition $taskDefinition, TaskRun $taskRun, array $duplicateCandidates): AgentThread
+    public function setupDuplicateGroupResolutionThread(TaskDefinition $taskDefinition, TaskRun $taskRun, array $groupsForDeduplication): AgentThread
     {
-        static::logDebug("Setting up duplicate group resolution thread for TaskRun {$taskRun->id} with " . count($duplicateCandidates) . ' duplicate candidates');
+        static::logDebug("Setting up group deduplication thread for TaskRun {$taskRun->id} with " . count($groupsForDeduplication) . ' groups');
 
         if (!$taskDefinition->agent) {
             throw new \Exception("Agent not found for TaskRun: $taskRun");
@@ -177,9 +178,9 @@ class AgentThreadService
 
         static::logDebug("Built agent thread {$agentThread->id}");
 
-        // Build context message explaining the situation
-        static::logDebug('Adding duplicate group context to thread');
-        $this->addDuplicateGroupContext($agentThread, $duplicateCandidates);
+        // Add group images and context
+        static::logDebug('Adding group context with sample images to thread');
+        $this->addDuplicateGroupContext($agentThread, $taskRun, $groupsForDeduplication);
 
         // Create schema for duplicate group resolution
         $schemaProvider   = app(SchemaProvider::class);
@@ -189,10 +190,10 @@ class AgentThreadService
         $taskDefinition->save();
 
         // Add duplicate group resolution instructions
-        static::logDebug('Adding duplicate group resolution instructions to thread');
+        static::logDebug('Adding group deduplication instructions to thread');
         $this->addDuplicateGroupResolutionInstructions($agentThread);
 
-        static::logDebug("Duplicate group resolution thread setup completed: {$agentThread->id}");
+        static::logDebug("Group deduplication thread setup completed: {$agentThread->id}");
 
         return $agentThread;
     }
@@ -267,34 +268,67 @@ class AgentThreadService
      */
     protected function addComparisonWindowInstructions(AgentThread $agentThread): void
     {
-        $instructions = "You are comparing adjacent files to organize them into logical groups.\n" .
+        $instructions = "You are analyzing files in sequential order within a sliding window.\n" .
             "Each file represents a page or document section.\n" .
-            "Group files that belong together based on their content and context.\n\n" .
-            "IMPORTANT: The task instructions provided by the user define how groups should be named. Follow those instructions for naming groups.\n\n" .
-            "For each group:\n" .
-            "- 'name': Use the naming convention specified in the task instructions. If the user says 'group by patient name', use patient names. If no naming convention is specified, use a clear, descriptive identifier from the document content.\n" .
-            "- 'description': A high-level summary of what the group contains\n" .
-            "- 'files': Array of file objects with page_number, confidence, and explanation\n\n" .
-            "GROUPING STRATEGY - PRIORITIZE CONTINUITY:\n" .
-            "Pages are presented in sequential order. Follow these rules:\n" .
-            "1. DEFAULT TO SAME GROUP: When a page has no clear grouping indicators, keep it with the PREVIOUS page's group\n" .
-            "2. ONLY SPLIT when there is CLEAR EVIDENCE of a boundary\n" .
-            "3. CONTINUATION PAGES: Multi-page documents, narratives, or related content should stay together\n" .
-            "4. BLANK/SEPARATOR PAGES: These often belong to the FOLLOWING content, not the preceding content\n" .
-            "5. AMBIGUOUS PAGES: When in doubt, assume continuity - use the same group as the previous page\n\n" .
-            // ... (rest of instructions - truncated for brevity but would include full text from runner)
-            "CRITICAL RULES:\n" .
-            "- Each page MUST appear in EXACTLY ONE group - NEVER place the same page in multiple groups\n" .
-            "- PREFER CONTINUITY: When uncertain, default to the same group as the previous page\n" .
-            "- If uncertain about placement, use a MODERATE confidence score (3) for continuity assumptions\n" .
-            "- Only use LOW confidence (0-2) when genuinely conflicted between multiple different groups\n" .
-            "- Only include page numbers that were provided in the input messages\n" .
-            "- If a file should be ignored (e.g., completely blank page), simply don't include it in any group\n\n" .
-            "WHEN NO CLEAR IDENTIFIER EXISTS:\n" .
-            "- If you cannot find ANY clear identifier for a group, use an empty string \"\" for the name\n" .
-            "- For files with no identifier, use confidence score 0 or 1 (minimum)\n" .
-            "- Example: {\"name\": \"\", \"description\": \"No clear identifier found\", \"files\": [...]}\n" .
-            '- An empty name explicitly signals that no valid grouping could be determined';
+            "Your task is to provide TWO INDEPENDENT signals for each file:\n\n" .
+            "1. ADJACENCY SIGNAL: Does this file continue from the previous file?\n" .
+            "2. GROUP NAME SIGNAL: What identifier/name describes this file's content?\n\n" .
+            "These signals are INDEPENDENT - you can be certain about one but uncertain about the other.\n\n" .
+            "=== FOR EACH FILE, PROVIDE ===\n\n" .
+            "1. belongs_to_previous (integer 0-5 or null):\n" .
+            "   - null: This is the FIRST page in the window - no previous page visible to compare\n" .
+            "   - 0: Definitely does NOT belong with the previous file (clear document break)\n" .
+            "   - 1-2: Probably doesn't belong with previous (weak evidence of break)\n" .
+            "   - 3: Uncertain (could go either way)\n" .
+            "   - 4-5: Definitely belongs with/continues from previous file (strong continuity)\n\n" .
+            "2. belongs_to_previous_reason (string):\n" .
+            "   - Brief explanation of why you gave that score\n" .
+            "   - Examples:\n" .
+            "     * \"Same letterhead and continued narrative from previous page\"\n" .
+            "     * \"New document header - clear break from previous\"\n" .
+            "     * \"No clear indicators either way - blank page\"\n\n" .
+            "3. group_name (string):\n" .
+            "   - The name/identifier for this group of files\n" .
+            "   - Follow the naming convention specified in the task instructions\n" .
+            "   - If user says 'group by patient name', use patient names\n" .
+            "   - If no naming convention specified, use a clear, descriptive identifier from the document\n" .
+            "   - Use empty string \"\" for blank/separator pages with no identifiable content\n\n" .
+            "4. group_name_confidence (integer 0-5):\n" .
+            "   - How confident are you in the GROUP NAME you assigned?\n" .
+            "   - 0: Cannot determine any group name\n" .
+            "   - 1-2: Low confidence in the name (weak or ambiguous identifiers)\n" .
+            "   - 3: Moderate confidence\n" .
+            "   - 4-5: High confidence - clear identifier visible in the document\n\n" .
+            "5. group_explanation (string):\n" .
+            "   - Why you assigned this group name\n" .
+            "   - Examples:\n" .
+            "     * \"Clear invoice header with 'Acme Corp' letterhead\"\n" .
+            "     * \"Patient name 'John Smith' visible in header\"\n" .
+            "     * \"No identifiable markers - completely blank page\"\n\n" .
+            "=== CRITICAL INDEPENDENCE RULE ===\n\n" .
+            "belongs_to_previous and group_name_confidence are INDEPENDENT signals.\n\n" .
+            "Valid combinations include:\n" .
+            "- belongs_to_previous=5, group_name_confidence=1\n" .
+            "  (\"This page definitely continues from the previous page, but I can't tell what to call this group\")\n\n" .
+            "- belongs_to_previous=0, group_name_confidence=5\n" .
+            "  (\"Clear document break here, and I can clearly see the new group name\")\n\n" .
+            "- belongs_to_previous=4, group_name_confidence=4\n" .
+            "  (\"Continuation page with clear identifiers\")\n\n" .
+            "=== EDGE CASES ===\n\n" .
+            "- First page in window: belongs_to_previous MUST be null (no previous page visible)\n" .
+            "- Blank/separator pages: Often have belongs_to_previous=0 and group_name=\"\", group_name_confidence=0\n" .
+            "- Continuation pages: Usually have high belongs_to_previous (4-5) regardless of whether identifiers are visible\n" .
+            "- New document starts: Usually have belongs_to_previous=0 or 1 when clear headers/breaks are visible\n\n" .
+            "=== RESPONSE FORMAT ===\n\n" .
+            "Return your analysis using the schema provided.\n" .
+            "Each file MUST include all five fields:\n" .
+            "- belongs_to_previous (0-5 or null)\n" .
+            "- belongs_to_previous_reason\n" .
+            "- group_name\n" .
+            "- group_name_confidence (0-5)\n" .
+            "- group_explanation\n\n" .
+            "Only analyze pages that were provided in the input messages.\n" .
+            "Do not invent page numbers that weren't shown to you.";
 
         app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
     }
@@ -383,16 +417,88 @@ class AgentThreadService
 
     /**
      * Add duplicate group context to thread.
+     * Includes all groups with up to 3 sample images per group.
      *
      * @param  AgentThread  $agentThread  The agent thread
-     * @param  array  $duplicateCandidates  Duplicate candidate data
+     * @param  TaskRun  $taskRun  The task run
+     * @param  array  $groupsForDeduplication  All groups with sample file data
      */
-    protected function addDuplicateGroupContext(AgentThread $agentThread, array $duplicateCandidates): void
+    protected function addDuplicateGroupContext(AgentThread $agentThread, TaskRun $taskRun, array $groupsForDeduplication): void
     {
-        $contextMessage = "CONTEXT: Potential duplicate groups detected\n\n";
-        // ... (build full context message as in runner)
+        $contextMessage = "CONTEXT: Review all group names for deduplication and spelling correction\n\n";
+        $contextMessage .= 'You are reviewing ALL ' . count($groupsForDeduplication) . " group names from the file organization.\n";
+        $contextMessage .= "Your task is to identify any misspellings, typos, or slight variations that should be unified.\n\n";
+        $contextMessage .= "Below, each group is shown with up to 3 sample pages (highest confidence assignments):\n\n";
 
+        // Add context message first
         app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
+
+        // For each group, add sample images
+        foreach ($groupsForDeduplication as $idx => $group) {
+            $groupNum    = $idx + 1;
+            $groupName   = $group['name'];
+            $fileCount   = $group['file_count'];
+            $sampleFiles = $group['sample_files'] ?? [];
+
+            // Build group header message
+            $groupMessage = "--- Group $groupNum: \"$groupName\" ($fileCount files) ---\n";
+            $groupMessage .= 'Description: ' . ($group['description'] ?? 'N/A') . "\n";
+
+            if (!empty($sampleFiles)) {
+                $groupMessage .= "Sample pages (highest confidence):\n";
+                foreach ($sampleFiles as $sampleIdx => $sample) {
+                    $sampleNum   = $sampleIdx + 1;
+                    $pageNumber  = $sample['page_number'];
+                    $confidence  = $sample['confidence'];
+                    $description = $sample['description'] ?? 'N/A';
+                    $groupMessage .= "  $sampleNum. Page $pageNumber (confidence: $confidence)\n";
+                    $groupMessage .= "     Description: $description\n";
+                }
+            } else {
+                $groupMessage .= "No sample files available\n";
+            }
+
+            $groupMessage .= "\n";
+
+            // Add group header as text message
+            app(ThreadRepository::class)->addMessageToThread($agentThread, $groupMessage);
+
+            // Add sample images to the thread
+            static::logDebug('Adding ' . count($sampleFiles) . " sample images for group '$groupName'");
+            foreach ($sampleFiles as $sampleIdx => $sample) {
+                $pageNumber = $sample['page_number'];
+                static::logDebug("Looking for stored file with page_number=$pageNumber");
+
+                // Find the stored file for this page number using Eloquent relationships
+                // Load all input artifacts with their stored files, then find the matching page
+                $storedFile = $taskRun->inputArtifacts()
+                    ->with(['storedFiles' => fn($query) => $query->where('page_number', $pageNumber)])
+                    ->get()
+                    ->flatMap(fn($artifact) => $artifact->storedFiles)
+                    ->first();
+
+                if ($storedFile) {
+                    static::logDebug("Found stored file ID: {$storedFile->id} for page $pageNumber (URL: {$storedFile->url})");
+                    // Attach the image to the thread
+                    $sampleLabel = 'Sample ' . ($sampleIdx + 1) . " for \"$groupName\" - Page $pageNumber";
+                    app(ThreadRepository::class)->addMessageToThread(
+                        $agentThread,
+                        $sampleLabel,
+                        [$storedFile->id]
+                    );
+                    static::logDebug("Added message with stored file ID {$storedFile->id} to thread");
+                } else {
+                    static::logDebug("WARNING: No stored file found for page $pageNumber in group '$groupName'");
+                }
+            }
+        }
+
+        // Add summary message
+        $summaryMessage = "\n=== END OF GROUP SAMPLES ===\n\n";
+        $summaryMessage .= 'You have now seen all ' . count($groupsForDeduplication) . " groups with their sample pages.\n";
+        $summaryMessage .= "Review these carefully and identify any corrections or merges needed.\n";
+
+        app(ThreadRepository::class)->addMessageToThread($agentThread, $summaryMessage);
     }
 
     /**
@@ -402,8 +508,51 @@ class AgentThreadService
      */
     protected function addDuplicateGroupResolutionInstructions(AgentThread $agentThread): void
     {
-        $instructions = "TASK: Determine if groups with similar names represent the same entity\n\n";
-        // ... (full instructions as in runner)
+        $instructions = "TASK: Review all group names for corrections, merges, and deduplication\n\n" .
+            "You have been shown ALL group names with sample pages from each group.\n\n" .
+            "Your task:\n" .
+            "1. Review each group name for spelling errors, typos, or inconsistencies\n" .
+            "2. Identify groups that represent the SAME ENTITY but have variations in naming:\n" .
+            "   - Spelling variations: 'ABC Medical' vs 'ABC Medcial'\n" .
+            "   - Suffix variations: 'ABC Medical' vs 'ABC Medical Center' vs 'ABC Medical Clinic'\n" .
+            "   - Similar names: 'Mountain View Pain Center' vs 'Mountain View Pain Specialists'\n" .
+            "   - Location variants: 'XYZ Therapy' vs 'XYZ Therapy (Denver)'\n" .
+            "3. Use the sample images to verify entities are the same:\n" .
+            "   - Check if addresses match or are in the same building/area\n" .
+            "   - Check if phone numbers match\n" .
+            "   - Check if the letterhead/branding looks similar\n" .
+            "   - Check if the same doctors/staff appear in both groups\n" .
+            "4. For groups that should be unified:\n" .
+            "   - List ALL original names in the 'original_names' array\n" .
+            "   - Choose the best canonical name (most commonly used, most complete)\n" .
+            "   - Explain why you merged them\n" .
+            "5. For groups that need no changes:\n" .
+            "   - List just that one name in 'original_names'\n" .
+            "   - Use the same name as 'canonical_name'\n" .
+            "   - Reason: 'No changes needed'\n\n" .
+            "MERGE THESE TYPES OF VARIATIONS:\n" .
+            "- 'X Center' / 'X Specialists' / 'X Clinic' / 'X Associates' (likely same entity)\n" .
+            "- Names with/without location suffixes that share the same base name\n" .
+            "- Names with minor spelling differences\n" .
+            "- Names that clearly refer to the same physical location based on sample images\n\n" .
+            "DO NOT MERGE:\n" .
+            "- Completely different entities that happen to have similar-sounding names\n" .
+            "- Groups where sample images show clearly different addresses or branding\n\n" .
+            "RESPONSE FORMAT:\n" .
+            "Return a 'group_decisions' array where each decision includes:\n" .
+            "- original_names: Array of one or more group names to unify\n" .
+            "- canonical_name: The correct final name to use\n" .
+            "- reason: Explanation of any changes (or 'No changes needed')\n\n" .
+            "Example:\n" .
+            "{\n" .
+            "  \"group_decisions\": [\n" .
+            "    {\n" .
+            "      \"original_names\": [\"Mountain View Pain Center\", \"Mountain View Pain Specialists\"],\n" .
+            "      \"canonical_name\": \"Mountain View Pain Specialists\",\n" .
+            "      \"reason\": \"Same facility - both names appear on documents from the same address\"\n" .
+            "    }\n" .
+            "  ]\n" .
+            "}\n";
 
         app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
     }

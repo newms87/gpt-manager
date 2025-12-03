@@ -23,10 +23,10 @@ class SchemaProvider
     {
         static::logDebug("Getting file organization schema for team $teamId");
 
-        // Get dynamic name description based on task definition
-        $nameDescription = $this->getNameDescription($taskDefinition);
+        // Get dynamic descriptions based on task definition (single LLM call for both)
+        $descriptions = app(SchemaDescriptionGeneratorService::class)->getSchemaDescriptions($taskDefinition);
 
-        $schema = $this->buildFileOrganizationSchema($nameDescription);
+        $schema = $this->buildFileOrganizationSchema($descriptions['name'], $descriptions['confidence']);
 
         $schemaDefinition = SchemaDefinition::updateOrCreate([
             'team_id' => $teamId,
@@ -41,22 +41,6 @@ class SchemaProvider
         static::logDebug("Schema definition created/updated: {$schemaDefinition->id}");
 
         return $schemaDefinition;
-    }
-
-    /**
-     * Get dynamic name description for the schema based on TaskDefinition.
-     * Uses SchemaDescriptionGeneratorService to generate context-specific descriptions.
-     *
-     * @param  TaskDefinition  $taskDefinition  Task definition with prompt
-     * @return string Name description for the schema
-     */
-    public function getNameDescription(TaskDefinition $taskDefinition): string
-    {
-        static::logDebug("Getting name description for TaskDefinition {$taskDefinition->id}");
-
-        $generator = app(SchemaDescriptionGeneratorService::class);
-
-        return $generator->getSchemaNameDescription($taskDefinition);
     }
 
     /**
@@ -88,69 +72,67 @@ class SchemaProvider
     /**
      * Build the JSON Schema for file organization responses.
      *
-     * @param  string|null  $nameDescription  Optional custom description for the name field
+     * @param  string|null  $nameDescription  Optional custom description for the group_name field
+     * @param  string|null  $confidenceDescription  Optional custom description for the group_name_confidence field
      * @return array JSON schema definition
      */
-    protected function buildFileOrganizationSchema(?string $nameDescription = null): array
+    protected function buildFileOrganizationSchema(?string $nameDescription = null, ?string $confidenceDescription = null): array
     {
         // Use provided description or fall back to default
-        $nameDescription = $nameDescription ?? 'Name of this group (e.g., "Section A", "Category 1", "Entity Name"). Use empty string "" if no clear identifier exists.';
+        $nameDescription       = $nameDescription       ?? 'Name of the group this file belongs to (e.g., "Acme Corp Invoice #12345", "Section A"). Use empty string "" if no clear identifier exists.';
+        $confidenceDescription = $confidenceDescription ?? 'How confident are you in the group name? 0=cannot determine, 5=highly confident';
 
         return [
             'type'                 => 'object',
             'properties'           => [
-                'groups' => [
+                'files' => [
                     'type'        => 'array',
+                    'description' => 'Array of files with adjacency signals and group names. Files should be analyzed in sequential order.',
                     'items'       => [
                         'type'                 => 'object',
                         'properties'           => [
-                            'name'        => [
+                            'page_number'                => [
+                                'type'        => 'integer',
+                                'description' => 'Page number of the file in the original document',
+                            ],
+                            'belongs_to_previous'        => [
+                                'type'        => ['integer', 'null'],
+                                'minimum'     => 0,
+                                'maximum'     => 5,
+                                'description' => 'How confident are you this file belongs with the previous file? 0=definitely not (new group), 5=definitely yes (same group). Use null for the first page in the window (no previous file visible).',
+                            ],
+                            'belongs_to_previous_reason' => [
+                                'type'        => ['string', 'null'],
+                                'description' => 'Explanation for the belongs_to_previous score. Use null for the first page in the window.',
+                            ],
+                            'group_name'                 => [
                                 'type'        => 'string',
                                 'description' => $nameDescription,
                             ],
-                            'description' => [
-                                'type'        => 'string',
-                                'description' => 'High-level description of the contents of this group',
+                            'group_name_confidence'      => [
+                                'type'        => 'integer',
+                                'minimum'     => 0,
+                                'maximum'     => 5,
+                                'description' => $confidenceDescription,
                             ],
-                            'files'       => [
-                                'type'        => 'array',
-                                'items'       => [
-                                    'type'                 => 'object',
-                                    'properties'           => [
-                                        'page_number' => [
-                                            'type'        => 'integer',
-                                            'description' => 'Page number of the file in the original document',
-                                        ],
-                                        'confidence'  => [
-                                            'type'        => 'integer',
-                                            'minimum'     => 0,
-                                            'maximum'     => 5,
-                                            'description' => 'Confidence score (0-5) for this file assignment',
-                                        ],
-                                        'explanation' => [
-                                            'type'        => 'string',
-                                            'description' => 'Brief explanation for this assignment and confidence level',
-                                        ],
-                                    ],
-                                    'required'             => ['page_number', 'confidence', 'explanation'],
-                                    'additionalProperties' => false,
-                                ],
-                                'description' => 'Array of file assignments with confidence scores',
+                            'group_explanation'          => [
+                                'type'        => 'string',
+                                'description' => 'Explanation for the group name and why this file belongs to this group',
                             ],
                         ],
-                        'required'             => ['name', 'description', 'files'],
+                        'required'             => ['page_number', 'belongs_to_previous', 'belongs_to_previous_reason', 'group_name', 'group_name_confidence', 'group_explanation'],
                         'additionalProperties' => false,
                     ],
-                    'description' => 'Groups of related files with confidence scores. Each page must appear in EXACTLY ONE group. If uncertain about placement, use a low confidence score (0-2) to trigger automatic resolution.',
                 ],
             ],
-            'required'             => ['groups'],
+            'required'             => ['files'],
             'additionalProperties' => false,
         ];
     }
 
     /**
      * Build JSON schema for duplicate group resolution responses.
+     * Reviews ALL groups for deduplication and spelling correction.
      *
      * @return array JSON schema definition
      */
@@ -159,44 +141,34 @@ class SchemaProvider
         return [
             'type'       => 'object',
             'properties' => [
-                'decisions' => [
+                'group_decisions' => [
                     'type'        => 'array',
-                    'description' => 'Array of decisions for each duplicate candidate pair',
+                    'description' => 'Array of decisions for all groups, including any merges or corrections needed',
                     'items'       => [
                         'type'       => 'object',
                         'properties' => [
-                            'group1_name'      => [
+                            'original_names' => [
+                                'type'        => 'array',
+                                'description' => 'Array of one or more original group names that should be unified under the canonical name. Single name if no merge needed.',
+                                'items'       => [
+                                    'type' => 'string',
+                                ],
+                                'minItems'    => 1,
+                            ],
+                            'canonical_name' => [
                                 'type'        => 'string',
-                                'description' => 'First group name from the pair',
+                                'description' => 'The correct, canonical name to use for this group. Should be the best-spelled, most complete version.',
                             ],
-                            'group2_name'      => [
+                            'reason'         => [
                                 'type'        => 'string',
-                                'description' => 'Second group name from the pair',
-                            ],
-                            'are_duplicates'   => [
-                                'type'        => 'boolean',
-                                'description' => 'True if these groups represent the same entity and should be merged',
-                            ],
-                            'canonical_group'  => [
-                                'type'        => 'string',
-                                'description' => 'If are_duplicates is true, which group name to use as the canonical (primary) name. Must be exactly one of the two group names.',
-                            ],
-                            'confidence'       => [
-                                'type'        => 'integer',
-                                'description' => 'Confidence level for this decision (1=very uncertain, 5=absolutely certain)',
-                                'minimum'     => 1,
-                                'maximum'     => 5,
-                            ],
-                            'reason'           => [
-                                'type'        => 'string',
-                                'description' => 'Detailed explanation of why you determined these are duplicates or different entities',
+                                'description' => 'Explanation of any changes made. If no changes: "No changes needed". If merged/corrected: explain why.',
                             ],
                         ],
-                        'required'   => ['group1_name', 'group2_name', 'are_duplicates', 'confidence', 'reason'],
+                        'required'   => ['original_names', 'canonical_name', 'reason'],
                     ],
                 ],
             ],
-            'required'   => ['decisions'],
+            'required'   => ['group_decisions'],
         ];
     }
 }

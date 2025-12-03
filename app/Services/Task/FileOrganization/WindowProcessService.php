@@ -4,7 +4,6 @@ namespace App\Services\Task\FileOrganization;
 
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\Task\FileOrganizationMergeService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -53,11 +52,10 @@ class WindowProcessService
         }
 
         // Create file list from artifacts (using page_number from StoredFile)
-        $mergeService = app(FileOrganizationMergeService::class);
-        $files        = $mergeService->getFileListFromArtifacts($inputArtifacts);
+        $files = $this->getFileListFromArtifacts($inputArtifacts);
 
         // Create overlapping windows with configured overlap
-        $windows = $mergeService->createOverlappingWindows($files, $windowSize, $overlap);
+        $windows = $this->createOverlappingWindows($files, $windowSize, $overlap);
 
         static::logDebug('Created ' . count($windows) . ' comparison windows');
 
@@ -134,5 +132,117 @@ class WindowProcessService
             $taskProcess->outputArtifacts()->sync($artifactIds);
             $taskProcess->updateRelationCounter('outputArtifacts');
         }
+    }
+
+    /**
+     * Get file IDs from artifacts with page_number from StoredFile.
+     * Used to create the initial list of files for window creation.
+     *
+     * @param  Collection  $artifacts  Collection of artifacts
+     * @return array Array of ['file_id' => artifact_id, 'page_number' => int]
+     */
+    protected function getFileListFromArtifacts(Collection $artifacts): array
+    {
+        $files = [];
+
+        foreach ($artifacts as $artifact) {
+            // Get page_number from the StoredFile model (NOT from artifact meta or position)
+            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
+            $pageNumber = $storedFile?->page_number ?? $artifact->position ?? 0;
+
+            $files[] = [
+                'file_id'     => $artifact->id,
+                'page_number' => $pageNumber,
+            ];
+        }
+
+        // Sort by page_number
+        usort($files, fn($a, $b) => $a['page_number'] <=> $b['page_number']);
+
+        static::logDebug('Extracted ' . count($files) . ' files from artifacts');
+
+        return $files;
+    }
+
+    /**
+     * Create overlapping windows from a list of files.
+     * Windows overlap by the specified number of files.
+     *
+     * Examples with different overlaps:
+     * - 10 files, size 5, overlap 1 → windows: [1-5], [5-9], [9-10]
+     * - 10 files, size 5, overlap 2 → windows: [1-5], [4-8], [7-10]
+     * - 10 files, size 5, overlap 3 → windows: [1-5], [3-7], [5-9], [7-10]
+     * - 6 files, size 5, overlap 1 → windows: [1-5], [5-6]
+     * - 4 files, size 5, overlap 1 → window: [1-4]
+     *
+     * @param  array  $files  Array of ['file_id' => id, 'page_number' => int]
+     * @param  int  $windowSize  Maximum number of files per window
+     * @param  int  $windowOverlap  Number of files to overlap between windows (default: 1)
+     * @return array Array of windows with metadata
+     */
+    protected function createOverlappingWindows(array $files, int $windowSize, int $windowOverlap = 1): array
+    {
+        if (empty($files)) {
+            static::logDebug('No files to create windows from');
+
+            return [];
+        }
+
+        if ($windowSize < 2) {
+            static::logDebug('Window size must be at least 2');
+
+            return [];
+        }
+
+        if ($windowOverlap < 1 || $windowOverlap >= $windowSize) {
+            throw new ValidationError(
+                "Window overlap must be >= 1 and < window size ($windowSize). Got: $windowOverlap",
+                400
+            );
+        }
+
+        $windows   = [];
+        $fileCount = count($files);
+
+        static::logDebug("Creating overlapping windows from $fileCount files with max window size $windowSize and overlap $windowOverlap");
+
+        // Create overlapping windows with configurable overlap
+        $windowIndex = 0;
+        $startIndex  = 0;
+
+        while ($startIndex < $fileCount) {
+            $windowFiles = [];
+            $pageNumbers = [];
+
+            // Collect up to $windowSize files for this window
+            for ($j = 0; $j < $windowSize && ($startIndex + $j) < $fileCount; $j++) {
+                $file          = $files[$startIndex + $j];
+                $windowFiles[] = $file;
+                $pageNumbers[] = $file['page_number'];
+            }
+
+            // Only create window if we have at least 2 files
+            if (count($windowFiles) < 2) {
+                static::logDebug("Window $windowIndex: skipping (only " . count($windowFiles) . ' file(s))');
+                break;
+            }
+
+            $windows[] = [
+                'window_index' => $windowIndex,
+                'window_start' => min($pageNumbers),
+                'window_end'   => max($pageNumbers),
+                'files'        => $windowFiles,
+            ];
+
+            static::logDebug("Window $windowIndex: page numbers " . min($pageNumbers) . '-' . max($pageNumbers) . ' (' . count($windowFiles) . ' files)');
+            $windowIndex++;
+
+            // Move to next window with configured overlap
+            $startIndex += $windowSize - $windowOverlap;
+        }
+
+        static::logDebug('Created ' . count($windows) . ' overlapping windows');
+
+        return $windows;
     }
 }

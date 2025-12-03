@@ -118,8 +118,6 @@ app/Services/
 ├── Task/
 │   ├── FileOrganizationMergeService.php       # Main service
 │   └── FileOrganization/                       # Supporting services
-│       ├── GroupConfidenceAnalyzer.php
-│       ├── GroupAbsorptionService.php
 │       └── NullGroupResolver.php
 ```
 
@@ -166,7 +164,7 @@ app/Services/
 
 **Single Responsibility Principle (SRP):**
 - Each class should have ONE clear purpose
-- Example: `GroupConfidenceAnalyzer` only analyzes confidence, doesn't merge groups
+- Example: `NullGroupResolver` only handles null group resolution, doesn't merge groups
 
 **Open/Closed Principle:**
 - Extend behavior via new classes, not modifying existing ones
@@ -652,7 +650,84 @@ class [Service]Test extends AuthenticatedTestCase
 
 ---
 
-## 8. Background Processing Patterns
+## 8. Test-Driven Debugging
+
+### CRITICAL: Always Write a Failing Test First
+
+When debugging issues, **ALWAYS** follow this process:
+
+1. **Investigate** - Search code, add debug logging, identify the problem area
+2. **Write a Failing Test** - Before fixing, create a test that reproduces the bug
+3. **Fix the Code** - Implement the fix
+4. **Verify Test Passes** - Confirm the test now passes
+5. **Clean Up** - Remove debug logging, run all related tests
+
+### Why This Matters
+
+- **Prevents Regression** - The test ensures the bug never comes back
+- **Proves the Fix** - A passing test proves you actually fixed the issue
+- **Documents Behavior** - The test documents what the correct behavior should be
+- **Saves Time** - Faster than manual testing and more reliable
+
+### Example Workflow
+
+**Bug:** Images not attaching to messages in AgentThreadService
+
+**Step 1: Investigate**
+```php
+// Add debug logging to understand the problem
+static::logDebug("Looking for stored file with page_number: $pageNumber");
+$storedFile = $taskRun->inputArtifacts()...->first();
+static::logDebug("Found stored file: " . ($storedFile ? $storedFile->id : 'NULL'));
+```
+
+**Step 2: Write Failing Test**
+```php
+public function test_duplicate_group_resolution_attaches_sample_images_to_thread(): void
+{
+    // Setup - create task run with artifacts that have stored files
+    $taskRun = $this->createTaskRunWithArtifacts();
+
+    // Create groups data that references those page numbers
+    $groupsForDeduplication = [
+        ['name' => 'Group A', 'sample_files' => [['page_number' => 1, 'confidence' => 5]]]
+    ];
+
+    // Act - setup the thread
+    $thread = app(AgentThreadService::class)->setupDuplicateGroupResolutionThread(
+        $taskRun->taskDefinition,
+        $taskRun,
+        $groupsForDeduplication
+    );
+
+    // Assert - verify images were attached
+    $messagesWithFiles = $thread->messages()->whereHas('storedFiles')->get();
+    $this->assertGreaterThan(0, $messagesWithFiles->count(),
+        'Expected messages with attached files for sample images');
+}
+```
+
+**Step 3: Fix the Code**
+- Identify that the query returns wrong data or files aren't being attached
+- Fix the actual issue
+
+**Step 4: Verify Test Passes**
+```bash
+./vendor/bin/sail test --filter=test_duplicate_group_resolution_attaches_sample_images
+```
+
+### When to Skip Writing a Test
+
+Only skip a failing test when:
+- The bug is a simple typo or syntax error
+- The fix is trivial and obvious (e.g., wrong variable name)
+- A test already exists that should catch this bug (fix the test instead)
+
+**When in doubt, write the test!**
+
+---
+
+## 9. Background Processing Patterns
 
 ### Job Structure Template
 
@@ -689,7 +764,7 @@ class [Action][Model]Job extends Job
 
 ---
 
-## 9. API Routing Patterns
+## 10. API Routing Patterns
 
 ### ActionRoute Pattern (danx)
 
@@ -717,7 +792,7 @@ ActionRoute automatically creates:
 
 ---
 
-## 10. Team-Based Access Control
+## 11. Team-Based Access Control
 
 ### CRITICAL: ALL repositories and services MUST implement team scoping
 
@@ -740,7 +815,7 @@ protected function validateOwnership([Model] $model): void
 
 ---
 
-## 11. User Roles and Permissions
+## 12. User Roles and Permissions
 
 Role-based permission system where users can have multiple roles, each containing a set of permissions. Permissions are cached for 24 hours for performance.
 
@@ -801,7 +876,7 @@ See `spa/src/components/ThePageHeader.vue` and `spa/src/navigation/adminNavigati
 
 ---
 
-## 12. Error Handling Patterns
+## 13. Error Handling Patterns
 
 ### Service-Level Validation
 
@@ -822,7 +897,7 @@ Controllers don't handle errors - they bubble up to Laravel's exception handler.
 
 ---
 
-## 13. Performance Patterns
+## 14. Performance Patterns
 
 ### Database Query Optimization
 
@@ -879,7 +954,7 @@ tests/
 
 ---
 
-## 14. Broadcasting and Events
+## 15. Broadcasting and Events
 
 All model update events extend `ModelSavedEvent` from the danx library, which provides subscription-based broadcasting with resource-type extraction and team-based filtering.
 
@@ -1113,6 +1188,14 @@ WorkflowRunUpdatedEvent::broadcast($workflowRun);
 3. Add controller actions (thin delegation)
 4. Create resources (API transformation)
 5. Write comprehensive tests
+
+### When Debugging Issues
+
+1. **Investigate** - Search code, add debug logging, identify the problem
+2. **Write a Failing Test** - Create a test that reproduces the bug BEFORE fixing
+3. **Fix the Code** - Implement the fix
+4. **Verify Test Passes** - Run the test to confirm the fix
+5. **Clean Up** - Remove debug logging, run all related tests
 
 ### After Writing Code
 
