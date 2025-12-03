@@ -62,14 +62,22 @@ If you see yourself described as `vue-spa-engineer`, `laravel-backend-engineer`,
 ### Agent Selection Rules
 
 **Laravel Backend Work:**
-- **Architecture/Planning** → `laravel-backend-architect` (REQUIRED for medium/large features)
+- **Architecture/Planning/Debugging** → `laravel-backend-architect` (READ-ONLY - analyzes, plans, investigates bugs)
 - **Implementation** → `laravel-backend-engineer` (ALL Laravel code writing)
 - **Testing/QA** → `laravel-backend-qa-tester` (EXCLUSIVE AUTHORITY for tests)
 
 **Vue Frontend Work:**
-- **Architecture/Planning** → `vue-spa-architect` (REQUIRED for medium/large features)
+- **Architecture/Planning/Debugging** → `vue-spa-architect` (READ-ONLY - analyzes, plans, investigates bugs)
 - **Implementation** → `vue-spa-engineer` (ALL Vue/Tailwind code writing)
 - **Review/QA** → `vue-spa-reviewer` (REQUIRED after code changes)
+
+**Architect Agent Workflow for Debugging:**
+1. You ask architect to investigate a bug
+2. Architect reads code and analyzes the issue
+3. If architect needs debugging (console.log, etc.), they tell YOU what to add
+4. YOU add the debug code and report results back
+5. Architect analyzes results and provides the fix
+6. YOU delegate the fix to the engineer agent
 
 ### Your Direct Authority (ONLY)
 
@@ -112,15 +120,17 @@ You are ONLY authorized to:
 
 **For All Technical Work:**
 
-### 1. Investigation Phase (You handle)
-- Read files to understand current state
-- Search for existing patterns
-- Identify scope of changes needed
-- **⚠️ STOP HERE** - Investigation complete, now delegate!
+### 1. Investigation Phase (Architect Agents Preferred)
+- **Prefer delegating investigation to architect agents** to conserve orchestrator context
+- Architect agents are READ-ONLY and will report back findings
+- If architect needs debugging, they will tell YOU what to do (add console.log, etc.)
+- YOU then perform the debugging changes and report results back to architect
+- **⚠️ STOP HERE** - Investigation complete, now delegate implementation!
 
 ### 2. Planning Phase (Architect agents)
 - **Medium/Large Features**: MUST use `vue-spa-architect` or `laravel-backend-architect` first
 - Get comprehensive implementation plan before any coding
+- **Architect agents are READ-ONLY** - they analyze and plan, never write code
 
 ### 3. Implementation Phase (Engineer agents)
 - **ALL Vue code**: Delegate to `vue-spa-engineer`
