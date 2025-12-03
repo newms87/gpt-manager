@@ -144,9 +144,8 @@ ActionRoute::routes('audit-requests', new AuditRequestsController);
 
 // UI Demands
 ActionRoute::routes('ui-demands', new UiDemandsController, function () {
-    Route::post('{uiDemand}/extract-data', [UiDemandsController::class, 'extractData'])->name('ui-demands.extract-data');
-    Route::post('{uiDemand}/write-medical-summary', [UiDemandsController::class, 'writeMedicalSummary'])->name('ui-demands.write-medical-summary');
-    Route::post('{uiDemand}/write-demand-letter', [UiDemandsController::class, 'writeDemandLetter'])->name('ui-demands.write-demand-letter');
+    Route::get('workflow-config', [UiDemandsController::class, 'workflowConfig'])->name('ui-demands.workflow-config');
+    Route::post('{uiDemand}/workflow/{workflowKey}', [UiDemandsController::class, 'runWorkflow'])->name('ui-demands.run-workflow');
 });
 
 // Demand Templates

@@ -2,6 +2,7 @@
 
 namespace App\Services\UiDemand;
 
+use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
@@ -15,49 +16,94 @@ use Newms87\Danx\Exceptions\ValidationError;
 
 class UiDemandWorkflowService
 {
-    public function extractData(UiDemand $uiDemand): WorkflowRun
+    /**
+     * Generic workflow execution method that replaces hardcoded workflow methods
+     *
+     * @param  UiDemand  $uiDemand  The demand to run the workflow on
+     * @param  string  $workflowKey  The workflow key from config (e.g., 'extract_data', 'write_medical_summary')
+     * @param  array  $params  Optional parameters: template_id, instruction_template_id, additional_instructions
+     *
+     * @throws ValidationError
+     */
+    public function runWorkflow(UiDemand $uiDemand, string $workflowKey, array $params = []): WorkflowRun
     {
-        if (!$uiDemand->canExtractData()) {
-            if (!$uiDemand->inputFiles()->count()) {
-                throw new ValidationError('No input files attached to the demand.');
-            }
-            throw new ValidationError('Cannot extract data for this demand. Make sure a workflow is not already running for this demand.');
+        $configService = app(UiDemandWorkflowConfigService::class);
+
+        // Get workflow configuration
+        $workflowConfig = $configService->getWorkflow($workflowKey);
+        if (!$workflowConfig) {
+            throw new ValidationError("Workflow '{$workflowKey}' not found in configuration");
         }
 
-        $workflowDefinition = $this->getWorkflowDefinition('extract_data');
-        $workflowInput      = $this->createWorkflowInputFromDemand($uiDemand, 'Extract Data');
+        // Validate workflow can run (dependencies met, etc.)
+        if (!$configService->canRunWorkflow($uiDemand, $workflowKey)) {
+            throw new ValidationError("Cannot run workflow '{$workflowKey}'. Check dependencies and input requirements.");
+        }
 
-        $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
+        // Get workflow definition from database
+        $workflowDefinition = WorkflowDefinition::where('team_id', team()->id)
+            ->where('name', $workflowConfig['name'])
+            ->first();
+
+        if (!$workflowDefinition) {
+            throw new ValidationError("Workflow definition '{$workflowConfig['name']}' not found");
+        }
+
+        // Build workflow input based on config
+        $inputArtifacts = $this->buildWorkflowInput($uiDemand, $workflowConfig, $params);
+
+        // Start workflow
+        $workflowRun = WorkflowRunnerService::start($workflowDefinition, $inputArtifacts);
 
         // Create WorkflowListener for callbacks
         WorkflowListener::createForListener(
             $uiDemand,
             $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA
+            $workflowKey
         );
 
         // Subscribe UiDemand to the workflow's usage event
         $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
 
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        // Attach workflow run to demand with workflow key
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => $workflowKey]);
 
         return $workflowRun;
     }
 
-    public function writeMedicalSummary(UiDemand $uiDemand, ?string $instructionTemplateId = null, ?string $additionalInstructions = null): WorkflowRun
+    /**
+     * Build workflow input artifacts based on config
+     */
+    protected function buildWorkflowInput(UiDemand $uiDemand, array $workflowConfig, array $params): array
     {
-        if (!$uiDemand->canWriteMedicalSummary()) {
-            throw new ValidationError('Cannot write medical summary. Check if extract data is completed and team object exists.');
+        $inputConfig = $workflowConfig['input'] ?? [];
+        $source      = $inputConfig['source']   ?? 'demand';
+
+        // Create main workflow input based on source
+        if ($source === 'demand') {
+            $workflowInput = $this->createWorkflowInputFromDemand($uiDemand, $workflowConfig['label']);
+        } else {
+            // source === 'team_object'
+            if (!$uiDemand->teamObject) {
+                throw new ValidationError('Team object not found for demand');
+            }
+
+            $templateId             = $params['template_id']             ?? null;
+            $additionalInstructions = $params['additional_instructions'] ?? null;
+
+            $workflowInput = $this->createWorkflowInputFromTeamObject(
+                $uiDemand,
+                $uiDemand->teamObject,
+                $workflowConfig['label'],
+                $templateId,
+                $additionalInstructions
+            );
         }
 
-        $workflowDefinition = $this->getWorkflowDefinition('write_medical_summary');
-        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Medical Summary', null, $additionalInstructions);
-
-        // Append instruction template content if provided
-        if ($instructionTemplateId) {
-            $instructionTemplate = WorkflowInput::find($instructionTemplateId);
+        // Handle instruction template injection if provided
+        if (isset($params['instruction_template_id'])) {
+            $instructionTemplate = WorkflowInput::find($params['instruction_template_id']);
             if ($instructionTemplate && $instructionTemplate->content) {
-                // Append critical instruction template content to the main workflow input
                 $workflowInput->content .= <<<TEXT
 
 
@@ -72,65 +118,35 @@ TEXT;
             }
         }
 
-        $workflowRun = WorkflowRunnerService::start($workflowDefinition, [$workflowInput->toArtifact()]);
-
-        // Create WorkflowListener for callbacks
-        WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY
-        );
-
-        // Subscribe UiDemand to the workflow's usage event
-        $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
-
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
-
-        return $workflowRun;
-    }
-
-    public function writeDemandLetter(UiDemand $uiDemand, ?int $templateId = null, ?string $additionalInstructions = null): WorkflowRun
-    {
-        if (!$uiDemand->canWriteDemandLetter()) {
-            throw new ValidationError('Cannot write demand letter. Check if write medical summary is completed and team object exists.');
-        }
-
-        $workflowDefinition = $this->getWorkflowDefinition('write_demand_letter');
-        $workflowInput      = $this->createWorkflowInputFromTeamObject($uiDemand, $uiDemand->teamObject, 'Write Demand Letter', $templateId, $additionalInstructions);
-
-        // Collect all input artifacts for the workflow:
-        // 1. The workflow input (converted to artifact)
-        // 2. Medical summary artifacts from previous workflow step
+        // Start with the main workflow input
         $inputArtifacts = [$workflowInput->toArtifact()];
 
-        // Add medical summary artifacts as additional input artifacts
-        // These contain the generated medical summaries from the previous workflow step
-        $medicalSummaryArtifacts = $uiDemand->medicalSummaries()->withPivot(['category'])->get();
+        // Add artifacts from previous workflows if configured
+        if (isset($inputConfig['include_artifacts_from'])) {
+            foreach ($inputConfig['include_artifacts_from'] as $artifactSource) {
+                $sourceWorkflow = $artifactSource['workflow'] ?? null;
+                $sourceCategory = $artifactSource['category'] ?? null;
 
-        // Store categories in artifact meta before passing to workflow
-        foreach ($medicalSummaryArtifacts as $artifact) {
-            $meta               = $artifact->meta ?? [];
-            $meta['__category'] = $artifact->pivot->category;
-            $artifact->meta     = $meta;
-            $artifact->save();
-            $inputArtifacts[] = $artifact;
+                if ($sourceWorkflow && $sourceCategory) {
+                    // Get artifacts from UiDemand filtered by category
+                    $artifacts = $uiDemand->artifacts()
+                        ->wherePivot('category', $sourceCategory)
+                        ->withPivot(['category'])
+                        ->get();
+
+                    // Store categories in artifact meta before passing to workflow
+                    foreach ($artifacts as $artifact) {
+                        $meta               = $artifact->meta ?? [];
+                        $meta['__category'] = $artifact->pivot->category;
+                        $artifact->meta     = $meta;
+                        $artifact->save();
+                        $inputArtifacts[] = $artifact;
+                    }
+                }
+            }
         }
 
-        $workflowRun = WorkflowRunnerService::start($workflowDefinition, $inputArtifacts);
-
-        // Create WorkflowListener for callbacks
-        WorkflowListener::createForListener(
-            $uiDemand,
-            $workflowRun,
-            WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER
-        );
-
-        // Subscribe UiDemand to the workflow's usage event
-        $this->subscribeToWorkflowUsageEvent($uiDemand, $workflowRun);
-
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
-
-        return $workflowRun;
+        return $inputArtifacts;
     }
 
     public function handleUiDemandWorkflowComplete(WorkflowRun $workflowRun): void
@@ -152,48 +168,50 @@ TEXT;
 
     protected function handleWorkflowSuccess(UiDemand $uiDemand, WorkflowRun $workflowRun): void
     {
-        $workflowName        = $workflowRun->workflowDefinition->name;
-        $outputArtifacts     = $workflowRun->collectFinalOutputArtifacts();
+        $outputArtifacts = $workflowRun->collectFinalOutputArtifacts();
 
-        if ($workflowName === config('ui-demands.workflows.extract_data')) {
-            $metadata = [
-                'extract_data_completed_at' => now()->toIso8601String(),
-                'workflow_run_id'           => $workflowRun->id,
-            ];
+        // Get workflow key from pivot table
+        $workflowKey = $uiDemand->workflowRuns()
+            ->where('workflow_runs.id', $workflowRun->id)
+            ->first()
+            ?->pivot
+            ?->workflow_type;
 
-            $uiDemand->update([
-                'status'   => UiDemand::STATUS_DRAFT,
-                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
-            ]);
-
-        } elseif ($workflowName === config('ui-demands.workflows.write_medical_summary')) {
-            $metadata = [
-                'write_medical_summary_completed_at' => now()->toIso8601String(),
-                'workflow_run_id'                    => $workflowRun->id,
-            ];
-
-            // Attach medical summary artifacts to UiDemand with medical_summary category
-            $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, 'medical_summary');
-
-            $uiDemand->update([
-                'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
-                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
-            ]);
-
-        } elseif ($workflowName === config('ui-demands.workflows.write_demand_letter')) {
-            $metadata = [
-                'write_demand_letter_completed_at' => now()->toIso8601String(),
-                'workflow_run_id'                  => $workflowRun->id,
-            ];
-
-            // Attach output files from workflow artifacts
-            $this->attachOutputFilesFromWorkflow($uiDemand, $outputArtifacts);
-
-            $uiDemand->update([
-                'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
-                'metadata' => array_merge($uiDemand->metadata ?? [], $metadata),
-            ]);
+        if (!$workflowKey) {
+            return;
         }
+
+        // Get workflow configuration
+        $configService  = app(UiDemandWorkflowConfigService::class);
+        $workflowConfig = $configService->getWorkflow($workflowKey);
+
+        if (!$workflowConfig) {
+            return;
+        }
+
+        // Handle artifact attachment based on display config
+        $displayConfig = $workflowConfig['display_artifacts'] ?? false;
+        if ($displayConfig) {
+            $displayType = $displayConfig['display_type']      ?? 'artifacts';
+            $category    = $displayConfig['artifact_category'] ?? 'output';
+
+            if ($displayType === 'files') {
+                $this->attachOutputFilesFromWorkflow($uiDemand, $outputArtifacts);
+            } else {
+                $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, $category);
+            }
+        }
+
+        // Update metadata with completion timestamp
+        $metadata = array_merge($uiDemand->metadata ?? [], [
+            "{$workflowKey}_completed_at" => now()->toIso8601String(),
+            'workflow_run_id'             => $workflowRun->id,
+        ]);
+
+        $uiDemand->update([
+            'status'   => UiDemand::STATUS_DRAFT, // Stay as Draft until manually published
+            'metadata' => $metadata,
+        ]);
     }
 
     protected function handleWorkflowFailure(UiDemand $uiDemand, WorkflowRun $workflowRun): void
@@ -212,7 +230,8 @@ TEXT;
 
     public function getSchemaDefinitionForDemand(): SchemaDefinition
     {
-        $name = config('ui-demands.workflows.schema_definition');
+        $configService = app(UiDemandWorkflowConfigService::class);
+        $name          = $configService->getSchemaDefinition();
 
         $schemaDefinition = SchemaDefinition::where('team_id', team()->id)
             ->where('name', $name)
@@ -223,25 +242,6 @@ TEXT;
         }
 
         return $schemaDefinition;
-    }
-
-    protected function getWorkflowDefinition(string $workflowType): WorkflowDefinition
-    {
-        $workflowName = config("ui-demands.workflows.{$workflowType}");
-
-        if (!$workflowName) {
-            throw new ValidationError("Workflow configuration not found for type: {$workflowType}");
-        }
-
-        $workflowDefinition = WorkflowDefinition::where('team_id', team()->id)
-            ->where('name', $workflowName)
-            ->first();
-
-        if (!$workflowDefinition) {
-            throw new ValidationError("Workflow '{$workflowName}' not found");
-        }
-
-        return $workflowDefinition;
     }
 
     protected function createWorkflowInputFromDemand(UiDemand $uiDemand, string $workflowType): WorkflowInput
@@ -278,7 +278,7 @@ TEXT;
 
         // Add template stored file ID if provided
         if ($templateId) {
-            $template = \App\Models\Demand\DemandTemplate::find($templateId);
+            $template = DemandTemplate::find($templateId);
             if ($template && $template->stored_file_id) {
                 $contentData['template_stored_file_id'] = $template->stored_file_id;
             }

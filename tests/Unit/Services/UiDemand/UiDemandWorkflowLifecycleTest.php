@@ -67,7 +67,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
 
         // When - Start extract data workflow
-        $workflowRun = $this->service->extractData($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
 
         // Then - Verify WorkflowListener is created
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -76,13 +76,13 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertNotNull($workflowListener);
         $this->assertEquals(UiDemand::class, $workflowListener->listener_type);
         $this->assertEquals($uiDemand->id, $workflowListener->listener_id);
-        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_EXTRACT_DATA, $workflowListener->workflow_type);
-        $this->assertEquals(WorkflowListener::STATUS_PENDING, $workflowListener->status);
+        $this->assertEquals('extract_data', $workflowListener->workflow_type);
+        $this->assertEquals('pending', $workflowListener->status);
 
         // Verify pivot relationship is created
         $this->assertTrue($uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->exists());
         $this->assertEquals(
-            UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'extract_data',
             $uiDemand->fresh()->workflowRuns()->where('workflow_runs.id', $workflowRun->id)->first()->pivot->workflow_type
         );
 
@@ -145,10 +145,10 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => 'write_medical_summary']);
 
         // When - Start write demand letter workflow
-        $workflowRun = $this->service->writeDemandLetter($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Then - Verify WorkflowListener is created
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -157,8 +157,8 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertNotNull($workflowListener);
         $this->assertEquals(UiDemand::class, $workflowListener->listener_type);
         $this->assertEquals($uiDemand->id, $workflowListener->listener_id);
-        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER, $workflowListener->workflow_type);
-        $this->assertEquals(WorkflowListener::STATUS_PENDING, $workflowListener->status);
+        $this->assertEquals('write_demand_letter', $workflowListener->workflow_type);
+        $this->assertEquals('pending', $workflowListener->status);
 
         // Create output artifacts with stored files to simulate workflow output
         $outputFile1 = StoredFile::factory()->create([
@@ -293,7 +293,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
 
         // When - Start and fail extract data workflow
-        $workflowRun = $this->service->extractData($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
         $workflowRun->update([
             'status'    => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
             'failed_at' => now(),
@@ -348,10 +348,10 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => 'write_medical_summary']);
 
         // When - Start and fail write demand workflow
-        $workflowRun = $this->service->writeDemandLetter($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
         $workflowRun->update([
             'status'    => \App\Models\Workflow\WorkflowStatesContract::STATUS_FAILED,
             'failed_at' => now(),
@@ -395,12 +395,12 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
 
         // When - Start workflow
-        $workflowRun = $this->service->extractData($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
 
         // Then - Verify initial WorkflowListener state
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
-        $this->assertEquals(WorkflowListener::STATUS_PENDING, $workflowListener->status);
+        $this->assertEquals('pending', $workflowListener->status);
         $this->assertNull($workflowListener->started_at);
         $this->assertNull($workflowListener->completed_at);
         $this->assertNull($workflowListener->failed_at);
@@ -410,7 +410,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Then - Verify running state
         $workflowListener->refresh();
-        $this->assertEquals(WorkflowListener::STATUS_RUNNING, $workflowListener->status);
+        $this->assertEquals('running', $workflowListener->status);
         $this->assertNotNull($workflowListener->started_at);
         $this->assertNull($workflowListener->completed_at);
         $this->assertNull($workflowListener->failed_at);
@@ -424,7 +424,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
         // Then - Verify completed state
         $workflowListener->refresh();
-        $this->assertEquals(WorkflowListener::STATUS_COMPLETED, $workflowListener->status);
+        $this->assertEquals('completed', $workflowListener->status);
         $this->assertNotNull($workflowListener->started_at);
         $this->assertNotNull($workflowListener->completed_at);
         $this->assertNull($workflowListener->failed_at);
@@ -476,17 +476,20 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'status'                 => \App\Models\Workflow\WorkflowStatesContract::STATUS_COMPLETED,
             'completed_at'           => now(),
         ]);
-        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY]);
+        $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, ['workflow_type' => 'write_medical_summary']);
 
         // When - Start write demand workflow with template and additional instructions
-        $workflowRun = $this->service->writeDemandLetter($uiDemand, $template->id, 'Please make it professional');
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter', [
+            'template_id'             => $template->id,
+            'additional_instructions' => 'Please make it professional',
+        ]);
 
         // Then - Verify WorkflowListener is created and workflow starts
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
 
         $workflowListener = WorkflowListener::where('workflow_run_id', $workflowRun->id)->first();
         $this->assertNotNull($workflowListener);
-        $this->assertEquals(WorkflowListener::WORKFLOW_TYPE_WRITE_DEMAND_LETTER, $workflowListener->workflow_type);
+        $this->assertEquals('write_demand_letter', $workflowListener->workflow_type);
 
         // The template and instructions would be included in the WorkflowInput content
         // This is verified by the successful creation of the workflow without errors

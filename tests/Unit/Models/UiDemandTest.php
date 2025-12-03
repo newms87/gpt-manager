@@ -3,10 +3,12 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Demand\UiDemand;
+use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use Newms87\Danx\Models\Utilities\StoredFile;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -20,7 +22,11 @@ class UiDemandTest extends AuthenticatedTestCase
         $this->setUpTeam();
     }
 
-    public function test_canExtractData_withValidConditions_returnsTrue(): void
+    /**
+     * Test canRunWorkflow with valid conditions for extract_data
+     */
+    #[Test]
+    public function canRunWorkflow_withValidConditionsForExtractData_returnsTrue(): void
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -37,30 +43,14 @@ class UiDemandTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When & Then
-        $this->assertTrue($uiDemand->canExtractData());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
     }
 
-    public function test_canExtractData_withCompletedStatus_returnsFalse(): void
-    {
-        // Given
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status'  => UiDemand::STATUS_COMPLETED, // Invalid status
-            'title'   => 'Test Demand',
-        ]);
-
-        $storedFile = StoredFile::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-        ]);
-        $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
-
-        // When & Then
-        $this->assertFalse($uiDemand->canExtractData());
-    }
-
-    public function test_canExtractData_withNoInputFiles_returnsFalse(): void
+    /**
+     * Test canRunWorkflow returns false when input files are missing
+     */
+    #[Test]
+    public function canRunWorkflow_withNoInputFiles_returnsFalse(): void
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -73,10 +63,14 @@ class UiDemandTest extends AuthenticatedTestCase
         // No input files attached
 
         // When & Then
-        $this->assertFalse($uiDemand->canExtractData());
+        $this->assertFalse($uiDemand->canRunWorkflow('extract_data'));
     }
 
-    public function test_canExtractData_withRunningWorkflow_returnsFalse(): void
+    /**
+     * Test canRunWorkflow returns false when workflow is already running
+     */
+    #[Test]
+    public function canRunWorkflow_withRunningWorkflow_returnsFalse(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -103,14 +97,18 @@ class UiDemandTest extends AuthenticatedTestCase
 
         // Attach running workflow
         $uiDemand->workflowRuns()->attach($runningWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // When & Then
-        $this->assertFalse($uiDemand->canExtractData());
+        $this->assertFalse($uiDemand->canRunWorkflow('extract_data'));
     }
 
-    public function test_canWriteMedicalSummary_withValidConditions_returnsTrue(): void
+    /**
+     * Test canRunWorkflow with valid conditions for write_medical_summary
+     */
+    #[Test]
+    public function canRunWorkflow_withValidConditionsForWriteMedicalSummary_returnsTrue(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -137,88 +135,18 @@ class UiDemandTest extends AuthenticatedTestCase
 
         // Attach completed extract data workflow
         $uiDemand->workflowRuns()->attach($completedWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // When & Then
-        $this->assertTrue($uiDemand->canWriteMedicalSummary());
+        $this->assertTrue($uiDemand->canRunWorkflow('write_medical_summary'));
     }
 
-    public function test_canWriteMedicalSummary_withNoTeamObject_returnsFalse(): void
-    {
-        // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $completedWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Completed',
-            'completed_at'           => now(),
-        ]);
-
-        $uiDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_DRAFT,
-            'team_object_id' => null, // No team object
-            'title'          => 'Test Demand',
-        ]);
-
-        // Attach completed extract data workflow
-        $uiDemand->workflowRuns()->attach($completedWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
-        ]);
-
-        // When & Then
-        $this->assertFalse($uiDemand->canWriteMedicalSummary());
-    }
-
-    public function test_canWriteMedicalSummary_withRunningWorkflow_returnsFalse(): void
-    {
-        // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $completedWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Completed',
-            'completed_at'           => now(),
-        ]);
-
-        $runningMedicalSummaryRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'started_at'             => now(),
-        ]);
-
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $uiDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_DRAFT,
-            'team_object_id' => $teamObject->id,
-            'title'          => 'Test Demand',
-        ]);
-
-        // Attach completed extract data workflow
-        $uiDemand->workflowRuns()->attach($completedWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
-        ]);
-
-        // Attach running medical summary workflow
-        $uiDemand->workflowRuns()->attach($runningMedicalSummaryRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
-        ]);
-
-        // When & Then
-        $this->assertFalse($uiDemand->canWriteMedicalSummary());
-    }
-
-    public function test_canWriteMedicalSummary_withoutExtractDataCompleted_returnsFalse(): void
+    /**
+     * Test canRunWorkflow returns false when dependency is not completed
+     */
+    #[Test]
+    public function canRunWorkflow_withoutDependencyCompleted_returnsFalse(): void
     {
         // Given
         $teamObject = TeamObject::factory()->create([
@@ -236,51 +164,21 @@ class UiDemandTest extends AuthenticatedTestCase
         // No extract data workflow attached
 
         // When & Then
-        $this->assertFalse($uiDemand->canWriteMedicalSummary());
+        $this->assertFalse($uiDemand->canRunWorkflow('write_medical_summary'));
     }
 
-    public function test_canWriteDemandLetter_withValidConditions_returnsTrue(): void
+    /**
+     * Test canRunWorkflow returns false when team_object is missing for team_object source
+     */
+    #[Test]
+    public function canRunWorkflow_withNoTeamObject_returnsFalse(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
-        $completedMedicalSummaryRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Completed',
-            'completed_at'           => now(),
-        ]);
-
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $uiDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_DRAFT,
-            'team_object_id' => $teamObject->id,
-            'title'          => 'Test Demand',
-        ]);
-
-        // Attach completed medical summary workflow
-        $uiDemand->workflowRuns()->attach($completedMedicalSummaryRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
-        ]);
-
-        // When & Then
-        $this->assertTrue($uiDemand->canWriteDemandLetter());
-    }
-
-    public function test_canWriteDemandLetter_withNoTeamObject_returnsFalse(): void
-    {
-        // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $completedMedicalSummaryRun = WorkflowRun::factory()->create([
+        $completedWorkflowRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
             'status'                 => 'Completed',
             'completed_at'           => now(),
@@ -294,81 +192,258 @@ class UiDemandTest extends AuthenticatedTestCase
             'title'          => 'Test Demand',
         ]);
 
-        // Attach completed medical summary workflow
-        $uiDemand->workflowRuns()->attach($completedMedicalSummaryRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+        // Attach completed extract data workflow
+        $uiDemand->workflowRuns()->attach($completedWorkflowRun->id, [
+            'workflow_type' => 'extract_data',
         ]);
 
         // When & Then
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertFalse($uiDemand->canRunWorkflow('write_medical_summary'));
     }
 
-    public function test_canWriteDemandLetter_withRunningWorkflow_returnsFalse(): void
+    /**
+     * Test isWorkflowRunning returns true when workflow is running
+     */
+    #[Test]
+    public function isWorkflowRunning_withRunningWorkflow_returnsTrue(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
-        $completedMedicalSummaryRun = WorkflowRun::factory()->create([
+        $runningRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'started_at'             => now(),
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        $uiDemand->workflowRuns()->attach($runningRun->id, [
+            'workflow_type' => 'extract_data',
+        ]);
+
+        // When & Then
+        $this->assertTrue($uiDemand->isWorkflowRunning('extract_data'));
+    }
+
+    /**
+     * Test isWorkflowRunning returns false when workflow is completed
+     */
+    #[Test]
+    public function isWorkflowRunning_withCompletedWorkflow_returnsFalse(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $completedRun = WorkflowRun::factory()->create([
             'workflow_definition_id' => $workflowDefinition->id,
             'status'                 => 'Completed',
             'completed_at'           => now(),
         ]);
 
-        $runningDemandLetterRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'started_at'             => now(),
-        ]);
-
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
         $uiDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_DRAFT,
-            'team_object_id' => $teamObject->id,
-            'title'          => 'Test Demand',
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
         ]);
 
-        // Attach completed medical summary workflow
-        $uiDemand->workflowRuns()->attach($completedMedicalSummaryRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
-        ]);
-
-        // Attach running demand letter workflow
-        $uiDemand->workflowRuns()->attach($runningDemandLetterRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+        $uiDemand->workflowRuns()->attach($completedRun->id, [
+            'workflow_type' => 'extract_data',
         ]);
 
         // When & Then
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
     }
 
-    public function test_canWriteDemandLetter_withoutMedicalSummaryCompleted_returnsFalse(): void
+    /**
+     * Test isWorkflowRunning returns false when no workflow is attached
+     */
+    #[Test]
+    public function isWorkflowRunning_withNoWorkflow_returnsFalse(): void
     {
         // Given
-        $teamObject = TeamObject::factory()->create([
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        // When & Then
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+    }
+
+    /**
+     * Test getLatestWorkflowRun returns the latest workflow run
+     */
+    #[Test]
+    public function getLatestWorkflowRun_withMultipleRuns_returnsLatest(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
-        $uiDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_DRAFT,
-            'team_object_id' => $teamObject->id,
-            'title'          => 'Test Demand',
+        $olderRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'created_at'             => now()->subHours(2),
         ]);
 
-        // No medical summary workflow attached
+        $newerRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+            'created_at'             => now()->subHour(),
+        ]);
 
-        // When & Then
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        $uiDemand->workflowRuns()->attach([
+            $olderRun->id => ['workflow_type' => 'extract_data'],
+            $newerRun->id => ['workflow_type' => 'extract_data'],
+        ]);
+
+        // When
+        $latestRun = $uiDemand->getLatestWorkflowRun('extract_data');
+
+        // Then
+        $this->assertEquals($newerRun->id, $latestRun->id);
     }
 
-    public function test_workflowRunsRelationships_workCorrectly(): void
+    /**
+     * Test getLatestWorkflowRun returns null when no workflow is attached
+     */
+    #[Test]
+    public function getLatestWorkflowRun_withNoWorkflow_returnsNull(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        // When
+        $latestRun = $uiDemand->getLatestWorkflowRun('extract_data');
+
+        // Then
+        $this->assertNull($latestRun);
+    }
+
+    /**
+     * Test getLatestWorkflowRun uses preloaded relationships when available
+     */
+    #[Test]
+    public function getLatestWorkflowRun_withPreloadedRelationships_usesPreloaded(): void
+    {
+        // Given
+        $workflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $workflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $workflowDefinition->id,
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        $uiDemand->workflowRuns()->attach($workflowRun->id, [
+            'workflow_type' => 'extract_data',
+        ]);
+
+        // Load relationship
+        $uiDemand->load('workflowRuns');
+
+        // When
+        $latestRun = $uiDemand->getLatestWorkflowRun('extract_data');
+
+        // Then
+        $this->assertEquals($workflowRun->id, $latestRun->id);
+    }
+
+    /**
+     * Test getArtifactsByCategory returns artifacts for specific category
+     */
+    #[Test]
+    public function getArtifactsByCategory_withArtifacts_returnsCorrectArtifacts(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        $medicalArtifact1 = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'text_content' => 'Medical Summary 1',
+        ]);
+
+        $medicalArtifact2 = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'text_content' => 'Medical Summary 2',
+        ]);
+
+        $outputArtifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'text_content' => 'Output Document',
+        ]);
+
+        $uiDemand->artifacts()->attach([
+            $medicalArtifact1->id => ['category' => 'medical_summary'],
+            $medicalArtifact2->id => ['category' => 'medical_summary'],
+            $outputArtifact->id   => ['category' => 'output_document'],
+        ]);
+
+        // When
+        $medicalArtifacts = $uiDemand->getArtifactsByCategory('medical_summary');
+        $outputArtifacts  = $uiDemand->getArtifactsByCategory('output_document');
+
+        // Then
+        $this->assertCount(2, $medicalArtifacts);
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertTrue($medicalArtifacts->contains($medicalArtifact1));
+        $this->assertTrue($medicalArtifacts->contains($medicalArtifact2));
+        $this->assertTrue($outputArtifacts->contains($outputArtifact));
+    }
+
+    /**
+     * Test getArtifactsByCategory returns empty collection when no artifacts exist
+     */
+    #[Test]
+    public function getArtifactsByCategory_withNoArtifacts_returnsEmptyCollection(): void
+    {
+        // Given
+        $uiDemand = UiDemand::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+            'title'   => 'Test Demand',
+        ]);
+
+        // When
+        $artifacts = $uiDemand->getArtifactsByCategory('medical_summary');
+
+        // Then
+        $this->assertCount(0, $artifacts);
+    }
+
+    /**
+     * Test workflowRuns relationship works correctly
+     */
+    #[Test]
+    public function workflowRuns_withMultipleWorkflows_returnsAllWorkflows(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -395,96 +470,23 @@ class UiDemandTest extends AuthenticatedTestCase
 
         // Attach workflows with different types
         $uiDemand->workflowRuns()->attach([
-            $extractDataRun->id     => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $medicalSummaryRun->id  => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY],
-            $demandLetterRun->id    => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER],
+            $extractDataRun->id    => ['workflow_type' => 'extract_data'],
+            $medicalSummaryRun->id => ['workflow_type' => 'write_medical_summary'],
+            $demandLetterRun->id   => ['workflow_type' => 'write_demand_letter'],
         ]);
 
         // When & Then
         $this->assertEquals(3, $uiDemand->workflowRuns()->count());
-        $this->assertEquals(1, $uiDemand->extractDataWorkflowRuns()->count());
-        $this->assertEquals(1, $uiDemand->writeMedicalSummaryWorkflowRuns()->count());
-        $this->assertEquals(1, $uiDemand->writeDemandLetterWorkflowRuns()->count());
-
-        $this->assertEquals($extractDataRun->id, $uiDemand->getLatestExtractDataWorkflowRun()->id);
-        $this->assertEquals($medicalSummaryRun->id, $uiDemand->getLatestWriteMedicalSummaryWorkflowRun()->id);
-        $this->assertEquals($demandLetterRun->id, $uiDemand->getLatestWriteDemandLetterWorkflowRun()->id);
+        $this->assertEquals($extractDataRun->id, $uiDemand->getLatestWorkflowRun('extract_data')->id);
+        $this->assertEquals($medicalSummaryRun->id, $uiDemand->getLatestWorkflowRun('write_medical_summary')->id);
+        $this->assertEquals($demandLetterRun->id, $uiDemand->getLatestWorkflowRun('write_demand_letter')->id);
     }
 
-    public function test_progressMethods_returnCorrectValues(): void
-    {
-        // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $workflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'started_at'             => now(),
-        ]);
-
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'title'   => 'Test Demand',
-        ]);
-
-        $uiDemand->workflowRuns()->attach($workflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
-        ]);
-
-        // When & Then
-        // Running workflow with no task runs will have 0 progress
-        $this->assertEquals(0.0, $uiDemand->getExtractDataProgress());
-        $this->assertEquals(0.0, $uiDemand->getWriteMedicalSummaryProgress()); // No workflow attached
-        $this->assertEquals(0.0, $uiDemand->getWriteDemandLetterProgress()); // No workflow attached
-    }
-
-    public function test_isWorkflowRunningMethods_returnCorrectValues(): void
-    {
-        // Given
-        $workflowDefinition = WorkflowDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $runningRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'started_at'             => now(),
-        ]);
-
-        $completedRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $workflowDefinition->id,
-            'status'                 => 'Completed',
-            'completed_at'           => now(),
-        ]);
-
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'title'   => 'Test Demand',
-        ]);
-
-        // Attach workflows - one running, one completed
-        $uiDemand->workflowRuns()->attach([
-            $runningRun->id   => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $completedRun->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY],
-        ]);
-
-        // When & Then
-        $this->assertTrue($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteMedicalSummaryRunning());
-        $this->assertFalse($uiDemand->isWriteDemandLetterRunning());
-    }
-
-    public function test_workflowConstants_areCorrect(): void
-    {
-        // Then
-        $this->assertEquals('extract_data', UiDemand::WORKFLOW_TYPE_EXTRACT_DATA);
-        $this->assertEquals('write_medical_summary', UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY);
-        $this->assertEquals('write_demand_letter', UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER);
-    }
-
-    public function test_statusConstants_areCorrect(): void
+    /**
+     * Test status constants are correct
+     */
+    #[Test]
+    public function statusConstants_areCorrect(): void
     {
         // Then
         $this->assertEquals('Draft', UiDemand::STATUS_DRAFT);
@@ -492,7 +494,11 @@ class UiDemandTest extends AuthenticatedTestCase
         $this->assertEquals('Failed', UiDemand::STATUS_FAILED);
     }
 
-    public function test_validate_withValidData_passes(): void
+    /**
+     * Test validate with valid data passes
+     */
+    #[Test]
+    public function validate_withValidData_passes(): void
     {
         // Given
         $uiDemand = UiDemand::factory()->create([
@@ -507,7 +513,11 @@ class UiDemandTest extends AuthenticatedTestCase
         $this->assertTrue($validator->passes());
     }
 
-    public function test_validate_withInvalidStatus_fails(): void
+    /**
+     * Test validate with invalid status fails
+     */
+    #[Test]
+    public function validate_withInvalidStatus_fails(): void
     {
         // Given
         $data = [
@@ -526,7 +536,11 @@ class UiDemandTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('status', $validator->errors()->toArray());
     }
 
-    public function test_validate_withMissingTitle_fails(): void
+    /**
+     * Test validate with missing title fails
+     */
+    #[Test]
+    public function validate_withMissingTitle_fails(): void
     {
         // Given
         $data = [

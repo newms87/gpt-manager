@@ -144,10 +144,10 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id' => $workflowRun->id,
             'listener_type'   => UiDemand::class,
             'listener_id'     => $uiDemand->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // 8. Mock GoogleDocsApi to simulate document creation and folder operations
         $this->mock(GoogleDocsApi::class, function ($mock) {
@@ -355,7 +355,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
 
-        $uiDemand->workflowRuns()->attach($firstWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($firstWorkflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // Second workflow run (reusing the same document)
         $secondWorkflowRun = WorkflowRun::factory()->create([
@@ -402,7 +402,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $secondWorkflowOutputRunner = $secondOutputTaskProcess->getRunner();
         $secondWorkflowOutputRunner->run();
 
-        $uiDemand->workflowRuns()->attach($secondWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($secondWorkflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // Create WorkflowListeners for both workflow runs
         WorkflowListener::factory()->create([
@@ -410,7 +410,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id' => $firstWorkflowRun->id,
             'listener_type'   => UiDemand::class,
             'listener_id'     => $uiDemand->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
         WorkflowListener::factory()->create([
@@ -418,7 +418,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id' => $secondWorkflowRun->id,
             'listener_type'   => UiDemand::class,
             'listener_id'     => $uiDemand->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
         // When - Process both workflow completions
@@ -470,7 +470,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'failed_at'              => now(),
         ]);
 
-        $uiDemand->workflowRuns()->attach($failedWorkflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($failedWorkflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // Create WorkflowListener to connect the workflow run to the UiDemand
         WorkflowListener::factory()->create([
@@ -478,7 +478,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id' => $failedWorkflowRun->id,
             'listener_type'   => UiDemand::class,
             'listener_id'     => $uiDemand->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
         // When
@@ -577,7 +577,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $workflowOutputRunner = $outputTaskProcess->getRunner();
         $workflowOutputRunner->run();
 
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // Create WorkflowListener to connect the workflow run to the UiDemand
         WorkflowListener::factory()->create([
@@ -585,7 +585,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_run_id' => $workflowRun->id,
             'listener_type'   => UiDemand::class,
             'listener_id'     => $uiDemand->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
         // When

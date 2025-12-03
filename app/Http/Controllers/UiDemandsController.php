@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Demand\UiDemand;
 use App\Repositories\UiDemandRepository;
 use App\Resources\UiDemandResource;
+use App\Services\UiDemand\UiDemandWorkflowConfigService;
 use App\Services\UiDemand\UiDemandWorkflowService;
+use Illuminate\Http\JsonResponse;
 use Newms87\Danx\Http\Controllers\ActionController;
 
 class UiDemandsController extends ActionController
@@ -15,52 +17,34 @@ class UiDemandsController extends ActionController
     public static ?string $resource = UiDemandResource::class;
 
     /**
-     * Handle workflow errors consistently
+     * Generic workflow execution endpoint
      */
-    private function handleWorkflowError(string $action, \Exception $e)
+    public function runWorkflow(UiDemand $uiDemand, string $workflowKey)
     {
+        try {
+            $params = request()->only(['template_id', 'instruction_template_id', 'additional_instructions']);
+
+            app(UiDemandWorkflowService::class)->runWorkflow($uiDemand, $workflowKey, $params);
+
+            return UiDemandResource::details($uiDemand);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => "Failed to start workflow '{$workflowKey}'.",
+                'error'   => $e->getMessage(),
+            ], 400);
+        }
+    }
+
+    /**
+     * Get workflow configuration for UI
+     */
+    public function workflowConfig(): JsonResponse
+    {
+        $config = app(UiDemandWorkflowConfigService::class);
+
         return response()->json([
-            'message' => "Failed to start {$action} workflow.",
-            'error'   => $e->getMessage(),
-        ], 400);
-    }
-
-    public function extractData(UiDemand $uiDemand)
-    {
-        try {
-            app(UiDemandWorkflowService::class)->extractData($uiDemand);
-
-            return UiDemandResource::details($uiDemand);
-        } catch (\Exception $e) {
-            return $this->handleWorkflowError('extract data', $e);
-        }
-    }
-
-    public function writeMedicalSummary(UiDemand $uiDemand)
-    {
-        try {
-            $instructionTemplateId  = request()->input('instruction_template_id');
-            $additionalInstructions = request()->input('additional_instructions');
-
-            app(UiDemandWorkflowService::class)->writeMedicalSummary($uiDemand, $instructionTemplateId, $additionalInstructions);
-
-            return UiDemandResource::details($uiDemand);
-        } catch (\Exception $e) {
-            return $this->handleWorkflowError('write medical summary', $e);
-        }
-    }
-
-    public function writeDemandLetter(UiDemand $uiDemand)
-    {
-        try {
-            $templateId             = request()->input('template_id');
-            $additionalInstructions = request()->input('additional_instructions');
-
-            app(UiDemandWorkflowService::class)->writeDemandLetter($uiDemand, $templateId, $additionalInstructions);
-
-            return UiDemandResource::details($uiDemand);
-        } catch (\Exception $e) {
-            return $this->handleWorkflowError('write demand letter', $e);
-        }
+            'workflows'         => $config->getWorkflowsForApi(),
+            'schema_definition' => $config->getSchemaDefinition(),
+        ]);
     }
 }

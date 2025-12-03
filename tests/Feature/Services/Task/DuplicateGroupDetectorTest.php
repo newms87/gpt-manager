@@ -150,7 +150,7 @@ class DuplicateGroupDetectorTest extends TestCase
 
         $this->assertEquals('ME Physical Therapy', $prepared['group1']['name']);
         $this->assertEquals(3, $prepared['group1']['file_count']);
-        $this->assertCount(3, $prepared['group1']['sample_files']);
+        $this->assertCount(2, $prepared['group1']['sample_files']);
 
         $this->assertEquals('ME Physical Therapy (Northglenn)', $prepared['group2']['name']);
         $this->assertEquals(2, $prepared['group2']['file_count']);

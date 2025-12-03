@@ -58,7 +58,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/extract-data");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
 
         // Then
         $response->assertSuccessful();
@@ -66,22 +66,19 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'id',
             'title',
             'status',
-            'can_extract_data',
-            'can_write_medical_summary',
-            'can_write_demand_letter',
-            'is_extract_data_running',
-            'extract_data_workflow_run' => [
-                'id',
-                'status',
-                'progress_percent',
+            'workflow_runs' => [
+                'extract_data' => [
+                    'id',
+                    'status',
+                    'progress_percent',
+                ],
             ],
-            'write_medical_summary_workflow_run',
-            'write_demand_letter_workflow_run',
+            'workflow_config',
         ]);
 
         // Verify workflow was started
         $this->assertTrue($uiDemand->fresh()->workflowRuns()->exists());
-        $this->assertTrue($uiDemand->fresh()->isExtractDataRunning());
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('extract_data'));
     }
 
     public function test_extractData_withInvalidDemand_returns400Error(): void
@@ -95,7 +92,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/extract-data");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
 
         // Then
         $response->assertStatus(400);
@@ -139,11 +136,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_medical_summary");
 
         // Then
         $response->assertSuccessful();
@@ -151,19 +148,20 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'id',
             'title',
             'status',
-            'can_write_medical_summary',
-            'is_write_medical_summary_running',
-            'write_medical_summary_workflow_run' => [
-                'id',
-                'status',
-                'progress_percent',
+            'workflow_runs' => [
+                'write_medical_summary' => [
+                    'id',
+                    'status',
+                    'progress_percent',
+                ],
             ],
+            'workflow_config',
         ]);
 
         // Verify workflow was started
         $workflowRuns = $uiDemand->fresh()->workflowRuns;
         $this->assertTrue($workflowRuns->count() > 0);
-        $this->assertTrue($uiDemand->fresh()->isWriteMedicalSummaryRunning());
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('write_medical_summary'));
     }
 
     public function test_writeMedicalSummary_withInvalidDemand_returns400Error(): void
@@ -178,7 +176,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_medical_summary");
 
         // Then
         $response->assertStatus(400);
@@ -187,7 +185,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'error',
         ]);
         $response->assertJsonFragment([
-            'message' => 'Failed to start write medical summary workflow.',
+            'message' => "Failed to start workflow 'write_medical_summary'.",
         ]);
     }
 
@@ -208,7 +206,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_medical_summary");
 
         // Then
         $response->assertStatus(400);
@@ -245,7 +243,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/extract-data");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
 
         // Then
         $response->assertSuccessful();
@@ -254,13 +252,13 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('team_object', $data);
         $this->assertArrayHasKey('input_files', $data);
         $this->assertArrayHasKey('output_files', $data);
-        $this->assertArrayHasKey('extract_data_workflow_run', $data);
+        $this->assertArrayHasKey('workflow_runs', $data);
 
         // Verify workflow run has necessary data
-        $this->assertNotNull($data['extract_data_workflow_run']);
-        $this->assertArrayHasKey('progress_percent', $data['extract_data_workflow_run']);
-        $this->assertArrayHasKey('total_nodes', $data['extract_data_workflow_run']);
-        $this->assertArrayHasKey('completed_tasks', $data['extract_data_workflow_run']);
+        $this->assertNotNull($data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['extract_data']);
     }
 
     public function test_writeMedicalSummary_endpoint_loadsCorrectRelationships(): void
@@ -297,25 +295,24 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_medical_summary");
 
         // Then
         $response->assertSuccessful();
 
         $data = $response->json();
         $this->assertArrayHasKey('team_object', $data);
-        $this->assertArrayHasKey('write_medical_summary_workflow_run', $data);
-        $this->assertArrayHasKey('write_demand_letter_workflow_run', $data);
+        $this->assertArrayHasKey('workflow_runs', $data);
 
         // Verify workflow run has necessary data
-        $this->assertNotNull($data['write_medical_summary_workflow_run']);
-        $this->assertArrayHasKey('progress_percent', $data['write_medical_summary_workflow_run']);
-        $this->assertArrayHasKey('total_nodes', $data['write_medical_summary_workflow_run']);
-        $this->assertArrayHasKey('completed_tasks', $data['write_medical_summary_workflow_run']);
+        $this->assertNotNull($data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_medical_summary']);
     }
 
     public function test_demand_canWriteDemand_flagIsCorrect(): void
@@ -334,15 +331,10 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'title'          => 'Test Demand',
         ]);
 
-        // When - get demand details
-        $response = $this->getJson("/api/ui-demands/{$uiDemand->id}/details");
+        // Then - should not be able to write medical summary yet (no extract_data completed)
+        $this->assertFalse($uiDemand->canRunWorkflow('write_medical_summary'));
 
-        // Then - can_write_medical_summary should be false
-        $response->assertSuccessful();
-        $data = $response->json();
-        $this->assertFalse($data['can_write_medical_summary']);
-
-        // Now complete extract data and verify can_write_medical_summary becomes true
+        // Now complete extract data and verify can run becomes true
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -355,17 +347,16 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         $uiDemand->update([
             'metadata' => ['extract_data_completed_at' => now()->toIso8601String()],
         ]);
 
-        $response = $this->getJson("/api/ui-demands/{$uiDemand->id}/details");
-        $response->assertSuccessful();
-        $data = $response->json();
-        $this->assertTrue($data['can_write_medical_summary']);
+        // Verify can now run write_medical_summary
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertTrue($updatedDemand->canRunWorkflow('write_medical_summary'));
     }
 
     public function test_workflow_completion_updates_canWriteMedicalSummary_correctly(): void
@@ -396,13 +387,13 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // Connect via pivot table
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA]);
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'extract_data']);
 
         // Should NOT be able to write demand letter yet - need medical summary first
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // But should be able to write medical summary since extract data is completed
-        $this->assertTrue($uiDemand->canWriteMedicalSummary());
+        $this->assertTrue($uiDemand->canRunWorkflow('write_medical_summary'));
 
         // When - Handle workflow completion
         $service = app(UiDemandWorkflowService::class);
@@ -410,7 +401,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
 
         // Then - Should now be able to write medical summary (metadata updated)
         $updatedDemand = $uiDemand->fresh();
-        $this->assertTrue($updatedDemand->canWriteMedicalSummary());
+        $this->assertTrue($updatedDemand->canRunWorkflow('write_medical_summary'));
         $this->assertArrayHasKey('extract_data_completed_at', $updatedDemand->metadata);
     }
 
@@ -459,12 +450,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach([
-            $extractDataWorkflowRun->id    => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $medicalSummaryWorkflowRun->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY],
+            $extractDataWorkflowRun->id    => ['workflow_type' => 'extract_data'],
+            $medicalSummaryWorkflowRun->id => ['workflow_type' => 'write_medical_summary'],
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-demand-letter");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_demand_letter");
 
         // Then
         $response->assertSuccessful();
@@ -472,19 +463,20 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'id',
             'title',
             'status',
-            'can_write_demand_letter',
-            'is_write_demand_letter_running',
-            'write_demand_letter_workflow_run' => [
-                'id',
-                'status',
-                'progress_percent',
+            'workflow_runs' => [
+                'write_demand_letter' => [
+                    'id',
+                    'status',
+                    'progress_percent',
+                ],
             ],
+            'workflow_config',
         ]);
 
         // Verify workflow was started
         $workflowRuns = $uiDemand->fresh()->workflowRuns;
         $this->assertTrue($workflowRuns->count() > 0);
-        $this->assertTrue($uiDemand->fresh()->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('write_demand_letter'));
     }
 
     public function test_writeDemandLetter_withInvalidDemand_returns400Error(): void
@@ -499,7 +491,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-demand-letter");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_demand_letter");
 
         // Then
         $response->assertStatus(400);
@@ -508,7 +500,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'error',
         ]);
         $response->assertJsonFragment([
-            'message' => 'Failed to start write demand letter workflow.',
+            'message' => "Failed to start workflow 'write_demand_letter'.",
         ]);
     }
 
@@ -529,7 +521,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-demand-letter");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_demand_letter");
 
         // Then
         $response->assertStatus(400);
@@ -584,25 +576,25 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach([
-            $extractDataWorkflowRun->id    => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $medicalSummaryWorkflowRun->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY],
+            $extractDataWorkflowRun->id    => ['workflow_type' => 'extract_data'],
+            $medicalSummaryWorkflowRun->id => ['workflow_type' => 'write_medical_summary'],
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-demand-letter");
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_demand_letter");
 
         // Then
         $response->assertSuccessful();
 
         $data = $response->json();
         $this->assertArrayHasKey('team_object', $data);
-        $this->assertArrayHasKey('write_demand_letter_workflow_run', $data);
+        $this->assertArrayHasKey('workflow_runs', $data);
 
         // Verify workflow run has necessary data
-        $this->assertNotNull($data['write_demand_letter_workflow_run']);
-        $this->assertArrayHasKey('progress_percent', $data['write_demand_letter_workflow_run']);
-        $this->assertArrayHasKey('total_nodes', $data['write_demand_letter_workflow_run']);
-        $this->assertArrayHasKey('completed_tasks', $data['write_demand_letter_workflow_run']);
+        $this->assertNotNull($data['workflow_runs']['write_demand_letter']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_demand_letter']);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_demand_letter']);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_demand_letter']);
     }
 
     public function test_writeMedicalSummary_withInstructionTemplate_acceptsTemplateId(): void
@@ -639,7 +631,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create instruction template
@@ -648,14 +640,14 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-medical-summary", [
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_medical_summary", [
             'instruction_template_id'  => $instructionTemplate->id,
             'additional_instructions'  => 'Focus on injury details',
         ]);
 
         // Then
         $response->assertSuccessful();
-        $this->assertTrue($uiDemand->fresh()->isWriteMedicalSummaryRunning());
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('write_medical_summary'));
     }
 
     public function test_writeDemandLetter_withTemplate_acceptsTemplateId(): void
@@ -703,8 +695,8 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach([
-            $extractDataWorkflowRun->id    => ['workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA],
-            $medicalSummaryWorkflowRun->id => ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY],
+            $extractDataWorkflowRun->id    => ['workflow_type' => 'extract_data'],
+            $medicalSummaryWorkflowRun->id => ['workflow_type' => 'write_medical_summary'],
         ]);
 
         // Create template
@@ -713,13 +705,13 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // When
-        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/write-demand-letter", [
+        $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/write_demand_letter", [
             'template_id'             => $template->id,
             'additional_instructions' => 'Include specific damages',
         ]);
 
         // Then
         $response->assertSuccessful();
-        $this->assertTrue($uiDemand->fresh()->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('write_demand_letter'));
     }
 }

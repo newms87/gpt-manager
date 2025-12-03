@@ -76,20 +76,20 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $service = app(UiDemandWorkflowService::class);
 
         // STEP 1: Verify initial state - can extract data, cannot write demand
-        $this->assertTrue($uiDemand->canExtractData());
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_demand_letter'));
 
         // STEP 2: Start extract data workflow
-        $extractDataWorkflowRun = $service->extractData($uiDemand);
+        $extractDataWorkflowRun = $service->runWorkflow($uiDemand, 'extract_data');
         $uiDemand               = $uiDemand->fresh();
 
         // Verify extract data is running
-        $this->assertFalse($uiDemand->canExtractData()); // Can't start another
-        $this->assertFalse($uiDemand->canWriteDemandLetter()); // Still can't write demand
-        $this->assertTrue($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteDemandLetterRunning());
+        $this->assertFalse($uiDemand->canRunWorkflow('extract_data')); // Can't start another
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter')); // Still can't write demand
+        $this->assertTrue($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_demand_letter'));
 
         // STEP 3: Simulate the actual workflow execution that would happen in production
 
@@ -154,24 +154,24 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand = $uiDemand->fresh();
 
         // STEP 4: Verify extract data completed state - now can write medical summary (not demand letter yet!)
-        $this->assertTrue($uiDemand->canExtractData()); // Still has files and draft status
-        $this->assertFalse($uiDemand->canWriteDemandLetter()); // CANNOT write demand letter until medical summary is complete
-        $this->assertTrue($uiDemand->canWriteMedicalSummary()); // NOW CAN write medical summary!
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data')); // Still has files and draft status
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter')); // CANNOT write demand letter until medical summary is complete
+        $this->assertTrue($uiDemand->canRunWorkflow('write_medical_summary')); // NOW CAN write medical summary!
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_demand_letter'));
         $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->status);
         $this->assertArrayHasKey('extract_data_completed_at', $uiDemand->metadata);
 
         // STEP 5: Start write medical summary workflow
-        $writeMedicalSummaryWorkflowRun = $service->writeMedicalSummary($uiDemand);
+        $writeMedicalSummaryWorkflowRun = $service->runWorkflow($uiDemand, 'write_medical_summary');
         $uiDemand                       = $uiDemand->fresh();
 
         // Verify medical summary is running
-        $this->assertTrue($uiDemand->canExtractData()); // Still can extract data
-        $this->assertFalse($uiDemand->canWriteMedicalSummary()); // Can't start another medical summary
-        $this->assertFalse($uiDemand->canWriteDemandLetter()); // Still can't write demand letter
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertTrue($uiDemand->isWriteMedicalSummaryRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data')); // Still can extract data
+        $this->assertFalse($uiDemand->canRunWorkflow('write_medical_summary')); // Can't start another medical summary
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter')); // Still can't write demand letter
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertTrue($uiDemand->isWorkflowRunning('write_medical_summary'));
 
         // STEP 6: Complete write medical summary workflow
         $writeMedicalSummaryWorkflowRun->update([
@@ -183,24 +183,24 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand = $uiDemand->fresh();
 
         // Verify medical summary completed state - now can write demand letter
-        $this->assertTrue($uiDemand->canExtractData()); // Still has files and draft status
-        $this->assertTrue($uiDemand->canWriteMedicalSummary()); // Can write medical summary again
-        $this->assertTrue($uiDemand->canWriteDemandLetter()); // NOW CAN write demand letter!
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteMedicalSummaryRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data')); // Still has files and draft status
+        $this->assertTrue($uiDemand->canRunWorkflow('write_medical_summary')); // Can write medical summary again
+        $this->assertTrue($uiDemand->canRunWorkflow('write_demand_letter')); // NOW CAN write demand letter!
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_medical_summary'));
         $this->assertArrayHasKey('write_medical_summary_completed_at', $uiDemand->metadata);
 
         // STEP 7: Start write demand letter workflow
-        $writeDemandLetterWorkflowRun = $service->writeDemandLetter($uiDemand);
+        $writeDemandLetterWorkflowRun = $service->runWorkflow($uiDemand, 'write_demand_letter');
         $uiDemand                     = $uiDemand->fresh();
 
         // Verify write demand letter is running
-        $this->assertTrue($uiDemand->canExtractData()); // Still can extract data
-        $this->assertTrue($uiDemand->canWriteMedicalSummary()); // Can write medical summary again
-        $this->assertFalse($uiDemand->canWriteDemandLetter()); // Can't start another demand letter
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteMedicalSummaryRunning());
-        $this->assertTrue($uiDemand->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data')); // Still can extract data
+        $this->assertTrue($uiDemand->canRunWorkflow('write_medical_summary')); // Can write medical summary again
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter')); // Can't start another demand letter
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_medical_summary'));
+        $this->assertTrue($uiDemand->isWorkflowRunning('write_demand_letter'));
 
         // STEP 8: Complete write demand letter workflow
         $writeDemandLetterWorkflowRun->update([
@@ -229,10 +229,10 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand = $uiDemand->fresh();
 
         // STEP 9: Verify final state - stays as Draft until manually published
-        $this->assertTrue($uiDemand->canExtractData()); // Still has files and status is DRAFT
-        $this->assertTrue($uiDemand->canWriteDemandLetter()); // Still can write demand since not running and has extract data completed
-        $this->assertFalse($uiDemand->isExtractDataRunning());
-        $this->assertFalse($uiDemand->isWriteDemandLetterRunning());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data')); // Still has files and status is DRAFT
+        $this->assertTrue($uiDemand->canRunWorkflow('write_demand_letter')); // Still can write demand since not running and has extract data completed
+        $this->assertFalse($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertFalse($uiDemand->isWorkflowRunning('write_demand_letter'));
         $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->status);
         $this->assertNull($uiDemand->completed_at);
         $this->assertArrayHasKey('write_demand_letter_completed_at', $uiDemand->metadata);
@@ -242,7 +242,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         // The number of output files depends on the artifacts having StoredFiles
     }
 
-    public function test_api_endpoints_return_correct_canWriteDemandLetter_flag(): void
+    public function test_api_endpoints_return_correct_workflow_structure(): void
     {
         // Given - Set up demand with medical summary completed (prerequisite for write demand letter)
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
@@ -275,7 +275,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED for write demand letter)
@@ -285,38 +285,75 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When - Get demand via API
         $response = $this->getJson("/api/ui-demands/{$uiDemand->id}/details");
 
-        // Then - Should show can_write_demand: true
+        // Then - Should return new workflow_runs and workflow_config structure
         $response->assertSuccessful();
         $data = $response->json();
 
-        $this->assertTrue($data['can_write_demand_letter'], 'API should return can_write_demand_letter: true when medical summary is completed');
-        $this->assertFalse($data['is_write_demand_letter_running']);
-        $this->assertArrayHasKey('write_demand_letter_workflow_run', $data);
+        // Verify new workflow_runs structure exists
+        $this->assertArrayHasKey('workflow_runs', $data);
+        $this->assertIsArray($data['workflow_runs']);
 
-        // Verify detailed response structure
+        // Verify all expected workflow keys exist
+        $this->assertArrayHasKey('extract_data', $data['workflow_runs']);
+        $this->assertArrayHasKey('write_medical_summary', $data['workflow_runs']);
+        $this->assertArrayHasKey('write_demand_letter', $data['workflow_runs']);
+
+        // Verify extract_data workflow run is not null (it was completed)
+        $this->assertNotNull($data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('id', $data['workflow_runs']['extract_data']);
+        $this->assertNotNull($data['workflow_runs']['extract_data']['completed_at']);
+
+        // Verify write_medical_summary workflow run is not null (it was completed)
+        $this->assertNotNull($data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('id', $data['workflow_runs']['write_medical_summary']);
+        $this->assertNotNull($data['workflow_runs']['write_medical_summary']['completed_at']);
+
+        // Verify write_demand_letter has no workflow run yet (null expected)
+        $this->assertNull($data['workflow_runs']['write_demand_letter']);
+
+        // Verify workflow_config structure
+        $this->assertArrayHasKey('workflow_config', $data);
+        $this->assertIsArray($data['workflow_config']);
+        $this->assertCount(3, $data['workflow_config']);
+
+        // Verify workflow_config contains expected fields
+        $firstWorkflow = $data['workflow_config'][0];
+        $this->assertArrayHasKey('key', $firstWorkflow);
+        $this->assertArrayHasKey('name', $firstWorkflow);
+        $this->assertArrayHasKey('label', $firstWorkflow);
+        $this->assertArrayHasKey('description', $firstWorkflow);
+        $this->assertArrayHasKey('color', $firstWorkflow);
+        $this->assertArrayHasKey('depends_on', $firstWorkflow);
+
+        // Verify metadata still exists
         $this->assertArrayHasKey('metadata', $data);
         $this->assertArrayHasKey('write_medical_summary_completed_at', $data['metadata']);
     }
 
-    public function test_list_endpoint_includes_write_demand_flags(): void
+    public function test_details_endpoint_includes_workflow_runs_for_different_states(): void
     {
-        // Given - Create demands in different states
+        // Given - Create demands in different workflow states
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
+        ]);
+
+        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Write Medical Summary',
         ]);
 
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
-        // Demand 1: Fresh demand (can extract data, cannot write demand)
+        // Demand 1: Fresh demand with no workflows run
         $freshDemand = UiDemand::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'user_id'        => $this->user->id,
@@ -332,20 +369,36 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
         $freshDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
-        // Demand 2: Medical summary completed (cannot extract, can write demand letter)
-        $readyDemand = UiDemand::factory()->create([
+        // Demand 2: Has completed extract_data workflow
+        $extractDataDemand = UiDemand::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'user_id'        => $this->user->id,
             'status'         => UiDemand::STATUS_DRAFT,
             'team_object_id' => $teamObject->id,
-            'metadata'       => ['write_medical_summary_completed_at' => now()->toIso8601String()],
-            'title'          => 'Ready for Write Demand',
+            'metadata'       => ['extract_data_completed_at' => now()->toIso8601String()],
+            'title'          => 'Extract Data Completed',
         ]);
 
-        // Create completed medical summary workflow run for ready demand
-        $medicalSummaryWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'name'    => 'Write Medical Summary',
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $extractDataWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $extractDataDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
+            'workflow_type' => 'extract_data',
+        ]);
+
+        // Demand 3: Has completed medical summary workflow
+        $medicalSummaryDemand = UiDemand::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
+            'metadata'       => [
+                'extract_data_completed_at'          => now()->subHour()->toIso8601String(),
+                'write_medical_summary_completed_at' => now()->toIso8601String(),
+            ],
+            'title'          => 'Medical Summary Completed',
         ]);
 
         $medicalSummaryWorkflowRun = WorkflowRun::factory()->create([
@@ -353,66 +406,47 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'completed_at'           => now(),
         ]);
 
-        $readyDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+        $medicalSummaryDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
+            'workflow_type' => 'write_medical_summary',
         ]);
 
-        // Demand 3: Completed demand (cannot do anything)
-        $completedDemand = UiDemand::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'user_id'        => $this->user->id,
-            'status'         => UiDemand::STATUS_COMPLETED,
-            'team_object_id' => $teamObject->id,
-            'metadata'       => [
-                'write_medical_summary_completed_at' => now()->subHour()->toIso8601String(),
-                'write_demand_letter_completed_at'   => now()->toIso8601String(),
-            ],
-            'completed_at'   => now(),
-            'title'          => 'Completed Demand',
-        ]);
+        // Test each demand's details endpoint individually
 
-        // Create completed medical summary workflow run for completed demand
-        $completedMedicalSummaryWorkflowRun = WorkflowRun::factory()->create([
-            'workflow_definition_id' => $medicalSummaryWorkflowDefinition->id,
-            'completed_at'           => now()->subHour(),
-        ]);
+        // Fresh demand - no workflow runs
+        $freshResponse = $this->getJson("/api/ui-demands/{$freshDemand->id}/details");
+        $freshResponse->assertSuccessful();
+        $fresh = $freshResponse->json();
 
-        $completedDemand->workflowRuns()->attach($completedMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
-        ]);
+        $this->assertArrayHasKey('workflow_runs', $fresh);
+        $this->assertArrayHasKey('extract_data', $fresh['workflow_runs']);
+        $this->assertArrayHasKey('write_medical_summary', $fresh['workflow_runs']);
+        $this->assertArrayHasKey('write_demand_letter', $fresh['workflow_runs']);
+        $this->assertNull($fresh['workflow_runs']['extract_data']);
+        $this->assertNull($fresh['workflow_runs']['write_medical_summary']);
+        $this->assertNull($fresh['workflow_runs']['write_demand_letter']);
 
-        // When - Get demands list
-        $response = $this->getJson('/api/ui-demands/list');
+        // Extract data completed demand - has extract_data workflow run
+        $extractDataResponse = $this->getJson("/api/ui-demands/{$extractDataDemand->id}/details");
+        $extractDataResponse->assertSuccessful();
+        $extractData = $extractDataResponse->json();
 
-        // Then - Verify all demands have correct flags
-        $response->assertSuccessful();
-        $data = $response->json();
+        $this->assertArrayHasKey('workflow_runs', $extractData);
+        $this->assertNotNull($extractData['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('id', $extractData['workflow_runs']['extract_data']);
+        $this->assertNotNull($extractData['workflow_runs']['extract_data']['completed_at']);
+        $this->assertNull($extractData['workflow_runs']['write_medical_summary']);
+        $this->assertNull($extractData['workflow_runs']['write_demand_letter']);
 
-        $this->assertCount(3, $data['data']);
+        // Medical summary completed demand - has medical summary workflow run
+        $medicalSummaryResponse = $this->getJson("/api/ui-demands/{$medicalSummaryDemand->id}/details");
+        $medicalSummaryResponse->assertSuccessful();
+        $medicalSummary = $medicalSummaryResponse->json();
 
-        // Find each demand in response and verify flags
-        $demands = collect($data['data'])->keyBy('title');
-
-        // Fresh demand
-        $fresh = $demands['Fresh Demand'];
-        $this->assertTrue($fresh['can_extract_data']);
-        $this->assertFalse($fresh['can_write_demand_letter']);
-        $this->assertFalse($fresh['is_extract_data_running']);
-        $this->assertFalse($fresh['is_write_demand_letter_running']);
-
-        // Ready demand - THIS IS THE CRITICAL TEST
-        $ready = $demands['Ready for Write Demand'];
-        $this->assertFalse($ready['can_extract_data']); // No files attached so can't extract data
-        $this->assertTrue($ready['can_write_demand_letter'], 'Demand with extract data completed should show can_write_demand: true');
-        $this->assertFalse($ready['is_extract_data_running']);
-        $this->assertFalse($ready['is_write_demand_letter_running']);
-
-        // Completed demand
-        $completed = $demands['Completed Demand'];
-        $this->assertFalse($completed['can_extract_data']); // No files attached, so can't extract data
-        $this->assertTrue($completed['can_write_demand_letter']); // Has team_object_id and extract_data_completed_at, can still write demand
-        $this->assertFalse($completed['is_extract_data_running']);
-        $this->assertFalse($completed['is_write_demand_letter_running']);
+        $this->assertArrayHasKey('workflow_runs', $medicalSummary);
+        $this->assertNotNull($medicalSummary['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('id', $medicalSummary['workflow_runs']['write_medical_summary']);
+        $this->assertNotNull($medicalSummary['workflow_runs']['write_medical_summary']['completed_at']);
+        $this->assertNull($medicalSummary['workflow_runs']['write_demand_letter']);
     }
 
     public function test_workflow_event_broadcasting_works_for_write_demand(): void
@@ -444,7 +478,7 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'completed_at'           => now(),
         ]);
 
-        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER]);
+        $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'write_demand_letter']);
 
         // When - Handle workflow completion (this should trigger event)
         $service = app(UiDemandWorkflowService::class);

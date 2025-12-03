@@ -1,0 +1,69 @@
+# UI Demands Workflow Configuration
+# Defines the workflow pipeline for processing demands
+
+version: "1.0"
+
+# Schema definition used for data extraction (creates TeamObject)
+schema_definition: "Demand Schema"
+
+# Flat ordered list of workflows with explicit dependencies
+# Order determines display order in UI timeline
+workflows:
+  - key: extract_data
+    name: "Extract Service Dates"         # WorkflowDefinition name to lookup
+    label: "Extract Data"                 # Display label in UI
+    description: "Extract structured data from input documents"
+    color: "blue"                         # Theme color for UI (Tailwind color name)
+    extracts_data: true                   # Shows "View Data" button when team_object exists
+    depends_on: []                        # No dependencies - can run first
+    input:
+      source: "demand"                    # Source: "demand" (uses input_files + demand data)
+      requires_input_files: true          # Validation: must have input files
+    # No template/instruction selection for this workflow
+    template_categories: []
+    instruction_categories: []
+    display_artifacts: false              # No output display (data goes to TeamObject)
+
+  - key: write_medical_summary
+    name: "Write Medical Summary"
+    label: "Write Medical Summary"
+    description: "Generate medical summaries from extracted data"
+    color: "teal"
+    extracts_data: false
+    depends_on:
+      - extract_data                      # Must complete before this can run
+    input:
+      source: "team_object"               # Uses TeamObject (extracted data)
+    # User can select instructions tagged with "medical_writing"
+    template_categories: []
+    instruction_categories:
+      - "medical_writing"                 # Only show instructions with this tag
+    display_artifacts:
+      section_title: "Medical Summaries"
+      artifact_category: "medical_summary"  # Category to attach artifacts with
+      editable: true                        # Allow editing text_content
+      deletable: true                       # Allow deleting artifacts
+
+  - key: write_demand_letter
+    name: "Write Demand Letter"
+    label: "Write Demand Letter"
+    description: "Generate final demand letter document"
+    color: "green"
+    extracts_data: false
+    depends_on:
+      - write_medical_summary             # Can have multiple dependencies
+    input:
+      source: "team_object"
+      include_artifacts_from:
+        - workflow: "write_medical_summary"
+          category: "medical_summary"
+    # User can select templates tagged with "demand_letter"
+    template_categories:
+      - "demand_letter"                   # Only show templates with this tag
+    instruction_categories: []
+    display_artifacts:
+      section_title: "Output Documents"
+      artifact_category: "output_document"
+      display_type: "files"               # "files" shows StoredFiles from artifacts
+      editable: false
+      deletable: true

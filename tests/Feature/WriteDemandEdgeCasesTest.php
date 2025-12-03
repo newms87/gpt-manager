@@ -73,7 +73,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
@@ -83,23 +83,23 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When - Start first write demand letter workflow
-        $firstWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $firstWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Verify the workflow is running
         $uiDemand = $uiDemand->fresh();
-        $this->assertTrue($uiDemand->isWriteDemandLetterRunning());
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertTrue($uiDemand->isWorkflowRunning('write_demand_letter'));
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // Then - Second attempt should fail
         $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('Cannot write demand letter. Check if write medical summary is completed and team object exists.');
+        $this->expectExceptionMessage("Cannot run workflow 'write_demand_letter'. Check dependencies and input requirements.");
 
         // When - Try to start another write demand letter workflow
-        $this->service->writeDemandLetter($uiDemand);
+        $this->service->runWorkflow($uiDemand, 'write_demand_letter');
     }
 
     public function test_write_demand_letter_can_be_run_multiple_times_after_completion(): void
@@ -140,7 +140,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
@@ -150,11 +150,11 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When - Start first write demand letter workflow
-        $firstWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $firstWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Simulate workflow completion
         $firstWorkflowRun->update([
@@ -167,10 +167,10 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
 
         // Verify demand stays as DRAFT and can still start write demand letter workflows
         $this->assertEquals(UiDemand::STATUS_DRAFT, $uiDemand->status);
-        $this->assertTrue($uiDemand->canWriteDemandLetter());
+        $this->assertTrue($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // When - Start another write demand letter workflow (should succeed now)
-        $secondWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $secondWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Then - Should successfully create second workflow run
         $this->assertInstanceOf(WorkflowRun::class, $secondWorkflowRun);
@@ -215,7 +215,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
@@ -225,11 +225,11 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When - Start first write demand letter workflow
-        $firstWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $firstWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Simulate workflow failure
         $firstWorkflowRun->update([
@@ -242,10 +242,10 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
 
         // Verify demand is failed but can still start write demand letter workflows (retry capability)
         $this->assertEquals(UiDemand::STATUS_FAILED, $uiDemand->status);
-        $this->assertTrue($uiDemand->canWriteDemandLetter());
+        $this->assertTrue($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // When - Start another write demand letter workflow (retry after failure)
-        $secondWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $secondWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Then - Should successfully create second workflow run for retry
         $this->assertInstanceOf(WorkflowRun::class, $secondWorkflowRun);
@@ -290,7 +290,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED prerequisite)
@@ -300,14 +300,14 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // Verify teamObject relationship is not loaded
         $this->assertFalse($uiDemand->relationLoaded('teamObject'));
 
         // When - Start write demand letter workflow (should work despite unloaded relationship)
-        $workflowRun = $this->service->writeDemandLetter($uiDemand);
+        $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Then - Should successfully create workflow run
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -352,7 +352,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($extractDataWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_EXTRACT_DATA,
+            'workflow_type' => 'extract_data',
         ]);
 
         // Create completed write medical summary workflow run (REQUIRED for write demand letter)
@@ -362,7 +362,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($writeMedicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         $storedFile = StoredFile::factory()->create([
@@ -372,25 +372,25 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         // When - Start write demand letter workflow first
-        $writeWorkflowRun = $this->service->writeDemandLetter($uiDemand);
+        $writeWorkflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter');
         $uiDemand         = $uiDemand->fresh();
 
         // Verify write demand letter is running
-        $this->assertTrue($uiDemand->isWriteDemandLetterRunning());
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertTrue($uiDemand->isWorkflowRunning('write_demand_letter'));
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // Should still be able to start extract data workflow (separate workflow type)
-        $this->assertTrue($uiDemand->canExtractData());
+        $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
 
         // When - Start extract data workflow while write demand letter is running
-        $extractWorkflowRun = $this->service->extractData($uiDemand);
+        $extractWorkflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
 
         // Then - Both workflows should exist
         $uiDemand = $uiDemand->fresh();
-        $this->assertTrue($uiDemand->isExtractDataRunning());
-        $this->assertTrue($uiDemand->isWriteDemandLetterRunning());
-        $this->assertFalse($uiDemand->canExtractData());
-        $this->assertFalse($uiDemand->canWriteDemandLetter());
+        $this->assertTrue($uiDemand->isWorkflowRunning('extract_data'));
+        $this->assertTrue($uiDemand->isWorkflowRunning('write_demand_letter'));
+        $this->assertFalse($uiDemand->canRunWorkflow('extract_data'));
+        $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
         // Verify both workflow runs are tracked
         $this->assertTrue($uiDemand->workflowRuns()->where('workflow_runs.id', $writeWorkflowRun->id)->exists());

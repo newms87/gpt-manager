@@ -82,15 +82,14 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemandLetter(
-            $uiDemand,
-            $template->id,
-            'Additional test instructions'
-        );
+        $workflowRun = $this->workflowService->runWorkflow($uiDemand, 'write_demand_letter', [
+            'template_id'             => $template->id,
+            'additional_instructions' => 'Additional test instructions',
+        ]);
 
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -99,7 +98,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertDatabaseHas('ui_demand_workflow_runs', [
             'ui_demand_id'    => $uiDemand->id,
             'workflow_run_id' => $workflowRun->id,
-            'workflow_type'   => UiDemand::WORKFLOW_TYPE_WRITE_DEMAND_LETTER,
+            'workflow_type'   => 'write_demand_letter',
         ]);
 
         // Verify workflow input contains template information
@@ -148,11 +147,11 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemandLetter($uiDemand);
+        $workflowRun = $this->workflowService->runWorkflow($uiDemand, 'write_demand_letter');
 
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);
@@ -202,15 +201,13 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
 
         $uiDemand->workflowRuns()->attach($medicalSummaryWorkflowRun->id, [
-            'workflow_type' => UiDemand::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY,
+            'workflow_type' => 'write_medical_summary',
         ]);
 
         // When
-        $workflowRun = $this->workflowService->writeDemandLetter(
-            $uiDemand,
-            null,
-            'Custom instructions without template'
-        );
+        $workflowRun = $this->workflowService->runWorkflow($uiDemand, 'write_demand_letter', [
+            'additional_instructions' => 'Custom instructions without template',
+        ]);
 
         // Then
         $this->assertInstanceOf(WorkflowRun::class, $workflowRun);

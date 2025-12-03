@@ -9,12 +9,14 @@ use App\Models\TeamObject\TeamObject;
 use App\Models\Traits\HasUsageTracking;
 use App\Models\User;
 use App\Models\Workflow\WorkflowRun;
+use App\Services\UiDemand\UiDemandWorkflowConfigService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Validator;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
@@ -30,12 +32,6 @@ class UiDemand extends Model implements Auditable
         STATUS_DRAFT     = 'Draft',
         STATUS_COMPLETED = 'Completed',
         STATUS_FAILED    = 'Failed';
-
-    // Workflow type constants
-    const string
-        WORKFLOW_TYPE_EXTRACT_DATA          = 'extract_data',
-        WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY = 'write_medical_summary',
-        WORKFLOW_TYPE_WRITE_DEMAND_LETTER   = 'write_demand_letter';
 
     protected $fillable = [
         'team_id',
@@ -157,149 +153,55 @@ class UiDemand extends Model implements Auditable
             ->withTimestamps();
     }
 
-    // Workflow helpers
-    public function canExtractData(): bool
+    /**
+     * Dynamic workflow methods - work with any workflow defined in config
+     */
+
+    /**
+     * Check if a workflow can run based on config rules
+     */
+    public function canRunWorkflow(string $key): bool
     {
-        return $this->status === self::STATUS_DRAFT &&
-            $this->inputFiles()->count() > 0        &&
-            !$this->isExtractDataRunning();
+        return app(UiDemandWorkflowConfigService::class)->canRunWorkflow($this, $key);
     }
 
-    public function canWriteMedicalSummary(): bool
+    /**
+     * Check if a specific workflow is currently running
+     */
+    public function isWorkflowRunning(string $key): bool
     {
-        // Must have team_object_id and no write medical summary workflow running
-        if (!$this->team_object_id || $this->isWriteMedicalSummaryRunning()) {
-            return false;
-        }
-
-        return $this->getLatestExtractDataWorkflowRun()?->isCompleted() ?? false;
-    }
-
-    public function canWriteDemandLetter(): bool
-    {
-        // Must have team_object_id and no write demand letter workflow running
-        if (!$this->team_object_id || $this->isWriteDemandLetterRunning()) {
-            return false;
-        }
-
-        return $this->getLatestWriteMedicalSummaryWorkflowRun()?->isCompleted() ?? false;
-    }
-
-    public function isExtractDataRunning(): bool
-    {
-        return $this->extractDataWorkflowRuns()
+        return $this->workflowRuns()
+            ->wherePivot('workflow_type', $key)
             ->whereIn('workflow_runs.status', ['Pending', 'Running'])
             ->exists();
     }
 
-    public function isWriteMedicalSummaryRunning(): bool
-    {
-        return $this->writeMedicalSummaryWorkflowRuns()
-            ->whereIn('workflow_runs.status', ['Pending', 'Running'])
-            ->exists();
-    }
-
-    public function isWriteDemandLetterRunning(): bool
-    {
-        return $this->writeDemandLetterWorkflowRuns()
-            ->whereIn('workflow_runs.status', ['Pending', 'Running'])
-            ->exists();
-    }
-
-    // Helper methods for workflow runs by type
-    public function extractDataWorkflowRuns(): BelongsToMany
-    {
-        return $this->workflowRuns()
-            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_EXTRACT_DATA);
-    }
-
-    public function writeMedicalSummaryWorkflowRuns(): BelongsToMany
-    {
-        return $this->workflowRuns()
-            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY);
-    }
-
-    public function writeDemandLetterWorkflowRuns(): BelongsToMany
-    {
-        return $this->workflowRuns()
-            ->wherePivot('workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND_LETTER);
-    }
-
-    public function getLatestExtractDataWorkflowRun(): ?WorkflowRun
+    /**
+     * Get the latest workflow run for a specific workflow key
+     */
+    public function getLatestWorkflowRun(string $key): ?WorkflowRun
     {
         // Use preloaded relationships when available for better performance
         if ($this->relationLoaded('workflowRuns')) {
             return $this->workflowRuns
-                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_EXTRACT_DATA)
+                ->where('pivot.workflow_type', $key)
                 ->sortByDesc('created_at')
                 ->first();
         }
 
-        return $this->extractDataWorkflowRuns()
+        return $this->workflowRuns()
+            ->wherePivot('workflow_type', $key)
             ->orderByDesc('created_at')
             ->first();
     }
 
-    public function getLatestWriteMedicalSummaryWorkflowRun(): ?WorkflowRun
+    /**
+     * Get all artifacts for a specific category
+     */
+    public function getArtifactsByCategory(string $category): Collection
     {
-        // Use preloaded relationships when available for better performance
-        if ($this->relationLoaded('workflowRuns')) {
-            return $this->workflowRuns
-                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_WRITE_MEDICAL_SUMMARY)
-                ->sortByDesc('created_at')
-                ->first();
-        }
-
-        return $this->writeMedicalSummaryWorkflowRuns()
-            ->orderByDesc('created_at')
-            ->first();
-    }
-
-    public function getLatestWriteDemandLetterWorkflowRun(): ?WorkflowRun
-    {
-        // Use preloaded relationships when available for better performance
-        if ($this->relationLoaded('workflowRuns')) {
-            return $this->workflowRuns
-                ->where('pivot.workflow_type', self::WORKFLOW_TYPE_WRITE_DEMAND_LETTER)
-                ->sortByDesc('created_at')
-                ->first();
-        }
-
-        return $this->writeDemandLetterWorkflowRuns()
-            ->orderByDesc('created_at')
-            ->first();
-    }
-
-    public function getExtractDataProgress(): float
-    {
-        $latestWorkflow = $this->getLatestExtractDataWorkflowRun();
-
-        if (!$latestWorkflow) {
-            return 0.0;
-        }
-
-        return $latestWorkflow->calculateProgress();
-    }
-
-    public function getWriteMedicalSummaryProgress(): float
-    {
-        $latestWorkflow = $this->getLatestWriteMedicalSummaryWorkflowRun();
-
-        if (!$latestWorkflow) {
-            return 0.0;
-        }
-
-        return $latestWorkflow->calculateProgress();
-    }
-
-    public function getWriteDemandLetterProgress(): float
-    {
-        $latestWorkflow = $this->getLatestWriteDemandLetterWorkflowRun();
-
-        if (!$latestWorkflow) {
-            return 0.0;
-        }
-
-        return $latestWorkflow->calculateProgress();
+        return $this->artifacts()
+            ->wherePivot('category', $category)
+            ->get();
     }
 }
