@@ -112,6 +112,24 @@ import { ShowHideButton } from "quasar-ui-danx";
 - `QTooltip` - Use `tooltip` prop on ActionButton instead
 - Custom button styling - Use the `color` and `size` props
 
+## Cross-Component Communication
+
+**NEVER pass callbacks through multiple component layers.** Use composables instead:
+
+```typescript
+// composables/useMyFeature.ts - shares context across components
+let currentContext: MyType | null = null;
+export function useMyFeature() {
+    const setContext = (ctx: MyType) => { currentContext = ctx; };
+    const reloadData = async () => { /* reload using currentContext */ };
+    return { setContext, reloadData };
+}
+
+// Parent sets context, child uses it with standard action pattern
+const { reloadData } = useMyFeature();
+const deleteAction = dxController.getAction("delete", { onFinish: reloadData });
+```
+
 ## Common Commands
 
 - `yarn build` - Build and validate (MANDATORY after non-trivial changes)

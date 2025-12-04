@@ -124,7 +124,7 @@ export function useDemands() {
                 team_object: true,
                 workflow_runs: true,
                 workflow_config: true,
-                artifact_sections: { artifacts: { text_content: true, files: true } }
+                artifact_sections: { artifacts: { text_content: true, json_content: true, meta: true, files: true } }
             });
         } catch (err: any) {
             const errorMessage = err.message || "Failed to load demand";

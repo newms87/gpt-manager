@@ -44,8 +44,6 @@
       v-for="section in demand?.artifact_sections"
       :key="section.workflow_key"
       :section="section"
-      @update-artifact="handleUpdateArtifact"
-      @delete-artifact="handleDeleteArtifact"
     />
   </div>
 </template>
@@ -55,11 +53,10 @@ import { FaSolidFileImport, FaSolidLock } from "danx-icon";
 import { MultiFileField, type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { UiCard } from "../../../shared";
-import type { Artifact, UiDemand } from "../../../shared/types";
+import type { UiDemand } from "../../../shared/types";
 import { DEMAND_STATUS } from "../../config";
 import WorkflowArtifactSection from "./WorkflowArtifactSection.vue";
 import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
-import { dxArtifact } from "@/components/Modules/Artifacts/config";
 
 const props = defineProps<{
   demand: UiDemand | null;
@@ -80,24 +77,6 @@ const canEditInputFiles = computed(() => {
 // Handle input files update
 const handleInputFilesUpdate = (files: StoredFile[]) => {
   emit('update:input-files', files);
-};
-
-// Handle artifact update
-const handleUpdateArtifact = async (artifact: Artifact, data: { text_content: string }) => {
-  try {
-    await dxArtifact.getAction("update").trigger(artifact, data);
-  } catch (error) {
-    console.error("Error updating artifact:", error);
-  }
-};
-
-// Handle artifact deletion
-const handleDeleteArtifact = async (artifact: Artifact) => {
-  try {
-    await dxArtifact.getAction("delete").trigger(artifact);
-  } catch (error) {
-    console.error("Error deleting artifact:", error);
-  }
 };
 
 // Subscribe to file updates for real-time transcoding progress

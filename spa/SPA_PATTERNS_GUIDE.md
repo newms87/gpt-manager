@@ -619,6 +619,32 @@ const modelValue = defineModel<string>();
 const agent = defineModel<Agent | null>();
 ```
 
+## 11. Direct Modification vs Emits Pattern
+
+**Use `dxController.getAction()` for direct resource modifications when the component has the resource object available.**
+
+When a component directly has a resource object (from props or computed), use the controller's action directly instead of emitting events. This keeps the modification logic encapsulated in the component.
+
+**When to use emits:**
+- Navigation events (view, edit, show-dialog)
+- Events that require parent coordination
+- Events where the parent has context the child doesn't
+
+**When to use dxController directly:**
+- The component has the resource object directly available
+- The component is modifying the resource itself (update, delete)
+
+**Example:**
+
+```typescript
+// ❌ WRONG - Emitting for direct resource modification
+emit('update', props.artifact, { text_content: newValue });
+
+// ✅ CORRECT - Direct modification with dxController
+const updateAction = dxArtifact.getAction("update");
+await updateAction.trigger(props.artifact, { text_content: newValue });
+```
+
 ## Testing & Build
 
 ### Build Process

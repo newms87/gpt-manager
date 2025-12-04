@@ -93,13 +93,14 @@ import {
     ViewWorkflowDialog
 } from "../components/Detail";
 import { UsageDisplayContainer } from "../components/Usage";
-import { useDemands } from "../composables";
+import { useDemands, useDemandArtifacts } from "../composables";
 import { DEMAND_STATUS } from "../config";
 
 const route = useRoute();
 const router = useRouter();
 
 const { updateDemand, loadDemand, runWorkflow, subscribeToWorkflowRunUpdates, clearWorkflowSubscriptions, deleteDemand } = useDemands();
+const { setDemand } = useDemandArtifacts();
 
 const demand = ref<UiDemand | null>(null);
 const isLoading = ref(false);
@@ -125,6 +126,9 @@ const loadDemandWithSubscriptions = async () => {
         const newDemand = await loadDemand(demandId.value);
 
         demand.value = newDemand;
+
+        // Set demand in artifact composable for reload functionality
+        setDemand(newDemand);
 
         // Subscribe to workflow run updates after demand is loaded
         subscribeToWorkflowRunUpdates(newDemand, (updatedDemand) => {

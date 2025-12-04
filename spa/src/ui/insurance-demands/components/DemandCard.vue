@@ -54,35 +54,7 @@
             </div>
 
             <!-- Workflow Progress Indicators -->
-            <div v-if="hasActiveWorkflows" class="space-y-2">
-                <!-- Extract Data Progress -->
-                <div v-if="showExtractDataProgress" class="flex items-center justify-between text-xs">
-                    <span class="text-slate-600 font-medium">Extracting Data</span>
-                    <span class="text-blue-600 font-semibold">{{
-                            demand.extract_data_workflow_run?.progress_percent || 0
-                        }}%</span>
-                </div>
-                <div v-if="showExtractDataProgress" class="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                        class="bg-blue-500 h-1.5 rounded-full transition-all duration-300 ease-out"
-                        :style="{ width: `${demand.extract_data_workflow_run?.progress_percent || 0}%` }"
-                    />
-                </div>
-
-                <!-- Write Demand Progress -->
-                <div v-if="showWriteDemandProgress" class="flex items-center justify-between text-xs">
-                    <span class="text-slate-600 font-medium">Writing Demand</span>
-                    <span class="text-green-600 font-semibold">{{
-                            demand.write_demand_workflow_run?.progress_percent || 0
-                        }}%</span>
-                </div>
-                <div v-if="showWriteDemandProgress" class="w-full bg-gray-200 rounded-full h-1.5">
-                    <div
-                        class="bg-green-500 h-1.5 rounded-full transition-all duration-300 ease-out"
-                        :style="{ width: `${demand.write_demand_workflow_run?.progress_percent || 0}%` }"
-                    />
-                </div>
-            </div>
+            <WorkflowProgressIndicators :demand="demand" />
         </div>
     </UiCard>
 </template>
@@ -94,6 +66,7 @@ import { UiCard, UiProgressBar, UiStatusBadge } from "../../shared/components";
 import type { UiDemand } from "../../shared/types";
 import { getDemandProgressPercentage, getDemandStatusColor } from "../config";
 import { UsageCostButton } from "./Usage";
+import WorkflowProgressIndicators from "./WorkflowProgressIndicators.vue";
 
 const props = defineProps<{
     demand: UiDemand;
@@ -108,20 +81,17 @@ const emit = defineEmits<{
 const progressColor = computed(() => getDemandStatusColor(props.demand.status));
 const progressPercentage = computed(() => getDemandProgressPercentage(props.demand.status));
 
-// Workflow progress indicators
-const showExtractDataProgress = computed(() => {
-    const progress = props.demand.extract_data_workflow_run?.progress_percent;
-    return progress != null && progress > 0 && progress < 100;
-});
+const hasActiveWorkflows = computed(() => {
+    if (!props.demand.workflow_runs || !props.demand.workflow_config) return false;
 
-const showWriteDemandProgress = computed(() => {
-    const progress = props.demand.write_demand_workflow_run?.progress_percent;
-    return progress != null && progress > 0 && progress < 100;
-});
+    return props.demand.workflow_config.some(config => {
+        const workflowRun = props.demand.workflow_runs[config.key];
+        if (!workflowRun) return false;
 
-const hasActiveWorkflows = computed(() =>
-    showExtractDataProgress.value || showWriteDemandProgress.value
-);
+        const progress = workflowRun.progress_percent;
+        return progress != null && progress > 0 && progress < 100;
+    });
+});
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {

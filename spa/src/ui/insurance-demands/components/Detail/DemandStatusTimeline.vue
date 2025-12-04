@@ -43,22 +43,17 @@
                         </div>
 
                         <div class="ml-4 flex items-center gap-2">
-                            <!-- Error Badge -->
-                            <ErrorBadge
-                                v-if="status.workflowRun"
-                                :error-count="status.workflowRun.error_count"
-                                :url="dxWorkflowRun.routes.errorsUrl(status.workflowRun)"
-                                :animate="status.isActive || status.failed"
+                            <!-- Run Workflow Button (first) -->
+                            <WorkflowRunButton
+                                v-if="status.config && canRunWorkflow(status)"
+                                :config="status.config"
+                                :demand="demand"
+                                :color="getWorkflowButtonColor(status.config)"
+                                :tooltip="getRunButtonTooltip(status)"
+                                @run="(key, params) => $emit('run-workflow', key, params)"
                             />
 
-                            <ActionButton
-                                v-if="status.workflowRun"
-                                type="view"
-                                color="sky-invert"
-                                size="xs"
-                                @click="$emit('view-workflow', status.workflowRun)"
-                            />
-
+                            <!-- Stop Button (when running) -->
                             <ActionButton
                                 v-if="status.isActive && status.workflowRun"
                                 type="stop"
@@ -69,6 +64,7 @@
                                 :target="status.workflowRun"
                             />
 
+                            <!-- Resume Button (when stopped) -->
                             <ActionButton
                                 v-if="status.isStopped && status.workflowRun"
                                 type="play"
@@ -79,8 +75,26 @@
                                 :target="status.workflowRun"
                             />
 
+                            <!-- Error Badge -->
+                            <ErrorBadge
+                                v-if="status.workflowRun"
+                                :error-count="status.workflowRun.error_count"
+                                :url="dxWorkflowRun.routes.errorsUrl(status.workflowRun)"
+                                :animate="status.isActive || status.failed"
+                            />
+
+                            <!-- View Workflow Button -->
                             <ActionButton
-                                v-if="status.name === 'extract-data' && demand?.team_object"
+                                v-if="status.workflowRun"
+                                type="view"
+                                color="sky-invert"
+                                size="xs"
+                                @click="$emit('view-workflow', status.workflowRun)"
+                            />
+
+                            <!-- View Data Button -->
+                            <ActionButton
+                                v-if="status.extractsData && demand?.team_object"
                                 type="database"
                                 color="green-invert"
                                 size="xs"
@@ -119,13 +133,12 @@
 <script setup lang="ts">
 import ErrorBadge from "@/components/Shared/ErrorBadge.vue";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-icon";
-import { ActionButton, DateTime, fDateTime, fDuration, fPercent, LabelPillWidget } from "quasar-ui-danx";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { ActionButton, fDateTime, fPercent, LabelPillWidget } from "quasar-ui-danx";
+import { computed, toRef } from "vue";
 import { UiCard } from "../../../shared";
-import type { UiDemand } from "../../../shared/types";
-import { DEMAND_STATUS } from "../../config";
-import { isWorkflowActive, isWorkflowCompleted, isWorkflowFailed, isWorkflowStopped } from "../../composables";
+import type { UiDemand, WorkflowConfig } from "../../../shared/types";
+import { isWorkflowActive, useActiveWorkflowTimer, useWorkflowStatusTimeline } from "../../composables";
+import WorkflowRunButton from "../WorkflowRunButton.vue";
 
 const props = defineProps<{
     demand: UiDemand | null;
@@ -134,183 +147,67 @@ const props = defineProps<{
 const emit = defineEmits<{
     "view-workflow": [workflowRun: any];
     "view-data": [];
+    "run-workflow": [workflowKey: string, parameters?: Record<string, any>];
 }>();
 
 // Get the workflow run actions from the existing dxWorkflowRun controller
 const stopWorkflowRunAction = dxWorkflowRun.getAction("stop");
 const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 
-// Reactive timer for live updates of running workflows
-const currentTime = ref(Date.now());
-let intervalId: NodeJS.Timeout | null = null;
-
-
-// Calculate runtime for a workflow run using fDuration
-const calculateRuntime = (workflowRun: any, isActive: boolean): string | null => {
-    if (!workflowRun?.started_at) return null;
-
-    let endTime: string | DateTime;
-
-    if (isActive) {
-        // For running workflows, use reactive currentTime for live updates
-        endTime = DateTime.fromMillis(currentTime.value);
-    } else {
-        // For completed/failed workflows, use completed_at or failed_at
-        const completedAt = workflowRun.completed_at || workflowRun.failed_at;
-        if (!completedAt) return null;
-        endTime = completedAt;
-    }
-
-    return fDuration(workflowRun.started_at, endTime);
-};
-
 // Check if there are any active workflows that need live updates
 const hasActiveWorkflows = computed(() => {
-    if (!props.demand) return false;
+    if (!props.demand?.workflow_runs) return false;
 
-    const extractDataActive = isWorkflowActive(props.demand.extract_data_workflow_run);
-    const writeMedicalSummaryActive = isWorkflowActive(props.demand.write_medical_summary_workflow_run);
-    const writeDemandLetterActive = isWorkflowActive(props.demand.write_demand_letter_workflow_run);
-
-    return extractDataActive || writeMedicalSummaryActive || writeDemandLetterActive;
+    // Check if any workflow is active
+    return Object.values(props.demand.workflow_runs).some(workflowRun =>
+        isWorkflowActive(workflowRun)
+    );
 });
 
-// Setup timer for live updates only when needed
-const setupTimer = () => {
-    if (!intervalId && hasActiveWorkflows.value) {
-        intervalId = setInterval(() => {
-            currentTime.value = Date.now();
-        }, 1000); // Update every second
-    }
+// Use composables for timer and status timeline
+const { currentTime } = useActiveWorkflowTimer(hasActiveWorkflows);
+const { statusTimeline } = useWorkflowStatusTimeline(toRef(props, 'demand'), currentTime);
+
+// Check if a workflow can run
+const canRunWorkflow = (status: any): boolean => {
+    // Cannot run if no config (draft/completed statuses don't have config)
+    if (!status.config) return false;
+
+    // Cannot run if already running
+    if (status.isActive) return false;
+
+    // Cannot run if dependencies not met
+    if (status.grayed) return false;
+
+    // Can run (or re-run) any workflow when dependencies are met
+    return true;
 };
 
-const clearTimer = () => {
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-};
-
-// Watch for changes in active workflows to manage timer
-watch(hasActiveWorkflows, (hasActive) => {
-    if (hasActive) {
-        setupTimer();
-    } else {
-        clearTimer();
-    }
-}, { immediate: true });
-
-onMounted(() => {
-    setupTimer();
-});
-
-onUnmounted(() => {
-    clearTimer();
-});
-
-const statusTimeline = computed(() => {
-    if (!props.demand) return [];
-
-    // Helper function to determine workflow state using shared logic
-    const getWorkflowState = (workflowRun?: any) => {
-        return {
-            completed: isWorkflowCompleted(workflowRun),
-            failed: isWorkflowFailed(workflowRun),
-            active: isWorkflowActive(workflowRun),
-            stopped: isWorkflowStopped(workflowRun)
-        };
+// Get workflow button color from config
+const getWorkflowButtonColor = (config: WorkflowConfig): string => {
+    const colorMap: Record<string, string> = {
+        blue: "sky",
+        teal: "teal",
+        green: "green",
+        red: "red",
+        orange: "orange",
+        purple: "purple",
+        slate: "slate"
     };
+    return colorMap[config.color] || config.color;
+};
 
-    // Get workflow states using shared helpers
-    const extractDataState = getWorkflowState(props.demand.extract_data_workflow_run);
-    const writeMedicalSummaryState = getWorkflowState(props.demand.write_medical_summary_workflow_run);
-    const writeDemandLetterState = getWorkflowState(props.demand.write_demand_letter_workflow_run);
-    const hasFiles = props.demand.files && props.demand.files.length > 0;
-
-    // Determine if steps should be grayed out
-    const extractDataGrayed = !hasFiles && !props.demand.extract_data_workflow_run;
-    const writeMedicalSummaryGrayed = !extractDataState.completed;
-    const writeDemandLetterGrayed = !writeMedicalSummaryState.completed;
-    const completeGrayed = !writeDemandLetterState.completed;
-
-    // Always show all 5 steps
-    return [
-        {
-            name: "draft",
-            label: "Created (Draft)",
-            icon: FaSolidClock,
-            bgColor: "bg-slate-500",
-            textColor: "text-slate-100",
-            completed: true,
-            failed: false,
-            isActive: false,
-            progress: null,
-            date: props.demand.created_at,
-            grayed: false,
-            workflowRun: null
-        },
-        {
-            name: "extract-data",
-            label: extractDataState.failed ? "Extract Data (Failed)" : "Extract Data",
-            icon: extractDataState.completed ? FaSolidCheck : extractDataState.failed ? FaSolidTriangleExclamation : FaSolidClock,
-            bgColor: extractDataState.failed ? "bg-red-500" : extractDataState.completed ? "bg-blue-500" : extractDataState.active ? "bg-slate-200" : "bg-gray-400",
-            textColor: extractDataState.failed ? "text-red-200" : extractDataState.completed ? "text-blue-200" : "text-gray-200",
-            completed: extractDataState.completed,
-            failed: extractDataState.failed,
-            isActive: extractDataState.active,
-            isStopped: extractDataState.stopped,
-            progress: extractDataState.active ? props.demand.extract_data_workflow_run?.progress_percent : null,
-            date: extractDataState.completed ? props.demand.extract_data_workflow_run?.completed_at : extractDataState.failed ? props.demand.extract_data_workflow_run?.failed_at : null,
-            runtime: calculateRuntime(props.demand.extract_data_workflow_run, extractDataState.active),
-            grayed: extractDataGrayed,
-            workflowRun: props.demand.extract_data_workflow_run
-        },
-        {
-            name: "write-medical-summary",
-            label: writeMedicalSummaryState.failed ? "Write Medical Summary (Failed)" : "Write Medical Summary",
-            icon: writeMedicalSummaryState.completed ? FaSolidCheck : writeMedicalSummaryState.failed ? FaSolidTriangleExclamation : FaSolidClock,
-            bgColor: writeMedicalSummaryState.failed ? "bg-red-500" : writeMedicalSummaryState.completed ? "bg-teal-500" : writeMedicalSummaryState.active ? "bg-slate-200" : "bg-gray-400",
-            textColor: writeMedicalSummaryState.failed ? "text-red-200" : writeMedicalSummaryState.completed ? "text-teal-200" : "text-gray-200",
-            completed: writeMedicalSummaryState.completed,
-            failed: writeMedicalSummaryState.failed,
-            isActive: writeMedicalSummaryState.active,
-            isStopped: writeMedicalSummaryState.stopped,
-            progress: writeMedicalSummaryState.active ? props.demand.write_medical_summary_workflow_run?.progress_percent : null,
-            date: writeMedicalSummaryState.completed ? props.demand.write_medical_summary_workflow_run?.completed_at : writeMedicalSummaryState.failed ? props.demand.write_medical_summary_workflow_run?.failed_at : null,
-            runtime: calculateRuntime(props.demand.write_medical_summary_workflow_run, writeMedicalSummaryState.active),
-            grayed: writeMedicalSummaryGrayed,
-            workflowRun: props.demand.write_medical_summary_workflow_run
-        },
-        {
-            name: "write-demand-letter",
-            label: writeDemandLetterState.failed ? "Write Demand Letter (Failed)" : "Write Demand Letter",
-            icon: writeDemandLetterState.completed ? FaSolidCheck : writeDemandLetterState.failed ? FaSolidTriangleExclamation : FaSolidClock,
-            bgColor: writeDemandLetterState.failed ? "bg-red-500" : writeDemandLetterState.completed ? "bg-green-500" : writeDemandLetterState.active ? "bg-slate-200" : "bg-gray-400",
-            textColor: writeDemandLetterState.failed ? "text-red-200" : writeDemandLetterState.completed ? "text-green-200" : "text-gray-200",
-            completed: writeDemandLetterState.completed,
-            failed: writeDemandLetterState.failed,
-            isActive: writeDemandLetterState.active,
-            isStopped: writeDemandLetterState.stopped,
-            progress: writeDemandLetterState.active ? props.demand.write_demand_letter_workflow_run?.progress_percent : null,
-            date: writeDemandLetterState.completed ? props.demand.write_demand_letter_workflow_run?.completed_at : writeDemandLetterState.failed ? props.demand.write_demand_letter_workflow_run?.failed_at : null,
-            runtime: calculateRuntime(props.demand.write_demand_letter_workflow_run, writeDemandLetterState.active),
-            grayed: writeDemandLetterGrayed,
-            workflowRun: props.demand.write_demand_letter_workflow_run
-        },
-        {
-            name: "completed",
-            label: "Complete",
-            icon: FaSolidCheck,
-            bgColor: props.demand.status === DEMAND_STATUS.COMPLETED ? "bg-green-600" : "bg-gray-400",
-            textColor: props.demand.status === DEMAND_STATUS.COMPLETED ? "text-green-200" : "text-gray-200",
-            completed: props.demand.status === DEMAND_STATUS.COMPLETED,
-            failed: false,
-            isActive: false,
-            progress: null,
-            date: props.demand.completed_at,
-            grayed: completeGrayed,
-            workflowRun: null
-        }
-    ];
-});
+// Get run button tooltip
+const getRunButtonTooltip = (status: any): string => {
+    if (status.isActive) {
+        return `${status.config?.label || status.label} is currently running`;
+    }
+    if (status.failed) {
+        return `Retry ${status.config?.label || status.label}`;
+    }
+    if (status.completed) {
+        return `Re-run ${status.config?.label || status.label}`;
+    }
+    return `Run ${status.config?.label || status.label}`;
+};
 </script>
