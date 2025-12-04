@@ -42,6 +42,15 @@
                             }}
                         </div>
 
+                        <!-- Multiple running indicator -->
+                        <LabelPillWidget
+                            v-if="getActiveRunCount(status) > 1"
+                            :label="`${getActiveRunCount(status)} Running`"
+                            color="sky"
+                            size="xs"
+                            class="ml-2"
+                        />
+
                         <div class="ml-4 flex items-center gap-2">
                             <!-- Run Workflow Button (first) -->
                             <WorkflowRunButton
@@ -87,9 +96,10 @@
                             <ActionButton
                                 v-if="status.workflowRun"
                                 type="view"
+                                :label="hasMultipleRuns(status) ? `${status.workflowRuns?.length}` : ''"
                                 color="sky-invert"
                                 size="xs"
-                                @click="$emit('view-workflow', status.workflowRun)"
+                                @click="$emit('view-workflow', status)"
                             />
 
                             <!-- View Data Button -->
@@ -146,9 +156,9 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    "view-workflow": [workflowRun: any];
+    "view-workflow": [status: any];
     "view-data": [];
-    "run-workflow": [workflowKey: string, parameters?: Record<string, any>];
+    "run-workflow": [workflowKey: string, parameters: Record<string, any> | undefined];
 }>();
 
 // Get the workflow run actions from the existing dxWorkflowRun controller
@@ -159,15 +169,26 @@ const resumeWorkflowRunAction = dxWorkflowRun.getAction("resume");
 const hasActiveWorkflows = computed(() => {
     if (!props.demand?.workflow_runs) return false;
 
-    // Check if any workflow is active
-    return Object.values(props.demand.workflow_runs).some(workflowRun =>
-        isWorkflowActive(workflowRun)
+    // Check if any workflow run is active (now workflow_runs is an array)
+    return Object.values(props.demand.workflow_runs).some(workflowRuns =>
+        workflowRuns?.some(run => isWorkflowActive(run))
     );
 });
 
 // Use composables for timer and status timeline
 const { currentTime } = useActiveWorkflowTimer(hasActiveWorkflows);
 const { statusTimeline } = useWorkflowStatusTimeline(toRef(props, 'demand'), currentTime);
+
+// Helper to check if status has multiple runs
+const hasMultipleRuns = (status: any): boolean => {
+    return (status.workflowRuns?.length || 0) > 1;
+};
+
+// Helper to count active runs
+const getActiveRunCount = (status: any): number => {
+    if (!status.workflowRuns) return 0;
+    return status.workflowRuns.filter((run: any) => isWorkflowActive(run)).length;
+};
 
 // Check if a workflow can run
 const canRunWorkflow = (status: any): boolean => {

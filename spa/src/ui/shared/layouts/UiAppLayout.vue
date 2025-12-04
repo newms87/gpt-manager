@@ -11,11 +11,14 @@
                 </div>
             </main>
         </div>
+
+        <ActionVnode />
     </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from "vue";
+import { ActionVnode } from "quasar-ui-danx";
 import { uiNavigation } from "../../../navigation/uiNavigation";
 import { useUiLayout, useUiNavigation, useUiTheme } from "../composables";
 import UiHeader from "./UiHeader.vue";

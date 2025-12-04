@@ -103,7 +103,8 @@
       "Bash(./vendor/bin/vapor queue:status:*)",
       "Bash(./vendor/bin/vapor logs:*)",
       "Bash(./vendor/bin/vapor list:*)",
-      "Bash(./vendor/bin/vapor tail:*)"
+      "Bash(./vendor/bin/vapor tail:*)",
+      "WebFetch(domain:vueflow.dev)"
     ],
     "deny": [],
     "additionalDirectories": [

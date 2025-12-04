@@ -7,6 +7,7 @@
             :size="size"
             :tooltip="tooltip"
             :disabled="disabled"
+            :loading="isLoading"
             @click="handleClick"
         />
 
@@ -49,8 +50,11 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<{
-    "run": [workflowKey: string, parameters?: Record<string, any>];
+    "run": [workflowKey: string, parameters: Record<string, any> | undefined];
 }>();
+
+// Loading state
+const isLoading = ref(false);
 
 // Dialog state for template/instruction selection
 const showInstructionTemplateSelector = ref(false);
@@ -73,6 +77,7 @@ const handleClick = () => {
 
 // Execute workflow with optional parameters
 const executeWorkflow = (parameters?: Record<string, any>) => {
+    isLoading.value = true;
     emit("run", props.config.key, parameters);
 };
 

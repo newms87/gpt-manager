@@ -196,6 +196,28 @@ class UiDemand extends Model implements Auditable
     }
 
     /**
+     * Get all workflow runs for a specific workflow key, sorted by created_at desc
+     *
+     * @param  string  $key  The workflow config key
+     * @return Collection<WorkflowRun>
+     */
+    public function getWorkflowRunsForKey(string $key): Collection
+    {
+        // Use preloaded relationships when available for better performance
+        if ($this->relationLoaded('workflowRuns')) {
+            return $this->workflowRuns
+                ->where('pivot.workflow_type', $key)
+                ->sortByDesc('created_at')
+                ->values(); // Re-index the collection
+        }
+
+        return $this->workflowRuns()
+            ->wherePivot('workflow_type', $key)
+            ->orderByDesc('workflow_runs.created_at')
+            ->get();
+    }
+
+    /**
      * Get all artifacts for a specific category
      */
     public function getArtifactsByCategory(string $category): Collection

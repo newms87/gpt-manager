@@ -191,7 +191,7 @@ class ArtifactResolutionService
 
         // Create new merged artifact for this group
         $targetArtifact       = app(ArtifactsMergeService::class)->merge([$artifactCopy]);
-        $targetArtifact->name = "Group: $groupName";
+        $targetArtifact->name = $groupName;
         $targetArtifact->meta = [
             'group_name'  => $groupName,
             'description' => 'Group created during resolution',

@@ -249,10 +249,12 @@ export function useDemands() {
             await pusher.subscribeToModel("WorkflowRun", ["updated"], workflowRun.id);
             subscribedWorkflowIds.value.add(workflowRun.id);
 
-            // Set up event handler
+            // Set up event handler - only reload when status changes
+            let lastKnownStatus = workflowRun.status;
             pusher.onEvent("WorkflowRun", "updated", async (updatedWorkflowRun: WorkflowRun) => {
-                if (updatedWorkflowRun.id === workflowRun.id && updatedWorkflowRun.status === "Completed") {
-                    // Reload the demand to get updated data
+                if (updatedWorkflowRun.id === workflowRun.id && updatedWorkflowRun.status !== lastKnownStatus) {
+                    lastKnownStatus = updatedWorkflowRun.status;
+                    // Reload the demand to get updated data on status change
                     const updatedDemand = await loadDemand(demandId);
                     if (onDemandUpdate) {
                         onDemandUpdate(updatedDemand);
@@ -268,10 +270,15 @@ export function useDemands() {
     const subscribeToWorkflowRunUpdates = (demand: UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
         if (!demand?.workflow_runs) return;
 
-        // Subscribe to all workflow runs
-        Object.values(demand.workflow_runs).forEach(workflowRun => {
-            if (workflowRun) {
-                subscribeToWorkflowRun(workflowRun, demand.id, onDemandUpdate);
+        // Subscribe to all workflow runs (workflow_runs is now Record<string, WorkflowRun[]>)
+        Object.values(demand.workflow_runs).forEach(workflowRunsArray => {
+            // Each value is an array of WorkflowRun objects
+            if (Array.isArray(workflowRunsArray)) {
+                workflowRunsArray.forEach(workflowRun => {
+                    if (workflowRun) {
+                        subscribeToWorkflowRun(workflowRun, demand.id, onDemandUpdate);
+                    }
+                });
             }
         });
     };

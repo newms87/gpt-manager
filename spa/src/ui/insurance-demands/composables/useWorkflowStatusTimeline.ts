@@ -25,9 +25,19 @@ export interface StatusTimelineItem {
 	runtime: string | null;
 	grayed: boolean;
 	workflowRun: WorkflowRun | null;
+	workflowRuns?: WorkflowRun[];
 	extractsData?: boolean;
 	config?: WorkflowConfig;
 }
+
+/**
+ * Get the latest (most recent) workflow run from an array
+ * Returns the first element (backend returns sorted by created_at DESC)
+ */
+const getLatestRun = (runs: WorkflowRun[] | undefined): WorkflowRun | null => {
+	if (!runs || runs.length === 0) return null;
+	return runs[0];
+};
 
 /**
  * Calculate runtime for a workflow run using fDuration
@@ -77,24 +87,28 @@ const createDraftStatus = (demand: UiDemand): StatusTimelineItem => {
  */
 const createWorkflowStatus = (
 	config: WorkflowConfig,
-	workflowRun: WorkflowRun | null,
+	workflowRuns: WorkflowRun[] | undefined,
 	demand: UiDemand,
 	currentTime: number
 ): StatusTimelineItem => {
+	// Get the latest run for status/display
+	const latestRun = getLatestRun(workflowRuns);
+
 	const state = {
-		completed: isWorkflowCompleted(workflowRun),
-		failed: isWorkflowFailed(workflowRun),
-		active: isWorkflowActive(workflowRun),
-		stopped: isWorkflowStopped(workflowRun)
+		completed: isWorkflowCompleted(latestRun),
+		failed: isWorkflowFailed(latestRun),
+		active: isWorkflowActive(latestRun),
+		stopped: isWorkflowStopped(latestRun)
 	};
 
 	// Determine if workflow should be grayed out (dependencies not met)
 	let grayed = false;
 	if (config.depends_on && config.depends_on.length > 0) {
-		// Check if all dependencies are completed
+		// Check if all dependencies are completed using latest run
 		grayed = config.depends_on.some((depKey: string) => {
-			const depRun = demand.workflow_runs[depKey];
-			return !isWorkflowCompleted(depRun);
+			const depRuns = demand.workflow_runs[depKey];
+			const latestDepRun = getLatestRun(depRuns);
+			return !isWorkflowCompleted(latestDepRun);
 		});
 	} else if (config.input?.requires_input_files) {
 		// Check if input files exist
@@ -123,8 +137,8 @@ const createWorkflowStatus = (
 	const label = state.failed ? `${config.label} (Failed)` : config.label;
 
 	// Get date
-	const date = state.completed ? workflowRun?.completed_at :
-		state.failed ? workflowRun?.failed_at :
+	const date = state.completed ? latestRun?.completed_at :
+		state.failed ? latestRun?.failed_at :
 			null;
 
 	return {
@@ -137,11 +151,12 @@ const createWorkflowStatus = (
 		failed: state.failed,
 		isActive: state.active,
 		isStopped: state.stopped,
-		progress: state.active ? workflowRun?.progress_percent : null,
+		progress: state.active ? latestRun?.progress_percent : null,
 		date,
-		runtime: calculateRuntime(workflowRun, state.active, currentTime),
+		runtime: calculateRuntime(latestRun, state.active, currentTime),
 		grayed,
-		workflowRun,
+		workflowRun: latestRun,
+		workflowRuns: workflowRuns || [],
 		extractsData: config.extracts_data, // Used for "View Data" button
 		config // Include the workflow config for run button logic
 	};
@@ -153,8 +168,9 @@ const createWorkflowStatus = (
 const createCompleteStatus = (demand: UiDemand): StatusTimelineItem => {
 	// Determine if complete status should be grayed (all workflows not done)
 	const allWorkflowsComplete = demand.workflow_config?.every(config => {
-		const workflowRun = demand.workflow_runs[config.key];
-		return isWorkflowCompleted(workflowRun);
+		const workflowRuns = demand.workflow_runs[config.key];
+		const latestRun = getLatestRun(workflowRuns);
+		return isWorkflowCompleted(latestRun);
 	}) ?? false;
 
 	return {
@@ -195,8 +211,8 @@ export function useWorkflowStatusTimeline(
 		// Add status for each workflow from config
 		if (demand.value.workflow_config) {
 			for (const config of demand.value.workflow_config) {
-				const workflowRun = demand.value.workflow_runs[config.key];
-				statuses.push(createWorkflowStatus(config, workflowRun, demand.value, currentTime.value));
+				const workflowRuns = demand.value.workflow_runs[config.key];
+				statuses.push(createWorkflowStatus(config, workflowRuns, demand.value, currentTime.value));
 			}
 		}
 

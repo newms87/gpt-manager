@@ -72,7 +72,9 @@
         <ViewWorkflowDialog
             v-if="showWorkflowDialog"
             :workflow-run="selectedWorkflowRun"
+            :workflow-runs="selectedWorkflowRuns"
             @close="handleCloseWorkflowDialog"
+            @select-run="handleSelectWorkflowRun"
         />
 
         <!-- View Data Dialog -->
@@ -115,8 +117,21 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 const editMode = ref(false);
 const showWorkflowDialog = ref(false);
-const selectedWorkflowRun = ref<WorkflowRun | null>(null);
+const selectedWorkflowKey = ref<string | null>(null);
+const selectedWorkflowRunId = ref<number | null>(null);
 const showDataDialog = ref(false);
+
+// Computed to get the current workflow runs from the reactive demand
+const selectedWorkflowRuns = computed(() => {
+    if (!selectedWorkflowKey.value || !demand.value) return [];
+    return demand.value.workflow_runs[selectedWorkflowKey.value] || [];
+});
+
+// Computed to get the selected workflow run from the reactive demand
+const selectedWorkflowRun = computed(() => {
+    if (!selectedWorkflowRunId.value) return null;
+    return selectedWorkflowRuns.value.find(run => run.id === selectedWorkflowRunId.value) || null;
+});
 const headerRef = ref<InstanceType<typeof DemandDetailHeader> | null>(null);
 
 const demandId = computed(() => {
@@ -182,14 +197,21 @@ const handleOutputFilesUpdate = async (outputFiles: StoredFile[]) => {
 };
 
 
-const handleViewWorkflow = (workflowRun: WorkflowRun) => {
-    selectedWorkflowRun.value = workflowRun;
+const handleViewWorkflow = (status: { workflowRun: WorkflowRun | null; workflowRuns?: WorkflowRun[]; name?: string }) => {
+    if (!status.workflowRun) return;
+    selectedWorkflowKey.value = status.name || null;
+    selectedWorkflowRunId.value = status.workflowRun.id;
     showWorkflowDialog.value = true;
+};
+
+const handleSelectWorkflowRun = (run: WorkflowRun) => {
+    selectedWorkflowRunId.value = run.id;
 };
 
 const handleCloseWorkflowDialog = () => {
     showWorkflowDialog.value = false;
-    selectedWorkflowRun.value = null;
+    selectedWorkflowKey.value = null;
+    selectedWorkflowRunId.value = null;
 };
 
 const handleViewData = () => {
@@ -200,7 +222,7 @@ const handleCloseDataDialog = () => {
     showDataDialog.value = false;
 };
 
-const handleRunWorkflow = async (workflowKey: string, parameters?: Record<string, any>) => {
+const handleRunWorkflow = async (workflowKey: string, parameters: Record<string, any> | undefined) => {
     if (!demand.value) return;
 
     try {

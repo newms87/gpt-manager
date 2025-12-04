@@ -170,6 +170,8 @@
                     <li class="mt-1 text-gray-600"><b>Recommended:</b> Join Previous Group for most use cases</li>
                 </ul>
             </div>
+
+            <TimeoutConfigField class="mt-6" :task-definition="taskDefinition" />
         </div>
     </BaseTaskRunnerConfig>
 </template>
@@ -181,7 +183,7 @@ import { useDebounceFn } from "@vueuse/core";
 import { NumberField, SelectField } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
-import { TaskDefinitionAgentConfigField, TaskDefinitionPromptField } from "./Fields";
+import { TaskDefinitionAgentConfigField, TaskDefinitionPromptField, TimeoutConfigField } from "./Fields";
 
 export interface FileOrganizationTaskRunnerConfig {
     comparison_window_size: number;

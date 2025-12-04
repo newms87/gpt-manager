@@ -143,9 +143,6 @@ class MergeProcessService
                 })
                 ->values();
 
-            // Find the window artifact that identified this group
-            $windowArtifactName = $this->findWindowArtifactName($groupName, $windowArtifacts);
-
             // Create copies of input artifacts to preserve originals
             $artifactCopies = [];
             foreach ($groupArtifacts as $artifact) {
@@ -155,8 +152,8 @@ class MergeProcessService
             // Create merged artifact for this group
             $mergedArtifact = app(ArtifactsMergeService::class)->merge($artifactCopies);
 
-            // Use the window artifact's name if available, otherwise use a generic name
-            $mergedArtifact->name = $windowArtifactName ?? "Group: $groupName";
+            // Always use the group name directly
+            $mergedArtifact->name = $groupName;
             $mergedArtifact->meta = array_merge($mergedArtifact->meta ?? [], [
                 'group_name'  => $groupName,
                 'description' => $description,
@@ -170,28 +167,6 @@ class MergeProcessService
         }
 
         return $outputArtifacts;
-    }
-
-    /**
-     * Find the window artifact name that first identified this group.
-     *
-     * @param  string  $groupName  Group name to find
-     * @param  Collection  $windowArtifacts  Window artifacts
-     * @return string|null Window artifact name or null
-     */
-    protected function findWindowArtifactName(string $groupName, Collection $windowArtifacts): ?string
-    {
-        foreach ($windowArtifacts as $windowArtifact) {
-            // New flat format uses 'files' array with each file having 'group_name'
-            $files = $windowArtifact->json_content['files'] ?? [];
-            foreach ($files as $file) {
-                if (($file['group_name'] ?? null) === $groupName) {
-                    return $windowArtifact->name;
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -364,8 +339,7 @@ class MergeProcessService
         $artifact->meta = array_merge($artifact->meta ?? [], [
             'group_name' => $newName,
         ]);
-        $fileCount      = $artifact->storedFiles->count();
-        $artifact->name = "$newName ($fileCount files)";
+        $artifact->name = $newName;
         $artifact->save();
 
         static::logDebug("Successfully renamed group '$oldName' to '$newName'");
@@ -426,9 +400,8 @@ class MergeProcessService
         // Refresh the relationship to get accurate count after attaching files
         $targetArtifact->load('storedFiles');
 
-        // Update target artifact name to reflect merged content
-        $mergedFileCount      = $targetArtifact->storedFiles->count();
-        $targetArtifact->name = "$targetGroup ($mergedFileCount files)";
+        // Update target artifact name to use group name directly
+        $targetArtifact->name = $targetGroup;
         $targetArtifact->save();
 
         // Delete source artifact (it's been merged)

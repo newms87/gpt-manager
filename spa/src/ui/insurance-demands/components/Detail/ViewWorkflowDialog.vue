@@ -7,25 +7,38 @@
     >
         <!-- Header -->
         <div class="bg-slate-800 p-4 border-b border-slate-700 flex-shrink-0">
-            <div class="flex-x space-x-2">
-                <h2 class="text-lg font-semibold text-slate-200">
-                    Workflow: {{ workflowRun?.name || "Loading..." }}
-                </h2>
-                <LabelPillWidget
-                    v-if="workflowRun"
-                    :label="workflowRun.id"
-                    color="sky"
-                    size="xs"
-                    class="flex-shrink-0"
+            <div class="flex items-center justify-between pr-16">
+                <!-- Left side: Workflow info -->
+                <div>
+                    <div class="flex-x space-x-2">
+                        <h2 class="text-lg font-semibold text-slate-200">
+                            Workflow: {{ workflowRun?.name || "Loading..." }}
+                        </h2>
+                        <LabelPillWidget
+                            v-if="workflowRun"
+                            :label="workflowRun.id"
+                            color="sky"
+                            size="xs"
+                            class="flex-shrink-0"
+                        />
+                    </div>
+                    <div class="flex items-center gap-3 mt-1">
+                        <div class="text-sm text-slate-400">
+                            Status: <span :class="statusColor">{{ workflowRun?.status }}</span>
+                        </div>
+                        <div v-if="workflowRun?.progress_percent !== undefined" class="text-sm text-slate-400">
+                            Progress: <span class="text-blue-400">{{ workflowRun.progress_percent }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right side: Run History Popover -->
+                <WorkflowRunHistoryPopover
+                    v-if="props.workflowRuns && props.workflowRuns.length > 1"
+                    :workflow-runs="props.workflowRuns"
+                    :current-run="props.workflowRun"
+                    @select-run="(run) => emit('select-run', run)"
                 />
-            </div>
-            <div class="flex items-center gap-3 mt-1">
-                <div class="text-sm text-slate-400">
-                    Status: <span :class="statusColor">{{ workflowRun?.status }}</span>
-                </div>
-                <div v-if="workflowRun?.progress_percent !== undefined" class="text-sm text-slate-400">
-                    Progress: <span class="text-blue-400">{{ workflowRun.progress_percent }}%</span>
-                </div>
             </div>
         </div>
 
@@ -72,13 +85,16 @@ import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { FaSolidTriangleExclamation } from "danx-icon";
 import { FullScreenDialog, LabelPillWidget } from "quasar-ui-danx";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import WorkflowRunHistoryPopover from "./WorkflowRunHistoryPopover.vue";
 
 const emit = defineEmits<{
     close: [];
+    "select-run": [run: WorkflowRun];
 }>();
 
 const props = defineProps<{
     workflowRun: WorkflowRun;
+    workflowRuns?: WorkflowRun[];
 }>();
 
 const workflowDefinition = ref<WorkflowDefinition | null>(null);

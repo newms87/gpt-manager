@@ -47,6 +47,7 @@ class UiDemandResource extends ActionResource
 
     /**
      * Format workflow runs keyed by workflow key
+     * Returns an array of all runs per key, sorted by created_at desc
      */
     protected static function formatWorkflowRuns(UiDemand $demand, mixed $fields): array
     {
@@ -56,7 +57,9 @@ class UiDemandResource extends ActionResource
 
         foreach ($workflows as $workflow) {
             $key                = $workflow['key'];
-            $workflowRuns[$key] = WorkflowRunResource::make($demand->getLatestWorkflowRun($key), $fields);
+            $runs               = $demand->getWorkflowRunsForKey($key);
+            // Return array of WorkflowRun resources
+            $workflowRuns[$key] = WorkflowRunResource::collection($runs, $fields);
         }
 
         return $workflowRuns;

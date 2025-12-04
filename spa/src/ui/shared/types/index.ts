@@ -66,7 +66,7 @@ export interface UiDemand extends ActionTargetItem {
     completed_at?: string;
     created_at: string;
     updated_at: string;
-    workflow_runs: Record<string, WorkflowRun | null>;
+    workflow_runs: Record<string, WorkflowRun[]>;
     workflow_config: WorkflowConfig[];
     artifact_sections: ArtifactSection[];
     user?: User;
