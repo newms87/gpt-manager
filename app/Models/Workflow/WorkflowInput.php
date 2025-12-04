@@ -7,6 +7,7 @@ use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Services\Workflow\WorkflowInputToArtifactMapper;
 use App\Traits\HasObjectTags;
+use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,7 +24,7 @@ use Newms87\Danx\Traits\KeywordSearchTrait;
 
 class WorkflowInput extends Model implements AuditableContract
 {
-    use ActionModelTrait, AuditableTrait, HasFactory, HasObjectTags, KeywordSearchTrait, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasObjectTags, HasTags, KeywordSearchTrait, SoftDeletes;
 
     protected $fillable = [
         'name',

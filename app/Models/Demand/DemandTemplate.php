@@ -5,6 +5,7 @@ namespace App\Models\Demand;
 use App\Models\User;
 use App\Rules\TeamScopedUniqueRule;
 use App\Services\GoogleDocs\GoogleDocsFileService;
+use App\Traits\HasTags;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Newms87\Danx\Traits\AuditableTrait;
 
 class DemandTemplate extends Model implements AuditableContract
 {
-    use ActionModelTrait, AuditableTrait, HasFactory, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasTags, SoftDeletes;
 
     protected $fillable = [
         'team_id',
