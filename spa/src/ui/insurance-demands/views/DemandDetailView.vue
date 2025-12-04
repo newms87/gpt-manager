@@ -1,4 +1,12 @@
 <template>
+    <!-- View All Demands Link -->
+    <div class="px-6 pb-2">
+        <RouterLink to="/ui/demands" class="text-sm text-blue-600 hover:text-blue-700 inline-flex items-center space-x-1">
+            <FaSolidArrowLeft class="w-3" />
+            <span>View All Demands</span>
+        </RouterLink>
+    </div>
+
     <UiMainLayout>
         <template #header>
             <DemandDetailHeader
@@ -78,10 +86,10 @@
 
 <script setup lang="ts">
 import { WorkflowRun } from "@/types";
-import { FaSolidExclamation } from "danx-icon";
+import { FaSolidArrowLeft, FaSolidExclamation } from "danx-icon";
 import { type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import { UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {

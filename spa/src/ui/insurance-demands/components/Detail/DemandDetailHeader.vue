@@ -1,16 +1,14 @@
 <template>
   <div class="px-6 py-4">
     <div class="flex items-center justify-between">
-      <div>
+      <div class="flex items-center space-x-4">
         <h1 class="text-2xl font-bold text-slate-800">
           {{ demand?.title || "Loading..." }}
         </h1>
-        <div v-if="demand?.status" class="flex items-center space-x-4 mt-1">
-          <UiStatusBadge :status="demand.status" />
-          <span v-if="demand.created_at" class="text-sm text-slate-500">
-            Created {{ formatDate(demand.created_at) }}
-          </span>
-        </div>
+        <UiStatusBadge v-if="demand?.status" :status="demand.status" />
+        <span v-if="demand?.created_at" class="text-sm text-slate-500">
+          Created {{ formatDate(demand.created_at) }}
+        </span>
       </div>
 
       <div class="flex items-center space-x-3">
@@ -20,6 +18,7 @@
         <ActionButton
           v-if="demand && demand.status !== DEMAND_STATUS.COMPLETED"
           type="check"
+          label="Mark Completed"
           color="green"
           size="sm"
           tooltip="Mark Complete"
@@ -30,6 +29,7 @@
         <ActionButton
           v-if="demand && demand.status === DEMAND_STATUS.COMPLETED"
           type="clock"
+          label="Set As Draft"
           color="slate"
           size="sm"
           tooltip="Set As Draft"
@@ -47,14 +47,6 @@
           :saving="isDeleting"
           @click="handleDelete"
         />
-
-        <RouterLink to="/ui/demands">
-          <ActionButton
-            type="back"
-            size="sm"
-            label="View All Demands"
-          />
-        </RouterLink>
       </div>
     </div>
 
