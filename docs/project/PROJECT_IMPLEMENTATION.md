@@ -55,15 +55,29 @@ Read this file to understand specific commands, syntax requirements, and technic
 
 ## Docker/Sail Commands
 
+### 🚨 CRITICAL: ALWAYS USE RELATIVE PATH `./vendor/bin/sail`
+
+**NEVER use absolute paths with Sail commands!**
+
+- ✅ **CORRECT**: `./vendor/bin/sail artisan migrate`
+- ✅ **CORRECT**: `./vendor/bin/sail test --filter=MyTest`
+- ✅ **CORRECT**: `./vendor/bin/sail pint app/Services/`
+- ❌ **WRONG**: `/home/user/project/vendor/bin/sail artisan migrate`
+- ❌ **WRONG**: `vendor/bin/sail artisan migrate` (missing `./`)
+
+**The `./` prefix is REQUIRED** - it ensures the command runs from the correct directory context.
+
 ### Required Commands
 
 - Use `./vendor/bin/sail artisan` for all artisan commands
+- Use `./vendor/bin/sail test` for running tests
+- Use `./vendor/bin/sail pint` for code formatting
+- Use `./vendor/bin/sail php` for running PHP files
 - Run `./vendor/bin/sail artisan fix` for permission issues
 - Never use chmod on files to fix permissions - always use `./vendor/bin/sail artisan fix`
 - Never use the rg command, use grep instead
-- When attempting to run PHP files, always use `./vendor/bin/sail php`
 
-**Why:** Sail manages Docker containers. Direct commands may run outside the container with wrong PHP version or missing extensions.
+**Why:** Sail manages Docker containers. Direct commands may run outside the container with wrong PHP version or missing extensions. Absolute paths break across different development environments.
 
 ---
 

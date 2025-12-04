@@ -128,7 +128,10 @@ Before starting any work, you MUST:
 ### Command Line
 
 - **Run commands**: Use `Bash` tool
-- Always use Sail commands when working with Laravel (`./vendor/bin/sail ...`)
+- **🚨 ALWAYS use relative path `./vendor/bin/sail`** - NEVER absolute paths!
+  - ✅ `./vendor/bin/sail artisan migrate`
+  - ✅ `./vendor/bin/sail test --filter=MyTest`
+  - ❌ `/home/user/project/vendor/bin/sail ...` (WRONG - absolute path)
 - Use `yarn` commands for Vue/SPA builds
 
 ### Tool Restrictions
