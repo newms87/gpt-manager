@@ -40,6 +40,11 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_complete_workflow_extractData_to_writeDemandLetter_integration(): void
     {
         // Given - Set up all 4-step workflow definitions
+        $organizeFilesWorkflow = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $extractDataWorkflow = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -74,6 +79,22 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
         $service = app(UiDemandWorkflowService::class);
+
+        // STEP 0: Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflow->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifact with organized_file category for extract_data workflow to use
+        $organizedArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
 
         // STEP 1: Verify initial state - can extract data, cannot write demand
         $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
@@ -304,23 +325,26 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('write_medical_summary', $data['workflow_runs']);
         $this->assertArrayHasKey('write_demand_letter', $data['workflow_runs']);
 
-        // Verify extract_data workflow run is not null (it was completed)
-        $this->assertNotNull($data['workflow_runs']['extract_data']);
-        $this->assertArrayHasKey('id', $data['workflow_runs']['extract_data']);
-        $this->assertNotNull($data['workflow_runs']['extract_data']['completed_at']);
+        // Verify extract_data workflow run is not empty (it was completed) - now returns array
+        $this->assertIsArray($data['workflow_runs']['extract_data']);
+        $this->assertNotEmpty($data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('id', $data['workflow_runs']['extract_data'][0]);
+        $this->assertNotNull($data['workflow_runs']['extract_data'][0]['completed_at']);
 
-        // Verify write_medical_summary workflow run is not null (it was completed)
-        $this->assertNotNull($data['workflow_runs']['write_medical_summary']);
-        $this->assertArrayHasKey('id', $data['workflow_runs']['write_medical_summary']);
-        $this->assertNotNull($data['workflow_runs']['write_medical_summary']['completed_at']);
+        // Verify write_medical_summary workflow run is not empty (it was completed) - now returns array
+        $this->assertIsArray($data['workflow_runs']['write_medical_summary']);
+        $this->assertNotEmpty($data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('id', $data['workflow_runs']['write_medical_summary'][0]);
+        $this->assertNotNull($data['workflow_runs']['write_medical_summary'][0]['completed_at']);
 
-        // Verify write_demand_letter has no workflow run yet (null expected)
-        $this->assertNull($data['workflow_runs']['write_demand_letter']);
+        // Verify write_demand_letter has no workflow run yet (empty array expected)
+        $this->assertIsArray($data['workflow_runs']['write_demand_letter']);
+        $this->assertEmpty($data['workflow_runs']['write_demand_letter']);
 
         // Verify workflow_config structure
         $this->assertArrayHasKey('workflow_config', $data);
         $this->assertIsArray($data['workflow_config']);
-        $this->assertCount(3, $data['workflow_config']);
+        $this->assertCount(4, $data['workflow_config']);
 
         // Verify workflow_config contains expected fields
         $firstWorkflow = $data['workflow_config'][0];
@@ -421,9 +445,12 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('extract_data', $fresh['workflow_runs']);
         $this->assertArrayHasKey('write_medical_summary', $fresh['workflow_runs']);
         $this->assertArrayHasKey('write_demand_letter', $fresh['workflow_runs']);
-        $this->assertNull($fresh['workflow_runs']['extract_data']);
-        $this->assertNull($fresh['workflow_runs']['write_medical_summary']);
-        $this->assertNull($fresh['workflow_runs']['write_demand_letter']);
+        $this->assertIsArray($fresh['workflow_runs']['extract_data']);
+        $this->assertEmpty($fresh['workflow_runs']['extract_data']);
+        $this->assertIsArray($fresh['workflow_runs']['write_medical_summary']);
+        $this->assertEmpty($fresh['workflow_runs']['write_medical_summary']);
+        $this->assertIsArray($fresh['workflow_runs']['write_demand_letter']);
+        $this->assertEmpty($fresh['workflow_runs']['write_demand_letter']);
 
         // Extract data completed demand - has extract_data workflow run
         $extractDataResponse = $this->getJson("/api/ui-demands/{$extractDataDemand->id}/details");
@@ -431,11 +458,14 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $extractData = $extractDataResponse->json();
 
         $this->assertArrayHasKey('workflow_runs', $extractData);
-        $this->assertNotNull($extractData['workflow_runs']['extract_data']);
-        $this->assertArrayHasKey('id', $extractData['workflow_runs']['extract_data']);
-        $this->assertNotNull($extractData['workflow_runs']['extract_data']['completed_at']);
-        $this->assertNull($extractData['workflow_runs']['write_medical_summary']);
-        $this->assertNull($extractData['workflow_runs']['write_demand_letter']);
+        $this->assertIsArray($extractData['workflow_runs']['extract_data']);
+        $this->assertNotEmpty($extractData['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('id', $extractData['workflow_runs']['extract_data'][0]);
+        $this->assertNotNull($extractData['workflow_runs']['extract_data'][0]['completed_at']);
+        $this->assertIsArray($extractData['workflow_runs']['write_medical_summary']);
+        $this->assertEmpty($extractData['workflow_runs']['write_medical_summary']);
+        $this->assertIsArray($extractData['workflow_runs']['write_demand_letter']);
+        $this->assertEmpty($extractData['workflow_runs']['write_demand_letter']);
 
         // Medical summary completed demand - has medical summary workflow run
         $medicalSummaryResponse = $this->getJson("/api/ui-demands/{$medicalSummaryDemand->id}/details");
@@ -443,10 +473,12 @@ class UiDemandWriteDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $medicalSummary = $medicalSummaryResponse->json();
 
         $this->assertArrayHasKey('workflow_runs', $medicalSummary);
-        $this->assertNotNull($medicalSummary['workflow_runs']['write_medical_summary']);
-        $this->assertArrayHasKey('id', $medicalSummary['workflow_runs']['write_medical_summary']);
-        $this->assertNotNull($medicalSummary['workflow_runs']['write_medical_summary']['completed_at']);
-        $this->assertNull($medicalSummary['workflow_runs']['write_demand_letter']);
+        $this->assertIsArray($medicalSummary['workflow_runs']['write_medical_summary']);
+        $this->assertNotEmpty($medicalSummary['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('id', $medicalSummary['workflow_runs']['write_medical_summary'][0]);
+        $this->assertNotNull($medicalSummary['workflow_runs']['write_medical_summary'][0]['completed_at']);
+        $this->assertIsArray($medicalSummary['workflow_runs']['write_demand_letter']);
+        $this->assertEmpty($medicalSummary['workflow_runs']['write_demand_letter']);
     }
 
     public function test_workflow_event_broadcasting_works_for_write_demand(): void

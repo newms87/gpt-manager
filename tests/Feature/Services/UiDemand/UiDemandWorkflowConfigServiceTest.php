@@ -33,11 +33,11 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
         $workflows = $this->service->getWorkflows();
 
         $this->assertIsArray($workflows);
-        $this->assertCount(3, $workflows);
+        $this->assertCount(4, $workflows);
 
         // Check workflow keys
         $keys = array_column($workflows, 'key');
-        $this->assertEquals(['extract_data', 'write_medical_summary', 'write_demand_letter'], $keys);
+        $this->assertEquals(['organize_files', 'extract_data', 'write_medical_summary', 'write_demand_letter'], $keys);
     }
 
     #[Test]
@@ -72,9 +72,13 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
     #[Test]
     public function gets_workflow_dependencies(): void
     {
-        // extract_data has no dependencies
-        $dependencies = $this->service->getDependencies('extract_data');
+        // organize_files has no dependencies
+        $dependencies = $this->service->getDependencies('organize_files');
         $this->assertEmpty($dependencies);
+
+        // extract_data depends on organize_files
+        $dependencies = $this->service->getDependencies('extract_data');
+        $this->assertEquals(['organize_files'], $dependencies);
 
         // write_medical_summary depends on extract_data
         $dependencies = $this->service->getDependencies('write_medical_summary');
@@ -97,6 +101,10 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
     #[Test]
     public function gets_workflow_dependents(): void
     {
+        // organize_files is depended on by extract_data
+        $dependents = $this->service->getDependents('organize_files');
+        $this->assertEquals(['extract_data'], $dependents);
+
         // extract_data is depended on by write_medical_summary
         $dependents = $this->service->getDependents('extract_data');
         $this->assertEquals(['write_medical_summary'], $dependents);
@@ -135,8 +143,8 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
             'team_id' => $this->user->currentTeam->id,
         ]);
 
-        // extract_data requires input files
-        $canRun = $this->service->canRunWorkflow($demand, 'extract_data');
+        // organize_files requires input files
+        $canRun = $this->service->canRunWorkflow($demand, 'organize_files');
 
         $this->assertFalse($canRun);
     }
@@ -167,14 +175,17 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
         ]);
 
-        // Create a pending extract_data workflow
+        // Add input files for organize_files
+        $demand->inputFiles()->attach(\Newms87\Danx\Models\Utilities\StoredFile::factory()->create()->id, ['category' => 'input']);
+
+        // Create a pending organize_files workflow
         $workflowRun = WorkflowRun::factory()->create([
             'status' => 'Pending',
         ]);
-        $demand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'extract_data']);
+        $demand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'organize_files']);
 
-        // write_medical_summary depends on extract_data being completed
-        $canRun = $this->service->canRunWorkflow($demand, 'write_medical_summary');
+        // extract_data depends on organize_files being completed
+        $canRun = $this->service->canRunWorkflow($demand, 'extract_data');
 
         $this->assertFalse($canRun);
     }
@@ -191,16 +202,22 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
             'team_object_id' => $teamObject->id,
         ]);
 
-        // Add input files for extract_data
+        // Add input files for organize_files
         $demand->inputFiles()->attach(\Newms87\Danx\Models\Utilities\StoredFile::factory()->create()->id, ['category' => 'input']);
+
+        // Create a completed organize_files workflow (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'completed_at' => now(),
+        ]);
+        $demand->workflowRuns()->attach($organizeFilesWorkflowRun->id, ['workflow_type' => 'organize_files']);
 
         // Create a completed extract_data workflow
         // Set completed_at timestamp which will automatically set status to Completed
-        $workflowRun = WorkflowRun::factory()->create([
+        $extractDataWorkflowRun = WorkflowRun::factory()->create([
             'completed_at' => now(),
         ]);
 
-        $demand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'extract_data']);
+        $demand->workflowRuns()->attach($extractDataWorkflowRun->id, ['workflow_type' => 'extract_data']);
 
         // write_medical_summary should be able to run now
         $canRun = $this->service->canRunWorkflow($demand, 'write_medical_summary');
@@ -237,7 +254,7 @@ class UiDemandWorkflowConfigServiceTest extends AuthenticatedTestCase
         $workflows = $this->service->getWorkflowsForApi();
 
         $this->assertIsArray($workflows);
-        $this->assertCount(3, $workflows);
+        $this->assertCount(4, $workflows);
 
         // Check first workflow structure
         $firstWorkflow = $workflows[0];

@@ -76,7 +76,7 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $response->assertStatus(401);
     }
 
-    public function test_authorize_withoutConfiguration_returns500(): void
+    public function test_authorize_withoutConfiguration_returns422(): void
     {
         // Given - remove all configuration for the service
         Config::set('auth.oauth.google', null);
@@ -84,8 +84,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When
         $response = $this->getJson("/api/oauth/{$this->service}/authorize");
 
-        // Then - Service will return 500 when configuration is missing
-        $response->assertStatus(500);
+        // Then - Service will return 422 (Unprocessable Entity) when configuration is missing
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
     }
 
@@ -187,11 +187,10 @@ class OAuthControllerTest extends AuthenticatedTestCase
         $error = 'access_denied';
 
         // When - Use getJson() to get JSON error response instead of exception
-        // Note: AuditingMiddleware catches exceptions and returns generic 500 error
         $response = $this->getJson("/api/oauth/callback?error=$error");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (Unprocessable Entity - validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
 
         // Verify it does NOT redirect with query parameters (the old behavior)
@@ -210,8 +209,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?state=$state");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -229,8 +228,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -248,8 +247,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$expiredState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -262,8 +261,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -277,8 +276,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$malformedState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -296,8 +295,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -315,8 +314,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -334,8 +333,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -353,8 +352,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$invalidState");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -380,8 +379,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When - Use getJson() to get JSON error response
         $response = $this->getJson("/api/oauth/callback?code=$code&state=$state");
 
-        // Then - Verify error is returned (not redirect with query parameters)
-        $response->assertStatus(500);
+        // Then - Verify error is returned as 422 (validation error)
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
         $this->assertFalse($response->isRedirect());
     }
@@ -530,8 +529,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When
         $response = $this->postJson("/api/oauth/{$this->service}/refresh");
 
-        // Then - The service will throw an exception that gets converted to 500
-        $response->assertStatus(500);
+        // Then - The service will throw a validation exception that gets converted to 422
+        $response->assertStatus(422);
         $response->assertJsonStructure(['message']);
     }
 
@@ -632,9 +631,8 @@ class OAuthControllerTest extends AuthenticatedTestCase
         // When
         $response = $this->deleteJson("/api/oauth/tokens/{$token->id}");
 
-        // Then - Model binding might fail (404) or permission check might fail (403)
-        // Both are acceptable since the user shouldn't have access to tokens from other teams
-        $this->assertTrue(in_array($response->getStatusCode(), [403, 404, 500]));
+        // Then - Validation error for wrong team ownership returns 422
+        $this->assertTrue(in_array($response->getStatusCode(), [403, 404, 422]));
         $response->assertJsonStructure(['message']);
     }
 

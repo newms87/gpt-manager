@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\WorkflowStartNodeJob;
 use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
+use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
@@ -40,6 +41,11 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_complete4StepWorkflow_fromStartToFinish_worksCorrectly(): void
     {
         // Given - Set up all workflow definitions
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $extractDataWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -68,12 +74,38 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
-        // Step 1: Extract Data
-        $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
+        // Step 0: Organize Files (new dependency for extract_data)
+        $this->assertTrue($uiDemand->canRunWorkflow('organize_files'));
+        $this->assertFalse($uiDemand->canRunWorkflow('extract_data')); // Can't run until organize_files completes
         $this->assertFalse($uiDemand->canRunWorkflow('write_medical_summary'));
         $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
-        $extractDataWorkflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
+        $organizeFilesWorkflowRun = $this->service->runWorkflow($uiDemand, 'organize_files');
+        $this->assertInstanceOf(WorkflowRun::class, $organizeFilesWorkflowRun);
+        $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('organize_files'));
+        $this->assertFalse($uiDemand->fresh()->canRunWorkflow('organize_files')); // Can't start another while running
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
+
+        // Simulate organize files completion
+        $organizeFilesWorkflowRun->update([
+            'completed_at' => now(),
+        ]);
+
+        $this->service->handleUiDemandWorkflowComplete($organizeFilesWorkflowRun);
+
+        // Verify organize files completed
+        $updatedDemand = $uiDemand->fresh();
+        $this->assertFalse($updatedDemand->isWorkflowRunning('organize_files'));
+        $this->assertTrue($updatedDemand->canRunWorkflow('extract_data')); // Now can run extract_data
+
+        // Step 1: Extract Data
+        $this->assertFalse($updatedDemand->canRunWorkflow('write_medical_summary'));
+        $this->assertFalse($updatedDemand->canRunWorkflow('write_demand_letter'));
+
+        $extractDataWorkflowRun = $this->service->runWorkflow($updatedDemand, 'extract_data');
         $this->assertInstanceOf(WorkflowRun::class, $extractDataWorkflowRun);
         $this->assertTrue($uiDemand->fresh()->isWorkflowRunning('extract_data'));
         $this->assertFalse($uiDemand->fresh()->canRunWorkflow('extract_data')); // Can't start another while running
@@ -137,8 +169,9 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('write_demand_letter_completed_at', $finalDemand->metadata);
         $this->assertFalse($finalDemand->isWorkflowRunning('write_demand_letter'));
 
-        // Verify all workflows are tracked correctly
-        $this->assertEquals(3, $finalDemand->workflowRuns()->count());
+        // Verify all workflows are tracked correctly (4 workflows: organize_files, extract_data, write_medical_summary, write_demand_letter)
+        $this->assertEquals(4, $finalDemand->workflowRuns()->count());
+        $this->assertEquals(1, $finalDemand->workflowRuns()->where('workflow_type', 'organize_files')->count());
         $this->assertEquals(1, $finalDemand->workflowRuns()->where('workflow_type', 'extract_data')->count());
         $this->assertEquals(1, $finalDemand->workflowRuns()->where('workflow_type', 'write_medical_summary')->count());
         $this->assertEquals(1, $finalDemand->workflowRuns()->where('workflow_type', 'write_demand_letter')->count());
@@ -211,6 +244,11 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
     public function test_workflowFailure_handlesCorrectly(): void
     {
         // Given
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -228,6 +266,20 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
+
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
 
         // When - Start workflow and simulate failure
         $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
@@ -403,7 +455,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // When - Test the actual writeDemandLetter method
         $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter', [
-            'template_id'             => $template->id,
+            'output_template_id'      => $template->id,
             'additional_instructions' => 'Include specific monetary damages and timeline.',
         ]);
 

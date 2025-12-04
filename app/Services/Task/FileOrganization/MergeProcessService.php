@@ -399,9 +399,10 @@ class MergeProcessService
 
         // Refresh the relationship to get accurate count after attaching files
         $targetArtifact->load('storedFiles');
+        $mergedFileCount = $targetArtifact->storedFiles->count();
 
-        // Update target artifact name to use group name directly
-        $targetArtifact->name = $targetGroup;
+        // Update target artifact name to include merged file count
+        $targetArtifact->name = "$targetGroup ($mergedFileCount files)";
         $targetArtifact->save();
 
         // Delete source artifact (it's been merged)

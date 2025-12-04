@@ -15,6 +15,7 @@ use Illuminate\Http\Middleware\ValidatePostSize;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Middleware\AppVersionMiddleware;
 use Newms87\Danx\Middleware\AuditingMiddleware;
 
@@ -57,5 +58,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Handle ValidationError exceptions to return 422 Unprocessable Entity
+        $exceptions->render(function (ValidationError $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        });
     })->create();

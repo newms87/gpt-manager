@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Demand\UiDemand;
+use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
@@ -34,6 +35,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
     public function test_extractData_withValidRequest_returnsSuccessResponse(): void
     {
         // Given
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -57,6 +63,22 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
+        // Create completed organize_files workflow (required dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifact with organized_file category for extract_data workflow to use
+        $organizedArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
+
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
 
@@ -68,9 +90,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'status',
             'workflow_runs' => [
                 'extract_data' => [
-                    'id',
-                    'status',
-                    'progress_percent',
+                    '*' => [
+                        'id',
+                        'status',
+                        'progress_percent',
+                    ],
                 ],
             ],
             'workflow_config',
@@ -150,9 +174,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'status',
             'workflow_runs' => [
                 'write_medical_summary' => [
-                    'id',
-                    'status',
-                    'progress_percent',
+                    '*' => [
+                        'id',
+                        'status',
+                        'progress_percent',
+                    ],
                 ],
             ],
             'workflow_config',
@@ -219,6 +245,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
     public function test_extractData_endpoint_loadsCorrectRelationships(): void
     {
         // Given
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -242,6 +273,22 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
+        // Create completed organize_files workflow (required dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifact with organized_file category for extract_data workflow to use
+        $organizedArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
+
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
 
@@ -254,11 +301,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('output_files', $data);
         $this->assertArrayHasKey('workflow_runs', $data);
 
-        // Verify workflow run has necessary data
-        $this->assertNotNull($data['workflow_runs']['extract_data']);
-        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['extract_data']);
-        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['extract_data']);
-        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['extract_data']);
+        // Verify workflow run has necessary data (workflow_runs is now an array for each type)
+        $this->assertIsArray($data['workflow_runs']['extract_data']);
+        $this->assertNotEmpty($data['workflow_runs']['extract_data']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['extract_data'][0]);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['extract_data'][0]);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['extract_data'][0]);
     }
 
     public function test_writeMedicalSummary_endpoint_loadsCorrectRelationships(): void
@@ -308,11 +356,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('team_object', $data);
         $this->assertArrayHasKey('workflow_runs', $data);
 
-        // Verify workflow run has necessary data
-        $this->assertNotNull($data['workflow_runs']['write_medical_summary']);
-        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_medical_summary']);
-        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_medical_summary']);
-        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_medical_summary']);
+        // Verify workflow run has necessary data (workflow_runs is now an array for each type)
+        $this->assertIsArray($data['workflow_runs']['write_medical_summary']);
+        $this->assertNotEmpty($data['workflow_runs']['write_medical_summary']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_medical_summary'][0]);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_medical_summary'][0]);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_medical_summary'][0]);
     }
 
     public function test_demand_canWriteDemand_flagIsCorrect(): void
@@ -465,9 +514,11 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
             'status',
             'workflow_runs' => [
                 'write_demand_letter' => [
-                    'id',
-                    'status',
-                    'progress_percent',
+                    '*' => [
+                        'id',
+                        'status',
+                        'progress_percent',
+                    ],
                 ],
             ],
             'workflow_config',
@@ -590,11 +641,12 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('team_object', $data);
         $this->assertArrayHasKey('workflow_runs', $data);
 
-        // Verify workflow run has necessary data
-        $this->assertNotNull($data['workflow_runs']['write_demand_letter']);
-        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_demand_letter']);
-        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_demand_letter']);
-        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_demand_letter']);
+        // Verify workflow run has necessary data (workflow_runs is now an array for each type)
+        $this->assertIsArray($data['workflow_runs']['write_demand_letter']);
+        $this->assertNotEmpty($data['workflow_runs']['write_demand_letter']);
+        $this->assertArrayHasKey('progress_percent', $data['workflow_runs']['write_demand_letter'][0]);
+        $this->assertArrayHasKey('total_nodes', $data['workflow_runs']['write_demand_letter'][0]);
+        $this->assertArrayHasKey('completed_tasks', $data['workflow_runs']['write_demand_letter'][0]);
     }
 
     public function test_writeMedicalSummary_withInstructionTemplate_acceptsTemplateId(): void

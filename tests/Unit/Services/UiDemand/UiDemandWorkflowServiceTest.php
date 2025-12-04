@@ -40,6 +40,11 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
     public function runWorkflow_withExtractDataWorkflow_startsCorrectly(): void
     {
         // Given
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -57,6 +62,20 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
+
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
 
         // When
         $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data', []);
@@ -191,6 +210,11 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
     public function runWorkflow_withMissingWorkflowDefinition_throwsValidationError(): void
     {
         // Given
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $uiDemand = UiDemand::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
@@ -204,7 +228,17 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
-        // No workflow definition exists
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // No extract_data workflow definition exists
 
         // Then
         $this->expectException(ValidationError::class);
@@ -505,10 +539,14 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
         $this->assertArrayHasKey('write_demand_letter_completed_at', $updatedDemand->metadata);
 
-        // Verify stored file was attached as output
-        $outputFiles = $updatedDemand->outputFiles;
-        $this->assertCount(1, $outputFiles);
-        $this->assertEquals($storedFile->id, $outputFiles->first()->id);
+        // Verify artifact was attached with output_document category
+        $outputArtifacts = $updatedDemand->artifacts()->wherePivot('category', 'output_document')->get();
+        $this->assertCount(1, $outputArtifacts);
+        $this->assertEquals($artifact->id, $outputArtifacts->first()->id);
+
+        // Verify the artifact has the stored file attached
+        $this->assertEquals(1, $artifact->storedFiles->count());
+        $this->assertEquals($storedFile->id, $artifact->storedFiles->first()->id);
     }
 
     #[Test]

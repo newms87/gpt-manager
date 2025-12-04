@@ -46,7 +46,12 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
     public function test_extractData_fullLifecycle_createsWorkflowListenerAndHandlesCompletion(): void
     {
-        // Given - Set up extract data workflow
+        // Given - Set up organize files and extract data workflows
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -65,6 +70,20 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
+
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
 
         // When - Start extract data workflow
         $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
@@ -233,17 +252,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'completed_at' => now(),
         ]);
 
-        // Since the collectFinalOutputArtifacts needs proper workflow nodes,
-        // let's simulate the file attachment directly
-        $outputArtifacts = collect([$artifact1, $artifact2]);
-
-        // Use reflection to call the protected method for testing
-        $reflection = new \ReflectionClass($this->service);
-        $method     = $reflection->getMethod('attachOutputFilesFromWorkflow');
-        $method->setAccessible(true);
-        $method->invokeArgs($this->service, [$uiDemand, $outputArtifacts]);
-
-        // Then call the regular workflow completion handler for metadata updates
+        // Call the workflow completion handler - it will automatically attach artifacts
         $this->service->handleUiDemandWorkflowComplete($workflowRun);
 
         // Then - Verify write demand completion effects
@@ -256,23 +265,27 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
 
-        // Verify output files are attached to UiDemand
-        $outputFiles = $updatedDemand->outputFiles;
-        $this->assertCount(2, $outputFiles);
+        // Verify artifacts are attached to UiDemand with output_document category
+        $outputArtifacts = $updatedDemand->artifacts()->wherePivot('category', 'output_document')->get();
+        $this->assertCount(2, $outputArtifacts);
 
-        $outputFileIds = $outputFiles->pluck('id')->toArray();
-        $this->assertContains($outputFile1->id, $outputFileIds);
-        $this->assertContains($outputFile2->id, $outputFileIds);
+        $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();
+        $this->assertContains($artifact1->id, $outputArtifactIds);
+        $this->assertContains($artifact2->id, $outputArtifactIds);
 
-        // Verify the pivot data has correct category
-        foreach ($outputFiles as $file) {
-            $this->assertEquals('output', $file->pivot->category ?? 'output');
-        }
+        // Verify the artifacts have the stored files attached
+        $this->assertEquals(1, $artifact1->storedFiles->count());
+        $this->assertEquals(1, $artifact2->storedFiles->count());
     }
 
     public function test_extractData_workflowFailure_updatesStatusAndMetadata(): void
     {
-        // Given - Set up extract data workflow
+        // Given - Set up organize files and extract data workflows
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -291,6 +304,20 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
+
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
 
         // When - Start and fail extract data workflow
         $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');
@@ -375,7 +402,12 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
 
     public function test_workflowListener_statusTransitions_duringLifecycle(): void
     {
-        // Given - Set up extract data workflow
+        // Given - Set up organize files and extract data workflows
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -393,6 +425,20 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'user_id' => $this->user->id,
         ]);
         $uiDemand->inputFiles()->attach($inputFile->id, ['category' => 'input']);
+
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifacts with organized_file category for extract_data workflow to use
+        $artifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $organizeFilesWorkflowRun->artifacts()->attach($artifact->id, ['category' => 'organized_file']);
 
         // When - Start workflow
         $workflowRun = $this->service->runWorkflow($uiDemand, 'extract_data');

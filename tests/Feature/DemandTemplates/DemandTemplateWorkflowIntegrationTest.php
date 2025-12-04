@@ -87,7 +87,7 @@ class DemandTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // When
         $workflowRun = $this->workflowService->runWorkflow($uiDemand, 'write_demand_letter', [
-            'template_id'             => $template->id,
+            'output_template_id'      => $template->id,
             'additional_instructions' => 'Additional test instructions',
         ]);
 

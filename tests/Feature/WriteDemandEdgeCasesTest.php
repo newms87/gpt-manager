@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Demand\UiDemand;
+use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
@@ -317,6 +318,11 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
     public function test_concurrent_extract_data_and_write_demand_letter_workflows(): void
     {
         // Given - Set up all workflow definitions
+        $organizeFilesWorkflow = WorkflowDefinition::factory()->withStartingNode()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Organize Files',
+        ]);
+
         $extractDataWorkflow = WorkflowDefinition::factory()->withStartingNode()->create([
             'team_id' => $this->user->currentTeam->id,
             'name'    => 'Extract Service Dates',
@@ -344,6 +350,22 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'metadata'       => ['write_medical_summary_completed_at' => now()->toIso8601String()],
             'title'          => 'Test Concurrent Workflows',
         ]);
+
+        // Create completed organize_files workflow run (REQUIRED for extract_data)
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflow->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
+        // Create artifact with organized_file category for extract_data workflow to use
+        $organizedArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
 
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([
@@ -379,7 +401,7 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
         $this->assertTrue($uiDemand->isWorkflowRunning('write_demand_letter'));
         $this->assertFalse($uiDemand->canRunWorkflow('write_demand_letter'));
 
-        // Should still be able to start extract data workflow (separate workflow type)
+        // Should still be able to start extract data workflow (separate workflow type, organize_files is completed)
         $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
 
         // When - Start extract data workflow while write demand letter is running

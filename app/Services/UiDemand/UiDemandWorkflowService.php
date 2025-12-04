@@ -82,14 +82,50 @@ class UiDemandWorkflowService
         // Create main workflow input based on source
         if ($source === 'demand') {
             $workflowInput = $this->createWorkflowInputFromDemand($uiDemand, $workflowConfig['label']);
+        } elseif ($source === 'artifacts') {
+            // Get artifacts from a previous workflow run
+            $fromWorkflow     = $inputConfig['from_workflow']     ?? null;
+            $artifactCategory = $inputConfig['artifact_category'] ?? null;
+
+            if (!$fromWorkflow || !$artifactCategory) {
+                throw new ValidationError('Artifacts source requires from_workflow and artifact_category configuration');
+            }
+
+            // Find the completed workflow run for the specified workflow
+            $completedWorkflowRun = $uiDemand->workflowRuns()
+                ->wherePivot('workflow_type', $fromWorkflow)
+                ->where('status', WorkflowRun::STATUS_COMPLETED)
+                ->first();
+
+            if (!$completedWorkflowRun) {
+                throw new ValidationError("No completed workflow run found for '{$fromWorkflow}'");
+            }
+
+            // Get artifacts from the workflow run's output artifacts filtered by category
+            // Or fall back to artifacts attached to the UiDemand with the specified category
+            $artifacts = $completedWorkflowRun->artifacts()
+                ->wherePivot('category', $artifactCategory)
+                ->get();
+
+            // If no artifacts found on workflow run, try getting from UiDemand directly
+            if ($artifacts->isEmpty()) {
+                $artifacts = $uiDemand->getArtifactsByCategory($artifactCategory);
+            }
+
+            if ($artifacts->isEmpty()) {
+                throw new ValidationError("No artifacts found with category '{$artifactCategory}' from workflow '{$fromWorkflow}'");
+            }
+
+            // For now, return all artifacts as input (run_per_artifact handling will be added later)
+            return $artifacts->all();
         } else {
             // source === 'team_object'
             if (!$uiDemand->teamObject) {
                 throw new ValidationError('Team object not found for demand');
             }
 
-            $templateId             = $params['output_template_id']       ?? null;
-            $additionalInstructions = $params['additional_instructions'] ?? null;
+            $templateId             = $params['output_template_id']        ?? null;
+            $additionalInstructions = $params['additional_instructions']  ?? null;
 
             $workflowInput = $this->createWorkflowInputFromTeamObject(
                 $uiDemand,
@@ -294,12 +330,26 @@ TEXT;
 
     /**
      * Attach artifacts to UiDemand with specified category
+     * Also attaches any StoredFiles from those artifacts to UiDemand's outputFiles
      */
     protected function attachArtifactsToUiDemand(UiDemand $uiDemand, $artifacts, string $category): void
     {
         foreach ($artifacts as $artifact) {
             // Attach artifact to UiDemand with specified category
             $uiDemand->artifacts()->syncWithoutDetaching([$artifact->id => ['category' => $category]]);
+
+            // Attach any StoredFiles from the artifact to UiDemand's outputFiles with category 'output'
+            // Note: UiDemand->outputFiles() relationship filters for category 'output'
+            $storedFileIds = $artifact->storedFiles()->pluck('stored_files.id')->toArray();
+            if (!empty($storedFileIds)) {
+                // Build array with category for each stored file
+                $storedFilesWithCategory = [];
+                foreach ($storedFileIds as $storedFileId) {
+                    $storedFilesWithCategory[$storedFileId] = ['category' => 'output'];
+                }
+                $uiDemand->morphToMany(\Newms87\Danx\Models\Utilities\StoredFile::class, 'storable', 'stored_file_storables')
+                    ->syncWithoutDetaching($storedFilesWithCategory);
+            }
         }
     }
 

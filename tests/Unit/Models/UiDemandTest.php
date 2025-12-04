@@ -42,6 +42,20 @@ class UiDemandTest extends AuthenticatedTestCase
         ]);
         $uiDemand->inputFiles()->attach($storedFile->id, ['category' => 'input']);
 
+        // Complete organize_files workflow first (dependency for extract_data)
+        $organizeFilesWorkflowDefinition = WorkflowDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $organizeFilesWorkflowRun = WorkflowRun::factory()->create([
+            'workflow_definition_id' => $organizeFilesWorkflowDefinition->id,
+            'completed_at'           => now(),
+        ]);
+
+        $uiDemand->workflowRuns()->attach($organizeFilesWorkflowRun->id, [
+            'workflow_type' => 'organize_files',
+        ]);
+
         // When & Then
         $this->assertTrue($uiDemand->canRunWorkflow('extract_data'));
     }
