@@ -4,7 +4,7 @@ import { FaSolidCheck, FaSolidClock, FaSolidTriangleExclamation } from "danx-ico
 import { DateTime, fDuration } from "quasar-ui-danx";
 import type { ComputedRef, Ref } from "vue";
 import { computed } from "vue";
-import { DEMAND_STATUS } from "../config";
+import { DEMAND_STATUS, getWorkflowColors } from "../config";
 import { isWorkflowActive, isWorkflowCompleted, isWorkflowFailed, isWorkflowStopped } from "./useWorkflowState";
 
 /**
@@ -106,15 +106,17 @@ const createWorkflowStatus = (
 		state.failed ? FaSolidTriangleExclamation :
 			FaSolidClock;
 
-	// Get colors from config (Tailwind color names like "blue", "teal", "green")
-	const colorName = config.color || "gray";
-	const bgColor = state.failed ? "bg-red-500" :
-		state.completed ? `bg-${colorName}-500` :
+	// Get colors from the palette system
+	const colors = getWorkflowColors(config.color || "slate");
+	const failedColors = getWorkflowColors("red");
+
+	const bgColor = state.failed ? failedColors.palette.bgProgress :
+		state.completed ? colors.palette.bgProgress :
 			state.active ? "bg-slate-200" :
 				"bg-gray-400";
 
-	const textColor = state.failed ? "text-red-200" :
-		state.completed ? `text-${colorName}-200` :
+	const textColor = state.failed ? failedColors.palette.textOnDark :
+		state.completed ? colors.palette.textOnDark :
 			"text-gray-200";
 
 	// Get label

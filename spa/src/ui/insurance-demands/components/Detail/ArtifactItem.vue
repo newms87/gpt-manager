@@ -147,6 +147,7 @@ import {
 import { ActionButton, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { useDemandArtifacts } from "../../composables";
+import { getWorkflowColors } from "../../config";
 
 interface Artifact {
   id: number;
@@ -174,6 +175,9 @@ const { reloadArtifactSections } = useDemandArtifacts();
 const updateAction = dxArtifact.getAction("update");
 const deleteAction = dxArtifact.getAction("delete-with-confirm", { onFinish: reloadArtifactSections });
 
+// Get color palette
+const colors = computed(() => getWorkflowColors(props.color));
+
 // Content type checks
 const hasText = computed(() => !!props.artifact.text_content);
 const hasJson = computed(() => !!props.artifact.json_content);
@@ -198,20 +202,8 @@ watch(() => props.artifact.text_content, (newContent) => {
   editedTextContent.value = newContent || '';
 });
 
-// Dynamic styling based on color
-const containerClasses = computed(() => {
-  const baseClasses = 'border-l-4';
-  const colorMap: Record<string, string> = {
-    blue: 'bg-slate-800 border-blue-500',
-    teal: 'bg-slate-800 border-teal-500',
-    green: 'bg-slate-800 border-green-500',
-    purple: 'bg-slate-800 border-purple-500',
-    slate: 'bg-slate-800 border-slate-500',
-    sky: 'bg-slate-800 border-sky-500'
-  };
-
-  return [baseClasses, colorMap[props.color] || colorMap.slate];
-});
+// Dynamic styling using the palette
+const containerClasses = computed(() => ['border-l-4', colors.value.artifactClasses]);
 
 function cancelEdit() {
   // Reset to original content

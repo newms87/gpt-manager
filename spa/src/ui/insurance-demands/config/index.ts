@@ -2,6 +2,9 @@ import { apiUrls } from '@/api';
 import { useActionRoutes, request } from 'quasar-ui-danx';
 import type { UiDemand } from '../../shared/types';
 
+// Re-export workflow colors
+export * from './workflowColors';
+
 export const demandRoutes = useActionRoutes(apiUrls.demands.uiDemands, {
   runWorkflow: async (demand: UiDemand, workflowKey: string, parameters?: Record<string, any>) =>
     request.post(`${apiUrls.demands.uiDemands}/${demand.id}/workflow/${workflowKey}`, parameters || {})

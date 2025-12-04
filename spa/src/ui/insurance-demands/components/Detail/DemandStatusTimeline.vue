@@ -138,6 +138,7 @@ import { computed, toRef } from "vue";
 import { UiCard } from "../../../shared";
 import type { UiDemand, WorkflowConfig } from "../../../shared/types";
 import { isWorkflowActive, useActiveWorkflowTimer, useWorkflowStatusTimeline } from "../../composables";
+import { getWorkflowColors } from "../../config";
 import WorkflowRunButton from "../WorkflowRunButton.vue";
 
 const props = defineProps<{
@@ -183,18 +184,10 @@ const canRunWorkflow = (status: any): boolean => {
     return true;
 };
 
-// Get workflow button color from config
+// Get workflow button color from config using the palette
 const getWorkflowButtonColor = (config: WorkflowConfig): string => {
-    const colorMap: Record<string, string> = {
-        blue: "sky",
-        teal: "teal",
-        green: "green",
-        red: "red",
-        orange: "orange",
-        purple: "purple",
-        slate: "slate"
-    };
-    return colorMap[config.color] || config.color;
+    const colors = getWorkflowColors(config.color);
+    return colors.buttonColor;
 };
 
 // Get run button tooltip
