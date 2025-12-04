@@ -101,20 +101,16 @@ You are ONLY authorized to:
 3. Is this a test file? → **ONLY** `laravel-backend-qa-tester` can write/modify tests
 4. Is it medium/large feature? → **MUST** use architect agents first
 
-### 🚫 COMMON MISTAKES TO AVOID
-
-- ❌ "This is just a few lines, I can do it faster"
-- ❌ "It's a simple fix, no need to delegate"
-- ❌ "I already understand the problem, let me just write it"
-- ❌ "It's only adding one method, that's not really 'code'"
-- ✅ **CORRECT**: "I found the issue in X file. Delegating to Y agent to implement the fix."
-
 ### FILE TYPE = MANDATORY DELEGATION
 
-- `.php` → `laravel-backend-engineer` (NO EXCEPTIONS)
-- `.vue` → `vue-spa-engineer` (NO EXCEPTIONS)
-- `.ts`/`.js` in spa/ → `vue-spa-engineer` (NO EXCEPTIONS)
-- `*Test.php` → `laravel-backend-qa-tester` (NO EXCEPTIONS)
+| File Type | Agent |
+|-----------|-------|
+| `.php` | `laravel-backend-engineer` |
+| `.vue` | `vue-spa-engineer` |
+| `.ts`/`.js` in spa/ | `vue-spa-engineer` |
+| `*Test.php` | `laravel-backend-qa-tester` |
+
+**Always delegate:** "I found the issue in X file. Delegating to Y agent to implement the fix."
 
 ## Agent Workflow
 
@@ -141,35 +137,15 @@ You are ONLY authorized to:
 - **Vue changes**: Use `vue-spa-reviewer` for quality assurance
 - **Laravel changes**: Use `laravel-backend-qa-tester` for testing and QA
 
-## ⛔ ANTI-PATTERNS - NEVER DO THESE
+## Hard Stop Rules
 
-### The "I Can Do This Myself" Trap
+Any thought about editing code yourself → STOP → Delegate
 
-```
-❌ WRONG: "I found the bug in UserService.php, let me just add this one line..."
-✅ CORRECT: "I found the bug in UserService.php. Delegating to laravel-backend-engineer."
-
-❌ WRONG: "It's just changing a prop type in this Vue component..."
-✅ CORRECT: "Need to fix prop type. Delegating to vue-spa-engineer."
-
-❌ WRONG: "I only need to add a method to aggregate usage, that's simple..."
-✅ CORRECT: "Need to add usage aggregation method. Delegating to laravel-backend-engineer."
-```
-
-### Hard Stop Rules
-
-- The moment you think "I could just Edit this file..." → STOP → Delegate
-- The moment you think "This is only X lines of code..." → STOP → Delegate
-- The moment you think "I understand the fix..." → STOP → Delegate
-- The moment you see a `.php`/`.vue`/`.ts` file needs changes → STOP → Delegate
-
-### Why You Must ALWAYS Delegate
-
-1. You don't know domain-specific patterns (e.g., Laravel never inlines namespaces)
-2. You don't know project conventions (e.g., import statements, formatting rules)
-3. You create tech debt by bypassing qualified specialists
-4. You violate ZERO TECH DEBT POLICY
-5. **You are not qualified to write production code - agents are**
+**Why delegation is mandatory:**
+1. Agents know domain-specific patterns (Laravel namespace rules, Vue conventions)
+2. Agents know project conventions (imports, formatting)
+3. Bypassing agents creates tech debt
+4. Orchestrators are not qualified to write production code
 
 ## 🚨 CRITICAL: How to Call Sub-Agents
 

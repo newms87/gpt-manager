@@ -15,20 +15,13 @@ Read this file to understand specific commands, syntax requirements, and technic
 - **NEVER EVER USE ABSOLUTE PATHS** - They will NEVER work in any command or tool
 - **ALWAYS USE RELATIVE PATHS** - All file paths must be relative to current working directory
 
-**Examples of CORRECT paths:**
-- `spa/src/components/MyComponent.vue` ✅
-- `app/Services/MyService.php` ✅
-- `config/google-docs.php` ✅
-- `./vendor/bin/sail test` ✅
+**Correct paths:**
+- `spa/src/components/MyComponent.vue`
+- `app/Services/MyService.php`
+- `config/google-docs.php`
+- `./vendor/bin/sail test`
 
-**Examples of INCORRECT paths:**
-- `/home/user/web/project/spa/src/components/MyComponent.vue` ❌
-- `/home/newms/web/gpt-manager/app/Services/MyService.php` ❌
-- `/var/www/config/google-docs.php` ❌
-
-**This applies to ALL tools and ALL agents** - No exceptions!
-
-**Why:** Absolute paths break when working directories change or when code runs in different environments (local, CI/CD, Docker, etc.).
+**Why:** Absolute paths break across environments (local, CI/CD, Docker).
 
 ---
 
@@ -37,9 +30,7 @@ Read this file to understand specific commands, syntax requirements, and technic
 **ONLY use these exact commands:**
 
 ### Vue Frontend
-- **Build**: `yarn build` (from spa/ directory)
-  - ✅ Use for production builds and validation
-  - ❌ NEVER `npm run dev` or `npm run type-check`
+- **Build**: `yarn build` (from spa/ directory) - for production builds and validation
 
 ### Laravel Backend
 - **Testing**: `./vendor/bin/sail test`
@@ -102,14 +93,14 @@ Read this file to understand specific commands, syntax requirements, and technic
 - **SECOND RESPONSE**: Only if repeated failures occur, then investigate actual code issues
 - **NEVER**: Drop or reset databases as a solution
 
-**CORRECT RESPONSE TO DATABASE ERRORS IN TESTS:**
-1. ✅ **Retry the test** - Run `./vendor/bin/sail test --filter=TestName` again
-2. ✅ **Check for parallel conflicts** - If error mentions migrations/tables, likely parallel execution issue
-3. ✅ **Wait and retry** - Give database a moment, then retry test
-4. ✅ **Only if persistent** - Investigate actual test code or migration issues
+**Response to database errors in tests:**
+1. **Retry the test** - Run `./vendor/bin/sail test --filter=TestName` again
+2. **Check for parallel conflicts** - If error mentions migrations/tables, likely parallel execution issue
+3. **Wait and retry** - Give database a moment, then retry test
+4. **Only if persistent** - Investigate actual test code or migration issues
 5. ❌ **NEVER drop/reset database** - This is NEVER the solution
 
-**Why:** Parallel tests create timing conflicts that look like database errors but aren't. Retrying almost always resolves these.
+**Why:** Parallel tests create timing conflicts that look like database errors. Retrying almost always resolves these.
 
 ---
 
@@ -183,7 +174,7 @@ curl -X POST \
 - ✅ **REQUIRED**: `#[Test]` PHP attributes for test methods
 - ✅ **REQUIRED**: Add `use PHPUnit\Framework\Attributes\Test;` import
 
-### Example - CORRECT test method:
+### Example test method:
 ```php
 use PHPUnit\Framework\Attributes\Test;
 
@@ -194,38 +185,25 @@ public function user_can_create_team(): void
 }
 ```
 
-### Example - WRONG (deprecated):
-```php
-/** @test */
-public function user_can_create_team(): void
-{
-    // Test implementation - will cause deprecation warnings
-}
-```
-
-**Why:** PHPUnit 12 deprecated doc-comment annotations. Using deprecated features causes warnings and will break in future PHPUnit versions.
+**Why:** PHPUnit 12 deprecated `/** @test */` doc-comment annotations.
 
 ---
 
 ## Tool Usage Guidelines
 
-**File Operations:**
-- Read files: Use Read tool (NOT cat/head/tail)
-- Edit files: Use Edit tool (NOT sed/awk)
-- Write new files: Use Write tool (NOT echo >/cat <<EOF)
-- Search files: Use Glob tool (NOT find or ls)
-- Search content: Use Grep tool (NOT grep or rg commands)
+| Operation | Use This | Instead of |
+|-----------|----------|------------|
+| Read files | Read tool | cat/head/tail |
+| Edit files | Edit tool | sed/awk |
+| Write files | Write tool | echo >/cat <<EOF |
+| Search files | Glob tool | find/ls |
+| Search content | Grep tool | grep/rg |
+| Run commands | Bash tool | - |
+| Communicate | Output text | bash echo |
 
-**Command Line:**
-- Run commands: Use Bash tool
-- Always use Sail commands when working with Laravel
+Always use Sail commands when working with Laravel.
 
-**NEVER:**
-- Use bash echo to communicate with user (output text directly)
-- Use cat/head/tail to read files (use Read tool)
-- Use find/grep commands (use Glob/Grep tools)
-
-**Why:** Specialized tools have better error handling, permissions, and formatting than raw bash commands.
+**Why:** Specialized tools have better error handling, permissions, and formatting.
 
 ---
 

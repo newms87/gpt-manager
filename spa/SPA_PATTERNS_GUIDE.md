@@ -122,32 +122,20 @@ This guide documents the reusable components, patterns, and conventions used thr
 **ActionButton** - Semantic action buttons
 
 ```vue
-<!-- ✅ CORRECT: Use type and label props only -->
 <ActionButton
-    type="create"      // Types: create, edit, delete, trash, merge, cancel, confirm, etc.
-label="Create New" // Use label prop for text
-color="blue-invert"
-tooltip="Create New"
-:loading="action.isApplying"
-@click="action.trigger()"
+    type="create"
+    label="Create New"
+    color="blue-invert"
+    tooltip="Create New"
+    :loading="action.isApplying"
+    @click="action.trigger()"
 />
-
-<!-- ❌ WRONG: NEVER add custom icons or slot content -->
-<ActionButton type="cancel" @click="...">
-    <template #icon>
-        <FaSolidX class="w-3" />  <!-- Creates duplicate icons! -->
-    </template>
-    Cancel  <!-- Use label prop instead -->
-</ActionButton>
 ```
 
-**CRITICAL ActionButton Rules:**
-
-- **ALWAYS use `type` prop** - Each type has a predefined icon (create=plus, cancel=X, etc.)
-- **ALWAYS use `label` prop** for text - NEVER use slot content
-- **NEVER add custom icons** - The type already provides the correct icon
-- **Available types**: create, edit, delete, trash, cancel, confirm, save, export, import, play, stop, pause, refresh,
-  restart, merge, check, view, etc.
+**ActionButton Rules:**
+- Use `type` prop - each type has a predefined icon (create=plus, cancel=X, etc.)
+- Use `label` prop for text
+- Available types: create, edit, delete, trash, cancel, confirm, save, export, import, play, stop, pause, refresh, restart, merge, check, view, etc.
 
 **ShowHideButton** - Toggle visibility
 
@@ -295,27 +283,18 @@ Features:
 **CRITICAL: NEVER use storeObject() or storeObjects() directly**
 
 ```typescript
-// ❌ WRONG - Manual state management
-const items = storeObjects(await api.list());
-storeObject(updatedItem);
-
-// ✅ CORRECT - Automatic state management
-const result = await routes.list(); // Automatically stores internally
-items.value = result.data; // Assign the already-stored data
+// Routes handle all state management automatically
+const result = await routes.list();
+items.value = result.data;
 await routes.details(object, fields); // Updates existing object in-place
 
-// ✅ CORRECT - Performance optimized loading
+// Performance optimized loading
 const loadBasicData = async (item) => {
-    await routes.details(item, {
-        user: true,
-        files: true
-    });
+    await routes.details(item, { user: true, files: true });
 };
 
 const loadHeavyData = async (item) => {
-    await routes.details(item, {
-        usage_events: { user: true } // Load separately when needed
-    });
+    await routes.details(item, { usage_events: { user: true } });
 };
 ```
 
@@ -637,10 +616,6 @@ When a component directly has a resource object (from props or computed), use th
 **Example:**
 
 ```typescript
-// ❌ WRONG - Emitting for direct resource modification
-emit('update', props.artifact, { text_content: newValue });
-
-// ✅ CORRECT - Direct modification with dxController
 const updateAction = dxArtifact.getAction("update");
 await updateAction.trigger(props.artifact, { text_content: newValue });
 ```

@@ -16,14 +16,9 @@ This application follows a strict **Service-Repository-Controller** pattern with
 
 #### Namespace and Import Rules
 
-**CRITICAL: NEVER use inline class references with backslashes - add `use` statements at top instead.**
+**Always add `use` statements at top - never use inline backslash references.**
 
 ```php
-// ❌ WRONG - Inline backslash references
-app(\App\Services\Task\ArtifactsMergeService::class)->merge($a, $b);
-\DB::table('users')->get();
-
-// ✅ CORRECT - Use statements at top
 use App\Services\Task\ArtifactsMergeService;
 use Illuminate\Support\Facades\DB;
 
@@ -36,74 +31,43 @@ DB::table('users')->get();
 
 #### Class Constant Declaration Standards
 
-**Group related constants using comma separation - NOT separate declarations.**
+**Group related constants using comma separation:**
 
 ```php
-// ✅ CORRECT - Grouped constants
 public const string STATUS_PENDING = 'pending',
                     STATUS_RUNNING = 'running',
                     STATUS_COMPLETED = 'completed';
 
 public const string TYPE_A = 'type_a',
                     TYPE_B = 'type_b';
-
-// ❌ WRONG - Separate declarations
-public const string STATUS_PENDING = 'pending';
-public const string STATUS_RUNNING = 'running';
-public const string STATUS_COMPLETED = 'completed';
 ```
 
 #### Dependency Injection Rules
 
-- **CRITICAL: ALWAYS use `app()` helper for ALL dependency injection**
+**Always use `app()` helper for ALL dependency injection** - never constructor injection or `new Service()`.
 - **NEVER use constructor injection** (`public function __construct(Service $service)`)
 - **NEVER use `new Service()`** - always use `app(Service::class)`
 - **This applies EVERYWHERE**: services, repositories, controllers, jobs, listeners
 - **Better readability**: Inline `app(Service::class)->method()` calls are preferred
-- **More condensed code**: No need for constructor setup or class properties
 
 ```php
-// ✅ CORRECT - Namespace imports and app() helper usage
 use App\Models\User;
 use App\Services\UserService;
 use App\Repositories\UserRepository;
-use Illuminate\Support\Facades\DB;
 
 class ExampleService
 {
     public function processUser($id)
     {
         $user = User::find($id);
-        
-        // Use app() helper for all dependency injection
         $userData = app(UserRepository::class)->getUserData($user);
         $result = app(UserService::class)->transformData($userData);
-        
         return $result;
     }
 }
-
-// ❌ WRONG - Constructor injection
-class BadExampleService
-{
-    public function __construct(
-        private UserRepository $userRepo,
-        private UserService $userService
-    ) {}
-    
-    public function processUser($id) {
-        // This is the old pattern - DON'T DO THIS
-    }
-}
-
-// ❌ WRONG - Using new keyword
-class AnotherBadExample
-{
-    public function processUser($id) {
-        $service = new UserService(); // NEVER DO THIS
-    }
-}
 ```
+
+**Benefits:** Better readability, more condensed code, no constructor setup needed.
 
 ---
 
@@ -184,19 +148,8 @@ app/Services/
 
 ### Self-Documenting Code
 
-**Code should explain itself without comments.**
-
 **Use descriptive names:**
 ```php
-// ❌ BAD - Unclear names
-public function process($data) {
-    $result = $this->calc($data);
-    if ($result > 0) {
-        return true;
-    }
-}
-
-// ✅ GOOD - Self-explanatory
 public function hasHighConfidenceAssignments(array $fileToGroup): bool {
     $avgConfidence = $this->calculateAverageConfidence($fileToGroup);
     return $avgConfidence >= 4;
@@ -205,22 +158,13 @@ public function hasHighConfidenceAssignments(array $fileToGroup): bool {
 
 **Extract magic numbers to constants:**
 ```php
-// ❌ BAD
-if ($confidence < 3) { }
-
-// ✅ GOOD
 public const int LOW_CONFIDENCE_THRESHOLD = 3;
 
 if ($confidence < self::LOW_CONFIDENCE_THRESHOLD) { }
 ```
 
-**Comments for WHY, not WHAT:**
+**Comments explain WHY, not WHAT:**
 ```php
-// ❌ BAD - States the obvious
-// Loop through files
-foreach ($files as $file) { }
-
-// ✅ GOOD - Explains business logic
 // Skip the last file to create 1-file overlap between windows
 $startIndex += $windowSize - 1;
 ```
@@ -552,57 +496,29 @@ return new class extends Migration
 - **Data integrity** - Relationships maintained, constraints enforced, cascading deletes
 - Run `./vendor/bin/sail test` before completing any work
 
-### What Makes a Good Test?
-
-**✅ GOOD TEST - Tests business logic:**
 ```php
 public function test_merging_team_objects_transfers_all_relationships(): void
 {
-    // Tests actual business requirement: relationships must transfer on merge
     $source = TeamObject::factory()->create();
     $target = TeamObject::factory()->create();
     $artifacts = Artifact::factory()->count(3)->create(['team_object_id' => $source->id]);
 
     app(TeamObjectMergeService::class)->merge($source, $target);
 
-    // Verify business outcome: all artifacts moved to target
     $this->assertEquals(3, $target->artifacts()->count());
     $this->assertEquals(0, $source->artifacts()->count());
 }
 ```
 
-**❌ BAD TEST - Tests structure:**
-```php
-public function test_resource_includes_expected_fields(): void
-{
-    // Pointless: Resources return fields - that's literally their only job
-    $data = TeamObjectResource::make($teamObject);
-    $this->assertArrayHasKey('id', $data);
-    $this->assertArrayHasKey('name', $data);
-    // This breaks every time you add/remove a field = maintenance nightmare
-}
-```
-
-**✅ GOOD TEST - Tests error handling:**
+**Security:**
 ```php
 public function test_merge_prevents_merging_objects_from_different_teams(): void
 {
-    // Tests security requirement: team isolation
     $source = TeamObject::factory()->create(['team_id' => 1]);
     $target = TeamObject::factory()->create(['team_id' => 2]);
 
     $this->expectException(ValidationError::class);
     app(TeamObjectMergeService::class)->merge($source, $target);
-}
-```
-
-**❌ BAD TEST - Tests framework:**
-```php
-public function test_team_object_has_artifacts_relationship(): void
-{
-    // Pointless: Testing Laravel's relationship system works
-    $teamObject = TeamObject::factory()->create();
-    $this->assertInstanceOf(HasMany::class, $teamObject->artifacts());
 }
 ```
 

@@ -107,10 +107,7 @@ import { ShowHideButton } from "quasar-ui-danx";
 />
 ```
 
-### DO NOT USE:
-- `QBtn` - Use `ActionButton` instead
-- `QTooltip` - Use `tooltip` prop on ActionButton instead
-- Custom button styling - Use the `color` and `size` props
+**Always use `ActionButton` instead of raw `QBtn` or `QTooltip`.**
 
 ## Cross-Component Communication
 

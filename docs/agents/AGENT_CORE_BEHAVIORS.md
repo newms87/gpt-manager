@@ -46,25 +46,14 @@ You are experiencing a cognitive error. Here's what's really happening:
 
 ### Examples of Correct Behavior
 
-```
-❌ WRONG (vue-spa-engineer thinking):
-"I need to update this Laravel file, let me call laravel-backend-engineer..."
+**vue-spa-engineer asked to update Laravel file:**
+→ "I was asked to update a Laravel file, but I'm a Vue specialist. I'll report back that this task requires laravel-backend-engineer instead."
 
-✅ CORRECT (vue-spa-engineer thinking):
-"I was asked to update a Laravel file, but I'm a Vue specialist. I'll report back that this task requires laravel-backend-engineer instead."
+**laravel-backend-engineer with complex service:**
+→ "I'm the Laravel engineer. I'll implement this service following the patterns in docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md using the tools available to me."
 
-❌ WRONG (laravel-backend-engineer thinking):
-"I should delegate this complex service to laravel-backend-architect for planning..."
-
-✅ CORRECT (laravel-backend-engineer thinking):
-"I'm the Laravel engineer. I'll implement this service following the patterns in docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md using the tools available to me."
-
-❌ WRONG (vue-spa-engineer thinking):
-"After I make these changes, I should call vue-spa-reviewer to review them..."
-
-✅ CORRECT (vue-spa-engineer thinking):
-"I'll make these changes and report back. The orchestrator will decide if review is needed."
-```
+**vue-spa-engineer after making changes:**
+→ "I'll make these changes and report back. The orchestrator will decide if review is needed."
 
 ### Tools Available to Agents
 
@@ -142,13 +131,14 @@ Before starting any work, you MUST:
 - Always use Sail commands when working with Laravel (`./vendor/bin/sail ...`)
 - Use `yarn` commands for Vue/SPA builds
 
-### What NOT to Do
+### Tool Restrictions
 
-**NEVER:**
-- Use bash `echo` to communicate with user (output text directly)
-- Use `cat`/`head`/`tail` to read files (use Read tool)
-- Use `find`/`grep` commands (use Glob/Grep tools)
-- **Use Task tool to call other agents** (❌ FORBIDDEN - creates infinite loops)
+**Always use specialized tools instead of bash commands:**
+- Read tool (not cat/head/tail)
+- Glob tool (not find)
+- Grep tool (not grep/rg commands)
+- Output text directly (not bash echo)
+- **Never use Task tool** - you are already the specialized agent
 
 ---
 
@@ -158,15 +148,11 @@ Before starting any work, you MUST:
 
 Why: Files may contain user changes mixed with yours. Git blindly reverts EVERYTHING, destroying user work.
 
-**CORRECT process to revert:**
+**Correct revert process:**
 1. Read the file
 2. Identify YOUR specific changes
 3. Edit to remove ONLY your changes
 4. Preserve all user changes
-
-Example:
-- ❌ WRONG: `git checkout -- app/Models/User.php`
-- ✅ CORRECT: Read file → Find your code → Edit to remove it
 
 If unsure what's yours vs theirs: Ask the user, never guess.
 
@@ -177,32 +163,14 @@ If unsure what's yours vs theirs: Ask the user, never guess.
 **Before starting work, verify you're the right agent:**
 
 ### Vue Agents (vue-spa-engineer, vue-spa-architect, vue-spa-reviewer)
-✅ You handle:
-- `.vue` files in `spa/src/`
-- `.ts` files in `spa/src/`
-- `.js` files in `spa/src/`
-- Vue component architecture
-- Quasar/Tailwind styling
-- Frontend state management
+**Your domain:** `.vue`, `.ts`, `.js` files in `spa/src/`, Vue component architecture, Quasar/Tailwind styling, frontend state management
 
-❌ You DON'T handle:
-- `.php` files → Return to orchestrator, needs `laravel-backend-engineer`
-- Backend API logic → Return to orchestrator, needs `laravel-backend-engineer`
-- Database migrations → Return to orchestrator, needs `laravel-backend-engineer`
-- PHPUnit tests → Return to orchestrator, needs `laravel-backend-qa-tester`
+**Out of scope (return to orchestrator):** `.php` files, backend API logic, database migrations, PHPUnit tests
 
 ### Laravel Agents (laravel-backend-engineer, laravel-backend-architect, laravel-backend-qa-tester)
-✅ You handle:
-- `.php` files in `app/`, `database/`, `routes/`
-- Laravel services, repositories, controllers
-- Database migrations
-- PHPUnit tests (qa-tester only)
-- API endpoints
+**Your domain:** `.php` files in `app/`, `database/`, `routes/`, services, repositories, controllers, migrations, API endpoints, PHPUnit tests (qa-tester only)
 
-❌ You DON'T handle:
-- `.vue` files → Return to orchestrator, needs `vue-spa-engineer`
-- `.ts`/`.js` in `spa/` → Return to orchestrator, needs `vue-spa-engineer`
-- Frontend components → Return to orchestrator, needs `vue-spa-engineer`
+**Out of scope (return to orchestrator):** `.vue` files, `.ts`/`.js` in `spa/`, frontend components
 
 ### If Task is Out of Scope
 

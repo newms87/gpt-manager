@@ -68,33 +68,19 @@ Use the correct specialized agent for each type of work:
 
 When instructing the `laravel-backend-qa-tester` agent to run tests:
 
-**DO:**
-- ✅ Run TARGETED tests related to your changes
-- ✅ Use `--filter` to run specific test classes or methods
-- ✅ Example: `./vendor/bin/sail test --filter=FileOrganizationTaskRunnerTest`
-- ✅ Example: `./vendor/bin/sail test --filter=test_operation_routing`
-- ✅ Run tests for the specific feature/module you modified
-
-**DON'T:**
-- ❌ Run the full test suite (`./vendor/bin/sail test`) for small changes
-- ❌ Run unrelated tests that couldn't be affected by your changes
-- ❌ Waste time running 1000+ tests when 10-20 targeted tests will verify the change
+**Run targeted tests:**
+- Use `--filter` to run specific test classes or methods
+- Example: `./vendor/bin/sail test --filter=FileOrganizationTaskRunnerTest`
+- Example: `./vendor/bin/sail test --filter=test_operation_routing`
+- Run tests for the specific feature/module you modified
 
 **Examples:**
 
 ```bash
-# Good - Testing specific Task Runner changes
 ./vendor/bin/sail test --filter=FileOrganizationTaskRunner
 ./vendor/bin/sail test --filter=ClassifierTaskRunner
-
-# Good - Testing specific feature area
 ./vendor/bin/sail test tests/Feature/Services/Task/
-
-# Good - Testing single test method
 ./vendor/bin/sail test --filter=test_creates_window_processes_with_correct_operations
-
-# Bad - Running everything for a small change
-./vendor/bin/sail test  # DON'T DO THIS unless necessary
 ```
 
 **When to run full test suite:**
