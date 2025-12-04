@@ -9,16 +9,37 @@ schema_definition: "Demand Schema"
 # Flat ordered list of workflows with explicit dependencies
 # Order determines display order in UI timeline
 workflows:
+  - key: organize_files
+    name: "Organize Files"                # WorkflowDefinition name to lookup
+    label: "Organize Files"               # Display label in UI
+    description: "Organize and categorize input documents for processing"
+    color: "purple"                       # Theme color for UI (Tailwind color name)
+    extracts_data: false
+    depends_on: []                        # No dependencies - can run first
+    input:
+      source: "demand"                    # Source: "demand" (uses input_files + demand data)
+      requires_input_files: true          # Validation: must have input files
+    template_categories: []
+    instruction_categories: []
+    display_artifacts:
+      section_title: "Organized Files"
+      artifact_category: "organized_file"
+      editable: false
+      deletable: true
+
   - key: extract_data
     name: "Extract Service Dates"         # WorkflowDefinition name to lookup
     label: "Extract Data"                 # Display label in UI
     description: "Extract structured data from input documents"
     color: "blue"                         # Theme color for UI (Tailwind color name)
     extracts_data: true                   # Shows "View Data" button when team_object exists
-    depends_on: []                        # No dependencies - can run first
+    depends_on:
+      - organize_files                    # Must complete before this can run
     input:
-      source: "demand"                    # Source: "demand" (uses input_files + demand data)
-      requires_input_files: true          # Validation: must have input files
+      source: "artifacts"                 # Uses artifacts from previous workflow
+      from_workflow: "organize_files"     # Which workflow to get artifacts from
+      artifact_category: "organized_file" # Category of artifacts to use
+      run_per_artifact: true              # Run a separate workflow run for each artifact
     # No template/instruction selection for this workflow
     template_categories: []
     instruction_categories: []
