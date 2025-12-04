@@ -27,6 +27,8 @@ If you find legacy code or old patterns:
 
 **Rationale:** Tech debt compounds exponentially. Maintaining multiple patterns or compatibility layers creates confusion, bugs, and maintenance burden. ONE correct way to do everything.
 
+**When tests use wrong parameter names:** Fix the TEST, not the service. The service defines the canonical interface.
+
 ---
 
 ## Git Operations Policy

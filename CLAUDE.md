@@ -15,6 +15,22 @@ This file provides a high-level overview of the project structure and documentat
 - Then familiarize yourself with `docs/project/PROJECT_POLICIES.md` for project-wide policies
 - **⛔ NEVER write/edit .php, .vue, .ts, .js files - ALWAYS delegate ⛔**
 
+**📋 CORE ENGINEERING PRINCIPLES**
+
+These principles MUST appear in EVERY plan and as the FIRST item in EVERY todo list:
+
+`📋 Core Principles: SOLID/DRY/Zero-Debt/One-Way/Read-First/Test-First/Delegate`
+
+| Principle | Description |
+|-----------|-------------|
+| **Zero Tech Debt** | No legacy, backwards compat, dead, deprecated, or obsolete code |
+| **SOLID** | Single responsibility, small files, small methods |
+| **DRY** | Don't repeat yourself, always refactor duplication |
+| **One Way** | ONE correct way to do everything. Fix at source, not caller |
+| **Read First** | Read existing implementations before writing |
+| **Test-First** | Bug fixes: failing test → fix → verify |
+| **Delegate** | Orchestrator → Architect → Engineer → QA (never skip) |
+
 **🚨 MISSION CRITICAL: SUB-AGENT INVOCATION PREAMBLE 🚨**
 
 When invoking ANY sub-agent using the Task tool, you MUST ALWAYS include this preamble at the start of your prompt:
