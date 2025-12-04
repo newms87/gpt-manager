@@ -21,7 +21,7 @@ class UiDemandWorkflowService
      *
      * @param  UiDemand  $uiDemand  The demand to run the workflow on
      * @param  string  $workflowKey  The workflow key from config (e.g., 'extract_data', 'write_medical_summary')
-     * @param  array  $params  Optional parameters: template_id, instruction_template_id, additional_instructions
+     * @param  array  $params  Optional parameters: output_template_id, instruction_template_id, additional_instructions
      *
      * @throws ValidationError
      */
@@ -88,7 +88,7 @@ class UiDemandWorkflowService
                 throw new ValidationError('Team object not found for demand');
             }
 
-            $templateId             = $params['template_id']             ?? null;
+            $templateId             = $params['output_template_id']       ?? null;
             $additionalInstructions = $params['additional_instructions'] ?? null;
 
             $workflowInput = $this->createWorkflowInputFromTeamObject(
@@ -192,14 +192,8 @@ TEXT;
         // Handle artifact attachment based on display config
         $displayConfig = $workflowConfig['display_artifacts'] ?? false;
         if ($displayConfig) {
-            $displayType = $displayConfig['display_type']      ?? 'artifacts';
-            $category    = $displayConfig['artifact_category'] ?? 'output';
-
-            if ($displayType === 'files') {
-                $this->attachOutputFilesFromWorkflow($uiDemand, $outputArtifacts);
-            } else {
-                $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, $category);
-            }
+            $category = $displayConfig['artifact_category'] ?? 'output';
+            $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, $category);
         }
 
         // Update metadata with completion timestamp
@@ -296,22 +290,6 @@ TEXT;
             'team_object_type' => $teamObject->type,
             'content'          => json_encode($contentData),
         ]);
-    }
-
-    /**
-     * Attach output files from workflow artifacts to UiDemand
-     */
-    protected function attachOutputFilesFromWorkflow(UiDemand $uiDemand, $outputArtifacts): void
-    {
-        foreach ($outputArtifacts as $artifact) {
-            // Get all StoredFiles attached to this artifact
-            $artifactStoredFiles = $artifact->storedFiles;
-
-            foreach ($artifactStoredFiles as $storedFile) {
-                // Reuse the StoredFile from artifact and attach to UiDemand as output
-                $uiDemand->outputFiles()->syncWithoutDetaching([$storedFile->id => ['category' => 'output']]);
-            }
-        }
     }
 
     /**

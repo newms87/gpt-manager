@@ -98,7 +98,7 @@ const handleDemandTemplateSelected = (template: any, additionalInstructions: str
     showDemandTemplateSelector.value = false;
 
     const parameters: Record<string, any> = {
-        template_id: template.id
+        output_template_id: template.id
     };
 
     if (additionalInstructions) {

@@ -22,7 +22,7 @@ class UiDemandsController extends ActionController
     public function runWorkflow(UiDemand $uiDemand, string $workflowKey)
     {
         try {
-            $params = request()->only(['template_id', 'instruction_template_id', 'additional_instructions']);
+            $params = request()->only(['output_template_id', 'instruction_template_id', 'additional_instructions']);
 
             app(UiDemandWorkflowService::class)->runWorkflow($uiDemand, $workflowKey, $params);
 
