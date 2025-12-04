@@ -13,8 +13,40 @@
         </div>
       </div>
 
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
         <slot name="actions" />
+
+        <!-- Complete / Set As Draft Button -->
+        <ActionButton
+          v-if="demand && demand.status !== DEMAND_STATUS.COMPLETED"
+          type="check"
+          color="green"
+          size="sm"
+          tooltip="Mark Complete"
+          :saving="isCompletingOrSettingDraft"
+          @click="handleMarkComplete"
+        />
+
+        <ActionButton
+          v-if="demand && demand.status === DEMAND_STATUS.COMPLETED"
+          type="clock"
+          color="slate"
+          size="sm"
+          tooltip="Set As Draft"
+          :saving="isCompletingOrSettingDraft"
+          @click="handleSetAsDraft"
+        />
+
+        <!-- Delete Button -->
+        <ActionButton
+          v-if="demand"
+          type="trash"
+          color="red"
+          size="sm"
+          tooltip="Delete Demand"
+          :saving="isDeleting"
+          @click="handleDelete"
+        />
 
         <RouterLink to="/ui/demands">
           <ActionButton
@@ -25,18 +57,42 @@
         </RouterLink>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <ConfirmDialog
+      v-if="showDeleteConfirm"
+      class="ui-mode"
+      title="Delete Demand?"
+      content="Are you sure you want to delete this demand? This action cannot be undone."
+      color="negative"
+      :is-saving="isDeleting"
+      @confirm="confirmDelete"
+      @close="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ActionButton } from "quasar-ui-danx";
+import { ActionButton, ConfirmDialog } from "quasar-ui-danx";
+import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import { UiStatusBadge } from "../../../shared";
 import type { UiDemand } from "../../../shared/types";
+import { DEMAND_STATUS } from "../../config";
 
-defineProps<{
+const props = defineProps<{
   demand: UiDemand | null;
 }>();
+
+const emit = defineEmits<{
+  "mark-complete": [];
+  "set-draft": [];
+  "delete": [];
+}>();
+
+const isCompletingOrSettingDraft = ref(false);
+const isDeleting = ref(false);
+const showDeleteConfirm = ref(false);
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -47,4 +103,31 @@ const formatDate = (dateString: string) => {
     minute: "2-digit"
   });
 };
+
+const handleMarkComplete = () => {
+  emit("mark-complete");
+};
+
+const handleSetAsDraft = () => {
+  emit("set-draft");
+};
+
+const handleDelete = () => {
+  showDeleteConfirm.value = true;
+};
+
+const confirmDelete = () => {
+  emit("delete");
+  showDeleteConfirm.value = false;
+};
+
+// Expose loading state setters so parent can control them
+defineExpose({
+  setCompletingOrSettingDraft: (value: boolean) => {
+    isCompletingOrSettingDraft.value = value;
+  },
+  setDeleting: (value: boolean) => {
+    isDeleting.value = value;
+  }
+});
 </script>

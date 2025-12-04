@@ -92,80 +92,20 @@ export function useDemands() {
     };
 
 
-    async function extractData(demand: UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
+    async function runWorkflow(demand: UiDemand, workflowKey: string, parameters?: Record<string, any>, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
         try {
-            const response = await demandRoutes.extractData(demand);
+            const response = await demandRoutes.runWorkflow(demand, workflowKey, parameters);
 
             // Check if response is an error (has error or message fields indicating failure)
             if (response?.error) {
                 throw new Error(response.error);
             } else {
                 storeObject(response);
-                // Subscribe to workflow run updates after starting extract data
+                // Subscribe to workflow run updates after starting workflow
                 subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
             }
         } catch (err: any) {
-            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to extract data";
-            error.value = errorMessage;
-            FlashMessages.error(errorMessage);
-
-            // Don't update the demand object with error response - just throw the error
-            throw err;
-        }
-    }
-
-    async function writeMedicalSummary(demand: UiDemand, instructionTemplateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
-        try {
-            const data: any = {};
-            if (instructionTemplateId) {
-                data.instruction_template_id = instructionTemplateId;
-            }
-            if (additionalInstructions) {
-                data.additional_instructions = additionalInstructions;
-            }
-
-            const response = await demandRoutes.writeMedicalSummary(demand, data);
-
-            // Check if response is an error (has error or message fields indicating failure)
-            if (response?.error) {
-                throw new Error(response.error);
-            } else {
-                storeObject(response);
-                // Subscribe to workflow run updates after starting write medical summary
-                subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
-            }
-        } catch (err: any) {
-            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write medical summary";
-            error.value = errorMessage;
-            FlashMessages.error(errorMessage);
-
-            // Don't update the demand object with error response - just throw the error
-            throw err;
-        }
-    }
-
-    async function writeDemandLetter(demand: UiDemand, templateId?: string, additionalInstructions?: string, onDemandUpdate?: (updatedDemand: UiDemand) => void) {
-        try {
-            const data: any = {};
-            if (templateId) {
-                data.template_id = templateId;
-            }
-            if (additionalInstructions) {
-                data.additional_instructions = additionalInstructions;
-            }
-
-            const response = await demandRoutes.writeDemandLetter(demand, data);
-
-            // Check if response is an error (has error or message fields indicating failure)
-            if (response?.error) {
-                throw new Error(response.error);
-            } else {
-                storeObject(response);
-                // Subscribe to workflow run updates after starting write demand letter
-                subscribeToWorkflowRunUpdates(demand, onDemandUpdate);
-            }
-        } catch (err: any) {
-            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || "Failed to write demand letter";
+            const errorMessage = err?.response?.data?.error || err?.response?.data?.message || err.message || `Failed to run workflow: ${workflowKey}`;
             error.value = errorMessage;
             FlashMessages.error(errorMessage);
 
@@ -181,11 +121,10 @@ export function useDemands() {
                 user: true,
                 input_files: { thumb: true },
                 output_files: { thumb: true },
-                medical_summaries: { text_content: true },
                 team_object: true,
-                extract_data_workflow_run: true,
-                write_medical_summary_workflow_run: true,
-                write_demand_letter_workflow_run: true
+                workflow_runs: true,
+                workflow_config: true,
+                artifact_sections: { artifacts: { text_content: true, files: true } }
             });
         } catch (err: any) {
             const errorMessage = err.message || "Failed to load demand";
@@ -327,22 +266,14 @@ export function useDemands() {
 
     // Subscribe to workflow run updates for real-time status updates
     const subscribeToWorkflowRunUpdates = (demand: UiDemand, onDemandUpdate?: (updatedDemand: UiDemand) => void) => {
-        if (!demand) return;
+        if (!demand?.workflow_runs) return;
 
-        // Subscribe to extract data workflow run
-        if (demand.extract_data_workflow_run) {
-            subscribeToWorkflowRun(demand.extract_data_workflow_run, demand.id, onDemandUpdate);
-        }
-
-        // Subscribe to write medical summary workflow run
-        if (demand.write_medical_summary_workflow_run) {
-            subscribeToWorkflowRun(demand.write_medical_summary_workflow_run, demand.id, onDemandUpdate);
-        }
-
-        // Subscribe to write demand letter workflow run
-        if (demand.write_demand_letter_workflow_run) {
-            subscribeToWorkflowRun(demand.write_demand_letter_workflow_run, demand.id, onDemandUpdate);
-        }
+        // Subscribe to all workflow runs
+        Object.values(demand.workflow_runs).forEach(workflowRun => {
+            if (workflowRun) {
+                subscribeToWorkflowRun(workflowRun, demand.id, onDemandUpdate);
+            }
+        });
     };
 
     // Clear workflow subscriptions (useful when navigating away or changing demands)
@@ -372,9 +303,7 @@ export function useDemands() {
         createDemand,
         updateDemand,
         deleteDemand,
-        extractData,
-        writeMedicalSummary,
-        writeDemandLetter,
+        runWorkflow,
         subscribeToWorkflowRunUpdates,
         clearWorkflowSubscriptions
     };

@@ -19,6 +19,44 @@ export interface Artifact {
     task_process_id?: number;
 }
 
+export interface WorkflowConfig {
+    key: string;
+    name: string;
+    label: string;
+    description: string;
+    color: string;
+    extracts_data: boolean;
+    depends_on: string[];
+    input: {
+        source: 'demand' | 'team_object';
+        requires_input_files?: boolean;
+        include_artifacts_from?: Array<{
+            workflow: string;
+            category: string;
+        }>;
+    };
+    template_categories: string[];
+    instruction_categories: string[];
+    display_artifacts?: {
+        section_title: string;
+        artifact_category: string;
+        display_type?: 'artifacts' | 'files';
+        editable?: boolean;
+        deletable?: boolean;
+    } | false;
+}
+
+export interface ArtifactSection {
+    workflow_key: string;
+    section_title: string;
+    artifact_category: string;
+    display_type: 'artifacts' | 'files';
+    editable: boolean;
+    deletable: boolean;
+    artifacts: Artifact[];
+    color: string;
+}
+
 export interface UiDemand extends ActionTargetItem {
     id: number;
     title: string;
@@ -28,22 +66,14 @@ export interface UiDemand extends ActionTargetItem {
     completed_at?: string;
     created_at: string;
     updated_at: string;
-    can_extract_data?: boolean;
-    can_write_medical_summary?: boolean;
-    can_write_demand_letter?: boolean;
-    is_extract_data_running?: boolean;
-    is_write_medical_summary_running?: boolean;
-    is_write_demand_letter_running?: boolean;
-    extract_data_workflow_run?: WorkflowRun;
-    write_medical_summary_workflow_run?: WorkflowRun;
-    write_demand_letter_workflow_run?: WorkflowRun;
+    workflow_runs: Record<string, WorkflowRun | null>;
+    workflow_config: WorkflowConfig[];
+    artifact_sections: ArtifactSection[];
     user?: User;
     input_files?: StoredFile[];
     output_files?: StoredFile[];
-    medical_summaries?: Artifact[];
     input_files_count?: number;
     output_files_count?: number;
-    medical_summaries_count?: number;
     usage_summary?: UsageSummary | null;
     team_object?: TeamObject | null;
 }

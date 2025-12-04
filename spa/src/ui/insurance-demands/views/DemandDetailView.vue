@@ -1,7 +1,13 @@
 <template>
     <UiMainLayout>
         <template #header>
-            <DemandDetailHeader :demand="demand" />
+            <DemandDetailHeader
+                ref="headerRef"
+                :demand="demand"
+                @mark-complete="handleMarkComplete"
+                @set-draft="handleSetAsDraft"
+                @delete="handleDeleteDemand"
+            />
         </template>
 
         <!-- Loading State -->
@@ -42,10 +48,8 @@
                     :demand="demand"
                     @view-workflow="handleViewWorkflow"
                     @view-data="handleViewData"
+                    @run-workflow="handleRunWorkflow"
                 />
-
-                <!-- Quick Actions -->
-                <DemandQuickActions :demand="demand" />
 
                 <!-- Usage Display -->
                 <UsageDisplayContainer
@@ -77,24 +81,25 @@ import { WorkflowRun } from "@/types";
 import { FaSolidExclamation } from "danx-icon";
 import { type StoredFile } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { UiLoadingSpinner, UiMainLayout } from "../../shared";
 import type { UiDemand } from "../../shared/types";
 import {
     DemandDetailDocuments,
     DemandDetailHeader,
     DemandDetailInfo,
-    DemandQuickActions,
     DemandStatusTimeline,
     TeamObjectDataDialog,
     ViewWorkflowDialog
 } from "../components/Detail";
 import { UsageDisplayContainer } from "../components/Usage";
 import { useDemands } from "../composables";
+import { DEMAND_STATUS } from "../config";
 
 const route = useRoute();
+const router = useRouter();
 
-const { updateDemand, loadDemand, subscribeToWorkflowRunUpdates, clearWorkflowSubscriptions } = useDemands();
+const { updateDemand, loadDemand, runWorkflow, subscribeToWorkflowRunUpdates, clearWorkflowSubscriptions, deleteDemand } = useDemands();
 
 const demand = ref<UiDemand | null>(null);
 const isLoading = ref(false);
@@ -103,6 +108,7 @@ const editMode = ref(false);
 const showWorkflowDialog = ref(false);
 const selectedWorkflowRun = ref<WorkflowRun | null>(null);
 const showDataDialog = ref(false);
+const headerRef = ref<InstanceType<typeof DemandDetailHeader> | null>(null);
 
 const demandId = computed(() => {
     const id = route.params.id;
@@ -180,6 +186,69 @@ const handleViewData = () => {
 
 const handleCloseDataDialog = () => {
     showDataDialog.value = false;
+};
+
+const handleRunWorkflow = async (workflowKey: string, parameters?: Record<string, any>) => {
+    if (!demand.value) return;
+
+    try {
+        await runWorkflow(demand.value, workflowKey, parameters, (updatedDemand) => {
+            demand.value = updatedDemand;
+        });
+    } catch (err: any) {
+        error.value = err.message || `Failed to run workflow: ${workflowKey}`;
+    }
+};
+
+const handleMarkComplete = async () => {
+    if (!demand.value) return;
+
+    try {
+        headerRef.value?.setCompletingOrSettingDraft(true);
+
+        await updateDemand(demand.value.id, {
+            status: DEMAND_STATUS.COMPLETED,
+            completed_at: new Date().toISOString()
+        });
+    } catch (err: any) {
+        error.value = err.message || "Failed to mark demand as complete";
+        console.error("Failed to mark demand as complete:", err);
+    } finally {
+        headerRef.value?.setCompletingOrSettingDraft(false);
+    }
+};
+
+const handleSetAsDraft = async () => {
+    if (!demand.value) return;
+
+    try {
+        headerRef.value?.setCompletingOrSettingDraft(true);
+
+        await updateDemand(demand.value.id, {
+            status: DEMAND_STATUS.DRAFT,
+            completed_at: null
+        });
+    } catch (err: any) {
+        error.value = err.message || "Failed to set demand as draft";
+        console.error("Failed to set demand as draft:", err);
+    } finally {
+        headerRef.value?.setCompletingOrSettingDraft(false);
+    }
+};
+
+const handleDeleteDemand = async () => {
+    if (!demand.value) return;
+
+    try {
+        headerRef.value?.setDeleting(true);
+        await deleteDemand(demand.value.id);
+        router.push("/ui/demands");
+    } catch (err: any) {
+        error.value = err.message || "Failed to delete demand";
+        console.error("Failed to delete demand:", err);
+    } finally {
+        headerRef.value?.setDeleting(false);
+    }
 };
 
 // Watch for route changes and load demand

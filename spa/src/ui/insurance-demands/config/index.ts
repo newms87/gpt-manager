@@ -3,9 +3,8 @@ import { useActionRoutes, request } from 'quasar-ui-danx';
 import type { UiDemand } from '../../shared/types';
 
 export const demandRoutes = useActionRoutes(apiUrls.demands.uiDemands, {
-  extractData: async (demand: UiDemand) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/extract-data`),
-  writeMedicalSummary: async (demand: UiDemand, data?: any) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/write-medical-summary`, data || {}),
-  writeDemandLetter: async (demand: UiDemand, data?: any) => request.post(`${apiUrls.demands.uiDemands}/${demand.id}/write-demand-letter`, data || {})
+  runWorkflow: async (demand: UiDemand, workflowKey: string, parameters?: Record<string, any>) =>
+    request.post(`${apiUrls.demands.uiDemands}/${demand.id}/workflow/${workflowKey}`, parameters || {})
 });
 
 // Status constants matching backend UiDemand::STATUS_* constants
