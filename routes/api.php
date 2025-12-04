@@ -88,7 +88,10 @@ ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController, f
     Route::post('/import-from-json', [WorkflowDefinitionsController::class, 'importFromJson']);
     Route::post('{workflowDefinition}/invoke', [WorkflowDefinitionsController::class, 'invoke']);
 });
-ActionRoute::routes('workflow-nodes', new WorkflowNodesController);
+ActionRoute::routes('workflow-nodes', new WorkflowNodesController, function () {
+    Route::post('clipboard-export', [WorkflowNodesController::class, 'clipboardExport']);
+    Route::post('clipboard-import', [WorkflowNodesController::class, 'clipboardImport']);
+});
 ActionRoute::routes('workflow-connections', new WorkflowConnectionsController);
 ActionRoute::routes('workflow-runs', new WorkflowRunsController, function () {
     Route::get('run-statuses', [WorkflowRunsController::class, 'runStatuses'])->name('workflow-runs.run-statuses');

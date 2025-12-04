@@ -4,7 +4,7 @@ namespace App\Models\Workflow;
 
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +17,7 @@ class WorkflowConnection extends Model implements AuditableContract, ResourcePac
     use ActionModelTrait, AuditableTrait, HasFactory, ResourcePackageableTrait;
 
     protected $fillable = [
+        'workflow_definition_id',
         'source_node_id',
         'target_node_id',
         'name',
@@ -39,7 +40,7 @@ class WorkflowConnection extends Model implements AuditableContract, ResourcePac
         return $this->belongsTo(WorkflowNode::class, 'target_node_id');
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         return $service->register($this, [
             'workflow_definition_id' => $service->registerRelatedModel($this->workflowDefinition),

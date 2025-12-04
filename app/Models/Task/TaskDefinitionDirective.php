@@ -5,7 +5,7 @@ namespace App\Models\Task;
 use App\Models\Prompt\PromptDirective;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Newms87\Danx\Contracts\AuditableContract;
@@ -37,7 +37,7 @@ class TaskDefinitionDirective extends Model implements AuditableContract, Resour
         return $this->belongsTo(PromptDirective::class, 'prompt_directive_id');
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         return $service->register($this, [
             'task_definition_id'  => $service->registerRelatedModel($this->taskDefinition),

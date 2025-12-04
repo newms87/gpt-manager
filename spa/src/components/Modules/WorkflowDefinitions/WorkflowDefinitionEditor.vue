@@ -11,6 +11,7 @@
             @node-copy="node => copyNodeAction.trigger(node)"
             @node-edit="node => nodeToEdit = node"
             @node-remove="workflowNode => removeNodeAction.trigger(workflowNode)"
+            @nodes-paste="onNodesPaste"
             @connection-add="onConnectionAdd"
             @connection-remove="workflowConnection => removeConnectionAction.trigger(workflowConnection)"
         />
@@ -67,6 +68,11 @@ const removeConnectionAction = dxWorkflowConnection.getAction("delete", {
 
 async function onNodePosition(workflowNode: WorkflowNode, position) {
     await updateNodeAction.trigger(workflowNode, { settings: position });
+}
+
+async function onNodesPaste(nodes: WorkflowNode[]) {
+    // Refresh the workflow to get the updated state including new nodes
+    await refreshActiveWorkflowDefinition();
 }
 
 async function onConnectionAdd(connection: Partial<WorkflowConnection>) {

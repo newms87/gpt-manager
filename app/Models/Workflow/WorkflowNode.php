@@ -5,7 +5,7 @@ namespace App\Models\Workflow;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Task\TaskDefinition;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -66,7 +66,7 @@ class WorkflowNode extends Model implements AuditableContract, ResourcePackageab
         return $this;
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         return $service->register($this, [
             'workflow_definition_id' => $service->registerRelatedModel($this->workflowDefinition),

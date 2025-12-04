@@ -6,7 +6,7 @@ use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Schema\SchemaFragment;
 use App\Services\AgentThread\ArtifactFilter;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -68,7 +68,7 @@ class TaskArtifactFilter extends Model implements AuditableContract, ResourcePac
         return $this->belongsTo(TaskDefinition::class, 'target_task_definition_id');
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         $service->registerRelatedModels($this->schemaFragment);
 

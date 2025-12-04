@@ -6,7 +6,7 @@ use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
 use App\Services\Task\Runners\WorkflowInputTaskRunner;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -109,7 +109,7 @@ class WorkflowDefinition extends Model implements AuditableContract, ResourcePac
         }
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         $this->cleanCorruptedConnections();
         $service->registerRelatedModels($this->workflowNodes);

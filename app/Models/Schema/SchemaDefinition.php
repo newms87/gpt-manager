@@ -5,7 +5,7 @@ namespace App\Models\Schema;
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Team\Team;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -106,7 +106,7 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
         });
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         return $service->register($this, [
             'type'          => $this->type,

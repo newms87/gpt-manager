@@ -2,7 +2,7 @@
 
 namespace App\Models\ResourcePackage;
 
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 interface ResourcePackageableContract
 {
-    public function exportToJson(WorkflowExportService $service): int;
+    public function exportToJson(WorkflowExportServiceInterface $service): int;
 
     public function resourcePackageImport(): ResourcePackageImport|BelongsTo;
 

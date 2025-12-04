@@ -13,14 +13,13 @@ use App\Models\Team\Team;
 use App\Models\Workflow\WorkflowNode;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\TaskRunnerService;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -179,7 +178,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         return parent::delete();
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         $service->registerRelatedModels($this->taskArtifactFiltersAsTarget);
         $service->registerRelatedModels($this->schemaAssociations);

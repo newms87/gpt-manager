@@ -63,6 +63,7 @@ import {
     convertConnectionsToVueFlow,
     convertNodesToVueFlow
 } from "@/components/Modules/WorkflowCanvas/helpers";
+import { useNodeClipboard } from "@/components/Modules/WorkflowCanvas/useNodeClipboard";
 import WorkflowCanvasConnectionLine from "@/components/Modules/WorkflowCanvas/WorkflowCanvasConnectionLine";
 import WorkflowCanvasEdge from "@/components/Modules/WorkflowCanvas/WorkflowCanvasEdge";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
@@ -72,7 +73,7 @@ import { Background } from "@vue-flow/background";
 import { Connection, ConnectionMode, Edge, EdgeProps, Node, useVueFlow, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import WorkflowCanvasNode from "./WorkflowCanvasNode.vue";
 
 const emit = defineEmits<{
@@ -83,6 +84,7 @@ const emit = defineEmits<{
     (e: "node-remove", node: WorkflowNode): void;
     (e: "connection-add", connection: WorkflowConnection): void;
     (e: "connection-remove", connection: WorkflowConnection): void;
+    (e: "nodes-paste", nodes: WorkflowNode[]): void;
 }>();
 
 const props = withDefaults(defineProps<{
@@ -103,6 +105,16 @@ const nodes = ref<Node[]>([]);
 const edges = ref<Edge[]>([]);
 
 const previousWorkflowDefinitionId = ref<number | null>(null);
+
+// Initialize clipboard functionality
+const workflowDefinitionId = computed(() => workflowDefinition.value?.id);
+
+const {
+    copySelectedNodes,
+    pasteNodes,
+    isInputFocused,
+    isPasting,
+} = useNodeClipboard(props.instanceId, workflowDefinitionId);
 
 const { busEmit } = useEventBus();
 const { onViewportChangeEnd } = useVueFlow(props.instanceId);
@@ -129,6 +141,11 @@ watch(() => props.workflowRun, loadWorkflowRunDetails);
 onMounted(() => {
     convertToVueFlow();
     loadWorkflowRunDetails();
+    document.addEventListener("keydown", onKeyDown);
+});
+
+onUnmounted(() => {
+    document.removeEventListener("keydown", onKeyDown);
 });
 
 function loadWorkflowRunDetails() {
@@ -189,5 +206,30 @@ function onConnectionRemove(edge: EdgeProps) {
 function onPaneReady(vfi) {
     vueFlowInstance = vfi;
     vueFlowInstance.fitView();
+}
+
+async function onKeyDown(event: KeyboardEvent) {
+    // Don't handle shortcuts when in readonly mode
+    if (props.readonly) return;
+
+    // Don't handle when typing in input fields
+    if (isInputFocused()) return;
+
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+
+    // Ctrl/Cmd + C for copy
+    if (isCtrlOrCmd && event.key === "c") {
+        event.preventDefault();
+        await copySelectedNodes();
+    }
+
+    // Ctrl/Cmd + V for paste
+    if (isCtrlOrCmd && event.key === "v") {
+        event.preventDefault();
+        const result = await pasteNodes();
+        if (result.success && result.nodes) {
+            emit("nodes-paste", result.nodes);
+        }
+    }
 }
 </script>

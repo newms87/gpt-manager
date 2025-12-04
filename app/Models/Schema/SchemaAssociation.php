@@ -4,7 +4,7 @@ namespace App\Models\Schema;
 
 use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,7 +36,7 @@ class SchemaAssociation extends Model implements ResourcePackageableContract
         return $this->belongsTo(SchemaFragment::class);
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         return $service->register($this, [
             'schema_definition_id' => $service->registerRelatedModel($this->schemaDefinition),

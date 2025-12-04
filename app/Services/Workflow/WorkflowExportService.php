@@ -9,7 +9,7 @@ use App\Models\Workflow\WorkflowDefinition;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\StringHelper;
 
-class WorkflowExportService
+class WorkflowExportService implements WorkflowExportServiceInterface
 {
     protected array $definitions = [];
 

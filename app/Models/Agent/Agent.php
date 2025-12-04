@@ -7,7 +7,7 @@ use App\Models\ResourcePackage\ResourcePackageableContract;
 use App\Models\ResourcePackage\ResourcePackageableTrait;
 use App\Models\Task\TaskDefinition;
 use App\Models\Team\Team;
-use App\Services\Workflow\WorkflowExportService;
+use App\Services\Workflow\WorkflowExportServiceInterface;
 use Exception;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -99,7 +99,7 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
         return $this;
     }
 
-    public function exportToJson(WorkflowExportService $service): int
+    public function exportToJson(WorkflowExportServiceInterface $service): int
     {
         $service->registerRelatedModels($this->directives);
 
