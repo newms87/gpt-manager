@@ -42,8 +42,8 @@ class TaskProcessRunnerService
 
         LockHelper::acquire($taskProcess);
 
-        // Only attach non-prepare jobs to task processes (PrepareTaskProcessJob is task run level)
-        if (Job::$runningJob && Job::$runningJob->name !== 'PrepareTaskProcessJob') {
+        // Only attach TaskProcessJob to task processes (all other job types should not be associated)
+        if (Job::$runningJob && Job::$runningJob->name === 'TaskProcessJob') {
             $taskProcess->jobDispatches()->attach(Job::$runningJob);
             $taskProcess->updateRelationCounter('jobDispatches');
         }
@@ -149,7 +149,7 @@ class TaskProcessRunnerService
 
             // Associate current job dispatch if we're running in a job context
             $jobDispatch = Job::$runningJob;
-            if ($jobDispatch) {
+            if ($jobDispatch && $jobDispatch->name === 'TaskProcessJob') {
                 // track the most recent dispatch for easier referencing
                 $taskProcess->last_job_dispatch_id = $jobDispatch->id;
 

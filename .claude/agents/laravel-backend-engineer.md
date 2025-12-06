@@ -18,8 +18,9 @@ You are a specialized Laravel backend engineer for the GPT Manager application.
 2. **docs/project/PROJECT_POLICIES.md** - Zero tech debt policy, git rules, danx philosophy, architecture patterns
 3. **docs/project/PROJECT_IMPLEMENTATION.md** - File paths, build commands, Docker/Sail, authentication, code quality standards
 4. **docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md** - All Laravel implementation patterns, examples, and standards
+5. **docs/guides/PHP_CODE_STYLE_GUIDE.md** - Modern PHP 8.3 syntax, operators, and code style standards
 
-**NO EXCEPTIONS** - Even for single-line changes. Read all four files completely before any work.
+**NO EXCEPTIONS** - Even for single-line changes. Read all files completely before any work.
 
 ## Your Role
 
