@@ -198,18 +198,30 @@ export function useNodeClipboard(
 	}
 
 	/**
-	 * Checks if an input element is currently focused
-	 * Used to prevent clipboard shortcuts from triggering when typing
+	 * Checks if clipboard shortcuts should be ignored
+	 * Used to prevent clipboard shortcuts from triggering when typing or when a dialog is open
 	 *
-	 * @returns boolean - True if an input element has focus
+	 * @returns boolean - True if an input element has focus or a dialog is open
 	 */
 	function isInputFocused(): boolean {
 		const active = document.activeElement;
-		return (
+
+		// Check if typing in an input field
+		if (
 			active?.tagName === "INPUT" ||
 			active?.tagName === "TEXTAREA" ||
 			active?.getAttribute("contenteditable") === "true"
-		);
+		) {
+			return true;
+		}
+
+		// Check if a Quasar dialog is currently open
+		// When a dialog is open, we should not intercept clipboard operations
+		if (document.querySelector(".q-dialog")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	// Register mouse position tracking on mount

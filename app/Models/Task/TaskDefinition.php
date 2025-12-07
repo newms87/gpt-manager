@@ -50,6 +50,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
         'schema_definition_id',
         'agent_id',
         'task_queue_type_id',
+        'meta',
     ];
 
     protected array $keywordFields = [
@@ -68,6 +69,7 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
             'task_runner_config'     => 'json',
             'input_artifact_levels'  => 'json',
             'output_artifact_levels' => 'json',
+            'meta'                   => 'json',
         ];
     }
 

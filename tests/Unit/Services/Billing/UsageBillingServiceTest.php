@@ -329,7 +329,7 @@ class UsageBillingServiceTest extends TestCase
             'created_at'    => $today,
         ]);
 
-        // Create usage for earlier this month
+        // Create usage for earlier this month (3 days ago, safely before today)
         UsageEvent::factory()->create([
             'team_id'       => $this->team->id,
             'input_tokens'  => 1500,
@@ -337,7 +337,7 @@ class UsageBillingServiceTest extends TestCase
             'input_cost'    => 3.00,
             'output_cost'   => 1.50,
             'request_count' => 3,
-            'created_at'    => $thisMonth->copy()->addDays(5),
+            'created_at'    => $today->copy()->subDays(3),
         ]);
 
         // Create usage for previous month (should not be included)

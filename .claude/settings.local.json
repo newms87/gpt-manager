@@ -104,7 +104,11 @@
       "Bash(./vendor/bin/vapor logs:*)",
       "Bash(./vendor/bin/vapor list:*)",
       "Bash(./vendor/bin/vapor tail:*)",
-      "WebFetch(domain:vueflow.dev)"
+      "WebFetch(domain:vueflow.dev)",
+      "Bash(wc:*)",
+      "Bash(test:*)",
+      "Bash(/home/newms/web/gpt-manager/vendor/bin/sail pint:*)",
+      "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test:*)"
     ],
     "deny": [],
     "additionalDirectories": [

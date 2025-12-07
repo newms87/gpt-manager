@@ -400,7 +400,7 @@ class BillingControllerTest extends AuthenticatedTestCase
             'input_cost'    => 2.00,
             'output_cost'   => 1.00,
             'request_count' => 3,
-            'created_at'    => $currentMonth->copy()->addDays(5),
+            'created_at'    => $today->copy()->subDays(3),
         ]);
 
         // Create usage for today

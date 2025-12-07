@@ -52,6 +52,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     public function casts(): array
     {
         return [
+            'meta'             => 'array',
             'percent_complete' => 'float',
             'started_at'       => 'datetime',
             'stopped_at'       => 'datetime',
