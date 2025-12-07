@@ -2,6 +2,7 @@
 
 namespace App\Services\AgentThread;
 
+use App\Services\Error\RetryableErrorChecker;
 use App\Traits\HasDebugLogging;
 use GuzzleHttp\Exception\ConnectException;
 use Newms87\Danx\Exceptions\ApiRequestException;
@@ -13,14 +14,6 @@ class AgentThreadExceptionHandler
 
     // Track retries by exception type
     protected array $exceptionRetries = [];
-
-    // Retryable 400-level error codes
-    protected array $retryable400Codes = [
-        'invalid_image_url',
-        'rate_limit_exceeded',
-        'insufficient_quota',
-        'model_overloaded',
-    ];
 
     /**
      * Reset retry counters for a new thread run
@@ -36,16 +29,16 @@ class AgentThreadExceptionHandler
      */
     public function shouldRetry(Throwable $exception): bool
     {
+        // Check if exception is retryable using centralized config
+        if (!RetryableErrorChecker::isRetryable($exception)) {
+            return false;
+        }
+
         $exceptionType = $this->getExceptionType($exception);
 
         // Initialize retry counter for this exception type if not set
         if (!isset($this->exceptionRetries[$exceptionType])) {
             $this->exceptionRetries[$exceptionType] = 0;
-        }
-
-        // Check if we should retry this exception type
-        if (!$this->isRetryableException($exception, $exceptionType)) {
-            return false;
         }
 
         // Check if we've exceeded max retries for this exception type
@@ -127,43 +120,6 @@ class AgentThreadExceptionHandler
         }
 
         return null;
-    }
-
-    /**
-     * Determine if we should retry this specific exception
-     */
-    protected function isRetryableException(Throwable $exception, string $exceptionType): bool
-    {
-        // Always retry connection errors
-        if ($exception instanceof ConnectException) {
-            return true;
-        }
-
-        if ($exception instanceof ApiRequestException) {
-            $statusCode = $exception->getStatusCode();
-
-            // Always retry 500+ errors
-            if ($statusCode >= 500) {
-                return true;
-            }
-
-            // For 400-level errors, only retry specific whitelisted codes
-            if ($statusCode >= 400 && $statusCode < 500) {
-                $errorCode = $this->extractErrorCodeFromApiException($exception);
-
-                return $this->isRetryable400Error($errorCode);
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if a 400-level error code should be retried
-     */
-    protected function isRetryable400Error(?string $errorCode): bool
-    {
-        return $errorCode && in_array($errorCode, $this->retryable400Codes);
     }
 
     /**

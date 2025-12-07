@@ -277,12 +277,10 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
                 }
             }
 
-            // When a process transitions to permanently failed (exhausted retries), re-count errors to surface them
+            // When failed_at or restart_count changes, recount errors
             if ($taskProcess->wasChanged(['failed_at', 'restart_count'])) {
-                if (!$taskProcess->canBeRetried() || $taskProcess->isFailed()) {
-                    app(TaskProcessErrorTrackingService::class)
-                        ->updateTaskProcessErrorCount($taskProcess);
-                }
+                app(TaskProcessErrorTrackingService::class)
+                    ->updateTaskProcessErrorCount($taskProcess);
             }
         });
     }

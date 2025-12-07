@@ -59,10 +59,6 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_it_tracks_errors_for_task_process_with_errors()
     {
-        // Mark task process as failed to surface errors
-        $this->taskProcess->update(['failed_at' => now()]);
-        $this->taskProcess->refresh();
-
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
             'ref'    => 'test-job-' . uniqid(),
@@ -104,10 +100,6 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Initially no errors
         $this->assertEquals(0, $this->taskProcess->error_count);
 
-        // Mark task process as failed to surface errors
-        $this->taskProcess->update(['failed_at' => now()]);
-        $this->taskProcess->refresh();
-
         // Create a job dispatch with errors
         $jobDispatch = $this->createJobDispatchWithErrors(3);
 
@@ -128,17 +120,15 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_it_updates_error_count_from_job_dispatch()
     {
-        // Mark task process as failed to surface errors
-        $this->taskProcess->update(['failed_at' => now()]);
-
         // Create a job dispatch with errors
         $jobDispatch = $this->createJobDispatchWithErrors(2);
 
         // Associate the job dispatch with the task process
         $this->taskProcess->jobDispatches()->attach($jobDispatch->id);
 
-        // Update error count from job dispatch
-        $this->service->updateErrorCountsForJobDispatch($jobDispatch);
+        // Refresh and surface errors
+        $this->taskProcess->refresh();
+        $this->service->updateTaskProcessErrorCount($this->taskProcess);
 
         // Refresh models
         $this->taskProcess->refresh();
@@ -158,12 +148,10 @@ class TaskProcessErrorTrackingTest extends TestCase
         $taskProcess2 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'name'        => 'Test Process 2',
-            'failed_at'   => now(),
         ]);
         $taskProcess3 = TaskProcess::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'name'        => 'Test Process 3',
-            'failed_at'   => now(),
         ]);
 
         // Create job dispatches with different error counts
@@ -181,7 +169,7 @@ class TaskProcessErrorTrackingTest extends TestCase
         $taskProcess2->refresh();
         $taskProcess3->refresh();
 
-        // Update error counts for all task processes
+        // Surface errors for all task processes
         $this->service->updateTaskProcessErrorCount($this->taskProcess);
         $this->service->updateTaskProcessErrorCount($taskProcess2);
         $this->service->updateTaskProcessErrorCount($taskProcess3);
@@ -195,8 +183,6 @@ class TaskProcessErrorTrackingTest extends TestCase
 
     public function test_error_count_updates_on_job_dispatch_status_change()
     {
-        // Mark task process as failed to surface errors
-        $this->taskProcess->update(['failed_at' => now()]);
 
         // Create a job dispatch
         $jobDispatch = JobDispatch::create([
@@ -225,9 +211,9 @@ class TaskProcessErrorTrackingTest extends TestCase
         // Simulate job completion (this would trigger the event listener)
         $jobDispatch->update(['status' => JobDispatch::STATUS_COMPLETE]);
 
-        // The event listener in EventServiceProvider should have been triggered
-        // For this test, we'll manually trigger it since events might not fire in tests
-        $this->service->updateErrorCountsForJobDispatch($jobDispatch);
+        // Refresh and surface errors
+        $this->taskProcess->refresh();
+        $this->service->updateTaskProcessErrorCount($this->taskProcess);
 
         $this->taskProcess->refresh();
         $this->assertEquals(1, $this->taskProcess->error_count);
@@ -277,7 +263,10 @@ class TaskProcessErrorTrackingTest extends TestCase
         $taskProcess2->jobDispatches()->attach($jobDispatch2->id);
         $taskProcess3->jobDispatches()->attach($jobDispatch3->id);
 
-        // Update error counts for task processes (this should cascade to task runs)
+        // Refresh and surface errors for task processes
+        $taskProcess1->refresh();
+        $taskProcess2->refresh();
+        $taskProcess3->refresh();
         $this->service->updateTaskProcessErrorCount($taskProcess1);
         $this->service->updateTaskProcessErrorCount($taskProcess2);
         $this->service->updateTaskProcessErrorCount($taskProcess3);
@@ -327,7 +316,8 @@ class TaskProcessErrorTrackingTest extends TestCase
         $jobDispatch = $this->createJobDispatchWithErrors(5);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
 
-        // Update task process error count
+        // Refresh and surface errors
+        $taskProcess->refresh();
         $this->service->updateTaskProcessErrorCount($taskProcess);
 
         // Refresh task run

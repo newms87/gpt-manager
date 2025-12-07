@@ -1,126 +1,135 @@
 <template>
-	<div class="relative h-18">
-		<div class="flex-x space-x-4">
-			<div v-if="activeWorkflowRun" class="flex-grow flex items-center space-x-4 flex-nowrap">
-				<LabelPillWidget
-					:label="`WorkflowRun: ${activeWorkflowRun.id}`"
-					color="sky"
-					size="xs"
-				/>
-				<EditableDiv
-					v-model="activeWorkflowRun.name"
-					color="sky-900"
-					@change="name => updateWorkflowRunAction.trigger(activeWorkflowRun, {name})"
-				/>
-				<ActionButton
-					v-if="isRunning"
-					type="stop"
-					color="red"
-					size="sm"
-					tooltip="Stop Workflow"
-					:action="stopWorkflowRunAction"
-					:target="activeWorkflowRun"
-				/>
-				<ActionButton
-					v-if="isStopped"
-					type="play"
-					color="sky"
-					size="sm"
-					tooltip="Resume Workflow"
-					:action="resumeWorkflowRunAction"
-					:target="activeWorkflowRun"
-				/>
-				<WorkflowStatusTimerPill :runner="activeWorkflowRun" timer-class="px-4 bg-slate-800 rounded-full" />
-				
-				<ActionButton
-					v-if="activeWorkflowRun"
-					type="users"
-					color="amber"
-					size="sm"
-					:label="`${activeWorkflowRun.active_workers_count || 0}/${activeWorkflowDefinition?.max_workers || 20}`"
-					tooltip="View Workers"
-					@click="isShowingWorkers = true"
-				/>
-			</div>
-			<div v-if="activeWorkflowRun" class="px-2">
-				<QSeparator class="bg-slate-400 h-6" vertical />
-			</div>
-			<div>
-				<ActionButton
-					type="play"
-					color="green"
-					label="Run Workflow"
-					:disabled="isRunning"
-					@click="onRunWorkflow"
-				/>
-			</div>
-			<div class="flex items-center space-x-2">
-				<LabelPillWidget
-					:label="`${runningCount} Running`"
-					color="orange"
-					size="xs"
-				/>
-				<LabelPillWidget
-					:label="`${completedCount} Completed`"
-					color="green"
-					size="xs"
-				/>
-			</div>
-			<div>
-				<ShowHideButton
-					v-model="isShowing"
-					:label="`${activeWorkflowDefinition.runs?.length || 0}`"
-					color="green-invert"
-					:show-icon="RunsIcon"
-				/>
-			</div>
-		</div>
-		<div
-			class="absolute-top-right top-[120%] z-10 transition-all overflow-y-auto max-h-[80vh] w-[80vw] bg-sky-900 px-4"
-			:class="{'h-[5000%]': isShowing, 'h-0': !isShowing}"
-		>
-			<div v-if="isShowing" class="mt-4">
-				<div v-if="activeWorkflowDefinition.runs?.length === 0" class="text-center text-sky-300">No Workflow Runs</div>
-				<div v-else>
-					<WorkflowRunCard
-						v-for="run in activeWorkflowDefinition.runs"
-						:key="run.id"
-						:workflow-definition="activeWorkflowDefinition"
-						:workflow-run="run"
-						class="my-2"
-						selectable
-						@select="onSelectActiveWorkflowRun(run)"
-					/>
-				</div>
-			</div>
-			<SelectWorkflowInputDialog
-				v-if="isSelectingWorkflowInput"
-				@confirm="onCreateWorkflowRun"
-				@close="isSelectingWorkflowInput = false"
-			/>
-		</div>
-		
-		<WorkflowWorkersInfoDialog
-			:is-showing="isShowingWorkers"
-			:workflow-run="activeWorkflowRun"
-			:workflow-definition="activeWorkflowDefinition"
-			@close="isShowingWorkers = false"
-		/>
-	</div>
+    <div class="relative h-18">
+        <div class="flex-x space-x-4">
+            <div v-if="activeWorkflowRun" class="flex-grow flex items-center space-x-4 flex-nowrap">
+                <LabelPillWidget
+                    :label="`WorkflowRun: ${activeWorkflowRun.id}`"
+                    color="sky"
+                    size="xs"
+                />
+                <EditableDiv
+                    v-model="activeWorkflowRun.name"
+                    color="sky-900"
+                    @change="name => updateWorkflowRunAction.trigger(activeWorkflowRun, {name})"
+                />
+                <ActionButton
+                    v-if="isRunning"
+                    type="stop"
+                    color="red"
+                    size="sm"
+                    tooltip="Stop Workflow"
+                    :action="stopWorkflowRunAction"
+                    :target="activeWorkflowRun"
+                />
+                <ActionButton
+                    v-if="isStopped"
+                    type="play"
+                    color="sky"
+                    size="sm"
+                    tooltip="Resume Workflow"
+                    :action="resumeWorkflowRunAction"
+                    :target="activeWorkflowRun"
+                />
+                <WorkflowStatusTimerPill :runner="activeWorkflowRun" timer-class="px-4 bg-slate-800 rounded-full" />
+
+                <ActionButton
+                    v-if="activeWorkflowRun"
+                    type="users"
+                    color="amber"
+                    size="sm"
+                    :label="`${activeWorkflowRun.active_workers_count || 0}/${activeWorkflowDefinition?.max_workers || 20}`"
+                    tooltip="View Workers"
+                    @click="isShowingWorkers = true"
+                />
+                <ActionButton
+                    v-if="activeWorkflowRun"
+                    type="close"
+                    color="slate"
+                    size="sm"
+                    tooltip="Clear Active Run"
+                    @click="activeWorkflowRun = null"
+                />
+            </div>
+            <div v-if="activeWorkflowRun" class="px-2">
+                <QSeparator class="bg-slate-400 h-6" vertical />
+            </div>
+            <div>
+                <ActionButton
+                    type="play"
+                    color="green"
+                    label="Run Workflow"
+                    @click="onRunWorkflow"
+                />
+            </div>
+            <div class="flex items-center space-x-2">
+                <LabelPillWidget
+                    :label="`${runningCount} Running`"
+                    color="orange"
+                    size="xs"
+                />
+                <LabelPillWidget
+                    :label="`${completedCount} Completed`"
+                    color="green"
+                    size="xs"
+                />
+            </div>
+            <div>
+                <ShowHideButton
+                    v-model="isShowing"
+                    :label="`${activeWorkflowDefinition.runs?.length || 0}`"
+                    color="green-invert"
+                    :show-icon="RunsIcon"
+                />
+            </div>
+        </div>
+        <div
+            class="absolute-top-right top-[120%] z-10 transition-all overflow-y-auto max-h-[80vh] w-[80vw] bg-sky-900 px-4"
+            :class="{'h-[5000%]': isShowing, 'h-0': !isShowing}"
+        >
+            <div v-if="isShowing" class="mt-4">
+                <div v-if="activeWorkflowDefinition.runs?.length === 0" class="text-center text-sky-300">No Workflow
+                    Runs
+                </div>
+                <div v-else>
+                    <WorkflowRunCard
+                        v-for="run in activeWorkflowDefinition.runs"
+                        :key="run.id"
+                        :workflow-definition="activeWorkflowDefinition"
+                        :workflow-run="run"
+                        class="my-2"
+                        selectable
+                        @select="onSelectActiveWorkflowRun(run)"
+                    />
+                </div>
+            </div>
+            <SelectWorkflowInputDialog
+                v-if="isSelectingWorkflowInput"
+                @confirm="onCreateWorkflowRun"
+                @close="isSelectingWorkflowInput = false"
+            />
+        </div>
+
+        <WorkflowWorkersInfoDialog
+            :is-showing="isShowingWorkers"
+            :workflow-run="activeWorkflowRun"
+            :workflow-definition="activeWorkflowDefinition"
+            @close="isShowingWorkers = false"
+        />
+    </div>
 </template>
 <script setup lang="ts">
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import {
-	activeWorkflowDefinition,
-	activeWorkflowRun,
-	createWorkflowRun,
-	refreshWorkflowRun
+    activeWorkflowDefinition,
+    activeWorkflowRun,
+    createWorkflowRun,
+    refreshWorkflowRun
 } from "@/components/Modules/WorkflowDefinitions/store";
 import SelectWorkflowInputDialog
-	from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/SelectWorkflowInputDialog";
+    from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/SelectWorkflowInputDialog";
 import WorkflowRunCard from "@/components/Modules/WorkflowDefinitions/WorkflowRunCard";
-import WorkflowWorkersInfoDialog from "@/components/Modules/WorkflowDefinitions/WorkflowWorkersInfoDialog.vue";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
+import WorkflowWorkersInfoDialog from "@/components/Modules/WorkflowDefinitions/WorkflowWorkersInfoDialog.vue";
 import { usePusher } from "@/helpers/pusher";
 import { WorkflowInput, WorkflowRun } from "@/types";
 import { FaSolidPersonRunning as RunsIcon } from "danx-icon";
@@ -143,49 +152,50 @@ const pusher = usePusher();
 
 // Subscribe to WorkflowRun events
 onMounted(async () => {
-	if (pusher) {
-		await pusher.subscribeToModel("WorkflowRun", ["created", "updated"], true);
-	}
+    if (pusher) {
+        await pusher.subscribeToModel("WorkflowRun", ["created", "updated"], true);
+    }
 });
 
 onUnmounted(async () => {
-	if (pusher) {
-		await pusher.unsubscribeFromModel("WorkflowRun", ["created", "updated"], true);
-	}
+    if (pusher) {
+        await pusher.unsubscribeFromModel("WorkflowRun", ["created", "updated"], true);
+    }
 });
 
 // Computed properties for status counts
 const runningCount = computed(() => {
-	return activeWorkflowDefinition.value?.runs?.filter(r =>
-		["Running", "Pending"].includes(r.status)
-	).length || 0;
+    return activeWorkflowDefinition.value?.runs?.filter(r =>
+        ["Running", "Pending"].includes(r.status)
+    ).length || 0;
 });
 
 const completedCount = computed(() => {
-	return activeWorkflowDefinition.value?.runs?.filter(r =>
-		r.status === "Completed"
-	).length || 0;
+    return activeWorkflowDefinition.value?.runs?.filter(r =>
+        r.status === "Completed"
+    ).length || 0;
 });
 
 function onRunWorkflow() {
-	if (!activeWorkflowDefinition.value) return;
+    if (!activeWorkflowDefinition.value) return;
 
-	if (hasWorkflowInputNode.value) {
-		isSelectingWorkflowInput.value = true;
-	} else {
-		onCreateWorkflowRun();
-	}
+    if (hasWorkflowInputNode.value) {
+        isSelectingWorkflowInput.value = true;
+    } else {
+        onCreateWorkflowRun();
+    }
 }
 
 async function onCreateWorkflowRun(workflowInput?: WorkflowInput) {
-	if (!activeWorkflowDefinition.value) return;
-	isSelectingWorkflowInput.value = false;
+    if (!activeWorkflowDefinition.value) return;
+    isSelectingWorkflowInput.value = false;
 
-	await createWorkflowRun(workflowInput);
+    await createWorkflowRun(workflowInput);
 }
+
 async function onSelectActiveWorkflowRun(workflowRun: WorkflowRun) {
-	activeWorkflowRun.value = workflowRun;
-	isShowing.value = false;
-	await refreshWorkflowRun(workflowRun);
+    activeWorkflowRun.value = workflowRun;
+    isShowing.value = false;
+    await refreshWorkflowRun(workflowRun);
 }
 </script>

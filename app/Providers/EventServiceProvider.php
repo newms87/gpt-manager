@@ -14,6 +14,7 @@ use App\Services\Task\TaskProcessErrorTrackingService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Newms87\Danx\Helpers\ModelHelper;
+use Newms87\Danx\Models\Audit\ErrorLogEntry;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Traits\HasRelationCountersTrait;
 
@@ -77,6 +78,30 @@ class EventServiceProvider extends ServiceProvider
 
             // Broadcast the JobDispatch update event
             JobDispatchUpdatedEvent::dispatch($jobDispatch, 'updated');
+        });
+
+        // Update error counts when ErrorLogEntry is created
+        // This ensures counts are updated AFTER the error is written to the database
+        ErrorLogEntry::created(function (ErrorLogEntry $errorLogEntry) {
+            // Only process if this entry has an audit request
+            if (!$errorLogEntry->audit_request_id) {
+                return;
+            }
+
+            // Find JobDispatches associated with this audit request
+            $jobDispatches = JobDispatch::where('running_audit_request_id', $errorLogEntry->audit_request_id)->get();
+
+            foreach ($jobDispatches as $jobDispatch) {
+                // Check if this JobDispatch is related to a TaskProcess
+                $hasTaskProcess = TaskProcess::whereHas('jobDispatches', function ($query) use ($jobDispatch) {
+                    $query->where('job_dispatch.id', $jobDispatch->id);
+                })->exists();
+
+                if ($hasTaskProcess) {
+                    app(TaskProcessErrorTrackingService::class)
+                        ->updateErrorCountsForJobDispatch($jobDispatch);
+                }
+            }
         });
 
         $modelsWithTrait = ModelHelper::getModelsWithTrait(HasRelationCountersTrait::class);

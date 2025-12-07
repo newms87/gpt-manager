@@ -2,7 +2,6 @@
 
 namespace App\Services\Task;
 
-use App\Exceptions\Auth\NoTokenFoundException;
 use App\Jobs\WorkflowApiInvocationWebhookJob;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Task\Artifact;
@@ -10,11 +9,11 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
+use App\Services\Error\RetryableErrorChecker;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
-use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Jobs\Job;
 use Throwable;
@@ -176,14 +175,14 @@ class TaskProcessRunnerService
                 : " (retries exhausted: {$taskProcess->restart_count}/{$maxRetries})";
             static::logDebug("TaskProcess failed: $taskProcess" . $retryInfo . "\n" . $throwable->getMessage());
 
-            // Update error counts before setting failure status (fallback in case JobDispatch event doesn't catch it)
-            app(TaskProcessErrorTrackingService::class)->updateTaskProcessErrorCount($taskProcess);
-
-            if ($throwable instanceof NoTokenFoundException) {
-                $taskProcess->failed_at = now();
-            } else {
+            if (RetryableErrorChecker::isRetryable($throwable)) {
+                // Transient error - can be retried
                 $taskProcess->incomplete_at = now();
+            } else {
+                // Permanent error - mark as failed immediately
+                $taskProcess->failed_at = now();
             }
+
             $taskProcess->save();
             throw $throwable;
         }

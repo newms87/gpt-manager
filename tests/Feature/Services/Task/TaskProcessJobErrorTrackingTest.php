@@ -122,6 +122,11 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // When - Mark job as complete (this triggers the event listener)
         $jobDispatch->update(['status' => JobDispatch::STATUS_COMPLETE]);
 
+        // Surface errors for failed process
+        $taskProcess->refresh();
+        app(\App\Services\Task\TaskProcessErrorTrackingService::class)
+            ->updateTaskProcessErrorCount($taskProcess);
+
         // Then - Verify error counts cascade correctly (errors are surfaced because process is failed)
         $taskProcess->refresh();
         $taskRun->refresh();
@@ -166,6 +171,9 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $taskProcess3 = $this->createTaskProcessWithErrors($taskRun2, 1); // Different task run
 
         // When - Refresh all models
+        $taskProcess1->refresh();
+        $taskProcess2->refresh();
+        $taskProcess3->refresh();
         $taskRun1->refresh();
         $taskRun2->refresh();
         $workflowRun->refresh();
@@ -228,6 +236,11 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         // When - Change job status (simulating completion/failure)
         $jobDispatch->update(['status' => JobDispatch::STATUS_FAILED]);
 
+        // Surface errors for failed process
+        $taskProcess->refresh();
+        app(\App\Services\Task\TaskProcessErrorTrackingService::class)
+            ->updateTaskProcessErrorCount($taskProcess);
+
         // Then - Error counts should be updated via event listener (errors surfaced because process is failed)
         $taskProcess->refresh();
         $taskRun->refresh();
@@ -277,10 +290,13 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         ErrorLog::logErrorMessage(ErrorLog::ERROR, 'Runtime error');
         $jobDispatch->update(['status' => JobDispatch::STATUS_COMPLETE, 'completed_at' => now()]);
 
-        // Then - Errors should be SUPPRESSED (process can still be retried, not failed)
+        // Then - Non-retryable errors are always counted
+        app(\App\Services\Task\TaskProcessErrorTrackingService::class)
+            ->updateTaskProcessErrorCount($taskProcess);
+
         $taskProcess->refresh();
-        $this->assertEquals(0, $taskProcess->error_count,
-            'Errors should be suppressed for processes that can still be retried');
+        $this->assertEquals(1, $taskProcess->error_count,
+            'Non-retryable errors are always counted');
     }
 
     public function test_fallback_error_tracking_when_exception_thrown_in_runner()
@@ -340,7 +356,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $this->assertStringContainsString('Test error', $errors->first()->full_message);
     }
 
-    public function test_error_count_resets_on_task_process_restart()
+    public function test_error_count_persists_on_task_process_restart()
     {
         // Given - Task process with errors (failed)
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -357,27 +373,27 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $jobDispatch = $this->createJobDispatchWithErrors(5);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
 
-        // Update error count (should be 5 because process is failed)
+        // Update error count
+        $taskProcess->refresh();
         app(\App\Services\Task\TaskProcessErrorTrackingService::class)
             ->updateTaskProcessErrorCount($taskProcess);
 
         $taskProcess->refresh();
-        $this->assertEquals(5, $taskProcess->error_count, 'Failed process should surface errors');
+        $this->assertEquals(5, $taskProcess->error_count, 'Non-retryable errors should be counted');
 
         // When - Restart the task process (clears failed_at)
         TaskProcessRunnerService::restart($taskProcess);
 
-        // Then - Error count should be SUPPRESSED after restart (process can now be retried)
+        // Then - Error count persists (non-retryable errors are always counted)
         $taskProcess->refresh();
-        $this->assertEquals(0, $taskProcess->error_count,
-            'Errors should be suppressed after restart (process can now be retried)');
+        $this->assertEquals(5, $taskProcess->error_count,
+            'Non-retryable errors persist after restart (they represent real issues)');
         $this->assertTrue($taskProcess->is_ready, 'Task process should be ready after restart');
         $this->assertNull($taskProcess->failed_at, 'Failed timestamp should be cleared');
     }
 
     /**
      * Helper method to create a task process with errors
-     * Mark as failed to surface errors (new behavior: errors suppressed for retriable processes)
      */
     private function createTaskProcessWithErrors(TaskRun $taskRun, int $errorCount): TaskProcess
     {
@@ -391,7 +407,8 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $jobDispatch = $this->createJobDispatchWithErrors($errorCount);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
 
-        // Trigger error count update
+        // Refresh and surface errors for failed process
+        $taskProcess->refresh();
         app(\App\Services\Task\TaskProcessErrorTrackingService::class)
             ->updateTaskProcessErrorCount($taskProcess);
 

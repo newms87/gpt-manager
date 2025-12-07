@@ -43,31 +43,38 @@ class TaskProcessErrorTrackingService
     }
 
     /**
-     * Update error count for a task process by counting all errors from its job dispatches
+     * Update error count for a task process by counting all NON-RETRYABLE errors.
+     * This method is idempotent - can be called at any time.
      */
     public function updateTaskProcessErrorCount(TaskProcess $taskProcess): void
     {
+        $taskProcess = $taskProcess->fresh(['jobDispatches.runningAuditRequest']);
+
+        if (!$taskProcess) {
+            return;
+        }
+
         $totalErrors = 0;
 
-        // Only count errors if the process has exhausted retries or is permanently failed
-        // This prevents transient retry errors from being surfaced to users
-        if (!$taskProcess->canBeRetried() || $taskProcess->isFailed()) {
-            // Count all errors from all job dispatches for this task process
-            foreach ($taskProcess->jobDispatches as $jobDispatch) {
-                if ($auditRequest = $jobDispatch->runningAuditRequest) {
-                    $totalErrors += $auditRequest->errorLogEntries()->count();
+        // Count only NON-retryable errors (real failures, not transient issues)
+        foreach ($taskProcess->jobDispatches as $jobDispatch) {
+            if ($auditRequest = $jobDispatch->runningAuditRequest) {
+                $errorCount = $auditRequest->errorLogEntries()
+                    ->where('is_retryable', false)
+                    ->count();
+
+                if ($errorCount > 0) {
+                    static::logDebug("JobDispatch {$jobDispatch->id} has {$errorCount} non-retryable errors");
                 }
+
+                $totalErrors += $errorCount;
             }
         }
-        // If process can still be retried, totalErrors stays 0 (errors suppressed)
 
-        // Update if changed
         if ($taskProcess->error_count !== $totalErrors) {
-            $suppressedMsg = ($totalErrors === 0 && $taskProcess->canBeRetried()) ? ' (suppressed - can retry)' : '';
-            static::logDebug("Updating TaskProcess {$taskProcess->id} error_count: {$taskProcess->error_count} → {$totalErrors}" . $suppressedMsg);
+            static::logDebug("Updating TaskProcess {$taskProcess->id} error_count: {$taskProcess->error_count} → {$totalErrors}");
             $taskProcess->update(['error_count' => $totalErrors]);
 
-            // Update the parent task run's aggregate error count
             if ($taskProcess->taskRun) {
                 $this->updateTaskRunErrorCount($taskProcess->taskRun);
             }
