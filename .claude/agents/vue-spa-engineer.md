@@ -127,6 +127,16 @@ const { reloadData } = useMyFeature();
 const deleteAction = dxController.getAction("delete", { onFinish: reloadData });
 ```
 
+## 🚨 CRITICAL: RELATIVE PATHS ONLY
+
+**NEVER use absolute paths in Bash commands** - they require manual approval and break autonomous operation.
+
+- ✅ `yarn build` (CORRECT - relative command)
+- ✅ `./vendor/bin/sail ...` (CORRECT - relative path)
+- ❌ `/home/newms/web/gpt-manager/...` (WRONG - absolute path)
+
+If a command fails, verify you're in the project root with `pwd` - NEVER switch to absolute paths.
+
 ## Common Commands
 
 - `yarn build` - Build and validate (MANDATORY after non-trivial changes)

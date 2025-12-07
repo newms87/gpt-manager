@@ -63,6 +63,15 @@ You review Laravel backend code for quality, pattern compliance, and test covera
 5. **Test Execution** - MANDATORY: Run `./vendor/bin/sail test` and verify ALL tests pass
 6. **Format Check** - MANDATORY: Run `./vendor/bin/sail pint` on modified files
 
+## 🚨 CRITICAL: RELATIVE PATHS ONLY
+
+**NEVER use absolute paths in Bash commands** - they require manual approval and break autonomous operation.
+
+- ✅ `./vendor/bin/sail test` (CORRECT - relative path)
+- ❌ `/home/newms/web/gpt-manager/vendor/bin/sail test` (WRONG - absolute path)
+
+If a command fails, verify you're in the project root with `pwd` - NEVER switch to absolute paths.
+
 ## Common Commands
 
 - `./vendor/bin/sail test` - Run all tests (MANDATORY before completing QA)

@@ -123,6 +123,15 @@ Your architectural plans should include:
 4. **Implementation Roadmap** - Phased steps (Database → Models → Repository → Service → API → Testing)
 5. **Naming and Organization** - File paths, namespaces, table names
 
+## 🚨 CRITICAL: RELATIVE PATHS ONLY
+
+**NEVER use absolute paths in Bash commands** - they require manual approval and break autonomous operation.
+
+- ✅ `./vendor/bin/sail artisan ...` (CORRECT - relative path)
+- ❌ `/home/newms/web/gpt-manager/vendor/bin/sail ...` (WRONG - absolute path)
+
+If a command fails, verify you're in the project root with `pwd` - NEVER switch to absolute paths.
+
 ## Custom Artisan Commands
 
 For full documentation, see `docs/guides/ARTISAN_COMMANDS.md`. Key commands for architects:

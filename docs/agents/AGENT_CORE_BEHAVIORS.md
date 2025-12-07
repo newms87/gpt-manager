@@ -145,6 +145,29 @@ These principles prevent tech debt accumulation and ensure consistent, maintaina
 
 ## Tool Usage Guidelines
 
+### 🚨🚨🚨 CRITICAL: RELATIVE PATHS ONLY - NO EXCEPTIONS 🚨🚨🚨
+
+**ABSOLUTE PATHS ARE FORBIDDEN IN ALL BASH COMMANDS**
+
+This is a blocking requirement - absolute paths require manual approval and break autonomous operation.
+
+**ALWAYS use relative paths:**
+- ✅ `./vendor/bin/sail artisan migrate`
+- ✅ `./vendor/bin/sail test --filter=MyTest`
+- ✅ `./vendor/bin/sail pint app/Services/MyService.php`
+- ✅ `yarn build`
+- ✅ `php artisan ...` (when inside container)
+
+**NEVER use absolute paths:**
+- ❌ `/home/user/project/vendor/bin/sail ...`
+- ❌ `/home/newms/web/gpt-manager/vendor/bin/sail ...`
+- ❌ Any path starting with `/home/`, `/Users/`, `/var/`, etc.
+
+**If your command fails due to wrong directory:**
+1. First, verify you're in the project root
+2. Use `pwd` to check current directory
+3. NEVER switch to absolute paths as a "fix"
+
 ### File Operations
 
 - **Read files**: Use `Read` tool

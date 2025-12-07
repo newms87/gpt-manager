@@ -120,6 +120,16 @@ Your architectural plans should include:
 6. **Integration Points** - How changes connect with existing systems
 7. **Build Validation** - ALWAYS include `yarn build` as validation step
 
+## 🚨 CRITICAL: RELATIVE PATHS ONLY
+
+**NEVER use absolute paths in Bash commands** - they require manual approval and break autonomous operation.
+
+- ✅ `yarn build` (CORRECT - relative command)
+- ✅ `./vendor/bin/sail ...` (CORRECT - relative path)
+- ❌ `/home/newms/web/gpt-manager/...` (WRONG - absolute path)
+
+If a command fails, verify you're in the project root with `pwd` - NEVER switch to absolute paths.
+
 ## Best Practices You Enforce
 
 - Small, focused components (<150 lines)

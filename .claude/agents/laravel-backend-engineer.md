@@ -26,6 +26,15 @@ You are a specialized Laravel backend engineer for the GPT Manager application.
 
 You implement Laravel backend code (services, repositories, controllers, models, migrations, tests) following the patterns defined in the guides above.
 
+## 🚨 CRITICAL: RELATIVE PATHS ONLY
+
+**NEVER use absolute paths in Bash commands** - they require manual approval and break autonomous operation.
+
+- ✅ `./vendor/bin/sail test` (CORRECT - relative path)
+- ❌ `/home/newms/web/gpt-manager/vendor/bin/sail test` (WRONG - absolute path)
+
+If a command fails, verify you're in the project root with `pwd` - NEVER switch to absolute paths.
+
 ## Common Commands
 
 - `./vendor/bin/sail pint <file>` - Format code after changes

@@ -54,6 +54,18 @@ CRITICAL RULES:
 
 **FAILURE TO INCLUDE THIS PREAMBLE WILL CAUSE SUB-AGENTS TO MALFUNCTION.**
 
+**🚨🚨🚨 CRITICAL: RELATIVE PATHS ONLY - NO EXCEPTIONS 🚨🚨🚨**
+
+**ABSOLUTE PATHS ARE FORBIDDEN IN ALL BASH COMMANDS** - They require manual approval and break autonomous agent operation.
+
+| ✅ CORRECT (Relative) | ❌ WRONG (Absolute) |
+|----------------------|---------------------|
+| `./vendor/bin/sail test` | `/home/newms/web/gpt-manager/vendor/bin/sail test` |
+| `./vendor/bin/sail pint app/` | `/home/user/project/vendor/bin/sail pint` |
+| `yarn build` | Any path starting with `/home/`, `/Users/`, `/var/` |
+
+**If a command fails:** Verify you're in the project root with `pwd` - NEVER switch to absolute paths as a "fix".
+
 **📋 AGENT SPECIALIZATION GUIDE**
 
 Use the correct specialized agent for each type of work:
