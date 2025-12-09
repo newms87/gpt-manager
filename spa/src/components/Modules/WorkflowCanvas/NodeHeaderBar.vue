@@ -10,6 +10,14 @@
 					@restart="$emit('restart')"
 				/>
 				<ActionButton
+					v-if="hasMetadata"
+					type="info"
+					color="purple"
+					size="xs"
+					tooltip="View Metadata"
+					@click.stop="showMetadataModal = true"
+				/>
+				<ActionButton
 					v-if="isRunning"
 					type="stop"
 					:disabled="!isRunning"
@@ -76,11 +84,17 @@
 				/>
 			</template>
 		</div>
+		<TaskDefinitionMetadataModal
+			:task-definition="taskDefinition"
+			:visible="showMetadataModal"
+			@close="showMetadataModal = false"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
+import TaskDefinitionMetadataModal from "@/components/Modules/TaskDefinitions/TaskDefinitionMetadataModal.vue";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { activeWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
@@ -118,4 +132,10 @@ async function onCopy() {
 	isCopying.value = true;
 	setTimeout(() => isCopying.value = false, 3000);
 }
+
+const showMetadataModal = ref(false);
+const taskDefinition = computed(() => props.workflowNode?.taskDefinition);
+const hasMetadata = computed(() => {
+	return taskDefinition.value?.meta && Object.keys(taskDefinition.value.meta).length > 0;
+});
 </script>

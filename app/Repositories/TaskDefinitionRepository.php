@@ -47,6 +47,7 @@ class TaskDefinitionRepository extends ActionRepository
             'save-directive'    => $this->saveDirective($model, $data['task_definition_directive_id'] ?? null, $data),
             'update-directives' => $this->updateDirectives($model, $data['taskDefinitionDirectives'] ?? []),
             'remove-directive'  => $this->removeDirective($model, $data['id'] ?? null),
+            'clear-meta'        => $this->clearMeta($model),
             default             => parent::applyAction($action, $model, $data)
         };
     }
@@ -75,6 +76,17 @@ class TaskDefinitionRepository extends ActionRepository
     public function updateTaskDefinition(TaskDefinition $taskDefinition, array $data): TaskDefinition
     {
         $taskDefinition->fill($data)->validate()->save($data);
+
+        return $taskDefinition;
+    }
+
+    /**
+     * Clear the metadata from a task definition
+     */
+    public function clearMeta(TaskDefinition $taskDefinition): TaskDefinition
+    {
+        $taskDefinition->meta = null;
+        $taskDefinition->save();
 
         return $taskDefinition;
     }
