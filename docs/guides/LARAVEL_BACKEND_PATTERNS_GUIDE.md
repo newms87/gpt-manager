@@ -375,6 +375,50 @@ class [Model] extends Model implements AuditableContract
 }
 ```
 
+### Anti-Pattern: Shortcut Attribute Accessors for Nested Relationships
+
+**NEVER create attribute accessors that simply expose nested relationships.**
+
+❌ **Anti-pattern - Do NOT do this:**
+```php
+// BAD: Creates confusion about where data comes from
+public function getTaskDefinitionAttribute(): ?TaskDefinition
+{
+    return $this->taskRun?->taskDefinition;
+}
+
+public function getTeamIdAttribute(): ?string
+{
+    return $this->taskRun?->taskDefinition?->team_id;
+}
+
+// Then used as:
+$taskProcess->taskDefinition;  // Looks like a direct relationship but isn't!
+$taskProcess->team_id;         // Where does this come from?
+```
+
+✅ **Correct pattern - Always use explicit relationship chains:**
+```php
+// GOOD: Clear and obvious where data comes from
+$taskProcess->taskRun->taskDefinition;
+$taskProcess->taskRun->taskDefinition->team_id;
+```
+
+**Why this matters:**
+- **Clarity**: Explicit chains make data flow obvious to readers
+- **Discoverability**: IDE autocomplete works properly with real relationships
+- **Debugging**: Easier to trace null pointer issues through explicit chains
+- **Consistency**: One way to access data, not multiple confusing shortcuts
+
+**Exception:** Computed/aggregated attributes that perform calculations are acceptable:
+```php
+// OK: This computes a value, not just a shortcut
+public function getTotalCostAttribute(): float
+{
+    return $this->inputCost + $this->outputCost + $this->cachedInputCost + $this->cachedOutputCost;
+}
+```
+
 ---
 
 ## 5. API Resource Patterns
@@ -837,6 +881,37 @@ public function scopeWithRelatedData(Builder $query): Builder
     }
 });
 ```
+
+### Eager Loading Rules
+
+**Eager loading is ONLY for collections, not single instances.**
+
+❌ **NEVER use `$with` on models or `load()` on single instances:**
+
+```php
+// BAD: $with forces loading for ALL queries
+protected $with = ['agent', 'schemaDefinition'];
+
+// BAD: load() on single instance - same queries as lazy loading
+$model = Model::find($id);
+$model->load(['agent']);  // Pointless - no batching benefit
+```
+
+✅ **CORRECT: Lazy load single instances, eager load collections:**
+
+```php
+// Single instance: just access when needed (Laravel caches it)
+$model = Model::find($id);
+$agent = $model->agent;  // Loaded on access, cached for reuse
+
+// Collection: eager load to prevent N+1
+$models = Model::with(['agent'])->get();
+foreach ($models as $m) {
+    echo $m->agent->name;  // No N+1
+}
+```
+
+**Why:** N+1 only exists when looping collections. Single instance access is always 1 query per relationship regardless of eager/lazy loading.
 
 ---
 

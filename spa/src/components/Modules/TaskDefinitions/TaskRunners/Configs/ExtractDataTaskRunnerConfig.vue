@@ -189,7 +189,7 @@
 
             <div class="text-lg font-medium mb-3 mt-6">Output Schema</div>
 
-            <SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" force-schema />
+            <SchemaAndFragmentsConfigField class="mt-6" :task-definition="taskDefinition" :max-fragments="1" force-schema />
 
             <TimeoutConfigField class="mt-6" :task-definition="taskDefinition" />
         </div>
