@@ -27,6 +27,7 @@ export interface TaskDefinition extends ActionTargetItem {
 	output_artifact_mode: ArtifactOutputMode;
 	output_artifact_levels?: number[];
 	response_format: AgentResponseFormat;
+	meta?: Record<string, unknown>;
 	timeout_after_seconds: number;
 	task_run_count: number;
 	task_agent_count: number;

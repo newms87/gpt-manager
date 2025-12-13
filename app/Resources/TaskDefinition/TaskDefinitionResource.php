@@ -27,6 +27,7 @@ class TaskDefinitionResource extends ActionResource
             'output_artifact_mode'   => $taskDefinition->output_artifact_mode,
             'output_artifact_levels' => $taskDefinition->output_artifact_levels,
             'timeout_after_seconds'  => $taskDefinition->timeout_after_seconds,
+            'meta'                   => $taskDefinition->meta,
             'task_run_count'         => $taskDefinition->task_run_count,
             'created_at'             => $taskDefinition->created_at,
             'updated_at'             => $taskDefinition->updated_at,
