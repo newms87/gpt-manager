@@ -1,5 +1,5 @@
 <template>
-    <QCard class="bg-slate-800">
+    <QCard class="bg-slate-800 overflow-hidden">
         <div class="flex items-center p-3 flex-nowrap">
             <div class="flex-grow flex-x space-x-2">
                 <LabelPillWidget :label="`JobDispatch: ${job.id}`" color="sky" size="xs" />

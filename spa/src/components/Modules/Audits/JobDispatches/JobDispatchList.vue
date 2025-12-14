@@ -1,5 +1,5 @@
 <template>
-	<ListTransition>
+	<ListTransition class="overflow-hidden w-full">
 		<QSkeleton v-if="!jobs" class="h-20 my-2" />
 		<div v-else-if="jobs.length === 0" class="text-xl text-center text-gray-500">No Job Dispatches</div>
 		<template v-else>

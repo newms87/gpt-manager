@@ -116,7 +116,6 @@
             <QSeparator class="bg-slate-500 mx-3" />
             <div class="m-3">
                 <QSkeleton v-if="isLoadingApiLog" class="h-32" />
-                <OpenAiResponsesApiCard v-else-if="message.apiLog && isOpenAiResponsesApi" :api-log="message.apiLog" />
                 <ApiLogEntryCard v-else-if="message.apiLog" :api-log="message.apiLog" />
             </div>
         </template>
@@ -125,7 +124,6 @@
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ApiLogEntryCard from "@/components/Modules/Audits/ApiLogs/ApiLogEntryCard.vue";
-import OpenAiResponsesApiCard from "@/components/Modules/Audits/ApiLogs/OpenAiResponsesApiCard.vue";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
 import { AgentThread, AgentThreadMessage } from "@/types";
@@ -212,9 +210,6 @@ async function loadApiLog() {
 }
 
 const isUserMessage = computed(() => props.message.role === "user");
-const isOpenAiResponsesApi = computed(() => {
-    return props.message.apiLog?.url?.includes('api.openai.com/v1/responses');
-});
 const nextRole = {
     user: "assistant",
     assistant: "user"

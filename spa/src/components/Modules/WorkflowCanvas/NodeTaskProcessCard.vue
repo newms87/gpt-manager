@@ -1,6 +1,6 @@
 <template>
-	<div class="flex items-start flex-nowrap space-x-2">
-		<div class="flex-grow min-w-0 overflow-hidden px-2">
+	<div class="flex items-start flex-nowrap space-x-2 overflow-hidden w-full">
+		<div class="flex-grow min-w-0 overflow-hidden px-2 w-full">
 			<div class="flex-grow flex-x space-x-2">
 				<NodeArtifactsButton
 					:count="taskProcess.input_artifact_count || 0"

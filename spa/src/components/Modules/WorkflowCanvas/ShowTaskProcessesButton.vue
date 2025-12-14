@@ -61,7 +61,7 @@
                             <div
                                 v-for="taskProcess in taskProcesses"
                                 :key="taskProcess.id"
-                                class="bg-slate-700 p-2 mb-4 rounded-lg flex items-start gap-2"
+                                class="bg-slate-700 p-2 mb-4 rounded-lg flex items-start gap-2 overflow-hidden"
                             >
                                 <QCheckbox
                                     :model-value="selectedProcesses.includes(taskProcess.id)"
@@ -70,7 +70,7 @@
                                 />
                                 <NodeTaskProcessCard
                                     :task-process="taskProcess"
-                                    class="flex-grow"
+                                    class="flex-grow min-w-0 overflow-hidden"
                                     @restart="onRestart"
                                 />
                             </div>
