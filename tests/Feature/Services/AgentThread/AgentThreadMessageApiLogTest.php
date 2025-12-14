@@ -299,10 +299,7 @@ class AgentThreadMessageApiLogTest extends AuthenticatedTestCase
         ]);
 
         // Create a mock response
-        $response = $this->getMockBuilder(\App\Api\AgentApiContracts\AgentCompletionResponseContract::class)
-            ->onlyMethods(['isMessageEmpty', 'getDataFields', 'isFinished', 'getContent', 'inputTokens', 'outputTokens', 'getResponseId'])
-            ->addMethods(['toArray'])
-            ->getMock();
+        $response = $this->createMock(\App\Api\AgentApiContracts\AgentCompletionResponseContract::class);
         $response->method('isMessageEmpty')->willReturn(false);
         $response->method('getContent')->willReturn('First response');
         $response->method('inputTokens')->willReturn(100);
@@ -336,10 +333,7 @@ class AgentThreadMessageApiLogTest extends AuthenticatedTestCase
             'started_at'      => now(),
         ]);
 
-        $response2 = $this->getMockBuilder(\App\Api\AgentApiContracts\AgentCompletionResponseContract::class)
-            ->onlyMethods(['isMessageEmpty', 'getDataFields', 'isFinished', 'getContent', 'inputTokens', 'outputTokens', 'getResponseId'])
-            ->addMethods(['toArray'])
-            ->getMock();
+        $response2 = $this->createMock(\App\Api\AgentApiContracts\AgentCompletionResponseContract::class);
         $response2->method('isMessageEmpty')->willReturn(false);
         $response2->method('getContent')->willReturn('Second response');
         $response2->method('inputTokens')->willReturn(50);

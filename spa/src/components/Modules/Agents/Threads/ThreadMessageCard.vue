@@ -36,12 +36,15 @@
                     tooltip="Show / Hide Images"
                 />
                 <ShowHideButton
-                    v-if="!isUserMessage && message.apiLog"
+                    v-if="!isUserMessage"
                     v-model="showApiLog"
                     :name="'api-log-' + message.id"
                     :show-icon="ApiLogIcon"
                     :hide-icon="ApiLogIcon"
+                    :disabled="!message.api_log_id"
+                    :loading="isLoadingApiLog"
                     tooltip="Show / Hide API Log"
+                    @show="loadApiLog"
                 />
                 <ShowHideButton
                     v-model="showMetaFields"
@@ -109,10 +112,11 @@
                 @update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
             />
         </template>
-        <template v-if="showApiLog && message.apiLog">
+        <template v-if="showApiLog && message.api_log_id">
             <QSeparator class="bg-slate-500 mx-3" />
             <div class="m-3">
-                <ApiLogEntryCard :api-log="message.apiLog" />
+                <QSkeleton v-if="isLoadingApiLog" class="h-32" />
+                <ApiLogEntryCard v-else-if="message.apiLog" :api-log="message.apiLog" />
             </div>
         </template>
     </div>
@@ -168,6 +172,7 @@ const files = ref<UploadedFile[]>(props.message.files || []);
 const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);
 const showApiLog = ref(false);
+const isLoadingApiLog = ref(false);
 
 // Sync local showMessage with parent prop when provided
 watch(() => props.isMessageExpanded, (value) => {
@@ -191,6 +196,19 @@ watch(showMessage, (value) => {
 watch(showFiles, (value) => {
     emit('update:filesExpanded', value);
 });
+
+// Load API log on demand (routes.details auto-hydrates props.message.apiLog)
+async function loadApiLog() {
+    if (!props.message.apiLog && !isLoadingApiLog.value) {
+        isLoadingApiLog.value = true;
+        try {
+            await dxThreadMessage.routes.details(props.message, { apiLog: true });
+        } finally {
+            isLoadingApiLog.value = false;
+        }
+    }
+}
+
 const isUserMessage = computed(() => props.message.role === "user");
 const nextRole = {
     user: "assistant",

@@ -288,14 +288,32 @@ const result = await routes.list();
 items.value = result.data;
 await routes.details(object, fields); // Updates existing object in-place
 
-// Performance optimized loading
+// Performance optimized loading - relations are auto-hydrated on the object
 const loadBasicData = async (item) => {
     await routes.details(item, { user: true, files: true });
+    // item.user and item.files are now populated - NO need to manually store results
 };
 
 const loadHeavyData = async (item) => {
     await routes.details(item, { usage_events: { user: true } });
 };
+
+// On-demand loading pattern (e.g., loading related data when user clicks to view)
+// Use @show callback on ShowHideButton - NOT watch() which is an anti-pattern
+async function loadRelated() {
+    if (!props.item.related && !isLoading.value) {
+        isLoading.value = true;
+        try {
+            await routes.details(props.item, { related: true });
+            // props.item.related is now populated automatically via storedObject()
+        } finally {
+            isLoading.value = false;
+        }
+    }
+}
+
+// In template:
+// <ShowHideButton v-model="showDetails" :loading="isLoading" @show="loadRelated" />
 ```
 
 **Key Principles:**

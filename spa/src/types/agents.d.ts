@@ -57,6 +57,7 @@ export interface AgentThreadMessage extends ActionTargetItem {
 	files?: UploadedFile[];
 	timestamp: string;
 	api_response_id?: string;
+	api_log_id?: string | number | null;
 	apiLog?: ApiLog;
 }
 

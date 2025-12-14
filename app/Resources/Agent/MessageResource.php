@@ -20,6 +20,7 @@ class MessageResource extends ActionResource
             'data'       => $message->data,
             'timestamp'  => $message->updated_at,
             'created_at' => $message->created_at,
+            'api_log_id' => $message->api_log_id,
             'files'      => fn($fields) => StoredFileResource::collection($message->storedFiles->load('transcodes'), $fields),
             'apiLog'     => fn($fields) => $message->apiLog ? ApiLogResource::make($message->apiLog, $fields) : null,
         ];
