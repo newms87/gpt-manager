@@ -16,11 +16,11 @@ export interface ApiLog {
     status_code: number;
     method: string;
     url: string;
-    request: string;
-    response: string;
+    request: string | AnyObject;
+    response: string | AnyObject;
     request_headers: AnyObject;
     response_headers: AnyObject;
-    run_time_ms: number;
+    run_time_ms: number | string;
     created_at: string;
 }
 
