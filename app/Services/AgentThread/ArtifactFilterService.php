@@ -10,13 +10,15 @@ class ArtifactFilterService
 {
     private ?Artifact $artifact             = null;
 
-    private bool $includeText          = true;
+    private bool $includeText               = true;
 
-    private bool $includeFiles         = true;
+    private bool $includeFiles              = true;
 
-    private bool $includeJson          = true;
+    private bool $includeJson               = true;
 
-    private bool $includeMeta          = true;
+    private bool $includeMeta               = true;
+
+    private bool $includeTextTranscodes     = true;
 
     private array $jsonFragmentSelector = [];
 
@@ -68,6 +70,13 @@ class ArtifactFilterService
     {
         $this->includeMeta          = $included;
         $this->metaFragmentSelector = $fragmentSelector;
+
+        return $this;
+    }
+
+    public function includeTextTranscodes(bool $included = true): static
+    {
+        $this->includeTextTranscodes = $included;
 
         return $this;
     }
@@ -194,6 +203,22 @@ class ArtifactFilterService
 
             if ($this->hasFiles()) {
                 $data['files'] = $this->artifact->storedFiles;
+
+                // Include text transcodes if enabled
+                if ($this->includeTextTranscodes) {
+                    $allTranscodes = [];
+
+                    foreach ($this->artifact->storedFiles as $storedFile) {
+                        $transcodeContent = $storedFile->getTextTranscodesContent();
+                        if ($transcodeContent) {
+                            $allTranscodes[] = "=== File: {$storedFile->filename} ===\n" . $transcodeContent;
+                        }
+                    }
+
+                    if ($allTranscodes) {
+                        $data['text_transcodes'] = implode("\n\n", $allTranscodes);
+                    }
+                }
             }
 
             if ($this->hasJson()) {
