@@ -7,6 +7,7 @@ $broadcastAuthTeam = fn(User $user, $teamId) => (bool)$user->teams()->find($team
 
 Broadcast::channel('WorkflowRun.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('TaskRun.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('TaskDefinition.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('AgentThreadRun.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('AgentThread.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('TaskProcess.{teamId}', $broadcastAuthTeam);

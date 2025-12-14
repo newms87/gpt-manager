@@ -2,6 +2,7 @@
 
 namespace App\Models\Task;
 
+use App\Events\TaskDefinitionUpdatedEvent;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Agent\McpServer;
@@ -245,6 +246,11 @@ class TaskDefinition extends Model implements AuditableContract, ResourcePackage
                         $schemaAssociation->delete();
                     }
                 }
+            }
+
+            // Broadcast updates for relevant field changes
+            if ($taskDefinition->wasChanged(['name', 'meta', 'task_runner_config']) || $taskDefinition->wasRecentlyCreated) {
+                TaskDefinitionUpdatedEvent::dispatch($taskDefinition);
             }
         });
     }

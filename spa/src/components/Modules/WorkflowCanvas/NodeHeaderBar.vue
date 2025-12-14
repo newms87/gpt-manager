@@ -10,14 +10,6 @@
 					@restart="$emit('restart')"
 				/>
 				<ActionButton
-					v-if="hasMetadata"
-					type="info"
-					color="purple"
-					size="xs"
-					tooltip="View Metadata"
-					@click.stop="showMetadataModal = true"
-				/>
-				<ActionButton
 					v-if="isRunning"
 					type="stop"
 					:disabled="!isRunning"
@@ -57,6 +49,14 @@
 				/>
 			</div>
 			<template v-if="!isTaskRunning && !readonly">
+				<ActionButton
+					v-if="hasMetadata"
+					:icon="MetaIcon"
+					color="purple"
+					size="xs"
+					tooltip="View Metadata"
+					@click.stop="showMetadataModal = true"
+				/>
 				<ActionButton
 					type="copy"
 					color="blue"
@@ -99,6 +99,7 @@ import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTas
 import { activeWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { TaskRun, WorkflowNode } from "@/types";
+import { FaSolidBarcode as MetaIcon } from "danx-icon";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 

@@ -1,3 +1,4 @@
+import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { authTeam } from "@/helpers/auth";
@@ -77,8 +78,92 @@ watch(activeWorkflowRun, async (newRun, oldRun) => {
     }
 });
 
+// Track active TaskDefinition subscriptions
+const activeTaskDefinitionSubscriptions = new Set<number>();
+
+// Interface for TaskDefinition event data (minimal payload from backend)
+interface TaskDefinitionEvent {
+    id: number;
+    updated_at: string;
+}
+
+// Event handler for TaskDefinition updated events
+const onTaskDefinitionUpdated = async (eventData: TaskDefinitionEvent) => {
+    // Update in activeWorkflowRun's taskRuns if present
+    if (activeWorkflowRun.value?.taskRuns) {
+        const taskRun = activeWorkflowRun.value.taskRuns.find(
+            tr => tr.task_definition_id === eventData.id
+        );
+        if (taskRun?.taskDefinition) {
+            try {
+                await dxTaskDefinition.routes.details(taskRun.taskDefinition);
+            } catch (error) {
+                console.error("Failed to fetch TaskDefinition details:", error);
+            }
+        }
+    }
+
+    // Also update in activeWorkflowDefinition's nodes if present
+    if (activeWorkflowDefinition.value?.nodes) {
+        const node = activeWorkflowDefinition.value.nodes.find(
+            n => n.task_definition_id === eventData.id
+        );
+        if (node?.taskDefinition) {
+            try {
+                await dxTaskDefinition.routes.details(node.taskDefinition);
+            } catch (error) {
+                console.error("Failed to fetch TaskDefinition details:", error);
+            }
+        }
+    }
+};
+
+// Cleanup all TaskDefinition subscriptions
+async function cleanupTaskDefinitionSubscriptions() {
+    if (!pusher) return;
+
+    for (const id of activeTaskDefinitionSubscriptions) {
+        await pusher.unsubscribeFromModel("TaskDefinition", ["updated"], id);
+    }
+    activeTaskDefinitionSubscriptions.clear();
+}
+
+// Subscribe to TaskDefinition updates for all nodes in the current workflow
+async function subscribeToWorkflowTaskDefinitions() {
+    if (!pusher || !activeWorkflowDefinition.value?.nodes) return;
+
+    // Cleanup existing subscriptions first
+    await cleanupTaskDefinitionSubscriptions();
+
+    // Subscribe to TaskDefinitions for all nodes
+    const taskDefIds = activeWorkflowDefinition.value.nodes
+        .map(node => node.task_definition_id)
+        .filter((id): id is number => id != null);
+
+    for (const id of taskDefIds) {
+        await pusher.subscribeToModel("TaskDefinition", ["updated"], id);
+        activeTaskDefinitionSubscriptions.add(id);
+    }
+}
+
+// Cleanup TaskDefinition subscriptions when workflow definition changes
+watch(activeWorkflowDefinition, async (newDef, oldDef) => {
+    if (!pusher) return;
+
+    // Cleanup old subscriptions when switching workflows
+    if (oldDef?.id && oldDef.id !== newDef?.id) {
+        await cleanupTaskDefinitionSubscriptions();
+    }
+});
+
+// Register TaskDefinition event listener
+if (pusher) {
+    pusher.onEvent("TaskDefinition", ["updated"], onTaskDefinitionUpdated);
+}
+
 async function refreshActiveWorkflowDefinition() {
     await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
+    await subscribeToWorkflowTaskDefinitions();
 }
 
 async function setActiveWorkflowDefinition(workflowDefinition: string | number | WorkflowDefinition | null, router?: Router, fromUrl: boolean = false) {
@@ -106,6 +191,7 @@ async function setActiveWorkflowDefinition(workflowDefinition: string | number |
 
     if (activeWorkflowDefinition.value) {
         await dxWorkflowDefinition.routes.details(activeWorkflowDefinition.value);
+        await subscribeToWorkflowTaskDefinitions();
         await loadWorkflowRuns();
     }
 }
@@ -160,6 +246,7 @@ async function initWorkflowState(urlWorkflowId?: number, router?: Router) {
                 // Successfully fetched (system or accessible workflow)
                 activeWorkflowDefinition.value = fetchedWorkflow;
                 setItem(ACTIVE_WORKFLOW_DEFINITION_KEY, urlWorkflowId);
+                await subscribeToWorkflowTaskDefinitions();
                 await loadWorkflowRuns();
             } else {
                 // Failed to fetch - error already set by fetchWorkflowById
