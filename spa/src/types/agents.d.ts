@@ -1,4 +1,4 @@
-import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
+import { ApiLog, JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import { AgentPromptDirective, SchemaDefinition, SchemaFragment } from "@/types";
 import { ActionTargetItem, AnyObject, UploadedFile } from "quasar-ui-danx";
 
@@ -57,6 +57,7 @@ export interface AgentThreadMessage extends ActionTargetItem {
 	files?: UploadedFile[];
 	timestamp: string;
 	api_response_id?: string;
+	apiLog?: ApiLog;
 }
 
 export interface AgentThreadResponseFormat {

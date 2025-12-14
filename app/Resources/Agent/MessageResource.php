@@ -3,6 +3,7 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\AgentThreadMessage;
+use App\Resources\Audit\ApiLogResource;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
@@ -20,6 +21,7 @@ class MessageResource extends ActionResource
             'timestamp'  => $message->updated_at,
             'created_at' => $message->created_at,
             'files'      => fn($fields) => StoredFileResource::collection($message->storedFiles->load('transcodes'), $fields),
+            'apiLog'     => fn($fields) => $message->apiLog ? ApiLogResource::make($message->apiLog, $fields) : null,
         ];
     }
 }

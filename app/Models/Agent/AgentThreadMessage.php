@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Helpers\StringHelper;
+use Newms87\Danx\Models\Audit\ApiLog;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -29,6 +30,7 @@ class AgentThreadMessage extends Model implements AuditableContract
         'content',
         'data',
         'api_response_id',
+        'api_log_id',
     ];
 
     public function casts()
@@ -46,6 +48,11 @@ class AgentThreadMessage extends Model implements AuditableContract
     public function storedFiles(): MorphToMany|StoredFile
     {
         return $this->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')->withTimestamps();
+    }
+
+    public function apiLog(): BelongsTo|ApiLog
+    {
+        return $this->belongsTo(ApiLog::class, 'api_log_id');
     }
 
     public function isUser(): bool

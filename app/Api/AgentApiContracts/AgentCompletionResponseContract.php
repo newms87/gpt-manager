@@ -34,4 +34,9 @@ interface AgentCompletionResponseContract
      * Get the response ID for tracking previous responses in future API calls caching current thread
      */
     public function getResponseId(): ?string;
+
+    /**
+     * Convert the response to an array for logging/storage
+     */
+    public function toArray();
 }

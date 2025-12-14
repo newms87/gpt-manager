@@ -36,6 +36,14 @@
                     tooltip="Show / Hide Images"
                 />
                 <ShowHideButton
+                    v-if="!isUserMessage && message.apiLog"
+                    v-model="showApiLog"
+                    :name="'api-log-' + message.id"
+                    :show-icon="ApiLogIcon"
+                    :hide-icon="ApiLogIcon"
+                    tooltip="Show / Hide API Log"
+                />
+                <ShowHideButton
                     v-model="showMetaFields"
                     name="show-meta-fields"
                     :show-icon="ToggleMetaFieldsIcon"
@@ -101,10 +109,17 @@
                 @update:model-value="saveFilesAction.trigger(message, { ids: files.map(f => f.id) })"
             />
         </template>
+        <template v-if="showApiLog && message.apiLog">
+            <QSeparator class="bg-slate-500 mx-3" />
+            <div class="m-3">
+                <ApiLogEntryCard :api-log="message.apiLog" />
+            </div>
+        </template>
     </div>
 </template>
 <script setup lang="ts">
 import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import ApiLogEntryCard from "@/components/Modules/Audits/ApiLogs/ApiLogEntryCard.vue";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
 import { AgentThread, AgentThreadMessage } from "@/types";
@@ -113,7 +128,8 @@ import {
     FaRegularUser as UserIcon,
     FaSolidFilePen as ToggleMetaFieldsIcon,
     FaSolidImage as AddImageIcon,
-    FaSolidRobot as AssistantIcon
+    FaSolidRobot as AssistantIcon,
+    FaSolidServer as ApiLogIcon
 } from "danx-icon";
 import {
     ActionButton,
@@ -151,6 +167,7 @@ const files = ref<UploadedFile[]>(props.message.files || []);
 
 const showMessage = ref(true);
 const showFiles = ref(files.value.length > 0);
+const showApiLog = ref(false);
 
 // Sync local showMessage with parent prop when provided
 watch(() => props.isMessageExpanded, (value) => {

@@ -36,6 +36,8 @@ class AgentThreadService
 
     protected int $currentTotalRetries = 0;
 
+    protected ?int $currentApiLogId = null;
+
     /**
      * Overrides the response format for the thread run.
      * This will replace the Agent's response format with the provided schema and fragment
@@ -373,9 +375,10 @@ STR;
         }
 
         $lastMessage = $thread->messages()->create([
-            'role'    => AgentThreadMessage::ROLE_ASSISTANT,
-            'content' => $response->getContent(),
-            'data'    => $response->getDataFields() ?: null,
+            'role'       => AgentThreadMessage::ROLE_ASSISTANT,
+            'content'    => $response->getContent(),
+            'data'       => $response->getDataFields() ?: null,
+            'api_log_id' => $this->currentApiLogId,
         ]);
 
         // Track the response ID for future optimization
@@ -383,6 +386,9 @@ STR;
             $lastMessage->setApiResponseId($response->getResponseId());
             static::logDebug("Tracked response ID: {$lastMessage->api_response_id} for message {$lastMessage->id}");
         }
+
+        // Clear the current API log ID after use
+        $this->currentApiLogId = null;
 
         if ($response->isFinished()) {
             $this->finishThreadResponse($threadRun, $lastMessage);
@@ -456,11 +462,18 @@ STR;
         } else {
             // Regular non-streaming Responses API call
             $agent    = $agentThread->agent;
-            $response = $agent->getModelApi()->responses(
+            $api      = $agent->getModelApi();
+            $response = $api->responses(
                 $agent->model,
                 $messages,
                 $apiOptions
             );
+
+            // Capture the ApiLog ID from the API instance
+            $apiLog = $api->getCurrentApiLog();
+            if ($apiLog) {
+                $this->currentApiLogId = $apiLog->id;
+            }
         }
 
         return $response;
@@ -479,12 +492,21 @@ STR;
         ]);
 
         // Execute streaming request using the separate streamResponses method
-        return $agentThread->agent->getModelApi()->streamResponses(
+        $api      = $agentThread->agent->getModelApi();
+        $response = $api->streamResponses(
             $agentThread->agent->model,
             $messages,
             $apiOptions,
             $streamMessage
         );
+
+        // Capture the ApiLog ID from the API instance
+        $apiLog = $api->getCurrentApiLog();
+        if ($apiLog) {
+            $this->currentApiLogId = $apiLog->id;
+        }
+
+        return $response;
     }
 
     /**
