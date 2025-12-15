@@ -11,7 +11,9 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
 use App\Services\Task\TaskAgentThreadBuilderService;
 use App\Traits\HasDebugLogging;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
  * Encapsulates reusable classification execution logic for task runners.
@@ -73,10 +75,34 @@ class ClassificationExecutorService
             throw new ValidationError('SchemaDefinition not found for TaskRun: ' . $taskRun->id);
         }
 
+        // Get the StoredFile for this artifact (page image/PDF)
+        $storedFile = $artifact->storedFiles()->first();
+
+        if (!$storedFile) {
+            throw new ValidationError('No StoredFile found for Artifact: ' . $artifact->id);
+        }
+
         static::logDebug('Classifying single page', [
             'artifact_id'    => $artifact->id,
+            'stored_file_id' => $storedFile->id,
             'page_number'    => $artifact->position ?? 'unknown',
             'property_count' => count($booleanSchema['properties'] ?? []),
+        ]);
+
+        // Check cache before running LLM
+        $cachedResult = $this->getCachedClassification($storedFile, $booleanSchema);
+
+        if ($cachedResult !== null) {
+            static::logDebug('Returning cached classification (skipping LLM call)', [
+                'artifact_id'    => $artifact->id,
+                'stored_file_id' => $storedFile->id,
+            ]);
+
+            return $cachedResult;
+        }
+
+        static::logDebug('Cache miss - running LLM classification', [
+            'stored_file_id' => $storedFile->id,
         ]);
 
         // Build classification instructions from boolean schema
@@ -140,6 +166,9 @@ class ClassificationExecutorService
             'results'     => $classificationResults,
         ]);
 
+        // Store result in cache
+        $this->storeCachedClassification($storedFile, $booleanSchema, $classificationResults);
+
         return $classificationResults;
     }
 
@@ -153,5 +182,123 @@ class ClassificationExecutorService
     protected function buildBooleanSchemaInstructions(array $booleanSchema): string
     {
         return 'You are an expert, detail-oriented agent designed to precisely classify each page. Pay close attention to the descriptions for each data point in the schema and decide on the correct classification relative to the contents of the page.';
+    }
+
+    /**
+     * Get artifacts classified for a specific category/group.
+     * Filters artifacts based on their classification metadata.
+     *
+     * @param  Collection  $artifacts  Artifacts to filter
+     * @param  string  $categoryKey  Category key to filter by (snake_case group name)
+     * @return Collection Artifacts where the category is classified as true
+     */
+    public function getArtifactsForCategory(Collection $artifacts, string $categoryKey): Collection
+    {
+        static::logDebug('Getting artifacts for category', [
+            'category'        => $categoryKey,
+            'artifacts_count' => $artifacts->count(),
+        ]);
+
+        $filtered = $artifacts->filter(function ($artifact) use ($categoryKey) {
+            $classification = $artifact->meta['classification'] ?? null;
+
+            if (!$classification || !is_array($classification)) {
+                return false;
+            }
+
+            // Boolean schema: check if category is true
+            return ($classification[$categoryKey] ?? false) === true;
+        });
+
+        static::logDebug('Filtered artifacts for category', [
+            'category'       => $categoryKey,
+            'filtered_count' => $filtered->count(),
+        ]);
+
+        return $filtered;
+    }
+
+    /**
+     * Compute SHA-256 hash of a classification schema.
+     * Uses normalized JSON encoding to ensure consistent hashing.
+     *
+     * @param  array  $schema  The schema to hash
+     * @return string SHA-256 hash of the schema
+     */
+    protected function computeSchemaHash(array $schema): string
+    {
+        // Normalize JSON encoding for consistent hashing
+        $normalized = json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return hash('sha256', $normalized);
+    }
+
+    /**
+     * Get cached classification result for a file with a specific schema.
+     * Returns null if no cache exists.
+     *
+     * @param  StoredFile  $storedFile  The file to check cache for
+     * @param  array  $booleanSchema  The schema used for classification
+     * @return array|null Cached classification result or null if no cache exists
+     */
+    protected function getCachedClassification(StoredFile $storedFile, array $booleanSchema): ?array
+    {
+        $schemaHash = $this->computeSchemaHash($booleanSchema);
+
+        $classifications = $storedFile->meta['classifications'] ?? [];
+        $cachedEntry     = $classifications[$schemaHash]        ?? null;
+
+        if (!$cachedEntry || !isset($cachedEntry['result']) || !is_array($cachedEntry['result'])) {
+            static::logDebug('No cached classification found', [
+                'stored_file_id' => $storedFile->id,
+                'schema_hash'    => substr($schemaHash, 0, 12) . '...',
+            ]);
+
+            return null;
+        }
+
+        static::logDebug('Using cached classification', [
+            'stored_file_id' => $storedFile->id,
+            'schema_hash'    => substr($schemaHash, 0, 12) . '...',
+            'classified_at'  => $cachedEntry['classified_at'] ?? 'unknown',
+        ]);
+
+        return $cachedEntry['result'];
+    }
+
+    /**
+     * Store classification result in cache on the StoredFile.
+     *
+     * @param  StoredFile  $storedFile  The file to cache results for
+     * @param  array  $booleanSchema  The schema used for classification
+     * @param  array  $classificationResult  The classification results to cache
+     */
+    protected function storeCachedClassification(
+        StoredFile $storedFile,
+        array $booleanSchema,
+        array $classificationResult
+    ): void {
+        $schemaHash = $this->computeSchemaHash($booleanSchema);
+
+        // Get existing classifications or create empty array
+        $classifications = $storedFile->meta['classifications'] ?? [];
+
+        // Store classification with metadata
+        $classifications[$schemaHash] = [
+            'schema_hash'   => $schemaHash,
+            'classified_at' => now()->toIso8601String(),
+            'result'        => $classificationResult,
+        ];
+
+        // Update meta field
+        $meta                    = $storedFile->meta ?? [];
+        $meta['classifications'] = $classifications;
+        $storedFile->meta        = $meta;
+        $storedFile->save();
+
+        static::logDebug('Stored classification in cache', [
+            'stored_file_id' => $storedFile->id,
+            'schema_hash'    => substr($schemaHash, 0, 12) . '...',
+        ]);
     }
 }
