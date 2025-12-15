@@ -23,15 +23,26 @@ if (!function_exists('isRetryable400ApiError')) {
             $responseBody = $exception->getContents();
             if ($responseBody) {
                 $responseJson = json_decode($responseBody, true);
-                $errorCode    = $responseJson['error']['code'] ?? null;
+                $errorCode    = $responseJson['error']['code']  ?? null;
+                $errorParam   = $responseJson['error']['param'] ?? null;
 
                 // Retryable 400-level error codes
-                return in_array($errorCode, [
+                $retryableErrorCodes = [
                     'invalid_image_url',
                     'rate_limit_exceeded',
                     'insufficient_quota',
                     'model_overloaded',
-                ]);
+                ];
+
+                // Check if error code is in the retryable list
+                if (in_array($errorCode, $retryableErrorCodes)) {
+                    return true;
+                }
+
+                // Special case: invalid_value with param=url (transient URL download errors)
+                if ($errorCode === 'invalid_value' && $errorParam === 'url') {
+                    return true;
+                }
             }
         } catch (Throwable $e) {
             // Ignore parsing errors

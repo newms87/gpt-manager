@@ -17,7 +17,11 @@ use Throwable;
 
 class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
 {
-    const string RUNNER_NAME = 'Image To Text Transcoder';
+    const string RUNNER_NAME         = 'Image To Text Transcoder';
+
+    const string TRANSCODE_NAME_OCR  = 'Image To Text OCR';
+
+    const string TRANSCODE_NAME_LLM  = 'Image To Text LLM';
 
     public function run(): void
     {
@@ -26,7 +30,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         $inputArtifact   = $this->taskProcess->inputArtifacts->first();
         $fileToTranscode = $this->getFileToTranscode();
 
-        $transcodedFile = $fileToTranscode->transcodes()->where('transcode_name', static::RUNNER_NAME)->first();
+        $transcodedFile = $fileToTranscode->transcodes()->where('transcode_name', static::TRANSCODE_NAME_LLM)->first();
 
         // If the file is already transcoded, just return the completed transcode immediately
         if ($transcodedFile) {
@@ -85,7 +89,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
         // Save the transcoded record
         $transcodedFile = app(TranscodeFileService::class)->storeTranscodedFile(
             $fileToTranscode,
-            static::RUNNER_NAME,
+            static::TRANSCODE_NAME_LLM,
             $transcodedFilename,
             $artifact->text_content
         );
@@ -166,7 +170,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
      */
     public function getOcrTranscode(StoredFile $storedFile)
     {
-        $ocrTranscode = $storedFile->transcodes()->where('transcode_name', 'OCR')->first();
+        $ocrTranscode = $storedFile->transcodes()->where('transcode_name', static::TRANSCODE_NAME_OCR)->first();
 
         if (!$ocrTranscode) {
             $this->activity("Transcoding $storedFile->filename to text", 10);
@@ -196,7 +200,7 @@ class ImageToTextTranscoderTaskRunner extends AgentThreadTaskRunner
             // Save the transcoded record
             $ocrTranscode = app(TranscodeFileService::class)->storeTranscodedFile(
                 $storedFile,
-                'OCR',
+                static::TRANSCODE_NAME_OCR,
                 $transcodedFilename,
                 $ocrText,
                 $storedFile->page_number

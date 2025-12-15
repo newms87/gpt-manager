@@ -5,6 +5,7 @@ namespace App\Services\AgentThread;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskArtifactFilter;
 use App\Services\JsonSchema\JsonSchemaService;
+use App\Services\TextTranscodeHelper;
 
 class ArtifactFilterService
 {
@@ -209,7 +210,8 @@ class ArtifactFilterService
                     $allTranscodes = [];
 
                     foreach ($this->artifact->storedFiles as $storedFile) {
-                        $transcodeContent = $storedFile->getTextTranscodesContent();
+                        $transcodeArray   = $storedFile->getTextTranscodesContent();
+                        $transcodeContent = TextTranscodeHelper::formatTextTranscodes($transcodeArray);
                         if ($transcodeContent) {
                             $allTranscodes[] = "=== File: {$storedFile->filename} ===\n" . $transcodeContent;
                         }

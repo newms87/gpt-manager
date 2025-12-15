@@ -36,6 +36,24 @@
             </div>
         </div>
 
+        <!-- Error Section -->
+        <div v-if="responseData?.error_type || responseData?.error_message" class="bg-red-900/20 border border-red-700 rounded p-3 space-y-2">
+            <div class="flex items-center gap-2">
+                <LabelPillWidget
+                    v-if="responseData.error_type"
+                    :label="responseData.error_type"
+                    color="red"
+                    size="xs"
+                />
+            </div>
+            <div v-if="responseData.error_message" class="text-sm text-red-200">
+                <div class="font-bold mb-1">Error Message:</div>
+                <div class="bg-slate-900 rounded p-2 whitespace-pre-wrap break-words">
+                    {{ responseData.error_message }}
+                </div>
+            </div>
+        </div>
+
         <!-- Output Items -->
         <div v-if="responseData?.output?.length">
             <div class="text-sm font-bold mb-2">Output</div>

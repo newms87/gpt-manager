@@ -1,7 +1,7 @@
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { dxWorkflowDefinition } from "@/components/Modules/WorkflowDefinitions/config";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
-import { authTeam } from "@/helpers/auth";
+import { authTeam, authUser } from "@/helpers/auth";
 import { usePusher } from "@/helpers/pusher";
 import {
     TaskDefinition,
@@ -85,10 +85,16 @@ const activeTaskDefinitionSubscriptions = new Set<number>();
 interface TaskDefinitionEvent {
     id: number;
     updated_at: string;
+    triggered_by_user_id?: number;
 }
 
 // Event handler for TaskDefinition updated events
 const onTaskDefinitionUpdated = async (eventData: TaskDefinitionEvent) => {
+    // Ignore events triggered by the current user (they already have the latest data)
+    if (eventData.triggered_by_user_id && eventData.triggered_by_user_id === authUser.value?.id) {
+        return;
+    }
+
     // Update in activeWorkflowRun's taskRuns if present
     if (activeWorkflowRun.value?.taskRuns) {
         const taskRun = activeWorkflowRun.value.taskRuns.find(

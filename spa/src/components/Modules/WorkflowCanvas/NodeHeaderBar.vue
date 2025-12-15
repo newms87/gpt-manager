@@ -1,100 +1,100 @@
 <template>
-	<div class="node-header" draggable="false" @click.prevent.stop @mousedown.prevent.stop>
-		<div class="flex flex-nowrap items-center space-x-1 h-8">
-			<div class="flex-grow flex-x space-x-1">
-				<ShowTaskProcessesButton
-					v-if="taskRun"
-					:task-run="taskRun"
-					class="bg-sky-950"
-					size="xs"
-					@restart="$emit('restart')"
-				/>
-				<ActionButton
-					v-if="isRunning"
-					type="stop"
-					:disabled="!isRunning"
-					:action="stopAction"
-					:target="taskRun"
-					color="red"
-					tooltip="Stop task"
-					size="xs"
-				/>
-				<ActionButton
-					v-else-if="isStopped"
-					type="play"
-					:action="resumeAction"
-					:target="taskRun"
-					color="green-invert"
-					tooltip="Continue running task"
-					size="xs"
-				/>
-				<ActionButton
-					v-if="canBeRestarted"
-					type="refresh"
-					:action="restartAction"
-					:target="taskRun"
-					color="orange"
-					tooltip="Restart task"
-					size="xs"
-				/>
-				<ActionButton
-					v-else-if="!taskRun && activeWorkflowRun && workflowNode"
-					type="play"
-					:action="startNodeAction"
-					:target="activeWorkflowRun"
-					:input="{workflow_node_id: workflowNode.id}"
-					color="green"
-					tooltip="Start task"
-					size="xs"
-				/>
-			</div>
-			<template v-if="!isTaskRunning && !readonly">
-				<ActionButton
-					v-if="hasMetadata"
-					:icon="MetaIcon"
-					color="purple"
-					size="xs"
-					tooltip="View Metadata"
-					@click.stop="showMetadataModal = true"
-				/>
-				<ActionButton
-					type="copy"
-					color="blue"
-					:disabled="temporary"
-					size="xs"
-					tooltip="Copy Task"
-					:saving="isCopying"
-					@click.stop="onCopy"
-				/>
-				<ActionButton
-					type="edit"
-					color="sky"
-					:disabled="temporary"
-					size="xs"
-					tooltip="Edit Task"
-					@click.stop="$emit('edit')"
-				/>
-				<ActionButton
-					type="minus"
-					color="red"
-					:disabled="temporary"
-					size="xs"
-					tooltip="Remove Task From Workflow"
-					@click.stop="$emit('remove')"
-				/>
-			</template>
-		</div>
-		<TaskDefinitionMetadataModal
-			:task-definition="taskDefinition"
-			:visible="showMetadataModal"
-			@close="showMetadataModal = false"
-		/>
-	</div>
+    <div class="node-header" draggable="false" @click.prevent.stop @mousedown.prevent.stop>
+        <div class="flex flex-nowrap items-center space-x-1 h-8">
+            <div class="flex-grow flex-x space-x-1 -ml-3 mr-2">
+                <ShowTaskProcessesButton
+                    v-if="taskRun"
+                    :task-run="taskRun"
+                    class="bg-sky-950"
+                    size="xs"
+                    @restart="$emit('restart')"
+                />
+                <ActionButton
+                    v-if="isRunning"
+                    type="stop"
+                    :disabled="!isRunning"
+                    :action="stopAction"
+                    :target="taskRun"
+                    color="red"
+                    tooltip="Stop task"
+                    size="xs"
+                />
+                <ActionButton
+                    v-else-if="isStopped"
+                    type="play"
+                    :action="resumeAction"
+                    :target="taskRun"
+                    color="green-invert"
+                    tooltip="Continue running task"
+                    size="xs"
+                />
+                <ActionButton
+                    v-if="canBeRestarted"
+                    type="refresh"
+                    :action="restartAction"
+                    :target="taskRun"
+                    color="orange"
+                    tooltip="Restart task"
+                    size="xs"
+                />
+                <ActionButton
+                    v-else-if="!taskRun && activeWorkflowRun && workflowNode"
+                    type="play"
+                    :action="startNodeAction"
+                    :target="activeWorkflowRun"
+                    :input="{workflow_node_id: workflowNode.id}"
+                    color="green"
+                    tooltip="Start task"
+                    size="xs"
+                />
+            </div>
+            <template v-if="!isTaskRunning && !readonly">
+                <ActionButton
+                    v-if="hasMetadata"
+                    :icon="MetaIcon"
+                    color="purple"
+                    size="xs"
+                    tooltip="View Metadata"
+                    @click.stop="showMetadataModal = true"
+                />
+                <ActionButton
+                    type="copy"
+                    color="blue"
+                    :disabled="temporary"
+                    size="xs"
+                    tooltip="Copy Task"
+                    :saving="isCopying"
+                    @click.stop="onCopy"
+                />
+                <ActionButton
+                    type="edit"
+                    color="sky"
+                    :disabled="temporary"
+                    size="xs"
+                    tooltip="Edit Task"
+                    @click.stop="$emit('edit')"
+                />
+                <ActionButton
+                    type="minus"
+                    color="red"
+                    :disabled="temporary"
+                    size="xs"
+                    tooltip="Remove Task From Workflow"
+                    @click.stop="$emit('remove')"
+                />
+            </template>
+        </div>
+        <TaskDefinitionMetadataModal
+            :task-definition="taskDefinition"
+            :visible="showMetadataModal"
+            @close="showMetadataModal = false"
+        />
+    </div>
 </template>
 
 <script setup lang="ts">
-import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import TaskDefinitionMetadataModal from "@/components/Modules/TaskDefinitions/TaskDefinitionMetadataModal.vue";
+import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
 import { activeWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
@@ -104,17 +104,17 @@ import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const emit = defineEmits<{
-	edit: void;
-	remove: void;
-	copy: void;
-	restart: void;
+    edit: void;
+    remove: void;
+    copy: void;
+    restart: void;
 }>();
 const props = defineProps<{
-	workflowNode?: WorkflowNode;
-	taskRun?: TaskRun;
-	temporary?: boolean;
-	loading?: boolean;
-	readonly?: boolean;
+    workflowNode?: WorkflowNode;
+    taskRun?: TaskRun;
+    temporary?: boolean;
+    loading?: boolean;
+    readonly?: boolean;
 }>();
 
 const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));
@@ -128,15 +128,16 @@ const isRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 const canBeRestarted = computed(() => props.taskRun && !isRunning.value);
 
 const isCopying = ref(false);
+
 async function onCopy() {
-	emit("copy");
-	isCopying.value = true;
-	setTimeout(() => isCopying.value = false, 3000);
+    emit("copy");
+    isCopying.value = true;
+    setTimeout(() => isCopying.value = false, 3000);
 }
 
 const showMetadataModal = ref(false);
 const taskDefinition = computed(() => props.workflowNode?.taskDefinition);
 const hasMetadata = computed(() => {
-	return taskDefinition.value?.meta && Object.keys(taskDefinition.value.meta).length > 0;
+    return taskDefinition.value?.meta && Object.keys(taskDefinition.value.meta).length > 0;
 });
 </script>

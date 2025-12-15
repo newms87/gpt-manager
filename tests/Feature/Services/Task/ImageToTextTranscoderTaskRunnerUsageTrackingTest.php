@@ -79,7 +79,7 @@ class ImageToTextTranscoderTaskRunnerUsageTrackingTest extends TestCase
 
         // Create existing OCR transcode
         $storedFile->transcodes()->create([
-            'transcode_name' => 'OCR',
+            'transcode_name' => ImageToTextTranscoderTaskRunner::TRANSCODE_NAME_OCR,
             'filename'       => 'test.ocr.txt',
             'content'        => 'Existing OCR text',
         ]);
