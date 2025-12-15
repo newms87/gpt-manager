@@ -3,9 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\Task\TaskRun;
+use App\Services\Task\Debug\ExtractDataDebugService;
 use App\Services\Task\FileOrganization\ResolutionOrchestrator;
+use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
+use App\Services\Task\TaskRunnerService;
 use Illuminate\Console\Command;
 
 class DebugTaskRunCommand extends Command
@@ -22,7 +25,11 @@ class DebugTaskRunCommand extends Command
         {--mismatches : Show pages with conflicting group assignments across windows}
         {--rerun-merge : Delete existing merge output and rerun the merge process}
         {--rerun-dedup : Delete existing dedup output and rerun the duplicate group resolution process}
-        {--reset-from-windows : Delete merge and all resolution processes, then re-create from windows}';
+        {--reset-from-windows : Delete merge and all resolution processes, then re-create from windows}
+        {--classify-status : Show status of all classify processes (ExtractData)}
+        {--artifact-tree : Show parent/child artifact hierarchy (ExtractData)}
+        {--run : Create and dispatch a new task run with same inputs}
+        {--rerun : Reset and re-dispatch this task run}';
 
     protected $description = 'Debug a TaskRun to understand agent communication and results';
 
@@ -31,7 +38,24 @@ class DebugTaskRunCommand extends Command
         $taskRunId = $this->argument('task-run');
         $taskRun   = TaskRun::findOrFail($taskRunId);
 
-        // Handle rerun options first
+        // Handle --run and --rerun options first (before any other processing)
+        if ($this->option('run')) {
+            return $this->handleRun($taskRun);
+        }
+
+        if ($this->option('rerun')) {
+            return $this->handleRerun($taskRun);
+        }
+
+        // Detect task runner type
+        $runnerName = $taskRun->taskDefinition->task_runner_name;
+
+        // Route to ExtractData debug service if applicable
+        if ($runnerName === ExtractDataTaskRunner::RUNNER_NAME) {
+            return $this->handleExtractDataDebug($taskRun);
+        }
+
+        // Handle FileOrganization rerun options first
         if ($this->option('rerun-merge')) {
             return $this->handleRerunMerge($taskRun);
         }
@@ -393,6 +417,38 @@ class DebugTaskRunCommand extends Command
                 }
             }
         }
+
+        return 0;
+    }
+
+    /**
+     * Handle ExtractData debug routing.
+     */
+    protected function handleExtractDataDebug(TaskRun $taskRun): int
+    {
+        $debugService = app(ExtractDataDebugService::class);
+
+        // Handle specialized options
+        if ($this->option('process')) {
+            $processId = (int)$this->option('process');
+
+            return $debugService->showProcessDetail($taskRun, $processId, $this);
+        }
+
+        if ($this->option('classify-status')) {
+            $debugService->showClassifyProcesses($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('artifact-tree')) {
+            $debugService->showArtifactStructure($taskRun, $this);
+
+            return 0;
+        }
+
+        // Default: show overview
+        $debugService->showOverview($taskRun, $this);
 
         return 0;
     }
@@ -956,6 +1012,81 @@ class DebugTaskRunCommand extends Command
 
             return 1;
         }
+
+        return 0;
+    }
+
+    /**
+     * Handle --run option: Create a new task run with same inputs and dispatch it
+     */
+    protected function handleRun(TaskRun $taskRun): int
+    {
+        $taskDef        = $taskRun->taskDefinition;
+        $inputArtifacts = $taskRun->inputArtifacts()->get();
+
+        $this->info("Creating new TaskRun for: {$taskDef->name}");
+        $this->line("Input artifacts: {$inputArtifacts->count()}");
+
+        // Create new task run
+        $newTaskRun = $taskDef->taskRuns()->create([
+            'team_id' => $taskDef->team_id,
+            'status'  => 'Pending',
+        ]);
+
+        // Attach input artifacts
+        $newTaskRun->addInputArtifacts($inputArtifacts);
+
+        $this->info("Created TaskRun: {$newTaskRun->id}");
+
+        // Prepare task processes (creates the initial Default Task process)
+        $processes = TaskRunnerService::prepareTaskProcesses($newTaskRun);
+        $this->line('Prepared ' . count($processes) . ' task process(es)');
+
+        // Start it
+        TaskRunnerService::continue($newTaskRun);
+
+        $this->info("Started! Use: php artisan debug:task-run {$newTaskRun->id}");
+
+        return 0;
+    }
+
+    /**
+     * Handle --rerun option: Reset and re-dispatch this task run
+     */
+    protected function handleRerun(TaskRun $taskRun): int
+    {
+        $this->info("Resetting TaskRun {$taskRun->id}");
+
+        // Delete all task processes
+        $processCount = $taskRun->taskProcesses()->count();
+        $taskRun->taskProcesses()->delete();
+        $this->line("Deleted $processCount task processes");
+
+        // Delete output artifacts
+        foreach ($taskRun->outputArtifacts as $artifact) {
+            // Delete children first
+            $artifact->children()->delete();
+            $artifact->delete();
+        }
+        $taskRun->outputArtifacts()->detach();
+        $taskRun->updateRelationCounter('outputArtifacts');
+        $this->line('Deleted output artifacts');
+
+        // Reset status
+        $taskRun->status       = 'Pending';
+        $taskRun->meta         = [];
+        $taskRun->started_at   = null;
+        $taskRun->completed_at = null;
+        $taskRun->save();
+
+        // Prepare task processes (creates the initial Default Task process)
+        $processes = TaskRunnerService::prepareTaskProcesses($taskRun);
+        $this->line('Prepared ' . count($processes) . ' task process(es)');
+
+        // Start it
+        TaskRunnerService::continue($taskRun);
+
+        $this->info("Re-started TaskRun {$taskRun->id}");
 
         return 0;
     }
