@@ -4,6 +4,7 @@ namespace Tests\Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
@@ -334,9 +335,9 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function run_routes_to_resolve_objects_operation(): void
+    public function run_routes_to_extract_identity_operation(): void
     {
-        // Given: TaskProcess with OPERATION_RESOLVE_OBJECTS
+        // Given: TaskProcess with OPERATION_EXTRACT_IDENTITY
         // Store plan in TaskDefinition.meta (new location)
         $this->taskDefinition->meta = [
             'extraction_plan' => [
@@ -370,10 +371,20 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
             'meta'        => [
-                'level'             => 0,
-                'parent_object_ids' => [],
+                'level'          => 0,
+                'identity_group' => [
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
             'started_at'  => now(),
         ]);
@@ -382,21 +393,21 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
 
         // Then: Verify operation routing
-        $this->assertEquals(ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS, $taskProcess->operation);
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY, $taskProcess->operation);
         $this->assertEquals(0, $taskProcess->meta['level']);
     }
 
     #[Test]
-    public function run_routes_to_extract_group_operation(): void
+    public function run_routes_to_extract_remaining_operation(): void
     {
-        // Given: TaskProcess with OPERATION_EXTRACT_GROUP
+        // Given: TaskProcess with OPERATION_EXTRACT_REMAINING
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_GROUP,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
             'meta'        => [
                 'level'            => 0,
                 'object_id'        => 123,
@@ -413,7 +424,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
 
         // Then: Verify operation routing
-        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_GROUP, $taskProcess->operation);
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING, $taskProcess->operation);
         $this->assertEquals(123, $taskProcess->meta['object_id']);
     }
 
@@ -508,7 +519,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function resolve_objects_operation_updates_level_progress(): void
+    public function extract_identity_operation_updates_level_progress(): void
     {
         // Given: TaskRun with cached plan in TaskDefinition.meta and no identification groups
         $this->taskDefinition->meta = [
@@ -542,21 +553,27 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
             'meta'        => [
-                'level'             => 0,
-                'parent_object_ids' => [],
+                'level'          => 0,
+                'identity_group' => [
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [],
+                ],
             ],
             'started_at'  => now(),
         ]);
 
-        // When: Running resolve objects
+        // When: Running extract identity
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
         $this->runner->run();
 
         // Then: Level progress is updated
         $taskRun->refresh();
-        $this->assertTrue($taskRun->meta['level_progress'][0]['resolution_complete'] ?? false);
+        $this->assertTrue($taskRun->meta['level_progress'][0]['identity_complete'] ?? false);
     }
 
     #[Test]
@@ -635,7 +652,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function afterAllProcessesCompleted_creates_resolve_objects_after_classification(): void
+    public function afterAllProcessesCompleted_creates_extract_identity_after_classification(): void
     {
         // Given: TaskRun with classification complete (classification process completed)
         $plan = [
@@ -644,6 +661,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
                     'level'      => 0,
                     'identities' => [
                         [
+                            'name'              => 'Client',
                             'object_type'       => 'Client',
                             'identity_fields'   => ['client_name'],
                             'skim_fields'       => ['client_name'],
@@ -666,6 +684,27 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Create parent output artifact
+        $parentArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => null,
+        ]);
+
+        // Create child artifact with classification for "Client Identification"
+        $childArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'meta'               => [
+                'classification' => [
+                    'client_identification' => true,
+                ],
+            ],
+        ]);
+
+        // Attach as output artifacts to task run
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $taskRun->outputArtifacts()->attach($childArtifact->id);
+
         // Create completed classification process
         $classificationProcess = TaskProcess::factory()->create([
             'task_run_id'  => $taskRun->id,
@@ -675,26 +714,52 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         ]);
 
         // When: afterAllProcessesCompleted is called
-        $this->runner->setTaskRun($taskRun);
+        $this->runner->setTaskRun($taskRun->fresh(['outputArtifacts', 'outputArtifacts.children']));
         $this->runner->afterAllProcessesCompleted();
 
-        // Then: Resolve objects process is created for level 0
-        $resolveProcess = $taskRun->taskProcesses()
-            ->where('operation', ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS)
+        // Then: Extract Identity process is created for level 0
+        $extractProcess = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
             ->where('meta->level', 0)
             ->first();
 
-        $this->assertNotNull($resolveProcess);
+        $this->assertNotNull($extractProcess);
     }
 
     #[Test]
     public function afterAllProcessesCompleted_advances_to_next_level_when_current_complete(): void
     {
-        // Given: TaskRun with level 0 complete, plan in TaskDefinition.meta
+        // Given: TaskRun with level 0 complete, plan in TaskDefinition.meta with identity groups for level 1
         $plan = [
             'levels' => [
-                ['level' => 0],
-                ['level' => 1],
+                [
+                    'level'      => 0,
+                    'identities' => [
+                        [
+                            'name'              => 'Client',
+                            'object_type'       => 'Client',
+                            'identity_fields'   => ['client_name'],
+                            'skim_fields'       => ['client_name'],
+                            'search_mode'       => 'skim',
+                            'fragment_selector' => [],
+                        ],
+                    ],
+                    'remaining'  => [],
+                ],
+                [
+                    'level'      => 1,
+                    'identities' => [
+                        [
+                            'name'              => 'Claim',
+                            'object_type'       => 'Claim',
+                            'identity_fields'   => ['claim_number'],
+                            'skim_fields'       => ['claim_number'],
+                            'search_mode'       => 'skim',
+                            'fragment_selector' => [],
+                        ],
+                    ],
+                    'remaining'  => [],
+                ],
             ],
         ];
 
@@ -707,28 +772,49 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
                 'current_level'  => 0,
                 'level_progress' => [
                     0 => [
-                        'resolution_complete' => true,
+                        'identity_complete'   => true,
                         'extraction_complete' => true,
                     ],
                 ],
             ],
         ]);
 
+        // Create parent output artifact
+        $parentArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => null,
+        ]);
+
+        // Create child artifact with classification for "Claim Identification"
+        $childArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'meta'               => [
+                'classification' => [
+                    'claim_identification' => true,
+                ],
+            ],
+        ]);
+
+        // Attach as output artifacts to task run
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $taskRun->outputArtifacts()->attach($childArtifact->id);
+
         // When: afterAllProcessesCompleted is called
-        $this->runner->setTaskRun($taskRun);
+        $this->runner->setTaskRun($taskRun->fresh(['outputArtifacts', 'outputArtifacts.children']));
         $this->runner->afterAllProcessesCompleted();
 
-        // Then: Level is advanced and new resolve objects process created (not classification)
+        // Then: Level is advanced and new extract identity process created (not classification)
         $taskRun->refresh();
         $this->assertEquals(1, $taskRun->meta['current_level']);
 
-        // Should create resolve objects for level 1, not classification (already done once)
-        $resolveProcess = $taskRun->taskProcesses()
-            ->where('operation', ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS)
+        // Should create extract identity for level 1, not classification (already done once)
+        $extractProcess = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
             ->where('meta->level', 1)
             ->first();
 
-        $this->assertNotNull($resolveProcess);
+        $this->assertNotNull($extractProcess);
     }
 
     #[Test]

@@ -3,19 +3,24 @@
 namespace App\Services\Task\Runners;
 
 use App\Models\TeamObject\TeamObject;
+use App\Services\AgentThread\AgentThreadBuilderService;
+use App\Services\AgentThread\AgentThreadService;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
+use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Task\DataExtraction\ArtifactPreparationService;
 use App\Services\Task\DataExtraction\ClassificationExecutorService;
 use App\Services\Task\DataExtraction\ClassificationOrchestrator;
 use App\Services\Task\DataExtraction\ClassificationSchemaBuilder;
+use App\Services\Task\DataExtraction\DuplicateRecordResolver;
 use App\Services\Task\DataExtraction\ExtractionPhaseService;
 use App\Services\Task\DataExtraction\ExtractionPlanningService;
 use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
 use App\Services\Task\DataExtraction\GroupExtractionService;
-use App\Services\Task\DataExtraction\ObjectResolutionService;
 use App\Services\Task\DataExtraction\ObjectTypeExtractor;
 use App\Services\Task\DataExtraction\PerObjectPlanningService;
 use App\Services\Task\DataExtraction\PlanningPhaseService;
 use Exception;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ExtractDataTaskRunner extends AgentThreadTaskRunner
@@ -25,8 +30,8 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
     public const string OPERATION_PLAN_IDENTIFY = 'Plan: Identify',
         OPERATION_PLAN_REMAINING                = 'Plan: Remaining',
         OPERATION_CLASSIFY                      = 'Classify',
-        OPERATION_RESOLVE_OBJECTS               = 'Resolve Objects',
-        OPERATION_EXTRACT_GROUP                 = 'Extract Group';
+        OPERATION_EXTRACT_IDENTITY              = 'Extract Identity',
+        OPERATION_EXTRACT_REMAINING             = 'Extract Remaining';
 
     /**
      * Get the task runner name.
@@ -79,12 +84,12 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
         static::logDebug("Running extract data operation: {$this->taskProcess->operation}");
 
         match ($this->taskProcess->operation) {
-            self::OPERATION_PLAN_IDENTIFY   => $this->runPlanIdentifyOperation(),
-            self::OPERATION_PLAN_REMAINING  => $this->runPlanRemainingOperation(),
-            self::OPERATION_CLASSIFY        => $this->runClassificationOperation(),
-            self::OPERATION_RESOLVE_OBJECTS => $this->runResolveObjectsOperation(),
-            self::OPERATION_EXTRACT_GROUP   => $this->runExtractGroupOperation(),
-            default                         => $this->runInitializeOperation()
+            self::OPERATION_PLAN_IDENTIFY     => $this->runPlanIdentifyOperation(),
+            self::OPERATION_PLAN_REMAINING    => $this->runPlanRemainingOperation(),
+            self::OPERATION_CLASSIFY          => $this->runClassificationOperation(),
+            self::OPERATION_EXTRACT_IDENTITY  => $this->runExtractIdentityOperation(),
+            self::OPERATION_EXTRACT_REMAINING => $this->runExtractRemainingOperation(),
+            default                           => $this->runInitializeOperation()
         };
     }
 
@@ -250,88 +255,105 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Run the resolve objects operation.
-     * Resolves/creates TeamObjects from artifacts.
-     * This runs FIRST at each level before extracting additional data.
+     * Run the extract identity operation.
+     * Extracts identity fields and resolves/creates TeamObjects.
      */
-    protected function runResolveObjectsOperation(): void
+    protected function runExtractIdentityOperation(): void
     {
-        $level = $this->taskProcess->meta['level'] ?? 0;
+        $group          = $this->taskProcess->meta['identity_group'];
+        $level          = $this->taskProcess->meta['level'];
+        $parentObjectId = $this->taskProcess->meta['parent_object_id'] ?? null;
 
-        // Get extraction plan from TaskDefinition.meta
-        $taskDefinition = $this->taskRun->taskDefinition;
-        $plan           = $taskDefinition->meta['extraction_plan'] ?? [];
+        // Get artifacts from process input (already filtered at creation time)
+        $artifacts = $this->taskProcess->inputArtifacts;
 
-        if (empty($plan)) {
-            static::logDebug('No extraction plan found in TaskDefinition');
-        } else {
-            static::logDebug('Using cached plan from TaskDefinition');
-        }
-
-        static::logDebug('Running resolve objects operation', [
-            'level' => $level,
-        ]);
-
-        $resolutionService = app(ObjectResolutionService::class);
-
-        // Check for existing object reference first
-        $resolutionService->verifyExistingObjectIfProvided(
-            $this->taskRun,
-            $this->taskProcess,
-            $plan,
-            $level
-        );
-
-        // Get identification groups at this level
-        $identificationGroups = $resolutionService->getIdentificationGroupsAtLevel($plan, $level);
-
-        if (empty($identificationGroups)) {
-            static::logDebug('No identification groups at this level', ['level' => $level]);
-            app(ExtractionProcessOrchestrator::class)->updateLevelProgress(
-                $this->taskRun,
-                $level,
-                'resolution_complete',
-                true
-            );
+        if ($artifacts->isEmpty()) {
+            static::logDebug('No input artifacts for identity extraction', [
+                'process_id' => $this->taskProcess->id,
+                'group'      => $group['name'] ?? 'unknown',
+            ]);
             $this->complete();
 
             return;
         }
 
-        // Resolve objects for each identification group
-        foreach ($identificationGroups as $groupIndex => $group) {
-            static::logDebug('Resolving objects for group', [
-                'level'       => $level,
-                'group_index' => $groupIndex,
-                'group_name'  => $group['name'] ?? "Group $groupIndex",
-            ]);
+        static::logDebug('Running Extract Identity with pre-filtered artifacts', [
+            'level'          => $level,
+            'group'          => $group['name'] ?? 'unknown',
+            'artifact_count' => $artifacts->count(),
+        ]);
 
-            $resolutionService->resolveObjectsForGroup(
-                $this->taskRun,
-                $this->taskProcess,
-                $group,
-                $level
-            );
+        // LLM Call #1: Extract identity fields + search query
+        $extractionResult = $this->extractIdentityWithSearchQuery($artifacts, $group);
+
+        if (empty($extractionResult)) {
+            static::logDebug('No identity data extracted');
+            $this->complete();
+
+            return;
         }
 
-        // Mark resolution complete
-        app(ExtractionProcessOrchestrator::class)->updateLevelProgress(
-            $this->taskRun,
-            $level,
-            'resolution_complete',
-            true
+        // Use DuplicateRecordResolver to find candidates
+        $resolver   = app(DuplicateRecordResolver::class);
+        $candidates = $resolver->findCandidates(
+            $group['object_type'],
+            $extractionResult['search_query'] ?? $extractionResult['data'] ?? [],
+            $parentObjectId,
+            $this->taskRun->taskDefinition->schema_definition_id
         );
 
-        static::logDebug('Object resolution completed for level', ['level' => $level]);
+        $matchId = null;
+        if ($candidates->isNotEmpty()) {
+            // Try quick exact-match first (optimization - avoids LLM Call #2)
+            $quickMatch = $resolver->quickMatchCheck($extractionResult['data'] ?? [], $candidates);
+            if ($quickMatch) {
+                $matchId = $quickMatch->id;
+                static::logDebug('Quick exact match found', ['object_id' => $matchId]);
+            } else {
+                // LLM Call #2: Resolve which candidate (if any) matches
+                $result = $resolver->resolveDuplicate(
+                    $extractionResult['data'] ?? [],
+                    $candidates,
+                    $this->taskRun,
+                    $this->taskProcess
+                );
+                if ($result->hasDuplicate()) {
+                    $matchId = $result->existingObjectId;
+                    static::logDebug('LLM resolution found match', ['object_id' => $matchId]);
+                }
+            }
+        }
+
+        // Create or use existing TeamObject
+        $teamObject = $this->resolveOrCreateTeamObject(
+            $group['object_type'],
+            $extractionResult['data'] ?? [],
+            $matchId,
+            $parentObjectId
+        );
+
+        // Store resolved object ID for dependent processes
+        app(ExtractionProcessOrchestrator::class)->storeResolvedObjectId(
+            $this->taskRun,
+            $group['object_type'],
+            $teamObject->id,
+            $level
+        );
+
+        static::logDebug('Extract Identity completed', [
+            'object_type'  => $group['object_type'],
+            'object_id'    => $teamObject->id,
+            'was_existing' => $matchId !== null,
+        ]);
 
         $this->complete();
     }
 
     /**
-     * Run the extract group operation.
+     * Run the extract remaining operation.
      * Extracts additional data points for resolved objects.
      */
-    protected function runExtractGroupOperation(): void
+    protected function runExtractRemainingOperation(): void
     {
         $group      = $this->taskProcess->meta['extraction_group'];
         $level      = $this->taskProcess->meta['level']       ?? 0;
@@ -394,6 +416,113 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
         ]);
 
         $this->complete();
+    }
+
+    /**
+     * Extract identity fields with search query using LLM.
+     */
+    protected function extractIdentityWithSearchQuery(Collection $artifacts, array $group): array
+    {
+        // Build schema that includes search_query
+        $fragmentSelector = $group['fragment_selector'] ?? [];
+        $identityFields   = $group['identity_fields']   ?? [];
+
+        // Build search_query schema
+        $searchQueryProperties = [];
+        foreach ($identityFields as $field) {
+            $searchQueryProperties[$field] = [
+                'type'        => 'string',
+                'description' => "SQL LIKE pattern for searching {$field} (use % wildcards)",
+            ];
+        }
+
+        $responseSchema = [
+            'type'       => 'object',
+            'properties' => [
+                'data'         => $fragmentSelector,
+                'search_query' => [
+                    'type'        => 'object',
+                    'description' => 'SQL LIKE patterns for finding matching records',
+                    'properties'  => $searchQueryProperties,
+                ],
+            ],
+            'required' => ['data', 'search_query'],
+        ];
+
+        // Run LLM extraction
+        $taskDefinition   = $this->taskRun->taskDefinition;
+        $schemaDefinition = $taskDefinition->schemaDefinition;
+
+        if (!$taskDefinition->agent || !$schemaDefinition) {
+            return [];
+        }
+
+        $jsonSchemaService = app(JsonSchemaService::class);
+
+        $thread = AgentThreadBuilderService::for($taskDefinition->agent, $this->taskRun->team_id)
+            ->named('Identity Data Extraction')
+            ->withArtifacts($artifacts)
+            ->build();
+
+        $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 60;
+        $timeout = max(1, min((int)$timeout, 600));
+
+        $threadRun = app(AgentThreadService::class)
+            ->withResponseFormat($schemaDefinition, null, $jsonSchemaService->setSchema($responseSchema))
+            ->withTimeout($timeout)
+            ->run($thread);
+
+        if (!$threadRun->isCompleted()) {
+            static::logDebug('Identity extraction thread failed', ['error' => $threadRun->error ?? 'Unknown']);
+
+            return [];
+        }
+
+        $data = $threadRun->lastMessage?->getJsonContent();
+
+        return is_array($data) ? $data : [];
+    }
+
+    /**
+     * Resolve or create TeamObject.
+     */
+    protected function resolveOrCreateTeamObject(
+        string $objectType,
+        array $identificationData,
+        ?int $existingId,
+        ?int $parentObjectId
+    ): TeamObject {
+        if ($existingId) {
+            $teamObject = TeamObject::find($existingId);
+            if ($teamObject) {
+                // Update existing object with new data
+                $mapper = app(JSONSchemaDataToDatabaseMapper::class);
+                if ($this->taskRun->taskDefinition->schemaDefinition) {
+                    $mapper->setSchemaDefinition($this->taskRun->taskDefinition->schemaDefinition);
+                }
+                $mapper->updateTeamObject($teamObject, $identificationData);
+
+                return $teamObject;
+            }
+        }
+
+        // Create new TeamObject
+        $mapper = app(JSONSchemaDataToDatabaseMapper::class);
+
+        if ($this->taskRun->taskDefinition->schemaDefinition) {
+            $mapper->setSchemaDefinition($this->taskRun->taskDefinition->schemaDefinition);
+        }
+
+        if ($parentObjectId) {
+            $parentObject = TeamObject::find($parentObjectId);
+            if ($parentObject) {
+                $mapper->setRootObject($parentObject);
+            }
+        }
+
+        $name = $identificationData['name'] ?? $identificationData['id'] ?? 'Unknown';
+
+        return $mapper->createTeamObject($objectType, $name, $identificationData);
     }
 
     /**
