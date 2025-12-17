@@ -643,8 +643,15 @@ await updateAction.trigger(props.artifact, { text_content: newValue });
 ### Build Process
 
 - **NEVER run yarn type-check** - Type checking is handled by the IDE
-- Use `yarn build` only for production builds
+- Use `yarn build` for production builds and validation
 - Prefer manual code review over automated type checking
+
+**🚨 NEVER build quasar-ui-danx directly**
+- ❌ **WRONG**: `cd /path/to/quasar-ui-danx/ui && yarn build`
+- ✅ **CORRECT**: Just run `yarn build` in the spa/ directory
+- The projects are locally linked via symlinks
+- Building quasar-ui-danx directly causes issues with the local linking
+- SPA build automatically picks up changes from quasar-ui-danx source files
 
 ## Key Principles
 

@@ -32,6 +32,12 @@ Read this file to understand specific commands, syntax requirements, and technic
 ### Vue Frontend
 - **Build**: `yarn build` (from spa/ directory) - for production builds and validation
 
+**🚨 CRITICAL: NEVER build quasar-ui-danx directly**
+- ❌ **WRONG**: `cd /path/to/quasar-ui-danx/ui && yarn build`
+- ✅ **CORRECT**: Just run `yarn build` in the spa/ directory
+
+The projects are locally linked via yarn/npm symlinks. Building quasar-ui-danx directly causes issues with the local linking. The SPA build will automatically pick up changes from quasar-ui-danx source files.
+
 ### Laravel Backend
 - **Testing**: `./vendor/bin/sail test`
   - Run all tests

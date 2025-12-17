@@ -142,6 +142,11 @@ If a command fails, verify you're in the project root with `pwd` - NEVER switch 
 - `yarn build` - Build and validate (MANDATORY after non-trivial changes)
 - Linting is handled via IDE (DO NOT use command-line linting)
 
+**🚨 NEVER build quasar-ui-danx directly**
+- The projects are locally linked - just build the SPA
+- Building quasar-ui-danx directly causes linking issues
+- SPA build automatically picks up quasar-ui-danx source changes
+
 ---
 
 **All implementation details are in the guides above. Read them first.**
