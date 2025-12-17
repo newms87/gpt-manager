@@ -79,10 +79,9 @@
                         <div v-if="outputItem.content" class="space-y-2">
                             <template v-for="(content, contentIndex) in outputItem.content" :key="contentIndex">
                                 <div v-if="content.type === 'output_text'">
-                                    <MarkdownEditor
+                                    <CodeViewer
                                         :model-value="content.text"
                                         :format="isJSON(content.text) ? 'yaml' : 'text'"
-                                        readonly
                                     />
                                 </div>
                             </template>
@@ -95,8 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import {
+    CodeViewer,
     fNumber,
     isJSON,
     LabelPillWidget,

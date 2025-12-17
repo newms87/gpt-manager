@@ -211,10 +211,15 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
             $this->status = WorkflowStatesContract::STATUS_STOPPED;
         } elseif ($this->isFailed()) {
             $this->status = WorkflowStatesContract::STATUS_FAILED;
-        } elseif ($this->isIncomplete()) {
-            $this->status = WorkflowStatesContract::STATUS_INCOMPLETE;
-        } elseif ($this->isTimeout()) {
-            $this->status = WorkflowStatesContract::STATUS_TIMEOUT;
+        } elseif ($this->isIncomplete() || $this->isTimeout()) {
+            // Incomplete/Timeout processes that cannot be retried are effectively Failed
+            if ($this->canBeRetried()) {
+                $this->status = $this->isTimeout()
+                    ? WorkflowStatesContract::STATUS_TIMEOUT
+                    : WorkflowStatesContract::STATUS_INCOMPLETE;
+            } else {
+                $this->status = WorkflowStatesContract::STATUS_FAILED;
+            }
         } elseif (!$this->isStarted()) {
             $this->status = WorkflowStatesContract::STATUS_PENDING;
         } elseif (!$this->isCompleted()) {
@@ -237,12 +242,6 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     public static function booted(): void
     {
         static::saving(function (TaskProcess $taskProcess) {
-            // If process is marked incomplete but has exceeded retry limit, mark as permanently failed
-            if ($taskProcess->isIncomplete() && $taskProcess->isFailedAndCannotBeRetried()) {
-                $taskProcess->incomplete_at = null;
-                $taskProcess->failed_at     = now();
-            }
-
             $taskProcess->computeStatus();
         });
 

@@ -78,7 +78,7 @@
                     :request-data="requestData"
                 />
                 <div v-else class="overflow-x-auto max-w-full">
-                    <MarkdownEditor :model-value="apiLog.request" format="json" readonly />
+                    <CodeViewer :model-value="apiLog.request" format="json" />
                 </div>
             </div>
         </div>
@@ -117,18 +117,18 @@
                     :response-data="responseData"
                 />
                 <div v-else class="overflow-x-auto max-w-full">
-                    <MarkdownEditor :model-value="apiLog.response" format="json" readonly />
+                    <CodeViewer :model-value="apiLog.response" format="json" />
                 </div>
             </div>
         </div>
     </QCard>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import OpenAiApiRequestCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiRequestCard.vue";
 import OpenAiApiResponseCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiResponseCard.vue";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
 import {
+    CodeViewer,
     fDateTime,
     fDateTimeMs,
     fMillisecondsToDuration,

@@ -88,22 +88,18 @@
       <!-- JSON Content -->
       <div v-if="hasJson && isShowingJson" class="mt-3">
         <div class="text-xs text-slate-400 mb-1">JSON Content</div>
-        <MarkdownEditor
+        <CodeViewer
           :model-value="artifact.json_content"
           format="yaml"
-          readonly
-          class="bg-slate-800"
         />
       </div>
 
       <!-- Meta -->
       <div v-if="hasMeta && isShowingMeta" class="mt-3">
         <div class="text-xs text-slate-400 mb-1">Meta</div>
-        <MarkdownEditor
+        <CodeViewer
           :model-value="artifact.meta"
           format="yaml"
-          readonly
-          class="bg-slate-800"
         />
       </div>
 
@@ -136,15 +132,15 @@
 </template>
 
 <script setup lang="ts">
-import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import {
   FaSolidBarcode as MetaIcon,
   FaSolidDatabase as JsonIcon,
   FaSolidFile as FilesIcon,
   FaSolidT as TextIcon
 } from "danx-icon";
-import { ActionButton, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, CodeViewer, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { useDemandArtifacts } from "../../composables";
 import { getWorkflowColors } from "../../config";

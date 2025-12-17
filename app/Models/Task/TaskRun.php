@@ -172,8 +172,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
             foreach ($taskProcesses as $taskProcess) {
                 if ($taskProcess->isStopped()) {
                     $hasStoppedProcesses = true;
-                } elseif ($taskProcess->isFailedAndCannotBeRetried()) {
-                    // If any process has failed or timed out, the task run has failed (we can stop checking)
+                } elseif ($taskProcess->isStatusFailed()) {
                     $hasFailedProcesses = true;
                 } elseif (!$taskProcess->isFinished()) {
                     $hasRunningProcesses = true;

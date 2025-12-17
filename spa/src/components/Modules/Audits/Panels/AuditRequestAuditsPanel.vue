@@ -9,25 +9,23 @@
 						audit.auditable_title
 					}}
 				</div>
-				<MarkdownEditor
+				<CodeViewer
 					class="md-bg-red"
 					:model-value="audit.old_values"
 					format="json"
-					readonly
 				/>
-				<MarkdownEditor
+				<CodeViewer
 					class="md-bg-green"
 					:model-value="audit.new_values"
 					format="json"
-					readonly
 				/>
 			</div>
 		</template>
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { AuditRequest } from "@/components/Modules/Audits/audit-requests";
+import { CodeViewer } from "quasar-ui-danx";
 
 defineProps<{
 	auditRequest: AuditRequest,

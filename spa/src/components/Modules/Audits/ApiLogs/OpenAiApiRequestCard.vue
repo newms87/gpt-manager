@@ -122,13 +122,12 @@
 
                     <!-- Text section -->
                     <div v-if="expandedMessageText[index] && getMessageTexts(inputItem).length > 0" class="mt-3 space-y-2">
-                        <MarkdownEditor
-                            v-for="(text, textIndex) in getMessageTexts(inputItem)"
-                            :key="textIndex"
-                            :model-value="text"
-                            :format="isJSON(text) ? 'yaml' : 'text'"
-                            readonly
-                        />
+                        <template v-for="(text, textIndex) in getMessageTexts(inputItem)" :key="textIndex">
+                            <CodeViewer
+                                :model-value="text"
+                                :format="isJSON(text) ? 'yaml' : 'text'"
+                            />
+                        </template>
                     </div>
                 </div>
             </ListTransition>
@@ -147,11 +146,10 @@
                 <div v-if="requestData.text.format.name" class="text-xs mb-2">
                     Schema: <span class="text-sky-300">{{ requestData.text.format.name }}</span>
                 </div>
-                <MarkdownEditor
+                <CodeViewer
                     v-if="requestData.text.format.schema"
-                    :model-value="JSON.stringify(requestData.text.format.schema, null, 2)"
+                    :model-value="requestData.text.format.schema"
                     format="yaml"
-                    readonly
                 />
             </div>
         </div>
@@ -159,7 +157,6 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import {
     FaRegularUser as UserIcon,
     FaSolidRobot as AssistantIcon,
@@ -169,6 +166,7 @@ import {
 } from "danx-icon";
 import {
     ActionButton,
+    CodeViewer,
     FilePreview,
     isJSON,
     LabelPillWidget,

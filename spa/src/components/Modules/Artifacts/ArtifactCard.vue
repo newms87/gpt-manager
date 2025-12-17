@@ -92,24 +92,18 @@
                 </div>
             </div>
             <div v-if="hasText && isShowingText">
-                <MarkdownEditor
-                    :model-value="artifact.text_content"
-                    format="text"
-                    readonly
-                />
+                <pre class="text-sm text-slate-300 whitespace-pre-wrap bg-slate-800 p-3 rounded">{{ artifact.text_content }}</pre>
             </div>
             <div v-if="hasJson && isShowingJson">
-                <MarkdownEditor
+                <CodeViewer
                     :model-value="artifact.json_content"
                     format="yaml"
-                    readonly
                 />
             </div>
             <div v-if="hasMeta && isShowingMeta">
-                <MarkdownEditor
+                <CodeViewer
                     :model-value="artifact.meta"
                     format="yaml"
-                    readonly
                 />
             </div>
             <ArtifactList
@@ -123,7 +117,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
@@ -136,7 +129,7 @@ import {
     FaSolidLayerGroup as GroupIcon,
     FaSolidT as TextIcon
 } from "danx-icon";
-import { fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { CodeViewer, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, shallowRef, watch } from "vue";
 
 const props = defineProps<{
