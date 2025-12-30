@@ -108,7 +108,8 @@
       "Bash(wc:*)",
       "Bash(test:*)",
       "Bash(/home/newms/web/gpt-manager/vendor/bin/sail pint:*)",
-      "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test:*)"
+      "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test:*)",
+      "Bash(npx vue-tsc:*)"
     ],
     "deny": [],
     "additionalDirectories": [
