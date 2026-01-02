@@ -6,7 +6,7 @@
 	/>
 	<span
 		v-else
-		class="inline-flex items-center gap-1 flex-wrap"
+		class="flex items-center gap-1 flex-wrap w-full"
 	>
 		<template v-for="(part, index) in messageParts" :key="index">
 			<EmbeddedObjectLink
