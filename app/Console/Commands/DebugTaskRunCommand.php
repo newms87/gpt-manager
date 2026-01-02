@@ -19,6 +19,7 @@ class DebugTaskRunCommand extends Command
         {--raw : Show raw artifact data}
         {--dedup : Show full deduplication metadata}
         {--process= : Show detailed info for specific task process ID}
+        {--run-process= : Run a specific task process ID synchronously to debug exceptions (ExtractData)}
         {--window= : Show detailed info for specific window (e.g., 1-10)}
         {--page= : Show all data about a specific page number across all windows}
         {--group= : Show all pages assigned to a specific group name}
@@ -28,6 +29,9 @@ class DebugTaskRunCommand extends Command
         {--reset-from-windows : Delete merge and all resolution processes, then re-create from windows}
         {--classify-status : Show status of all classify processes (ExtractData)}
         {--artifact-tree : Show parent/child artifact hierarchy (ExtractData)}
+        {--resolved-objects : Show all TeamObjects created during extraction (ExtractData)}
+        {--taskrun-meta : Show the full TaskRun meta data (ExtractData)}
+        {--level-progress : Show extraction level progress for each level (ExtractData)}
         {--run : Create and dispatch a new task run with same inputs}
         {--rerun : Reset and re-dispatch this task run}';
 
@@ -429,6 +433,12 @@ class DebugTaskRunCommand extends Command
         $debugService = app(ExtractDataDebugService::class);
 
         // Handle specialized options
+        if ($this->option('run-process')) {
+            $processId = (int)$this->option('run-process');
+
+            return $debugService->runProcess($taskRun, $processId, $this);
+        }
+
         if ($this->option('process')) {
             $processId = (int)$this->option('process');
 
@@ -443,6 +453,24 @@ class DebugTaskRunCommand extends Command
 
         if ($this->option('artifact-tree')) {
             $debugService->showArtifactStructure($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('resolved-objects')) {
+            $debugService->showResolvedObjects($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('taskrun-meta')) {
+            $debugService->showTaskRunMeta($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('level-progress')) {
+            $debugService->showLevelProgress($taskRun, $this);
 
             return 0;
         }
