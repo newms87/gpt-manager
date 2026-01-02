@@ -26,8 +26,6 @@ services:
         depends_on:
             - redis
             - pgsql
-            - meilisearch
-            - mailpit
 
     horizon:
         build:
@@ -51,8 +49,6 @@ services:
         depends_on:
             - redis
             - pgsql
-            - meilisearch
-            - mailpit
             - laravel.test
 
     redis:
@@ -126,5 +122,5 @@ volumes:
         driver: local
     sail-pgsql:
         driver: local
-    sail-meilisearch:
-        driver: local
+#    sail-meilisearch:
+#        driver: local

@@ -22,6 +22,10 @@
 				v-else-if="part.type === 'lockOperation'"
 				:operation="part.operation"
 			/>
+			<LogJsonViewer
+				v-else-if="part.type === 'json'"
+				:json="part.json"
+			/>
 			<span v-else class="whitespace-pre-wrap">{{ part.text }}</span>
 		</template>
 	</span>
@@ -32,8 +36,9 @@ import { computed } from 'vue';
 import EmbeddedObjectLink from './EmbeddedObjectLink.vue';
 import SquareBracketEntity from './SquareBracketEntity.vue';
 import LockOperationIcon from './LockOperationIcon.vue';
+import LogJsonViewer from './LogJsonViewer.vue';
 import JobLogEntry from './JobLogEntry.vue';
-import type { ParsedLogLine, EmbeddedObject, SquareBracketEntity as SBEntity, LockOperation } from './useLogParser';
+import type { ParsedLogLine, EmbeddedObject, SquareBracketEntity as SBEntity, LockOperation, EmbeddedJson } from './useLogParser';
 
 const props = defineProps<{
 	logLine: ParsedLogLine;
@@ -44,22 +49,23 @@ defineEmits<{
 }>();
 
 interface MessagePart {
-	type: 'text' | 'object' | 'squareBracket' | 'lockOperation';
+	type: 'text' | 'object' | 'squareBracket' | 'lockOperation' | 'json';
 	text?: string;
 	object?: EmbeddedObject;
 	entity?: SBEntity;
 	operation?: LockOperation;
+	json?: EmbeddedJson;
 }
 
 interface SpecialElement {
-	type: 'object' | 'squareBracket' | 'lockOperation';
+	type: 'object' | 'squareBracket' | 'lockOperation' | 'json';
 	startIndex: number;
 	endIndex: number;
-	data: EmbeddedObject | SBEntity | LockOperation;
+	data: EmbeddedObject | SBEntity | LockOperation | EmbeddedJson;
 }
 
 const messageParts = computed<MessagePart[]>(() => {
-	const { message, embeddedObjects, squareBracketEntities, lockOperations } = props.logLine;
+	const { message, embeddedObjects, squareBracketEntities, lockOperations, embeddedJsonObjects } = props.logLine;
 
 	// Combine all special elements into a single sorted array
 	const specialElements: SpecialElement[] = [
@@ -80,6 +86,12 @@ const messageParts = computed<MessagePart[]>(() => {
 			startIndex: op.startIndex,
 			endIndex: op.endIndex + 1, // Include the colon
 			data: op
+		})),
+		...embeddedJsonObjects.map(json => ({
+			type: 'json' as const,
+			startIndex: json.startIndex,
+			endIndex: json.endIndex,
+			data: json
 		}))
 	];
 
@@ -112,6 +124,9 @@ const messageParts = computed<MessagePart[]>(() => {
 				break;
 			case 'lockOperation':
 				parts.push({ type: 'lockOperation', operation: element.data as LockOperation });
+				break;
+			case 'json':
+				parts.push({ type: 'json', json: element.data as EmbeddedJson });
 				break;
 		}
 

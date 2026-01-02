@@ -81,7 +81,8 @@
                                 <div v-if="content.type === 'output_text'">
                                     <CodeViewer
                                         :model-value="content.text"
-                                        :format="isJSON(content.text) ? 'yaml' : 'text'"
+                                        :format="isJSON(content.text) ? 'yaml' : 'markdown'"
+                                        default-code-format="yaml"
                                     />
                                 </div>
                             </template>

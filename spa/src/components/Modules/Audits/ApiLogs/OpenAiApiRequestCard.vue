@@ -125,7 +125,8 @@
                         <template v-for="(text, textIndex) in getMessageTexts(inputItem)" :key="textIndex">
                             <CodeViewer
                                 :model-value="text"
-                                :format="isJSON(text) ? 'yaml' : 'text'"
+                                :format="isJSON(text) ? 'yaml' : 'markdown'"
+                                default-code-format="yaml"
                             />
                         </template>
                     </div>

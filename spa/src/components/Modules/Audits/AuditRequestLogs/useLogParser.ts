@@ -3,7 +3,6 @@
  */
 
 import { computed, Ref } from 'vue';
-import { fDateTime } from 'quasar-ui-danx';
 import type { LogLevel } from './logHelpers';
 
 export interface EmbeddedObject {
@@ -19,6 +18,13 @@ export interface SquareBracketEntity {
 	content: string;
 	startIndex: number;
 	endIndex: number;
+}
+
+export interface EmbeddedJson {
+	content: string;      // The raw JSON string
+	parsed: object;       // The parsed JSON object
+	startIndex: number;   // Start position in message
+	endIndex: number;     // End position in message
 }
 
 export interface LockOperation {
@@ -46,7 +52,97 @@ export interface ParsedLogLine {
 	embeddedObjects: EmbeddedObject[];
 	squareBracketEntities: SquareBracketEntity[];
 	lockOperations: LockOperation[];
+	embeddedJsonObjects: EmbeddedJson[];
 	jobEntry?: JobLogEntry; // Parsed job log entry if this is a job log line
+}
+
+/**
+ * Extract a multi-line JSON block starting at the given line index.
+ * Returns the JSON content (single line) and the ending line index.
+ */
+function extractMultiLineJson(lines: string[], startIndex: number): { content: string; endLineIndex: number } | null {
+	let depth = 0;
+	const jsonLines: string[] = [];
+	let inString = false;
+	let escapeNext = false;
+
+	for (let i = startIndex; i < lines.length; i++) {
+		const line = lines[i];
+		jsonLines.push(line.trim());
+
+		// Count braces/brackets (respecting string context)
+		for (const char of line) {
+			if (escapeNext) {
+				escapeNext = false;
+				continue;
+			}
+			if (char === '\\' && inString) {
+				escapeNext = true;
+				continue;
+			}
+			if (char === '"') {
+				inString = !inString;
+				continue;
+			}
+			if (inString) continue;
+
+			if (char === '{' || char === '[') depth++;
+			if (char === '}' || char === ']') depth--;
+		}
+
+		// If depth is 0 and we've seen at least the opening, we're done
+		if (depth === 0 && jsonLines.length > 0) {
+			const content = jsonLines.join(' ').replace(/\s+/g, ' ').trim();
+			// Validate it's actually JSON
+			try {
+				JSON.parse(content);
+				return { content, endLineIndex: i };
+			} catch {
+				return null;
+			}
+		}
+
+		// Safety: don't go too far (max 100 lines for a JSON block)
+		if (i - startIndex > 100) return null;
+	}
+
+	return null;
+}
+
+/**
+ * Pre-process logs to join multi-line JSON blocks with their preceding log line.
+ * Detects JSON blocks that start on their own line and joins them to the previous line.
+ */
+function preprocessLogs(rawLogs: string): string {
+	const lines = rawLogs.split('\n');
+	const result: string[] = [];
+	let i = 0;
+
+	while (i < lines.length) {
+		const line = lines[i];
+		const trimmed = line.trim();
+
+		// Check if this line is the start of a JSON block (just "{" or "[")
+		if (trimmed === '{' || trimmed === '[') {
+			// Try to extract the complete JSON block
+			const jsonBlock = extractMultiLineJson(lines, i);
+			if (jsonBlock) {
+				// Append to previous line if exists, otherwise add as new line
+				if (result.length > 0) {
+					result[result.length - 1] += ' ' + jsonBlock.content;
+				} else {
+					result.push(jsonBlock.content);
+				}
+				i = jsonBlock.endLineIndex + 1;
+				continue;
+			}
+		}
+
+		result.push(line);
+		i++;
+	}
+
+	return result.join('\n');
 }
 
 /**
@@ -148,6 +244,145 @@ function findLockOperations(message: string): LockOperation[] {
 }
 
 /**
+ * Extract a balanced JSON structure starting from a given position
+ * Returns the extracted string and end index, or null if not valid
+ */
+function extractBalancedJson(
+	message: string,
+	startIndex: number,
+	openChar: '{' | '[',
+	closeChar: '}' | ']'
+): { content: string; endIndex: number } | null {
+	let depth = 0;
+	let inString = false;
+	let escapeNext = false;
+
+	for (let i = startIndex; i < message.length; i++) {
+		const char = message[i];
+
+		if (escapeNext) {
+			escapeNext = false;
+			continue;
+		}
+
+		if (char === '\\' && inString) {
+			escapeNext = true;
+			continue;
+		}
+
+		if (char === '"') {
+			inString = !inString;
+			continue;
+		}
+
+		if (inString) continue;
+
+		if (char === openChar) {
+			depth++;
+		} else if (char === closeChar) {
+			depth--;
+			if (depth === 0) {
+				return {
+					content: message.substring(startIndex, i + 1),
+					endIndex: i + 1
+				};
+			}
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Check if array content looks like JSON (not just a simple entity name)
+ * Returns true if the content has JSON-like structure
+ */
+function isJsonArrayContent(content: string): boolean {
+	const trimmed = content.trim();
+	// Check if it contains objects, arrays, or key-value pairs
+	// Simple [EntityName] patterns should NOT match
+	return (
+		trimmed.includes('{') ||
+		trimmed.includes(':') ||
+		trimmed.includes('"') ||
+		/^\s*\[/.test(trimmed)
+	);
+}
+
+/**
+ * Find all embedded JSON objects and arrays in a message
+ * Detects JSON objects ({...}) and JSON arrays ([...]) with proper nesting
+ * Validates by attempting JSON.parse on extracted content
+ */
+function findEmbeddedJson(message: string): EmbeddedJson[] {
+	const results: EmbeddedJson[] = [];
+	let currentIndex = 0;
+
+	while (currentIndex < message.length) {
+		// Find next potential JSON start
+		let nextObject = message.indexOf('{', currentIndex);
+		let nextArray = message.indexOf('[', currentIndex);
+
+		// Skip if neither found
+		if (nextObject === -1 && nextArray === -1) break;
+
+		// Determine which comes first
+		let startIndex: number;
+		let openChar: '{' | '[';
+		let closeChar: '}' | ']';
+
+		if (nextObject === -1) {
+			startIndex = nextArray;
+			openChar = '[';
+			closeChar = ']';
+		} else if (nextArray === -1) {
+			startIndex = nextObject;
+			openChar = '{';
+			closeChar = '}';
+		} else if (nextObject < nextArray) {
+			startIndex = nextObject;
+			openChar = '{';
+			closeChar = '}';
+		} else {
+			startIndex = nextArray;
+			openChar = '[';
+			closeChar = ']';
+		}
+
+		// Try to extract balanced JSON
+		const extracted = extractBalancedJson(message, startIndex, openChar, closeChar);
+
+		if (extracted) {
+			// For arrays, check if content looks like JSON (not simple [EntityName])
+			if (openChar === '[' && !isJsonArrayContent(extracted.content)) {
+				currentIndex = startIndex + 1;
+				continue;
+			}
+
+			// Try to parse as JSON
+			try {
+				const parsed = JSON.parse(extracted.content);
+				results.push({
+					content: extracted.content,
+					parsed,
+					startIndex,
+					endIndex: extracted.endIndex
+				});
+				currentIndex = extracted.endIndex;
+			} catch {
+				// Not valid JSON, continue searching
+				currentIndex = startIndex + 1;
+			}
+		} else {
+			// Could not extract balanced structure
+			currentIndex = startIndex + 1;
+		}
+	}
+
+	return results;
+}
+
+/**
  * Parse job log entry from message
  * Format: ###### Job {Status} {JobName} ({ID}) --- {identifier} --- ({timing})
  * Examples:
@@ -204,6 +439,7 @@ function parseLogLine(line: string): ParsedLogLine {
 			embeddedObjects: findEmbeddedObjects(message),
 			squareBracketEntities: findSquareBracketEntities(message),
 			lockOperations: findLockOperations(message),
+			embeddedJsonObjects: findEmbeddedJson(message),
 			jobEntry: jobEntry || undefined
 		};
 	}
@@ -217,6 +453,7 @@ function parseLogLine(line: string): ParsedLogLine {
 		embeddedObjects: findEmbeddedObjects(trimmedLine),
 		squareBracketEntities: findSquareBracketEntities(trimmedLine),
 		lockOperations: findLockOperations(trimmedLine),
+		embeddedJsonObjects: findEmbeddedJson(trimmedLine),
 		jobEntry: jobEntry || undefined
 	};
 }
@@ -228,7 +465,9 @@ export function useLogParser(logs: Ref<string | null | undefined>) {
 	const parsedLines = computed<ParsedLogLine[]>(() => {
 		if (!logs.value) return [];
 
-		const lines = logs.value.split('\n');
+		// Pre-process to join multi-line JSON blocks with preceding log lines
+		const preprocessed = preprocessLogs(logs.value);
+		const lines = preprocessed.split('\n');
 		return lines
 			.filter((line) => line.trim()) // Skip empty lines
 			.map((line) => parseLogLine(line));
@@ -250,6 +489,7 @@ export function useLogParser(logs: Ref<string | null | undefined>) {
 		parseLogLine,
 		findEmbeddedObjects,
 		findSquareBracketEntities,
-		findLockOperations
+		findLockOperations,
+		findEmbeddedJson
 	};
 }
