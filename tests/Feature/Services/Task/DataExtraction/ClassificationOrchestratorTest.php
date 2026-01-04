@@ -187,9 +187,9 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
 
         // Incomplete process with different operation (should be ignored)
         $taskRun->taskProcesses()->create([
-            'name'      => 'Extract Group',
-            'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_GROUP,
-            'activity'  => 'Extracting data',
+            'name'      => 'Extract Identity',
+            'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+            'activity'  => 'Extracting identity data',
             'meta'      => ['level' => 0],
             'is_ready'  => true,
             // No completed_at

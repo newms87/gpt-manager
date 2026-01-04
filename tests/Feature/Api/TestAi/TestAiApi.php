@@ -8,6 +8,7 @@ use App\Api\AgentApiContracts\AgentMessageFormatterContract;
 use App\Api\OpenAi\Classes\OpenAiMessageFormatter;
 use App\Api\Options\ResponsesApiOptions;
 use App\Models\Agent\AgentThreadMessage;
+use Newms87\Danx\Models\Audit\ApiLog;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
 
 class TestAiApi implements AgentApiContract
@@ -53,5 +54,10 @@ class TestAiApi implements AgentApiContract
             'options'   => $options->toArray($model),
             'streaming' => true,
         ]);
+    }
+
+    public function getCurrentApiLog(): ?ApiLog
+    {
+        return null;
     }
 }

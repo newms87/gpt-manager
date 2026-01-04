@@ -134,7 +134,7 @@ class BillingServiceTest extends AuthenticatedTestCase
                 'brand'     => 'visa',
                 'last4'     => '4242',
                 'exp_month' => 12,
-                'exp_year'  => 2025,
+                'exp_year'  => (int) date('Y') + 2,
             ],
         ];
 
@@ -465,7 +465,7 @@ class BillingServiceTest extends AuthenticatedTestCase
                 'brand'     => 'visa',
                 'last4'     => '4242',
                 'exp_month' => 12,
-                'exp_year'  => 2025,
+                'exp_year'  => (int) date('Y') + 2,
             ],
         ];
 
