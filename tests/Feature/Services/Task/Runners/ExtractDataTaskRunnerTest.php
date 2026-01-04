@@ -4,6 +4,7 @@ namespace Tests\Feature\Services\Task\Runners;
 
 use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
@@ -334,9 +335,9 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function run_routes_to_resolve_objects_operation(): void
+    public function run_routes_to_extract_identity_operation(): void
     {
-        // Given: TaskProcess with OPERATION_RESOLVE_OBJECTS
+        // Given: TaskProcess with OPERATION_EXTRACT_IDENTITY
         // Store plan in TaskDefinition.meta (new location)
         $this->taskDefinition->meta = [
             'extraction_plan' => [
@@ -370,10 +371,20 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
             'meta'        => [
-                'level'             => 0,
-                'parent_object_ids' => [],
+                'level'          => 0,
+                'identity_group' => [
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
             'started_at'  => now(),
         ]);
@@ -382,21 +393,21 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
 
         // Then: Verify operation routing
-        $this->assertEquals(ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS, $taskProcess->operation);
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY, $taskProcess->operation);
         $this->assertEquals(0, $taskProcess->meta['level']);
     }
 
     #[Test]
-    public function run_routes_to_extract_group_operation(): void
+    public function run_routes_to_extract_remaining_operation(): void
     {
-        // Given: TaskProcess with OPERATION_EXTRACT_GROUP
+        // Given: TaskProcess with OPERATION_EXTRACT_REMAINING
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_GROUP,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
             'meta'        => [
                 'level'            => 0,
                 'object_id'        => 123,
@@ -413,7 +424,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
 
         // Then: Verify operation routing
-        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_GROUP, $taskProcess->operation);
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING, $taskProcess->operation);
         $this->assertEquals(123, $taskProcess->meta['object_id']);
     }
 
@@ -508,7 +519,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function resolve_objects_operation_updates_level_progress(): void
+    public function extract_identity_operation_updates_level_progress(): void
     {
         // Given: TaskRun with cached plan in TaskDefinition.meta and no identification groups
         $this->taskDefinition->meta = [
@@ -542,21 +553,27 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
             'meta'        => [
-                'level'             => 0,
-                'parent_object_ids' => [],
+                'level'          => 0,
+                'identity_group' => [
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [],
+                ],
             ],
             'started_at'  => now(),
         ]);
 
-        // When: Running resolve objects
+        // When: Running extract identity
         $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
         $this->runner->run();
 
         // Then: Level progress is updated
         $taskRun->refresh();
-        $this->assertTrue($taskRun->meta['level_progress'][0]['resolution_complete'] ?? false);
+        $this->assertTrue($taskRun->meta['level_progress'][0]['identity_complete'] ?? false);
     }
 
     #[Test]
@@ -635,7 +652,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function afterAllProcessesCompleted_creates_resolve_objects_after_classification(): void
+    public function afterAllProcessesCompleted_creates_extract_identity_after_classification(): void
     {
         // Given: TaskRun with classification complete (classification process completed)
         $plan = [
@@ -644,6 +661,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
                     'level'      => 0,
                     'identities' => [
                         [
+                            'name'              => 'Client',
                             'object_type'       => 'Client',
                             'identity_fields'   => ['client_name'],
                             'skim_fields'       => ['client_name'],
@@ -666,6 +684,27 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Create parent output artifact
+        $parentArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => null,
+        ]);
+
+        // Create child artifact with classification for "Client Identification"
+        $childArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'meta'               => [
+                'classification' => [
+                    'client_identification' => true,
+                ],
+            ],
+        ]);
+
+        // Attach as output artifacts to task run
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $taskRun->outputArtifacts()->attach($childArtifact->id);
+
         // Create completed classification process
         $classificationProcess = TaskProcess::factory()->create([
             'task_run_id'  => $taskRun->id,
@@ -675,26 +714,52 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         ]);
 
         // When: afterAllProcessesCompleted is called
-        $this->runner->setTaskRun($taskRun);
+        $this->runner->setTaskRun($taskRun->fresh(['outputArtifacts', 'outputArtifacts.children']));
         $this->runner->afterAllProcessesCompleted();
 
-        // Then: Resolve objects process is created for level 0
-        $resolveProcess = $taskRun->taskProcesses()
-            ->where('operation', ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS)
+        // Then: Extract Identity process is created for level 0
+        $extractProcess = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
             ->where('meta->level', 0)
             ->first();
 
-        $this->assertNotNull($resolveProcess);
+        $this->assertNotNull($extractProcess);
     }
 
     #[Test]
     public function afterAllProcessesCompleted_advances_to_next_level_when_current_complete(): void
     {
-        // Given: TaskRun with level 0 complete, plan in TaskDefinition.meta
+        // Given: TaskRun with level 0 complete, plan in TaskDefinition.meta with identity groups for level 1
         $plan = [
             'levels' => [
-                ['level' => 0],
-                ['level' => 1],
+                [
+                    'level'      => 0,
+                    'identities' => [
+                        [
+                            'name'              => 'Client',
+                            'object_type'       => 'Client',
+                            'identity_fields'   => ['client_name'],
+                            'skim_fields'       => ['client_name'],
+                            'search_mode'       => 'skim',
+                            'fragment_selector' => [],
+                        ],
+                    ],
+                    'remaining'  => [],
+                ],
+                [
+                    'level'      => 1,
+                    'identities' => [
+                        [
+                            'name'              => 'Claim',
+                            'object_type'       => 'Claim',
+                            'identity_fields'   => ['claim_number'],
+                            'skim_fields'       => ['claim_number'],
+                            'search_mode'       => 'skim',
+                            'fragment_selector' => [],
+                        ],
+                    ],
+                    'remaining'  => [],
+                ],
             ],
         ];
 
@@ -707,28 +772,49 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
                 'current_level'  => 0,
                 'level_progress' => [
                     0 => [
-                        'resolution_complete' => true,
+                        'identity_complete'   => true,
                         'extraction_complete' => true,
                     ],
                 ],
             ],
         ]);
 
+        // Create parent output artifact
+        $parentArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => null,
+        ]);
+
+        // Create child artifact with classification for "Claim Identification"
+        $childArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'meta'               => [
+                'classification' => [
+                    'claim_identification' => true,
+                ],
+            ],
+        ]);
+
+        // Attach as output artifacts to task run
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $taskRun->outputArtifacts()->attach($childArtifact->id);
+
         // When: afterAllProcessesCompleted is called
-        $this->runner->setTaskRun($taskRun);
+        $this->runner->setTaskRun($taskRun->fresh(['outputArtifacts', 'outputArtifacts.children']));
         $this->runner->afterAllProcessesCompleted();
 
-        // Then: Level is advanced and new resolve objects process created (not classification)
+        // Then: Level is advanced and new extract identity process created (not classification)
         $taskRun->refresh();
         $this->assertEquals(1, $taskRun->meta['current_level']);
 
-        // Should create resolve objects for level 1, not classification (already done once)
-        $resolveProcess = $taskRun->taskProcesses()
-            ->where('operation', ExtractDataTaskRunner::OPERATION_RESOLVE_OBJECTS)
+        // Should create extract identity for level 1, not classification (already done once)
+        $extractProcess = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
             ->where('meta->level', 1)
             ->first();
 
-        $this->assertNotNull($resolveProcess);
+        $this->assertNotNull($extractProcess);
     }
 
     #[Test]
@@ -765,5 +851,491 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         $taskProcess->refresh();
         $this->assertNotNull($taskProcess->completed_at);
+    }
+
+    #[Test]
+    public function extract_identity_operation_creates_identity_schema_correctly(): void
+    {
+        // Given: TaskRun with cached plan in TaskDefinition.meta and identity group with fragment selector
+        $this->taskDefinition->meta = [
+            'extraction_plan' => [
+                'levels' => [
+                    [
+                        'level'      => 0,
+                        'identities' => [
+                            [
+                                'name'              => 'Client',
+                                'object_type'       => 'Client',
+                                'identity_fields'   => ['client_name'],
+                                'skim_fields'       => ['client_name'],
+                                'search_mode'       => 'skim',
+                                'fragment_selector' => [
+                                    'type'     => 'object',
+                                    'children' => [
+                                        'client_name' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'remaining'  => [],
+                    ],
+                ],
+            ],
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'meta'               => [],
+        ]);
+
+        // Create artifact with storedFile (required for the extraction)
+        $artifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Page 1',
+            'meta'    => [
+                'classification' => [
+                    'client_identification' => true,
+                ],
+            ],
+        ]);
+
+        $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 1,
+            'filename'    => 'page-1.jpg',
+            'filepath'    => 'test/page-1.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+
+        $artifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+            'meta'        => [
+                'level'          => 0,
+                'identity_group' => [
+                    'name'              => 'Client',
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'started_at'  => now(),
+        ]);
+
+        // Attach artifact as input to process
+        $taskProcess->inputArtifacts()->attach($artifact->id);
+
+        // Mock AgentThreadBuilderService to return a real thread
+        $thread = \App\Models\Agent\AgentThread::factory()->create([
+            'agent_id' => $this->agent->id,
+            'team_id'  => $this->user->currentTeam->id,
+        ]);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadBuilderService::class, function ($mock) use ($thread) {
+            $builderMock = \Mockery::mock();
+            $builderMock->shouldReceive('named')->andReturnSelf();
+            $builderMock->shouldReceive('withArtifacts')->andReturnSelf();
+            $builderMock->shouldReceive('build')->andReturn($thread);
+
+            $mock->shouldReceive('for')->andReturn($builderMock);
+        });
+
+        // Mock AgentThreadService to avoid actual LLM calls and return a completed thread run
+        $mockMessage = $this->createMock(\App\Models\Agent\AgentThreadMessage::class);
+        $mockMessage->method('getJsonContent')->willReturn([
+            'data'         => ['client_name' => 'Test Client'],
+            'search_query' => ['client_name' => '%Test%'],
+        ]);
+
+        $mockThreadRun              = $this->mock(\App\Models\Agent\AgentThreadRun::class)->makePartial();
+        $mockThreadRun->lastMessage = $mockMessage;
+        $mockThreadRun->shouldReceive('isCompleted')->andReturn(true);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadService::class, function ($mock) use ($mockThreadRun) {
+            $mock->shouldReceive('withResponseFormat')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('withTimeout')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('run')
+                ->once()
+                ->andReturn($mockThreadRun);
+        });
+
+        // When: Running the extract identity operation
+        // This should now succeed because the bug has been fixed
+        $freshTaskRun = TaskRun::with('taskDefinition.agent')->find($taskRun->id);
+        $this->runner->setTaskRun($freshTaskRun)->setTaskProcess($taskProcess);
+        $this->runner->run();
+
+        // Then: Process completes successfully (or updates level progress)
+        $taskProcess->refresh();
+        $taskRun->refresh();
+
+        // The operation should complete without throwing a setSchema error
+        // Level progress should be updated to mark identity complete
+        $this->assertTrue(
+            $taskRun->meta['level_progress'][0]['identity_complete'] ?? false,
+            'Level 0 identity should be marked as complete after successful extraction'
+        );
+    }
+
+    #[Test]
+    public function extract_identity_operation_creates_output_artifact(): void
+    {
+        // Given: TaskRun with cached plan and identity group with fragment selector
+        $this->taskDefinition->meta = [
+            'extraction_plan' => [
+                'levels' => [
+                    [
+                        'level'      => 0,
+                        'identities' => [
+                            [
+                                'name'              => 'Client',
+                                'object_type'       => 'Client',
+                                'identity_fields'   => ['client_name'],
+                                'skim_fields'       => ['client_name'],
+                                'search_mode'       => 'skim',
+                                'fragment_selector' => [
+                                    'type'     => 'object',
+                                    'children' => [
+                                        'client_name' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'remaining'  => [],
+                    ],
+                ],
+            ],
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'meta'               => [],
+        ]);
+
+        // Create input artifact with classification
+        $inputArtifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'task_run_id'  => $taskRun->id,
+            'name'         => 'Page 1',
+            'json_content' => [],
+            'meta'         => [
+                'classification' => [
+                    'client_identification' => true,
+                ],
+            ],
+        ]);
+
+        $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 1,
+            'filename'    => 'page-1.jpg',
+            'filepath'    => 'test/page-1.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+
+        $inputArtifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+            'meta'        => [
+                'level'          => 0,
+                'identity_group' => [
+                    'name'              => 'Client',
+                    'object_type'       => 'Client',
+                    'identity_fields'   => ['client_name'],
+                    'skim_fields'       => ['client_name'],
+                    'search_mode'       => 'skim',
+                    'fragment_selector' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'started_at'  => now(),
+        ]);
+
+        // Attach artifact as input to process
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Mock AgentThreadBuilderService to return a real thread
+        $thread = \App\Models\Agent\AgentThread::factory()->create([
+            'agent_id' => $this->agent->id,
+            'team_id'  => $this->user->currentTeam->id,
+        ]);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadBuilderService::class, function ($mock) use ($thread) {
+            $builderMock = \Mockery::mock();
+            $builderMock->shouldReceive('named')->andReturnSelf();
+            $builderMock->shouldReceive('withArtifacts')->andReturnSelf();
+            $builderMock->shouldReceive('build')->andReturn($thread);
+
+            $mock->shouldReceive('for')->andReturn($builderMock);
+        });
+
+        // Mock AgentThreadService to return extraction result with data matching fragment_selector
+        // The fragment_selector specifies: children.client_name => type: string
+        // The fix ensures applyFragmentSelector() properly converts this to JSON Schema,
+        // so the LLM returns actual data in the 'data' field
+        $mockMessage = $this->createMock(\App\Models\Agent\AgentThreadMessage::class);
+        $mockMessage->method('getJsonContent')->willReturn([
+            'data'         => [
+                'client_name' => 'John Doe Insurance',
+            ],
+            'search_query' => ['client_name' => '%John%Doe%'],
+        ]);
+
+        $mockThreadRun              = $this->mock(\App\Models\Agent\AgentThreadRun::class)->makePartial();
+        $mockThreadRun->lastMessage = $mockMessage;
+        $mockThreadRun->shouldReceive('isCompleted')->andReturn(true);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadService::class, function ($mock) use ($mockThreadRun) {
+            $mock->shouldReceive('withResponseFormat')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('withTimeout')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('run')
+                ->once()
+                ->andReturn($mockThreadRun);
+        });
+
+        // When: Running the extract identity operation
+        $freshTaskRun = TaskRun::with('taskDefinition.agent')->find($taskRun->id);
+        $this->runner->setTaskRun($freshTaskRun)->setTaskProcess($taskProcess);
+        $this->runner->run();
+
+        // Then: Output artifact is created with correct structure
+        $taskProcess->refresh();
+        $outputArtifact = $taskProcess->outputArtifacts()->first();
+
+        // Verify output artifact was created
+        $this->assertNotNull($outputArtifact, 'Output artifact should be created');
+        $this->assertStringContainsString('Identity:', $outputArtifact->name);
+        $this->assertStringContainsString('Client', $outputArtifact->name);
+
+        // Verify json_content has data at root level with id and type
+        $jsonContent = $outputArtifact->json_content;
+        $this->assertArrayHasKey('id', $jsonContent);
+        $this->assertNotNull($jsonContent['id']);
+        $this->assertEquals('Client', $jsonContent['type']);
+
+        // Verify extracted fields are at root level (not nested in extracted_data)
+        $this->assertArrayHasKey('client_name', $jsonContent);
+        $this->assertEquals('John Doe Insurance', $jsonContent['client_name']);
+
+        // Verify meta contains operational fields
+        $meta = $outputArtifact->meta;
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY, $meta['operation']);
+        $this->assertEquals(['client_name' => '%John%Doe%'], $meta['search_query']);
+        $this->assertArrayHasKey('was_existing', $meta);
+        $this->assertArrayHasKey('match_id', $meta);
+        $this->assertEquals($taskProcess->id, $meta['task_process_id']);
+        $this->assertEquals(0, $meta['level']);
+        $this->assertEquals('Client', $meta['identity_group']);
+
+        // Verify parent-child relationship via parent_artifact_id
+        $this->assertEquals($inputArtifact->id, $outputArtifact->parent_artifact_id);
+
+        // Input artifact's json_content is NOT modified (extracted artifacts are children via parent_artifact_id)
+        $inputArtifact->refresh();
+        $this->assertEmpty($inputArtifact->json_content);
+    }
+
+    #[Test]
+    public function extract_remaining_operation_creates_output_artifact(): void
+    {
+        // Given: TaskRun with extraction plan and a resolved TeamObject
+        $this->taskDefinition->meta = [
+            'extraction_plan' => [
+                'levels' => [
+                    [
+                        'level'      => 0,
+                        'identities' => [
+                            [
+                                'name'              => 'Client',
+                                'object_type'       => 'Client',
+                                'identity_fields'   => ['client_name'],
+                                'skim_fields'       => ['client_name'],
+                                'search_mode'       => 'skim',
+                                'fragment_selector' => [
+                                    'type'     => 'object',
+                                    'children' => [
+                                        'client_name' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'remaining'  => [
+                            [
+                                'name'              => 'Client Address',
+                                'key'               => 'client_address',
+                                'object_type'       => 'Client',
+                                'fields'            => ['address', 'city', 'state'],
+                                'search_mode'       => 'exhaustive',
+                                'fragment_selector' => [
+                                    'type'     => 'object',
+                                    'children' => [
+                                        'address' => ['type' => 'string'],
+                                        'city'    => ['type' => 'string'],
+                                        'state'   => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'meta'               => [],
+        ]);
+
+        // Create parent output artifact (represents the extraction session)
+        $parentArtifact = Artifact::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_run_id'        => $taskRun->id,
+            'name'               => 'Extraction Output',
+            'parent_artifact_id' => null,
+        ]);
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+
+        // Create child artifact with classification for the extraction group
+        $childArtifact = Artifact::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_run_id'        => $taskRun->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'name'               => 'Page 1',
+            'json_content'       => [],
+            'meta'               => [
+                'classification' => [
+                    'client_address' => true,
+                ],
+            ],
+        ]);
+
+        $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 1,
+            'filename'    => 'page-1.jpg',
+            'filepath'    => 'test/page-1.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+        $childArtifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
+
+        // Create existing TeamObject
+        $teamObject = \App\Models\TeamObject\TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'John Doe Insurance',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
+            'meta'        => [
+                'level'            => 0,
+                'object_id'        => $teamObject->id,
+                'search_mode'      => 'exhaustive',
+                'extraction_group' => [
+                    'name'              => 'Client Address',
+                    'key'               => 'client_address',
+                    'object_type'       => 'Client',
+                    'fields'            => ['address', 'city', 'state'],
+                    'search_mode'       => 'exhaustive',
+                    'fragment_selector' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'address' => ['type' => 'string'],
+                            'city'    => ['type' => 'string'],
+                            'state'   => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+            'started_at'  => now(),
+        ]);
+
+        // Attach artifact as input to process
+        $taskProcess->inputArtifacts()->attach($childArtifact->id);
+
+        // Mock GroupExtractionService to return extracted data
+        $this->mock(\App\Services\Task\DataExtraction\GroupExtractionService::class, function ($mock) use ($childArtifact) {
+            $mock->shouldReceive('getClassifiedArtifactsForGroup')
+                ->once()
+                ->andReturn(collect([$childArtifact]));
+
+            $mock->shouldReceive('extractExhaustive')
+                ->once()
+                ->andReturn([
+                    'address' => '123 Main Street',
+                    'city'    => 'Springfield',
+                    'state'   => 'IL',
+                ]);
+
+            $mock->shouldReceive('updateTeamObjectWithExtractedData')
+                ->once();
+        });
+
+        // When: Running the extract remaining operation
+        $freshTaskRun = TaskRun::with('taskDefinition.agent')->find($taskRun->id);
+        $this->runner->setTaskRun($freshTaskRun)->setTaskProcess($taskProcess);
+        $this->runner->run();
+
+        // Then: Output artifact is created with correct structure
+        $taskProcess->refresh();
+        $outputArtifact = $taskProcess->outputArtifacts()->first();
+
+        // Verify output artifact was created
+        $this->assertNotNull($outputArtifact, 'Output artifact should be created');
+        $this->assertStringContainsString('Remaining:', $outputArtifact->name);
+        $this->assertStringContainsString('Client Address', $outputArtifact->name);
+
+        // Verify json_content has data at root level with id and type
+        $jsonContent = $outputArtifact->json_content;
+        $this->assertArrayHasKey('id', $jsonContent);
+        $this->assertEquals($teamObject->id, $jsonContent['id']);
+        $this->assertEquals('Client', $jsonContent['type']);
+
+        // Verify extracted fields are at root level (not nested in extracted_data)
+        $this->assertEquals('123 Main Street', $jsonContent['address']);
+        $this->assertEquals('Springfield', $jsonContent['city']);
+        $this->assertEquals('IL', $jsonContent['state']);
+
+        // Verify meta contains operational fields
+        $meta = $outputArtifact->meta;
+        $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING, $meta['operation']);
+        $this->assertEquals('exhaustive', $meta['extraction_mode']);
+        $this->assertEquals($taskProcess->id, $meta['task_process_id']);
+        $this->assertEquals(0, $meta['level']);
+        $this->assertEquals('Client Address', $meta['extraction_group']);
+
+        // Verify parent-child relationship via parent_artifact_id
+        $this->assertEquals($childArtifact->id, $outputArtifact->parent_artifact_id);
+
+        // Input artifact's json_content is NOT modified (extracted artifacts are children via parent_artifact_id)
+        $childArtifact->refresh();
+        $this->assertEmpty($childArtifact->json_content);
     }
 }

@@ -2,20 +2,17 @@
 
 namespace App\Services\Task\Runners;
 
-use App\Models\TeamObject\TeamObject;
 use App\Services\Task\DataExtraction\ArtifactPreparationService;
 use App\Services\Task\DataExtraction\ClassificationExecutorService;
 use App\Services\Task\DataExtraction\ClassificationOrchestrator;
 use App\Services\Task\DataExtraction\ClassificationSchemaBuilder;
 use App\Services\Task\DataExtraction\ExtractionPhaseService;
 use App\Services\Task\DataExtraction\ExtractionPlanningService;
-use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
-use App\Services\Task\DataExtraction\GroupExtractionService;
-use App\Services\Task\DataExtraction\ObjectResolutionService;
+use App\Services\Task\DataExtraction\IdentityExtractionService;
 use App\Services\Task\DataExtraction\ObjectTypeExtractor;
 use App\Services\Task\DataExtraction\PerObjectPlanningService;
 use App\Services\Task\DataExtraction\PlanningPhaseService;
-use Exception;
+use App\Services\Task\DataExtraction\RemainingExtractionService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ExtractDataTaskRunner extends AgentThreadTaskRunner
@@ -25,8 +22,8 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
     public const string OPERATION_PLAN_IDENTIFY = 'Plan: Identify',
         OPERATION_PLAN_REMAINING                = 'Plan: Remaining',
         OPERATION_CLASSIFY                      = 'Classify',
-        OPERATION_RESOLVE_OBJECTS               = 'Resolve Objects',
-        OPERATION_EXTRACT_GROUP                 = 'Extract Group';
+        OPERATION_EXTRACT_IDENTITY              = 'Extract Identity',
+        OPERATION_EXTRACT_REMAINING             = 'Extract Remaining';
 
     /**
      * Get the task runner name.
@@ -79,12 +76,12 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
         static::logDebug("Running extract data operation: {$this->taskProcess->operation}");
 
         match ($this->taskProcess->operation) {
-            self::OPERATION_PLAN_IDENTIFY   => $this->runPlanIdentifyOperation(),
-            self::OPERATION_PLAN_REMAINING  => $this->runPlanRemainingOperation(),
-            self::OPERATION_CLASSIFY        => $this->runClassificationOperation(),
-            self::OPERATION_RESOLVE_OBJECTS => $this->runResolveObjectsOperation(),
-            self::OPERATION_EXTRACT_GROUP   => $this->runExtractGroupOperation(),
-            default                         => $this->runInitializeOperation()
+            self::OPERATION_PLAN_IDENTIFY     => $this->runPlanIdentifyOperation(),
+            self::OPERATION_PLAN_REMAINING    => $this->runPlanRemainingOperation(),
+            self::OPERATION_CLASSIFY          => $this->runClassificationOperation(),
+            self::OPERATION_EXTRACT_IDENTITY  => $this->runExtractIdentityOperation(),
+            self::OPERATION_EXTRACT_REMAINING => $this->runExtractRemainingOperation(),
+            default                           => $this->runInitializeOperation()
         };
     }
 
@@ -250,148 +247,61 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Run the resolve objects operation.
-     * Resolves/creates TeamObjects from artifacts.
-     * This runs FIRST at each level before extracting additional data.
+     * Run the extract identity operation.
+     * Delegates to IdentityExtractionService for identity field extraction and TeamObject resolution.
      */
-    protected function runResolveObjectsOperation(): void
+    protected function runExtractIdentityOperation(): void
     {
-        $level = $this->taskProcess->meta['level'] ?? 0;
+        $level          = $this->taskProcess->meta['level']            ?? 0;
+        $group          = $this->taskProcess->meta['identity_group']   ?? [];
+        $parentObjectId = $this->taskProcess->meta['parent_object_id'] ?? null;
 
-        // Get extraction plan from TaskDefinition.meta
-        $taskDefinition = $this->taskRun->taskDefinition;
-        $plan           = $taskDefinition->meta['extraction_plan'] ?? [];
-
-        if (empty($plan)) {
-            static::logDebug('No extraction plan found in TaskDefinition');
-        } else {
-            static::logDebug('Using cached plan from TaskDefinition');
-        }
-
-        static::logDebug('Running resolve objects operation', [
-            'level' => $level,
-        ]);
-
-        $resolutionService = app(ObjectResolutionService::class);
-
-        // Check for existing object reference first
-        $resolutionService->verifyExistingObjectIfProvided(
-            $this->taskRun,
-            $this->taskProcess,
-            $plan,
-            $level
-        );
-
-        // Get identification groups at this level
-        $identificationGroups = $resolutionService->getIdentificationGroupsAtLevel($plan, $level);
-
-        if (empty($identificationGroups)) {
-            static::logDebug('No identification groups at this level', ['level' => $level]);
-            app(ExtractionProcessOrchestrator::class)->updateLevelProgress(
-                $this->taskRun,
-                $level,
-                'resolution_complete',
-                true
-            );
+        if (empty($group)) {
+            static::logDebug('No identity group found in task process meta');
             $this->complete();
 
             return;
         }
 
-        // Resolve objects for each identification group
-        foreach ($identificationGroups as $groupIndex => $group) {
-            static::logDebug('Resolving objects for group', [
-                'level'       => $level,
-                'group_index' => $groupIndex,
-                'group_name'  => $group['name'] ?? "Group $groupIndex",
-            ]);
-
-            $resolutionService->resolveObjectsForGroup(
-                $this->taskRun,
-                $this->taskProcess,
-                $group,
-                $level
-            );
-        }
-
-        // Mark resolution complete
-        app(ExtractionProcessOrchestrator::class)->updateLevelProgress(
-            $this->taskRun,
-            $level,
-            'resolution_complete',
-            true
+        // Delegate to IdentityExtractionService
+        app(IdentityExtractionService::class)->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $this->taskProcess,
+            identityGroup: $group,
+            level: $level,
+            parentObjectId: $parentObjectId
         );
-
-        static::logDebug('Object resolution completed for level', ['level' => $level]);
 
         $this->complete();
     }
 
     /**
-     * Run the extract group operation.
-     * Extracts additional data points for resolved objects.
+     * Run the extract remaining operation.
+     * Delegates to RemainingExtractionService for additional data extraction.
      */
-    protected function runExtractGroupOperation(): void
+    protected function runExtractRemainingOperation(): void
     {
-        $group      = $this->taskProcess->meta['extraction_group'];
-        $level      = $this->taskProcess->meta['level']       ?? 0;
-        $objectId   = $this->taskProcess->meta['object_id'];
-        $searchMode = $this->taskProcess->meta['search_mode'] ?? 'exhaustive';
+        $level        = $this->taskProcess->meta['level']            ?? 0;
+        $group        = $this->taskProcess->meta['extraction_group'] ?? [];
+        $teamObjectId = $this->taskProcess->meta['object_id']        ?? null;
+        $searchMode   = $this->taskProcess->meta['search_mode']      ?? 'exhaustive';
 
-        static::logDebug('Running extract group operation', [
-            'level'       => $level,
-            'object_id'   => $objectId,
-            'search_mode' => $searchMode,
-            'group_name'  => $group['name'] ?? 'Unknown',
-        ]);
-
-        $extractionService = app(GroupExtractionService::class);
-
-        // Get classified artifacts for this group
-        $artifacts = $extractionService->getClassifiedArtifactsForGroup($this->taskRun, $group);
-
-        if ($artifacts->isEmpty()) {
-            static::logDebug('No classified artifacts for group', ['group' => $group['name'] ?? 'Unknown']);
+        if (empty($group) || !$teamObjectId) {
+            static::logDebug('Missing extraction group or object_id in task process meta');
             $this->complete();
 
             return;
         }
 
-        // Load resolved TeamObject
-        $teamObject = TeamObject::find($objectId);
-
-        if (!$teamObject) {
-            throw new Exception("Resolved TeamObject not found: $objectId");
-        }
-
-        // Extract based on search mode
-        if ($searchMode === 'skim') {
-            $extractedData = $extractionService->extractWithSkimMode(
-                $this->taskRun,
-                $this->taskProcess,
-                $group,
-                $artifacts,
-                $teamObject
-            );
-        } else {
-            $extractedData = $extractionService->extractExhaustive(
-                $this->taskRun,
-                $this->taskProcess,
-                $group,
-                $artifacts,
-                $teamObject
-            );
-        }
-
-        // Update TeamObject with extracted data
-        if (!empty($extractedData)) {
-            $extractionService->updateTeamObjectWithExtractedData($this->taskRun, $teamObject, $extractedData, $group);
-        }
-
-        static::logDebug('Extract group operation completed', [
-            'level'      => $level,
-            'group_name' => $group['name'] ?? 'Unknown',
-        ]);
+        // Delegate to RemainingExtractionService
+        app(RemainingExtractionService::class)->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $this->taskProcess,
+            extractionGroup: $group,
+            level: $level,
+            teamObjectId: $teamObjectId,
+            searchMode: $searchMode
+        );
 
         $this->complete();
     }
