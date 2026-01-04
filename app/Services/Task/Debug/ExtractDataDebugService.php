@@ -102,7 +102,7 @@ class ExtractDataDebugService
                 $filesCount  = $storedFiles->count();
                 $filesIds    = $storedFiles->pluck('id')->implode(', ');
 
-                $command->line("     - {$child->name} (ID: {$child->id}, Position: {$child->position})");
+                $command->line("     - {$child->name} (ID: {$child->id}, Position: {$child->position}, child_artifacts_count: {$child->child_artifacts_count})");
                 $command->line("       Stored files: $filesCount ($filesIds)");
 
                 // Show classification if present
@@ -110,6 +110,18 @@ class ExtractDataDebugService
                 if ($classification) {
                     $trueFields = array_keys(array_filter($classification, fn($v) => $v === true));
                     $command->line('       Classifications: ' . implode(', ', array_slice($trueFields, 0, 5)));
+                }
+
+                // Show grandchildren (extraction artifacts)
+                $grandchildren = $child->children()->get();
+                if ($grandchildren->isNotEmpty()) {
+                    $command->line("       Grandchildren: {$grandchildren->count()}");
+                    foreach ($grandchildren->take(3) as $grandchild) {
+                        $command->line("         - {$grandchild->name} (ID: {$grandchild->id})");
+                    }
+                    if ($grandchildren->count() > 3) {
+                        $command->line('         ... and ' . ($grandchildren->count() - 3) . ' more');
+                    }
                 }
             }
 
@@ -216,6 +228,12 @@ class ExtractDataDebugService
 
         foreach ($outputArtifacts as $artifact) {
             $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
+
+            // Show parent artifact info
+            $parentId   = $artifact->parent_artifact_id;
+            $parentName = $artifact->parent?->name ?? '(none)';
+            $command->line('    parent_artifact_id: ' . ($parentId ?? 'NULL') . " ($parentName)");
+
             if ($artifact->json_content) {
                 $command->line('    JSON Content:');
                 $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->json_content, JSON_PRETTY_PRINT)));

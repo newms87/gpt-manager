@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Debug\ExtractDataDebugService;
 use App\Services\Task\FileOrganization\ResolutionOrchestrator;
@@ -13,7 +14,7 @@ use Illuminate\Console\Command;
 
 class DebugTaskRunCommand extends Command
 {
-    protected $signature = 'debug:task-run {task-run : TaskRun ID}
+    protected $signature = 'debug:task-run {task-run : TaskRun ID or TaskProcess ID}
         {--messages : Show agent thread messages}
         {--artifacts : Show artifact JSON content}
         {--raw : Show raw artifact data}
@@ -39,8 +40,29 @@ class DebugTaskRunCommand extends Command
 
     public function handle(): int
     {
-        $taskRunId = $this->argument('task-run');
-        $taskRun   = TaskRun::findOrFail($taskRunId);
+        $id = $this->argument('task-run');
+
+        // First try to find as TaskRun
+        $taskRun = TaskRun::find($id);
+
+        if (!$taskRun) {
+            // Try to find as TaskProcess
+            $taskProcess = TaskProcess::find($id);
+
+            if (!$taskProcess) {
+                $this->error("No TaskRun or TaskProcess found with ID: $id");
+
+                return 1;
+            }
+
+            $taskRun = $taskProcess->taskRun;
+            $this->info("Resolved TaskProcess $id -> TaskRun {$taskRun->id}");
+
+            // Auto-set the --process option if not already set
+            if (!$this->option('process')) {
+                $this->input->setOption('process', $id);
+            }
+        }
 
         // Handle --run and --rerun options first (before any other processing)
         if ($this->option('run')) {
