@@ -9,6 +9,7 @@ import {
 	DashboardView,
 	LoginView,
 	PageNotFoundView,
+	PlaygroundView,
 	SchemaDefinitionsView,
 	TeamObjectsDemoView,
 	WorkflowDefinitionsView,
@@ -82,6 +83,12 @@ const router = createRouter({
 					name: "team-objects-demo",
 					component: TeamObjectsDemoView,
 					meta: { title: "Team Objects Demo", type: "TeamObjectResource" }
+				},
+				{
+					path: "/playground",
+					name: "playground",
+					component: PlaygroundView,
+					meta: { title: "Component Playground" }
 				}
 			]
 		},

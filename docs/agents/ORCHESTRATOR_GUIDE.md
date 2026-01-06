@@ -237,6 +237,18 @@ The preamble is required because:
 
 ---
 
+## 🚨 quasar-ui-danx: NEVER Rebuild
+
+**Vite HMR handles all changes instantly. DO NOT rebuild after making changes to quasar-ui-danx.**
+
+- ❌ DO NOT run `yarn build` in quasar-ui-danx after changes
+- ❌ DO NOT run `yarn build` in the SPA after quasar-ui-danx changes
+- ❌ DO NOT instruct sub-agents to rebuild after quasar-ui-danx changes
+- ✅ Changes to .vue, .ts, .scss files are reflected immediately via HMR
+- ✅ Only run `yarn build` for final validation before committing
+
+---
+
 ## 🚨 CONVERSATION COMPACTING RULES
 
 **When compacting/summarizing conversations:**

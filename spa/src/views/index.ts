@@ -4,6 +4,7 @@ export { default as ContentSourcesView } from "./ContentSourcesView.vue";
 export { default as DashboardView } from "./DashboardView.vue";
 export { default as LoginView } from "./LoginView.vue";
 export { default as PageNotFoundView } from "./PageNotFoundView.vue";
+export { default as PlaygroundView } from "./PlaygroundView.vue";
 export { default as PromptDirectivesView } from "./PromptDirectivesView.vue";
 export { default as SchemaDefinitionsView } from "./SchemaDefinitionsView.vue";
 export { default as TeamObjectsDemoView } from "./TeamObjectsDemoView.vue";

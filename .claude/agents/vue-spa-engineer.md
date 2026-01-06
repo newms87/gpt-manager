@@ -142,10 +142,12 @@ If a command fails, verify you're in the project root with `pwd` - NEVER switch 
 - `yarn build` - Build and validate (MANDATORY after non-trivial changes)
 - Linting is handled via IDE (DO NOT use command-line linting)
 
-**🚨 NEVER build quasar-ui-danx directly**
-- The projects are locally linked - just build the SPA
-- Building quasar-ui-danx directly causes linking issues
-- SPA build automatically picks up quasar-ui-danx source changes
+**🚨 NEVER rebuild after changes to quasar-ui-danx**
+- Vite HMR (Hot Module Replacement) handles all changes instantly
+- DO NOT run `yarn build` in quasar-ui-danx after making changes
+- DO NOT run `yarn build` in the SPA after quasar-ui-danx changes
+- Changes to .vue, .ts, .scss files in quasar-ui-danx are reflected immediately
+- Only run `yarn build` for final validation before committing
 
 ---
 

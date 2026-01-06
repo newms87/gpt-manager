@@ -194,6 +194,15 @@ This is a blocking requirement - absolute paths require manual approval and brea
 - Output text directly (not bash echo)
 - **Never use Task tool** - you are already the specialized agent
 
+### 🚨 quasar-ui-danx: NEVER Rebuild
+
+**Vite HMR handles all changes instantly. DO NOT rebuild after making changes to quasar-ui-danx.**
+
+- ❌ DO NOT run `yarn build` in quasar-ui-danx after changes
+- ❌ DO NOT run `yarn build` in the SPA after quasar-ui-danx changes
+- ✅ Changes to .vue, .ts, .scss files are reflected immediately via HMR
+- ✅ Only run `yarn build` for final validation before committing
+
 ---
 
 ## 🚨 ZERO BACKWARDS COMPATIBILITY - Anti-Patterns
