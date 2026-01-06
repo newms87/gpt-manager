@@ -13,6 +13,7 @@ class ArtifactFilter
         public bool $includeFiles = true,
         public bool $includeJson = true,
         public bool $includeMeta = true,
+        public bool $includeTextTranscodes = true,
         public array $jsonFragmentSelector = [],
         public array $metaFragmentSelector = []
     ) {

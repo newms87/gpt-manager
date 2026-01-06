@@ -154,6 +154,8 @@ class TaskRunnerService
             $taskRun->started_at               = null;
             $taskRun->skipped_at               = null;
             $taskRun->task_process_error_count = 0;
+            $taskRun->meta                     = null;
+
             $taskRun->save();
 
             // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts

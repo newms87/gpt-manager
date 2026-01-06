@@ -102,9 +102,15 @@ class ArtifactFilterService
         return $this->includeMeta && $this->artifact->meta;
     }
 
+    public function hasTextTranscodes(): bool
+    {
+        return $this->includeTextTranscodes && $this->artifact->storedFiles->isNotEmpty();
+    }
+
     public function isTextOnly(): bool
     {
-        return $this->includeText && !$this->hasFiles() && !$this->hasJson() && !$this->hasMeta();
+        // Text-only when we ONLY have text content and/or text transcodes (no files, json, meta)
+        return !$this->hasFiles() && !$this->hasJson() && !$this->hasMeta();
     }
 
     /**
@@ -117,6 +123,10 @@ class ArtifactFilterService
         }
 
         if ($this->hasText() || $this->hasFiles()) {
+            return false;
+        }
+
+        if ($this->hasTextTranscodes()) {
             return false;
         }
 
@@ -187,6 +197,21 @@ class ArtifactFilterService
         return $filteredArtifact;
     }
 
+    protected function buildTextTranscodes(): ?string
+    {
+        $allTranscodes = [];
+
+        foreach ($this->artifact->storedFiles as $storedFile) {
+            $transcodeArray   = $storedFile->getTextTranscodesContent();
+            $transcodeContent = TextTranscodeHelper::formatTextTranscodes($transcodeArray);
+            if ($transcodeContent) {
+                $allTranscodes[] = "=== File: {$storedFile->filename} ===\n" . $transcodeContent;
+            }
+        }
+
+        return $allTranscodes ? implode("\n\n", $allTranscodes) : null;
+    }
+
     public function filter(): array|string|null
     {
         if ($this->willBeEmpty()) {
@@ -194,7 +219,20 @@ class ArtifactFilterService
         }
 
         if ($this->isTextOnly()) {
-            return $this->getTextContent();
+            $parts = [];
+
+            if ($this->hasText()) {
+                $parts[] = $this->getTextContent();
+            }
+
+            if ($this->hasTextTranscodes()) {
+                $transcodes = $this->buildTextTranscodes();
+                if ($transcodes) {
+                    $parts[] = $transcodes;
+                }
+            }
+
+            return $parts ? implode("\n\n", $parts) : null;
         } else {
             $data = [];
 
@@ -204,22 +242,14 @@ class ArtifactFilterService
 
             if ($this->hasFiles()) {
                 $data['files'] = $this->artifact->storedFiles;
+            }
 
-                // Include text transcodes if enabled
-                if ($this->includeTextTranscodes) {
-                    $allTranscodes = [];
-
-                    foreach ($this->artifact->storedFiles as $storedFile) {
-                        $transcodeArray   = $storedFile->getTextTranscodesContent();
-                        $transcodeContent = TextTranscodeHelper::formatTextTranscodes($transcodeArray);
-                        if ($transcodeContent) {
-                            $allTranscodes[] = "=== File: {$storedFile->filename} ===\n" . $transcodeContent;
-                        }
-                    }
-
-                    if ($allTranscodes) {
-                        $data['text_transcodes'] = implode("\n\n", $allTranscodes);
-                    }
+            // Text transcodes are available independently of files
+            // (e.g., for identity extraction we want text transcodes but not images)
+            if ($this->hasTextTranscodes()) {
+                $transcodes = $this->buildTextTranscodes();
+                if ($transcodes) {
+                    $data['text_transcodes'] = $transcodes;
                 }
             }
 

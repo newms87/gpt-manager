@@ -324,6 +324,7 @@ class AgentThreadBuilderService
             $service->includeFiles($filter->includeFiles);
             $service->includeJson($filter->includeJson, $filter->jsonFragmentSelector);
             $service->includeMeta($filter->includeMeta, $filter->metaFragmentSelector);
+            $service->includeTextTranscodes($filter->includeTextTranscodes);
         }
 
         return $service;
