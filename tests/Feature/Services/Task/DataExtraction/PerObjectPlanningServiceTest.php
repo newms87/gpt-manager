@@ -821,6 +821,359 @@ class PerObjectPlanningServiceTest extends AuthenticatedTestCase
     }
 
     // ==========================================
+    // FRAGMENT SELECTOR TYPE MATCHING TESTS
+    // ==========================================
+
+    #[Test]
+    public function buildFragmentSelectorFromFields_uses_array_type_for_array_properties(): void
+    {
+        // Given: A schema where 'provider' has type: array
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Demand',
+            'properties' => [
+                'name'     => ['type' => 'string'],
+                'provider' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'name'    => ['type' => 'string'],
+                            'address' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Update schema definition with this schema
+        $this->taskDefinition->schemaDefinition->update(['schema' => $schema]);
+
+        // Store per-object plan for provider
+        $perObjectPlans = [
+            'Provider' => [
+                'object_type'    => 'Provider',
+                'path'           => 'provider',
+                'level'          => 1,
+                'is_array'       => true,
+                'identity_group' => [
+                    'identity_fields' => ['name'],
+                    'skim_fields'     => ['name', 'address'],
+                    'search_mode'     => 'skim',
+                ],
+                'has_remaining_fields' => false,
+                'extraction_groups'    => [],
+            ],
+        ];
+
+        $this->taskRun->meta = ['per_object_plans' => $perObjectPlans];
+        $this->taskRun->save();
+
+        // When: Compile final plan
+        $plan = $this->service->compileFinalPlan($this->taskRun);
+
+        // Then: Fragment selector should have correct structure for array property
+        $fragmentSelector = $plan['levels'][0]['identities'][0]['fragment_selector'];
+
+        // The root wrapper type is 'object' (container for path parts)
+        $this->assertEquals('object', $fragmentSelector['type']);
+
+        // The provider path should be type 'array' (from schema type)
+        $this->assertArrayHasKey('provider', $fragmentSelector['children']);
+        $providerSelector = $fragmentSelector['children']['provider'];
+        $this->assertEquals('array', $providerSelector['type']);
+    }
+
+    #[Test]
+    public function buildFragmentSelectorFromFields_uses_object_type_for_object_properties(): void
+    {
+        // Given: A schema where 'client' has type: object
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Demand',
+            'properties' => [
+                'name'   => ['type' => 'string'],
+                'client' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'name'  => ['type' => 'string'],
+                        'email' => ['type' => 'string'],
+                    ],
+                ],
+            ],
+        ];
+
+        // Update schema definition with this schema
+        $this->taskDefinition->schemaDefinition->update(['schema' => $schema]);
+
+        // Store per-object plan for client
+        $perObjectPlans = [
+            'Client' => [
+                'object_type'    => 'Client',
+                'path'           => 'client',
+                'level'          => 1,
+                'is_array'       => false,
+                'identity_group' => [
+                    'identity_fields' => ['name'],
+                    'skim_fields'     => ['name', 'email'],
+                    'search_mode'     => 'skim',
+                ],
+                'has_remaining_fields' => false,
+                'extraction_groups'    => [],
+            ],
+        ];
+
+        $this->taskRun->meta = ['per_object_plans' => $perObjectPlans];
+        $this->taskRun->save();
+
+        // When: Compile final plan
+        $plan = $this->service->compileFinalPlan($this->taskRun);
+
+        // Then: Fragment selector should have type 'object' for client path part
+        $fragmentSelector = $plan['levels'][0]['identities'][0]['fragment_selector'];
+
+        // The root wrapper should be type 'object'
+        $this->assertEquals('object', $fragmentSelector['type']);
+
+        // The client path should be type 'object' (from schema)
+        $this->assertArrayHasKey('client', $fragmentSelector['children']);
+        $clientSelector = $fragmentSelector['children']['client'];
+        $this->assertEquals('object', $clientSelector['type']);
+    }
+
+    #[Test]
+    public function buildFragmentSelectorFromFields_handles_nested_array_paths(): void
+    {
+        // Given: A schema with nested structure provider (array) -> care_summary (object)
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Demand',
+            'properties' => [
+                'name'     => ['type' => 'string'],
+                'provider' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'name'         => ['type' => 'string'],
+                            'care_summary' => [
+                                'type'       => 'object',
+                                'properties' => [
+                                    'name' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Update schema definition with this schema
+        $this->taskDefinition->schemaDefinition->update(['schema' => $schema]);
+
+        // Store per-object plan for care_summary (nested inside provider)
+        $perObjectPlans = [
+            'CareSummary' => [
+                'object_type'    => 'CareSummary',
+                'path'           => 'provider.care_summary',
+                'level'          => 2,
+                'is_array'       => false,
+                'parent_type'    => 'Provider',
+                'identity_group' => [
+                    'identity_fields' => ['name'],
+                    'skim_fields'     => ['name'],
+                    'search_mode'     => 'skim',
+                ],
+                'has_remaining_fields' => false,
+                'extraction_groups'    => [],
+            ],
+        ];
+
+        $this->taskRun->meta = ['per_object_plans' => $perObjectPlans];
+        $this->taskRun->save();
+
+        // When: Compile final plan
+        $plan = $this->service->compileFinalPlan($this->taskRun);
+
+        // Then: Fragment selector should have correct types for nested path
+        $fragmentSelector = $plan['levels'][0]['identities'][0]['fragment_selector'];
+
+        // The root wrapper type is 'object' (container for path parts)
+        $this->assertEquals('object', $fragmentSelector['type']);
+
+        // The provider path should be type 'array' (from schema: provider is an array)
+        $this->assertArrayHasKey('provider', $fragmentSelector['children']);
+        $providerSelector = $fragmentSelector['children']['provider'];
+        $this->assertEquals('array', $providerSelector['type']);
+
+        // The care_summary has type 'object' (from schema: care_summary is an object within provider items)
+        $this->assertArrayHasKey('care_summary', $providerSelector['children']);
+        $careSummarySelector = $providerSelector['children']['care_summary'];
+        $this->assertEquals('object', $careSummarySelector['type']);
+    }
+
+    #[Test]
+    public function fragment_selector_validates_against_schema_with_arrays(): void
+    {
+        // Given: A complete Demand schema with provider array
+        $schema = [
+            'type'       => 'object',
+            'title'      => 'Demand',
+            'properties' => [
+                'name'     => ['type' => 'string'],
+                'provider' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'name'    => ['type' => 'string'],
+                            'address' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Update schema definition with this schema
+        $this->taskDefinition->schemaDefinition->update(['schema' => $schema]);
+
+        // Store per-object plan for provider
+        $perObjectPlans = [
+            'Provider' => [
+                'object_type'    => 'Provider',
+                'path'           => 'provider',
+                'level'          => 1,
+                'is_array'       => true,
+                'identity_group' => [
+                    'identity_fields' => ['name'],
+                    'skim_fields'     => ['name', 'address'],
+                    'search_mode'     => 'skim',
+                ],
+                'has_remaining_fields' => false,
+                'extraction_groups'    => [],
+            ],
+        ];
+
+        $this->taskRun->meta = ['per_object_plans' => $perObjectPlans];
+        $this->taskRun->save();
+
+        // When: Compile final plan and apply fragment selector via JsonSchemaService
+        $plan             = $this->service->compileFinalPlan($this->taskRun);
+        $fragmentSelector = $plan['levels'][0]['identities'][0]['fragment_selector'];
+
+        // Then: applyFragmentSelector should NOT throw an exception
+        $jsonSchemaService = app(\App\Services\JsonSchema\JsonSchemaService::class);
+        $filteredSchema    = $jsonSchemaService->applyFragmentSelector($schema, $fragmentSelector);
+
+        // The filtered schema should have the provider property
+        $this->assertArrayHasKey('properties', $filteredSchema);
+        $this->assertArrayHasKey('provider', $filteredSchema['properties']);
+        $this->assertEquals('array', $filteredSchema['properties']['provider']['type']);
+    }
+
+    #[Test]
+    public function buildPathTypeMap_correctly_maps_array_and_object_types(): void
+    {
+        // Given: A schema with mixed array and object types
+        $schema = [
+            'type'       => 'object',
+            'properties' => [
+                'provider' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'contacts' => [
+                                'type'  => 'array',
+                                'items' => [
+                                    'type'       => 'object',
+                                    'properties' => [
+                                        'name' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Use reflection to access protected method
+        $reflection = new \ReflectionClass($this->service);
+        $method     = $reflection->getMethod('buildPathTypeMap');
+        $method->setAccessible(true);
+
+        // When: Build path type map for nested path
+        $pathParts = ['provider', 'contacts'];
+        $result    = $method->invokeArgs($this->service, [$pathParts, $schema]);
+
+        // Then: Types should be correctly identified from schema
+        $this->assertEquals('array', $result['provider']);
+        $this->assertEquals('array', $result['contacts']);
+    }
+
+    #[Test]
+    public function buildPathTypeMap_handles_union_types_with_null(): void
+    {
+        // Given: A schema with union types (e.g., ['array', 'null'])
+        $schema = [
+            'type'       => 'object',
+            'properties' => [
+                'providers' => [
+                    'type'  => ['array', 'null'],
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Use reflection to access protected method
+        $reflection = new \ReflectionClass($this->service);
+        $method     = $reflection->getMethod('buildPathTypeMap');
+        $method->setAccessible(true);
+
+        // When: Build path type map
+        $pathParts = ['providers'];
+        $result    = $method->invokeArgs($this->service, [$pathParts, $schema]);
+
+        // Then: Primary type (non-null) should be used
+        $this->assertEquals('array', $result['providers']);
+    }
+
+    #[Test]
+    public function getPrimaryType_returns_first_non_null_type(): void
+    {
+        // Use reflection to access protected method
+        $reflection = new \ReflectionClass($this->service);
+        $method     = $reflection->getMethod('getPrimaryType');
+        $method->setAccessible(true);
+
+        // Test: array before null
+        $result = $method->invokeArgs($this->service, [['array', 'null']]);
+        $this->assertEquals('array', $result);
+
+        // Test: null before object
+        $result = $method->invokeArgs($this->service, [['null', 'object']]);
+        $this->assertEquals('object', $result);
+
+        // Test: string only
+        $result = $method->invokeArgs($this->service, [['string']]);
+        $this->assertEquals('string', $result);
+
+        // Test: empty array (defaults to object)
+        $result = $method->invokeArgs($this->service, [[]]);
+        $this->assertEquals('object', $result);
+
+        // Test: only null (defaults to object)
+        $result = $method->invokeArgs($this->service, [['null']]);
+        $this->assertEquals('object', $result);
+    }
+
+    // ==========================================
     // HELPER METHODS FOR MOCKING
     // ==========================================
 

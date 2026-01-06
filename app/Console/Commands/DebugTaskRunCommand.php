@@ -33,6 +33,8 @@ class DebugTaskRunCommand extends Command
         {--resolved-objects : Show all TeamObjects created during extraction (ExtractData)}
         {--taskrun-meta : Show the full TaskRun meta data (ExtractData)}
         {--level-progress : Show extraction level progress for each level (ExtractData)}
+        {--cached-plan : Show cached extraction plan fragment selectors (ExtractData)}
+        {--clear-cached-plan : Clear cached extraction plan (ExtractData)}
         {--run : Create and dispatch a new task run with same inputs}
         {--rerun : Reset and re-dispatch this task run}';
 
@@ -493,6 +495,18 @@ class DebugTaskRunCommand extends Command
 
         if ($this->option('level-progress')) {
             $debugService->showLevelProgress($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('cached-plan')) {
+            $debugService->showCachedPlan($taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('clear-cached-plan')) {
+            $debugService->clearCachedPlan($taskRun, $this);
 
             return 0;
         }

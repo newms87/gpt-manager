@@ -7,6 +7,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Throwable;
 
@@ -49,37 +50,102 @@ class ExtractDataDebugService
 
             // Show details for classify processes
             if ($operation === ExtractDataTaskRunner::OPERATION_CLASSIFY) {
-                $completed = $operationProcesses->where('status', 'Completed')->count();
-                $pending   = $operationProcesses->where('status', 'Pending')->count();
-                $running   = $operationProcesses->where('status', 'Running')->count();
-                $failed    = $operationProcesses->where('status', 'Failed')->count();
+                $this->showClassifyProcessSummary($operationProcesses, $count, $command);
+            }
 
-                $command->line("    Completed: $completed, Pending: $pending, Running: $running, Failed: $failed");
+            // Show details for Extract Identity processes
+            if ($operation === ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY) {
+                $this->showExtractionProcessSummary($operationProcesses, $command);
+            }
 
-                // Show child artifacts with classifications
-                foreach ($operationProcesses->take(5) as $process) {
-                    $childArtifactId = $process->meta['child_artifact_id'] ?? null;
-                    $inputArtifact   = $process->inputArtifacts->first();
-                    $pageNumber      = $inputArtifact?->position ?? '?';
-                    $status          = $process->status;
-
-                    $command->line("      Page $pageNumber (Artifact $childArtifactId): $status");
-
-                    // Show classification from child artifact meta if available
-                    $classification = $inputArtifact?->meta['classification'] ?? null;
-                    if ($classification) {
-                        $trueFields = array_keys(array_filter($classification, fn($v) => $v === true));
-                        $trueCount  = count($trueFields);
-                        $command->line("        Classifications: $trueCount fields true");
-                    }
-                }
-
-                if ($count > 5) {
-                    $command->line('      ... and ' . ($count - 5) . ' more');
-                }
+            // Show details for Extract Remaining processes
+            if ($operation === ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING) {
+                $this->showExtractionProcessSummary($operationProcesses, $command);
             }
         }
         $command->newLine();
+    }
+
+    /**
+     * Show summary of classify processes with status breakdown.
+     */
+    protected function showClassifyProcessSummary(
+        Collection $operationProcesses,
+        int $count,
+        Command $command
+    ): void {
+        $completed = $operationProcesses->where('status', 'Completed')->count();
+        $pending   = $operationProcesses->where('status', 'Pending')->count();
+        $running   = $operationProcesses->where('status', 'Running')->count();
+        $failed    = $operationProcesses->where('status', 'Failed')->count();
+
+        $command->line("    Completed: $completed, Pending: $pending, Running: $running, Failed: $failed");
+
+        // Show child artifacts with classifications
+        foreach ($operationProcesses->take(5) as $process) {
+            $childArtifactId = $process->meta['child_artifact_id'] ?? null;
+            $inputArtifact   = $process->inputArtifacts->first();
+            $pageNumber      = $inputArtifact?->position ?? '?';
+            $status          = $process->status;
+
+            $command->line("      Page $pageNumber (Artifact $childArtifactId): $status");
+
+            // Show classification from child artifact meta if available
+            $classification = $inputArtifact?->meta['classification'] ?? null;
+            if ($classification) {
+                $trueFields = array_keys(array_filter($classification, fn($v) => $v === true));
+                $trueCount  = count($trueFields);
+                $command->line("        Classifications: $trueCount fields true");
+            }
+        }
+
+        if ($count > 5) {
+            $command->line('      ... and ' . ($count - 5) . ' more');
+        }
+    }
+
+    /**
+     * Show summary of extraction processes (identity or remaining) with status breakdown and details.
+     */
+    protected function showExtractionProcessSummary(
+        Collection $operationProcesses,
+        Command $command
+    ): void {
+        $completed = $operationProcesses->where('status', 'Completed')->count();
+        $pending   = $operationProcesses->where('status', 'Pending')->count();
+        $running   = $operationProcesses->where('status', 'Running')->count();
+        $failed    = $operationProcesses->where('status', 'Failed')->count();
+
+        $command->line("    Completed: $completed, Failed: $failed, Pending: $pending, Running: $running");
+
+        // Show each process with level and object type
+        foreach ($operationProcesses as $process) {
+            $level      = $process->meta['level'] ?? '?';
+            $status     = $process->status;
+            $objectType = $this->getObjectTypeFromProcess($process);
+
+            $command->line("      Level $level - $objectType: $status");
+        }
+    }
+
+    /**
+     * Extract object type from a task process meta.
+     */
+    protected function getObjectTypeFromProcess(TaskProcess $process): string
+    {
+        // For Extract Identity processes
+        $identityGroup = $process->meta['identity_group'] ?? null;
+        if ($identityGroup) {
+            return $identityGroup['object_type'] ?? $identityGroup['name'] ?? 'Unknown';
+        }
+
+        // For Extract Remaining processes
+        $extractionGroup = $process->meta['extraction_group'] ?? null;
+        if ($extractionGroup) {
+            return $extractionGroup['name'] ?? $extractionGroup['object_type'] ?? 'Unknown';
+        }
+
+        return 'Unknown';
     }
 
     /**
@@ -304,6 +370,10 @@ class ExtractDataDebugService
         $this->resetProcess($process);
         $command->line('Process reset to Pending state');
         $command->newLine();
+
+        // Set started_at before running (matches TaskProcessRunnerService behavior)
+        $process->started_at = now();
+        $process->save();
 
         // Run the process synchronously
         $command->info('Running process...');
@@ -537,5 +607,140 @@ class ExtractDataDebugService
         }
 
         $command->info("Overall Progress: $completeLevels / $totalLevels levels complete");
+    }
+
+    /**
+     * Show cached extraction plan with fragment selector types.
+     */
+    public function showCachedPlan(TaskRun $taskRun, Command $command): void
+    {
+        $taskDef = $taskRun->taskDefinition;
+        $plan    = $taskDef->meta['extraction_plan'] ?? null;
+
+        $command->info('=== Cached Extraction Plan ===');
+        $command->line("TaskDefinition ID: {$taskDef->id}");
+        $command->newLine();
+
+        if (!$plan) {
+            $command->warn('No extraction_plan cached on TaskDefinition');
+
+            return;
+        }
+
+        $levels = $plan['levels'] ?? [];
+        $command->line('Total Levels: ' . count($levels));
+        $command->newLine();
+
+        foreach ($levels as $levelIdx => $level) {
+            $command->info("Level $levelIdx:");
+
+            // Show identity groups
+            $command->line('  Identity Groups:');
+            foreach ($level['identities'] ?? [] as $identity) {
+                $objectType = $identity['object_type']       ?? 'Unknown';
+                $selector   = $identity['fragment_selector'] ?? [];
+
+                $command->line("    $objectType:");
+                $this->showFragmentSelectorTypes($selector, $command, 6);
+            }
+
+            // Show remaining groups
+            $command->line('  Remaining Groups:');
+            foreach ($level['remaining'] ?? [] as $group) {
+                $groupName  = $group['name']              ?? 'Unknown';
+                $objectType = $group['object_type']       ?? 'Unknown';
+                $selector   = $group['fragment_selector'] ?? [];
+
+                $command->line("    $groupName ($objectType):");
+                $this->showFragmentSelectorTypes($selector, $command, 6);
+            }
+
+            $command->newLine();
+        }
+
+        // Also show the schema's actual types for comparison
+        $schema = $taskDef->schemaDefinition?->schema ?? [];
+        $command->info('=== Schema Actual Types ===');
+        $this->showSchemaTypes($schema, $command);
+    }
+
+    /**
+     * Recursively show fragment selector types.
+     */
+    protected function showFragmentSelectorTypes(array $selector, Command $command, int $indent = 0): void
+    {
+        $prefix = str_repeat(' ', $indent);
+        $type   = $selector['type'] ?? 'unknown';
+        $command->line("{$prefix}type: $type");
+
+        $children = $selector['children'] ?? [];
+        if (!empty($children)) {
+            foreach ($children as $name => $child) {
+                $childType = $child['type'] ?? 'unknown';
+                $command->line("{$prefix}  $name: $childType");
+
+                // Recursively show nested children (but limit depth)
+                if (isset($child['children']) && $indent < 12) {
+                    $this->showFragmentSelectorTypes($child, $command, $indent + 4);
+                }
+            }
+        }
+    }
+
+    /**
+     * Show top-level schema types for comparison.
+     */
+    protected function showSchemaTypes(array $schema, Command $command, string $path = '', int $depth = 0): void
+    {
+        if ($depth > 3) {
+            return; // Limit depth
+        }
+
+        $prefix      = str_repeat('  ', $depth);
+        $type        = $schema['type'] ?? 'unknown';
+        $pathDisplay = $path ?: '(root)';
+        $command->line("{$prefix}{$pathDisplay}: $type");
+
+        $properties = $schema['properties'] ?? [];
+        foreach ($properties as $propName => $propSchema) {
+            $propPath = $path ? "$path.$propName" : $propName;
+            $propType = $propSchema['type'] ?? 'unknown';
+
+            // Handle union types
+            if (is_array($propType)) {
+                $propType = implode('|', $propType);
+            }
+
+            $command->line("{$prefix}  $propName: $propType");
+
+            // For arrays, show items type
+            if ($propType === 'array' && isset($propSchema['items'])) {
+                $this->showSchemaTypes($propSchema['items'], $command, "$propPath.items", $depth + 2);
+            } elseif ($propType === 'object' && isset($propSchema['properties'])) {
+                // For objects, recurse into properties
+                $this->showSchemaTypes($propSchema, $command, $propPath, $depth + 2);
+            }
+        }
+    }
+
+    /**
+     * Clear cached extraction plan from TaskDefinition.
+     */
+    public function clearCachedPlan(TaskRun $taskRun, Command $command): void
+    {
+        $taskDef = $taskRun->taskDefinition;
+        $meta    = $taskDef->meta;
+
+        if (!isset($meta['extraction_plan'])) {
+            $command->warn('No extraction_plan to clear');
+
+            return;
+        }
+
+        unset($meta['extraction_plan']);
+        $taskDef->meta = $meta;
+        $taskDef->save();
+
+        $command->info("Cleared extraction_plan from TaskDefinition {$taskDef->id}");
     }
 }

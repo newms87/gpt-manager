@@ -144,6 +144,12 @@ When instructing the `laravel-backend-qa-tester` agent to run tests:
 
 ## Quick Reference
 
+**🌐 Local Development URL:**
+- **Base URL**: `http://localhost:5173/`
+- **Dashboard (Start Here)**: `http://localhost:5173/dashboard`
+- When testing the app in a browser, always navigate to `http://localhost:5173/` first
+- The app will redirect to the dashboard automatically
+
 **Key Architecture:**
 - Service-Repository-Controller pattern with danx integration
 - Team-based access control for all data operations

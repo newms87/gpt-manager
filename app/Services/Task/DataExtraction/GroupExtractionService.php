@@ -179,7 +179,7 @@ class GroupExtractionService
 
         // Run extraction
         $threadRun = app(AgentThreadService::class)
-            ->withResponseFormat($schemaDefinition, null, $jsonSchemaService->setSchema($fragmentSchema))
+            ->withResponseFormat($schemaDefinition, null, $jsonSchemaService)
             ->withTimeout($timeout)
             ->run($thread);
 

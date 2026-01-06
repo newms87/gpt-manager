@@ -25,6 +25,21 @@ Read this file to understand specific commands, syntax requirements, and technic
 
 ---
 
+## Local Development URLs
+
+**🌐 When testing the app in a browser:**
+- **Base URL**: `http://localhost:5173/`
+- **Dashboard (Start Here)**: `http://localhost:5173/dashboard`
+- The Vite dev server runs on port 5173
+- The app will redirect to the dashboard automatically from the base URL
+- Use these URLs when using browser automation tools (e.g., Claude in Chrome)
+
+**API Endpoints:**
+- **Backend API**: `http://localhost/api/` (through Laravel Sail)
+- See Authentication & API Testing section for CLI testing
+
+---
+
 ## Build Commands
 
 **ONLY use these exact commands:**

@@ -6,7 +6,6 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
-use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
@@ -494,8 +493,8 @@ class PerObjectPlanningService
      */
     public function compileFinalPlan(TaskRun $taskRun): array
     {
-        $perObjectPlans    = $this->getPerObjectPlans($taskRun);
-        $jsonSchemaService = app(JsonSchemaService::class);
+        $perObjectPlans = $this->getPerObjectPlans($taskRun);
+        $schema         = $taskRun->taskDefinition->schemaDefinition?->schema ?? [];
 
         // Group plans by level
         $levelGroups = [];
@@ -524,7 +523,9 @@ class PerObjectPlanningService
                 if (!empty($identityGroup['identity_fields'])) {
                     $fragmentSelector = $this->buildFragmentSelectorFromFields(
                         $planData['path']             ?? '',
-                        $identityGroup['skim_fields'] ?? []
+                        $identityGroup['skim_fields'] ?? [],
+                        $schema,
+                        $planData['is_array']         ?? false
                     );
 
                     $levelData['identities'][] = [
@@ -542,7 +543,9 @@ class PerObjectPlanningService
                 foreach ($extractionGroups as $group) {
                     $fragmentSelector = $this->buildFragmentSelectorFromFields(
                         $planData['path'] ?? '',
-                        $group['fields']  ?? []
+                        $group['fields']  ?? [],
+                        $schema,
+                        $planData['is_array'] ?? false
                     );
 
                     $levelData['remaining'][] = [
@@ -571,12 +574,18 @@ class PerObjectPlanningService
     /**
      * Build fragment selector from field list.
      *
-     * Uses JsonSchemaService to build proper fragment selector structure.
+     * Traverses the schema to determine correct types (array vs object) for each path part.
+     *
+     * @param  string  $objectPath  Dot-notation path to the object (e.g., "provider" or "provider.contacts")
+     * @param  array  $fields  Field names to include in the fragment selector
+     * @param  array  $schema  The JSON schema to determine types from
+     * @param  bool  $leafIsArray  Whether the leaf object type is an array
      */
-    protected function buildFragmentSelectorFromFields(string $objectPath, array $fields): array
+    protected function buildFragmentSelectorFromFields(string $objectPath, array $fields, array $schema, bool $leafIsArray): array
     {
+        // Build the leaf fragment selector for the fields
         $fragmentSelector = [
-            'type'     => 'object',
+            'type'     => $leafIsArray ? 'array' : 'object',
             'children' => [],
         ];
 
@@ -586,25 +595,96 @@ class PerObjectPlanningService
             ];
         }
 
-        // If there's an object path, we need to wrap in parent selectors
-        if ($objectPath) {
-            $pathParts = explode('.', $objectPath);
-            $current   = &$fragmentSelector;
-
-            // Build nested structure from path
-            foreach (array_reverse($pathParts) as $pathPart) {
-                $wrapped = [
-                    'type'     => 'object',
-                    'children' => [
-                        $pathPart => $current,
-                    ],
-                ];
-                $current = $wrapped;
-            }
-
-            return $current;
+        // If there's no object path, return the fragment selector as-is
+        if (!$objectPath) {
+            return $fragmentSelector;
         }
 
-        return $fragmentSelector;
+        // Build the path type map by traversing the schema
+        $pathParts   = explode('.', $objectPath);
+        $pathTypeMap = $this->buildPathTypeMap($pathParts, $schema);
+
+        // Build nested structure from path (in reverse order)
+        // Each path part needs its type from pathTypeMap explicitly set
+        $current = $fragmentSelector;
+
+        foreach (array_reverse($pathParts) as $pathPart) {
+            // Get the type for this path part from the schema
+            $pathPartType = $pathTypeMap[$pathPart] ?? 'object';
+
+            // Wrap current children under this path part with its correct type
+            $current = [
+                'type'     => 'object', // Container type for the wrapper
+                'children' => [
+                    $pathPart => [
+                        'type'     => $pathPartType,
+                        'children' => $current['children'] ?? [],
+                    ],
+                ],
+            ];
+        }
+
+        return $current;
+    }
+
+    /**
+     * Build a map of path part names to their types by traversing the schema.
+     *
+     * @param  array  $pathParts  Array of path part names (e.g., ['provider', 'contacts'])
+     * @param  array  $schema  The JSON schema
+     * @return array Map of path part name to type (e.g., ['provider' => 'array', 'contacts' => 'object'])
+     */
+    protected function buildPathTypeMap(array $pathParts, array $schema): array
+    {
+        $typeMap        = [];
+        $currentSchema  = $schema;
+
+        foreach ($pathParts as $pathPart) {
+            // Get the property definition from the current schema level
+            $properties       = $currentSchema['properties'] ?? [];
+            $propertySchema   = $properties[$pathPart]       ?? null;
+
+            if (!$propertySchema) {
+                // Property not found in schema, default to object
+                $typeMap[$pathPart] = 'object';
+                break;
+            }
+
+            // Determine the type
+            $type = $propertySchema['type'] ?? 'object';
+
+            // Handle union types (e.g., ['array', 'null'])
+            if (is_array($type)) {
+                $type = $this->getPrimaryType($type);
+            }
+
+            $typeMap[$pathPart] = $type;
+
+            // Navigate to the next level of the schema
+            if ($type === 'array') {
+                // For arrays, the child schema is in 'items'
+                $currentSchema = $propertySchema['items'] ?? [];
+            } elseif ($type === 'object') {
+                // For objects, continue with the property itself
+                $currentSchema = $propertySchema;
+            } else {
+                // Scalar type - shouldn't happen for path parts, but handle gracefully
+                break;
+            }
+        }
+
+        return $typeMap;
+    }
+
+    /**
+     * Get primary type from union type array.
+     *
+     * Filters out 'null' and returns the first non-null type.
+     */
+    protected function getPrimaryType(array $types): string
+    {
+        $filtered = array_filter($types, fn($t) => $t !== 'null');
+
+        return reset($filtered) ?: 'object';
     }
 }

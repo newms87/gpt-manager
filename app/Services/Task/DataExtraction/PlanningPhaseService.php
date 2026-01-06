@@ -42,6 +42,9 @@ class PlanningPhaseService
     /**
      * Handle completion of identity planning phase.
      * Creates remaining processes or transitions to classification.
+     *
+     * Returns true if planning is still active (more planning work to do),
+     * false if planning is complete and classification already exists.
      */
     protected function handleIdentityPlanningComplete(TaskRun $taskRun): bool
     {
@@ -59,9 +62,12 @@ class PlanningPhaseService
             if (empty($createdProcesses)) {
                 // No remaining processes needed - compile plan and create per-page classification
                 static::logDebug('No remaining processes needed - compiling final plan');
-                $this->compilePlanAndTransitionToClassification($taskRun);
+                $createdClassification = $this->compilePlanAndTransitionToClassification($taskRun);
 
-                return true;
+                // If classification was created, planning phase handled it.
+                // If not (already exists), planning phase is effectively done - return false
+                // so extraction phase can be handled.
+                return $createdClassification;
             }
 
             return true;
@@ -73,9 +79,10 @@ class PlanningPhaseService
         if ($allRemainingComplete) {
             // All planning done - compile and create per-page classification
             static::logDebug('All planning complete - compiling final plan');
-            $this->compilePlanAndTransitionToClassification($taskRun);
+            $createdClassification = $this->compilePlanAndTransitionToClassification($taskRun);
 
-            return true;
+            // Same logic: return false if classification already existed
+            return $createdClassification;
         }
 
         return true;
@@ -83,8 +90,10 @@ class PlanningPhaseService
 
     /**
      * Compile final plan and transition to classification phase.
+     *
+     * @return bool True if classification processes were created, false if they already existed
      */
-    protected function compilePlanAndTransitionToClassification(TaskRun $taskRun): void
+    protected function compilePlanAndTransitionToClassification(TaskRun $taskRun): bool
     {
         $perObjectService = app(PerObjectPlanningService::class);
 
@@ -103,7 +112,7 @@ class PlanningPhaseService
         if ($hasClassifyProcesses) {
             static::logDebug('Classification processes already exist - skipping creation');
 
-            return;
+            return false;
         }
 
         // Resolve all pages from input artifacts
@@ -112,9 +121,13 @@ class PlanningPhaseService
 
         if (!empty($pages)) {
             $this->transitionToClassification($taskRun, $finalPlan, $pages);
-        } else {
-            static::logDebug('No pages found to classify');
+
+            return true;
         }
+
+        static::logDebug('No pages found to classify');
+
+        return true;
     }
 
     /**

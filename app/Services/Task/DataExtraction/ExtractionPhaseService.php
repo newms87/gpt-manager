@@ -95,11 +95,16 @@ class ExtractionPhaseService
                 static::logDebug('Identity completed - creating Extract Remaining processes', ['level' => $currentLevel]);
                 $processes = $orchestrator->createExtractRemainingProcesses($taskRun, $plan, $currentLevel);
                 if (empty($processes)) {
+                    // No remaining processes needed - mark extraction complete and continue
+                    // to check level progression (don't return early!)
                     static::logDebug('No extract remaining processes needed - marking extraction complete', ['level' => $currentLevel]);
                     $orchestrator->updateLevelProgress($taskRun, $currentLevel, 'extraction_complete', true);
+                    // Refresh levelProgress since we just updated it
+                    $levelProgress = $orchestrator->getLevelProgress($taskRun)[$currentLevel] ?? [];
+                } else {
+                    // Remaining processes created - wait for them to complete
+                    return;
                 }
-
-                return;
             }
         }
 

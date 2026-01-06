@@ -139,7 +139,12 @@ class ExtractionProcessOrchestrator
             }
 
             $process = $taskRun->taskProcesses()->create([
-                'name'      => sprintf('Extract Identity: %s - Level %d', $identity['name'] ?? "Identity $index", $level),
+                'name'      => $this->buildProcessName(
+                    'Identity',
+                    $level,
+                    $identity['object_type'] ?? 'Unknown',
+                    $identity['skim_fields'] ?? []
+                ),
                 'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
                 'activity'  => sprintf('Extracting identity fields for %s', $identity['name'] ?? 'object'),
                 'meta'      => [
@@ -233,11 +238,11 @@ class ExtractionProcessOrchestrator
                 $parentObjectId = $this->getParentObjectIdForLevel($taskRun, $level);
 
                 $process = $taskRun->taskProcesses()->create([
-                    'name'      => sprintf(
-                        'Extract Remaining: %s - Level %d - Object %d',
-                        $group['name'] ?? "Group $groupIndex",
+                    'name'      => $this->buildProcessName(
+                        'Remaining',
                         $level,
-                        $objectId
+                        $group['object_type'] ?? 'Unknown',
+                        $group['fields']      ?? []
                     ),
                     'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
                     'activity'  => sprintf('Extracting %s data', $group['name'] ?? 'group'),
@@ -479,5 +484,47 @@ class ExtractionProcessOrchestrator
         }
 
         return [];
+    }
+
+    /**
+     * Build a descriptive process name with object type and fields.
+     *
+     * @param  string  $prefix  "Identity" or "Remaining"
+     * @param  int  $level  The extraction level
+     * @param  string  $objectType  The object type being extracted
+     * @param  array  $fields  Field names being extracted (snake_case)
+     * @param  int  $maxLength  Maximum name length (default 255)
+     */
+    protected function buildProcessName(string $prefix, int $level, string $objectType, array $fields, int $maxLength = 255): string
+    {
+        // Convert snake_case field names to Title Case
+        $formattedFields = array_map(fn($field) => Str::title(str_replace('_', ' ', $field)), $fields);
+
+        // Start building the name
+        $baseName = sprintf('%s L%d: %s', $prefix, $level, $objectType);
+
+        // If no fields, just return base name
+        if (empty($formattedFields)) {
+            return $baseName;
+        }
+
+        // Calculate available space for fields (account for " (" and ")")
+        $availableLength = $maxLength - strlen($baseName) - 3; // 3 for " ()"
+
+        // Build fields string, truncating with "..." if needed
+        $fieldsStr = '';
+        foreach ($formattedFields as $i => $field) {
+            $separator       = $i > 0 ? ', ' : '';
+            $potentialLength = strlen($fieldsStr) + strlen($separator) + strlen($field);
+
+            if ($potentialLength > $availableLength - 3) { // -3 for "..."
+                $fieldsStr .= '...';
+                break;
+            }
+
+            $fieldsStr .= $separator . $field;
+        }
+
+        return sprintf('%s (%s)', $baseName, $fieldsStr);
     }
 }
