@@ -27,7 +27,8 @@ class RemainingExtractionService
         array $extractionGroup,
         int $level,
         int $teamObjectId,
-        string $searchMode = 'exhaustive'
+        string $searchMode = 'exhaustive',
+        ?int $parentObjectId = null
     ): array {
         static::logDebug('Starting remaining extraction', [
             'team_object_id' => $teamObjectId,
@@ -99,7 +100,8 @@ class RemainingExtractionService
             group: $extractionGroup,
             extractedData: $extractedData,
             level: $level,
-            searchMode: $searchMode
+            searchMode: $searchMode,
+            parentObjectId: $parentObjectId
         );
 
         static::logDebug('Remaining extraction completed', [

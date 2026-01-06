@@ -281,10 +281,11 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
      */
     protected function runExtractRemainingOperation(): void
     {
-        $level        = $this->taskProcess->meta['level']            ?? 0;
-        $group        = $this->taskProcess->meta['extraction_group'] ?? [];
-        $teamObjectId = $this->taskProcess->meta['object_id']        ?? null;
-        $searchMode   = $this->taskProcess->meta['search_mode']      ?? 'exhaustive';
+        $level          = $this->taskProcess->meta['level']            ?? 0;
+        $group          = $this->taskProcess->meta['extraction_group'] ?? [];
+        $teamObjectId   = $this->taskProcess->meta['object_id']        ?? null;
+        $searchMode     = $this->taskProcess->meta['search_mode']      ?? 'exhaustive';
+        $parentObjectId = $this->taskProcess->meta['parent_object_id'] ?? null;
 
         if (empty($group) || !$teamObjectId) {
             static::logDebug('Missing extraction group or object_id in task process meta');
@@ -300,7 +301,8 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
             extractionGroup: $group,
             level: $level,
             teamObjectId: $teamObjectId,
-            searchMode: $searchMode
+            searchMode: $searchMode,
+            parentObjectId: $parentObjectId
         );
 
         $this->complete();

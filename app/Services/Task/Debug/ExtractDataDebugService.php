@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\Debug;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
@@ -355,9 +356,26 @@ class ExtractDataDebugService
 
     /**
      * Reset a task process so it can be re-attempted.
+     *
+     * This performs a full reset including:
+     * - Deleting output artifacts linked to this process
+     * - Clearing output artifact relationships
+     * - Resetting all timestamps and status fields
      */
     protected function resetProcess(TaskProcess $process): void
     {
+        // Get output artifact IDs for this process and delete them
+        // Using relationship instead of JSON query to avoid PostgreSQL unicode issues
+        $artifactIds = $process->outputArtifacts()->pluck('artifacts.id');
+
+        if ($artifactIds->isNotEmpty()) {
+            Artifact::whereIn('id', $artifactIds)->delete();
+        }
+
+        // Clear output artifact relationship
+        $process->clearOutputArtifacts();
+
+        // Reset all timestamps and status fields
         $process->started_at    = null;
         $process->completed_at  = null;
         $process->failed_at     = null;
@@ -365,6 +383,9 @@ class ExtractDataDebugService
         $process->incomplete_at = null;
         $process->timeout_at    = null;
         $process->is_ready      = true;
+        $process->activity      = null;
+        $process->error_count   = 0;
+        $process->status        = WorkflowStatesContract::STATUS_PENDING;
         $process->save();
     }
 

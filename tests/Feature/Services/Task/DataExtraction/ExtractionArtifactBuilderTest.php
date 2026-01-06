@@ -9,6 +9,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
+use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use PHPUnit\Framework\Attributes\Test;
@@ -641,5 +642,853 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // And artifact is linked via parent_artifact_id
         $this->assertEquals($inputArtifact->id, $artifact->parent_artifact_id);
+    }
+
+    // =========================================================================
+    // Hierarchical JSON structure tests (level 0 vs level 1+)
+    // =========================================================================
+
+    #[Test]
+    public function buildIdentityArtifact_level_0_shows_flat_structure(): void
+    {
+        // Given: A root-level TeamObject (Demand) with no parent
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $teamObject  = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $group = [
+            'name'        => 'Demand',
+            'object_type' => 'Demand',
+        ];
+
+        $extractionResult = [
+            'data'         => ['demand_number' => 'DEM-001', 'claimant_name' => 'John Smith'],
+            'search_query' => ['demand_number' => '%DEM-001%'],
+        ];
+
+        // When: Building identity artifact at level 0 with no parent
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $teamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 0,
+            matchId: null,
+            parentObjectId: null  // No parent - flat structure expected
+        );
+
+        // Then: json_content shows flat structure with object data at root level
+        $jsonContent = $artifact->json_content;
+        $this->assertEquals($teamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+        $this->assertEquals('DEM-001', $jsonContent['demand_number']);
+        $this->assertEquals('John Smith', $jsonContent['claimant_name']);
+
+        // Verify there is NO nested relationship key (like 'demand' or 'provider')
+        $this->assertArrayNotHasKey('demand', $jsonContent);
+        $this->assertArrayNotHasKey('provider', $jsonContent);
+    }
+
+    #[Test]
+    public function buildIdentityArtifact_level_1_shows_hierarchical_structure(): void
+    {
+        // Given: A parent TeamObject (Demand) and child TeamObject (Provider)
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Provider A',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Provider',
+            'object_type' => 'Provider',
+        ];
+
+        $extractionResult = [
+            'data'         => ['provider_name' => 'Provider A', 'npi' => '1234567890'],
+            'search_query' => ['provider_name' => '%Provider%A%'],
+        ];
+
+        // When: Building identity artifact at level 1 with parent object
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 1,
+            matchId: null,
+            parentObjectId: $parentTeamObject->id  // Has parent - hierarchical structure expected
+        );
+
+        // Then: json_content shows hierarchical structure with parent at root
+        $jsonContent = $artifact->json_content;
+
+        // Parent's id and type are at root level
+        $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Child data is nested under snake_case relationship key
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $this->assertIsArray($jsonContent['provider']);
+        $this->assertCount(1, $jsonContent['provider']);
+
+        // Child object has correct structure
+        $childData = $jsonContent['provider'][0];
+        $this->assertEquals($childTeamObject->id, $childData['id']);
+        $this->assertEquals('Provider', $childData['type']);
+        $this->assertEquals('Provider A', $childData['provider_name']);
+        $this->assertEquals('1234567890', $childData['npi']);
+    }
+
+    #[Test]
+    public function buildRemainingArtifact_level_0_shows_flat_structure(): void
+    {
+        // Given: A root-level TeamObject (Demand) with no parent
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $teamObject  = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $group = [
+            'name'        => 'Demand Details',
+            'object_type' => 'Demand',
+        ];
+
+        $extractedData = [
+            'total_amount'    => 150000,
+            'date_of_injury'  => '2024-01-15',
+        ];
+
+        // When: Building remaining artifact at level 0 with no parent
+        $artifact = $this->builder->buildRemainingArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $teamObject,
+            group: $group,
+            extractedData: $extractedData,
+            level: 0,
+            searchMode: 'exhaustive',
+            parentObjectId: null  // No parent - flat structure expected
+        );
+
+        // Then: json_content shows flat structure with object data at root level
+        $jsonContent = $artifact->json_content;
+        $this->assertEquals($teamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+        $this->assertEquals(150000, $jsonContent['total_amount']);
+        $this->assertEquals('2024-01-15', $jsonContent['date_of_injury']);
+
+        // Verify there is NO nested relationship key
+        $this->assertArrayNotHasKey('demand', $jsonContent);
+        $this->assertArrayNotHasKey('provider', $jsonContent);
+    }
+
+    #[Test]
+    public function buildRemainingArtifact_level_1_shows_hierarchical_structure(): void
+    {
+        // Given: A parent TeamObject (Demand) and child TeamObject (Provider)
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Provider B',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Provider Details',
+            'object_type' => 'Provider',
+        ];
+
+        $extractedData = [
+            'specialty'     => 'Orthopedics',
+            'facility_name' => 'City Hospital',
+        ];
+
+        // When: Building remaining artifact at level 1 with parent object
+        $artifact = $this->builder->buildRemainingArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractedData: $extractedData,
+            level: 1,
+            searchMode: 'exhaustive',
+            parentObjectId: $parentTeamObject->id  // Has parent - hierarchical structure expected
+        );
+
+        // Then: json_content shows hierarchical structure with parent at root
+        $jsonContent = $artifact->json_content;
+
+        // Parent's id and type are at root level
+        $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Child data is nested under snake_case relationship key
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $this->assertIsArray($jsonContent['provider']);
+        $this->assertCount(1, $jsonContent['provider']);
+
+        // Child object has correct structure
+        $childData = $jsonContent['provider'][0];
+        $this->assertEquals($childTeamObject->id, $childData['id']);
+        $this->assertEquals('Provider', $childData['type']);
+        $this->assertEquals('Orthopedics', $childData['specialty']);
+        $this->assertEquals('City Hospital', $childData['facility_name']);
+    }
+
+    #[Test]
+    public function buildHierarchicalJson_uses_snake_case_for_relationship_key(): void
+    {
+        // Given: Parent and child team objects with multi-word object type
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Case',
+            'name'    => 'Test Case',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment Received',  // Multi-word type
+            'name'    => 'Physical Therapy',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Treatment Received',
+            'object_type' => 'Treatment Received',
+        ];
+
+        $extractionResult = [
+            'data'         => ['treatment_type' => 'Physical Therapy', 'sessions' => 10],
+            'search_query' => null,
+        ];
+
+        // When: Building identity artifact at level 1 with parent object
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 1,
+            matchId: null,
+            parentObjectId: $parentTeamObject->id
+        );
+
+        // Then: Relationship key is snake_case version of object type
+        $jsonContent = $artifact->json_content;
+
+        // "Treatment Received" becomes "treatment_received"
+        $this->assertArrayHasKey('treatment_received', $jsonContent);
+        $this->assertArrayNotHasKey('Treatment Received', $jsonContent);
+        $this->assertArrayNotHasKey('treatmentReceived', $jsonContent);
+
+        // Verify the child data is correct
+        $childData = $jsonContent['treatment_received'][0];
+        $this->assertEquals($childTeamObject->id, $childData['id']);
+        $this->assertEquals('Treatment Received', $childData['type']);
+    }
+
+    #[Test]
+    public function buildIdentityArtifact_with_simple_single_word_type_uses_lowercase(): void
+    {
+        // Given: Parent and child with simple single-word type
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',  // Single word, already snake_case
+            'name'    => 'Dr. Smith',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Provider',
+            'object_type' => 'Provider',
+        ];
+
+        $extractionResult = [
+            'data'         => ['name' => 'Dr. Smith'],
+            'search_query' => null,
+        ];
+
+        // When: Building identity artifact
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 1,
+            matchId: null,
+            parentObjectId: $parentTeamObject->id
+        );
+
+        // Then: "Provider" becomes "provider" (lowercase snake_case)
+        $jsonContent = $artifact->json_content;
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $this->assertArrayNotHasKey('Provider', $jsonContent);
+    }
+
+    #[Test]
+    public function buildRemainingArtifact_level_2_shows_full_hierarchical_structure(): void
+    {
+        // Given: Full hierarchy - Demand (root) -> Provider (level 1) -> Treatment (level 2)
+        $demandObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $providerObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Dr. Smith',
+        ]);
+
+        $treatmentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment',
+            'name'    => 'Therapy Session',
+        ]);
+
+        // Create TeamObjectRelationships to link hierarchy
+        TeamObjectRelationship::create([
+            'team_object_id'         => $demandObject->id,        // parent
+            'related_team_object_id' => $providerObject->id,      // child
+            'relationship_name'      => 'provider',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $providerObject->id,      // parent
+            'related_team_object_id' => $treatmentObject->id,     // child
+            'relationship_name'      => 'treatment',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Treatment Details',
+            'object_type' => 'Treatment',
+        ];
+
+        $extractedData = [
+            'date'     => '2024-06-15',
+            'duration' => '60 minutes',
+            'notes'    => 'Patient responding well',
+        ];
+
+        // When: Building remaining artifact at level 2 with immediate parent
+        $artifact = $this->builder->buildRemainingArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $treatmentObject,
+            group: $group,
+            extractedData: $extractedData,
+            level: 2,
+            searchMode: 'exhaustive',
+            parentObjectId: $providerObject->id  // Immediate parent
+        );
+
+        // Then: json_content shows FULL hierarchical structure from root (Demand)
+        $jsonContent = $artifact->json_content;
+
+        // Root is Demand (not Provider!)
+        $this->assertEquals($demandObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Provider is nested under Demand
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $this->assertIsArray($jsonContent['provider']);
+        $this->assertCount(1, $jsonContent['provider']);
+
+        $providerData = $jsonContent['provider'][0];
+        $this->assertEquals($providerObject->id, $providerData['id']);
+        $this->assertEquals('Provider', $providerData['type']);
+
+        // Treatment is nested under Provider
+        $this->assertArrayHasKey('treatment', $providerData);
+        $this->assertIsArray($providerData['treatment']);
+        $this->assertCount(1, $providerData['treatment']);
+
+        $treatmentData = $providerData['treatment'][0];
+        $this->assertEquals($treatmentObject->id, $treatmentData['id']);
+        $this->assertEquals('Treatment', $treatmentData['type']);
+        $this->assertEquals('2024-06-15', $treatmentData['date']);
+        $this->assertEquals('60 minutes', $treatmentData['duration']);
+        $this->assertEquals('Patient responding well', $treatmentData['notes']);
+    }
+
+    #[Test]
+    public function buildIdentityArtifact_level_3_shows_full_hierarchical_structure(): void
+    {
+        // Given: Full hierarchy - Demand -> Provider -> Treatment -> LineItem (4 levels)
+        $demandObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Jones Demand',
+        ]);
+
+        $providerObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'City Hospital',
+        ]);
+
+        $treatmentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment',
+            'name'    => 'Surgery',
+        ]);
+
+        $lineItemObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Line Item',
+            'name'    => 'CPT 99213',
+        ]);
+
+        // Create TeamObjectRelationships to link hierarchy
+        TeamObjectRelationship::create([
+            'team_object_id'         => $demandObject->id,
+            'related_team_object_id' => $providerObject->id,
+            'relationship_name'      => 'provider',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $providerObject->id,
+            'related_team_object_id' => $treatmentObject->id,
+            'relationship_name'      => 'treatment',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $treatmentObject->id,
+            'related_team_object_id' => $lineItemObject->id,
+            'relationship_name'      => 'line_item',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Line Item',
+            'object_type' => 'Line Item',
+        ];
+
+        $extractionResult = [
+            'data'         => ['cpt_code' => '99213', 'amount' => 150.00, 'description' => 'Office visit'],
+            'search_query' => ['cpt_code' => '%99213%'],
+        ];
+
+        // When: Building identity artifact at level 3 (Line Item under Treatment under Provider under Demand)
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $lineItemObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 3,
+            matchId: null,
+            parentObjectId: $treatmentObject->id  // Immediate parent
+        );
+
+        // Then: json_content shows FULL hierarchical structure from root (Demand)
+        $jsonContent = $artifact->json_content;
+
+        // Root is Demand
+        $this->assertEquals($demandObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Provider is nested under Demand
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $providerData = $jsonContent['provider'][0];
+        $this->assertEquals($providerObject->id, $providerData['id']);
+        $this->assertEquals('Provider', $providerData['type']);
+
+        // Treatment is nested under Provider
+        $this->assertArrayHasKey('treatment', $providerData);
+        $treatmentData = $providerData['treatment'][0];
+        $this->assertEquals($treatmentObject->id, $treatmentData['id']);
+        $this->assertEquals('Treatment', $treatmentData['type']);
+
+        // Line Item is nested under Treatment
+        $this->assertArrayHasKey('line_item', $treatmentData);
+        $lineItemData = $treatmentData['line_item'][0];
+        $this->assertEquals($lineItemObject->id, $lineItemData['id']);
+        $this->assertEquals('Line Item', $lineItemData['type']);
+        $this->assertEquals('99213', $lineItemData['cpt_code']);
+        $this->assertEquals(150.00, $lineItemData['amount']);
+        $this->assertEquals('Office visit', $lineItemData['description']);
+    }
+
+    #[Test]
+    public function buildRemainingArtifact_level_4_shows_full_hierarchical_structure(): void
+    {
+        // Given: Full hierarchy - Demand -> Provider -> Treatment -> LineItem -> Modifier (5 levels)
+        $demandObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Williams Demand',
+        ]);
+
+        $providerObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Regional Medical Center',
+        ]);
+
+        $treatmentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment',
+            'name'    => 'Physical Therapy',
+        ]);
+
+        $lineItemObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Line Item',
+            'name'    => 'CPT 97110',
+        ]);
+
+        $modifierObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Modifier',
+            'name'    => 'Modifier 59',
+        ]);
+
+        // Create TeamObjectRelationships to link hierarchy
+        TeamObjectRelationship::create([
+            'team_object_id'         => $demandObject->id,
+            'related_team_object_id' => $providerObject->id,
+            'relationship_name'      => 'provider',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $providerObject->id,
+            'related_team_object_id' => $treatmentObject->id,
+            'relationship_name'      => 'treatment',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $treatmentObject->id,
+            'related_team_object_id' => $lineItemObject->id,
+            'relationship_name'      => 'line_item',
+        ]);
+
+        TeamObjectRelationship::create([
+            'team_object_id'         => $lineItemObject->id,
+            'related_team_object_id' => $modifierObject->id,
+            'relationship_name'      => 'modifier',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $group = [
+            'name'        => 'Modifier Details',
+            'object_type' => 'Modifier',
+        ];
+
+        $extractedData = [
+            'code'        => '59',
+            'description' => 'Distinct procedural service',
+            'applies_to'  => 'Physical therapy exercises',
+        ];
+
+        // When: Building remaining artifact at level 4 (Modifier under LineItem under Treatment under Provider under Demand)
+        $artifact = $this->builder->buildRemainingArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $modifierObject,
+            group: $group,
+            extractedData: $extractedData,
+            level: 4,
+            searchMode: 'exhaustive',
+            parentObjectId: $lineItemObject->id  // Immediate parent
+        );
+
+        // Then: json_content shows FULL hierarchical structure from root (Demand)
+        $jsonContent = $artifact->json_content;
+
+        // Root is Demand
+        $this->assertEquals($demandObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Provider is nested under Demand
+        $this->assertArrayHasKey('provider', $jsonContent);
+        $providerData = $jsonContent['provider'][0];
+        $this->assertEquals($providerObject->id, $providerData['id']);
+        $this->assertEquals('Provider', $providerData['type']);
+
+        // Treatment is nested under Provider
+        $this->assertArrayHasKey('treatment', $providerData);
+        $treatmentData = $providerData['treatment'][0];
+        $this->assertEquals($treatmentObject->id, $treatmentData['id']);
+        $this->assertEquals('Treatment', $treatmentData['type']);
+
+        // Line Item is nested under Treatment
+        $this->assertArrayHasKey('line_item', $treatmentData);
+        $lineItemData = $treatmentData['line_item'][0];
+        $this->assertEquals($lineItemObject->id, $lineItemData['id']);
+        $this->assertEquals('Line Item', $lineItemData['type']);
+
+        // Modifier is nested under Line Item
+        $this->assertArrayHasKey('modifier', $lineItemData);
+        $modifierData = $lineItemData['modifier'][0];
+        $this->assertEquals($modifierObject->id, $modifierData['id']);
+        $this->assertEquals('Modifier', $modifierData['type']);
+        $this->assertEquals('59', $modifierData['code']);
+        $this->assertEquals('Distinct procedural service', $modifierData['description']);
+        $this->assertEquals('Physical therapy exercises', $modifierData['applies_to']);
+    }
+
+    // =========================================================================
+    // Fragment selector type tests (object vs array)
+    // =========================================================================
+
+    #[Test]
+    public function buildIdentityArtifact_with_object_type_fragment_selector_does_not_wrap_in_array(): void
+    {
+        // Given: A parent TeamObject (Demand) and child TeamObject (Client)
+        // where the fragment_selector specifies client as type: "object" (not array)
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Abdi, Abdinasir',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Group with fragment_selector specifying client as "object" type (NOT array)
+        $group = [
+            'name'              => 'Client',
+            'object_type'       => 'Client',
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',  // <-- This tells us client is NOT an array
+                        'children' => [
+                            'name'          => ['type' => 'string'],
+                            'date_of_birth' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $extractionResult = [
+            'data'         => ['name' => 'Abdi, Abdinasir', 'date_of_birth' => '11/16/1995'],
+            'search_query' => null,
+        ];
+
+        // When: Building identity artifact at level 1 with parent object
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 1,
+            matchId: null,
+            parentObjectId: $parentTeamObject->id
+        );
+
+        // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
+        $jsonContent = $artifact->json_content;
+
+        // Parent's id and type are at root level
+        $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Client data is nested directly (NOT as array) because fragment_selector type is "object"
+        $this->assertArrayHasKey('client', $jsonContent);
+        $this->assertIsArray($jsonContent['client']);
+
+        // CRITICAL: It should NOT be wrapped in an array - accessing directly, not via [0]
+        $this->assertArrayHasKey('id', $jsonContent['client'], 'Client should be an object, not an array');
+        $this->assertEquals($childTeamObject->id, $jsonContent['client']['id']);
+        $this->assertEquals('Client', $jsonContent['client']['type']);
+        $this->assertEquals('Abdi, Abdinasir', $jsonContent['client']['name']);
+        $this->assertEquals('11/16/1995', $jsonContent['client']['date_of_birth']);
+    }
+
+    #[Test]
+    public function buildIdentityArtifact_with_array_type_fragment_selector_wraps_in_array(): void
+    {
+        // Given: A parent TeamObject (Demand) and child TeamObject (Incident)
+        // where the fragment_selector specifies incidents as type: "array"
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Incident',
+            'name'    => 'Car Accident',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Group with fragment_selector specifying incidents as "array" type
+        $group = [
+            'name'              => 'Incident',
+            'object_type'       => 'Incident',
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'incidents' => [
+                        'type'     => 'array',  // <-- This tells us incidents IS an array
+                        'children' => [
+                            'name'        => ['type' => 'string'],
+                            'date'        => ['type' => 'string'],
+                            'description' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $extractionResult = [
+            'data'         => ['name' => 'Car Accident', 'date' => '2024-01-15', 'description' => 'Rear-end collision'],
+            'search_query' => null,
+        ];
+
+        // When: Building identity artifact at level 1 with parent object
+        $artifact = $this->builder->buildIdentityArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractionResult: $extractionResult,
+            level: 1,
+            matchId: null,
+            parentObjectId: $parentTeamObject->id
+        );
+
+        // Then: json_content shows hierarchical structure WITH array wrapping for incidents
+        $jsonContent = $artifact->json_content;
+
+        // Parent's id and type are at root level
+        $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Incidents data is nested as an array because fragment_selector type is "array"
+        $this->assertArrayHasKey('incidents', $jsonContent);
+        $this->assertIsArray($jsonContent['incidents']);
+        $this->assertCount(1, $jsonContent['incidents']);
+
+        // Access via array index [0]
+        $incidentData = $jsonContent['incidents'][0];
+        $this->assertEquals($childTeamObject->id, $incidentData['id']);
+        $this->assertEquals('Incident', $incidentData['type']);
+        $this->assertEquals('Car Accident', $incidentData['name']);
+        $this->assertEquals('2024-01-15', $incidentData['date']);
+        $this->assertEquals('Rear-end collision', $incidentData['description']);
+    }
+
+    #[Test]
+    public function buildRemainingArtifact_with_object_type_fragment_selector_does_not_wrap_in_array(): void
+    {
+        // Given: A parent TeamObject (Demand) and child TeamObject (Client)
+        // where the fragment_selector specifies client as type: "object" (not array)
+        $parentTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Smith Demand',
+        ]);
+
+        $childTeamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'John Doe',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Group with fragment_selector specifying client as "object" type (NOT array)
+        $group = [
+            'name'              => 'Client Details',
+            'object_type'       => 'Client',
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',  // <-- This tells us client is NOT an array
+                        'children' => [
+                            'address' => ['type' => 'string'],
+                            'phone'   => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $extractedData = [
+            'address' => '123 Main St',
+            'phone'   => '555-1234',
+        ];
+
+        // When: Building remaining artifact at level 1 with parent object
+        $artifact = $this->builder->buildRemainingArtifact(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            teamObject: $childTeamObject,
+            group: $group,
+            extractedData: $extractedData,
+            level: 1,
+            searchMode: 'exhaustive',
+            parentObjectId: $parentTeamObject->id
+        );
+
+        // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
+        $jsonContent = $artifact->json_content;
+
+        // Parent's id and type are at root level
+        $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
+        $this->assertEquals('Demand', $jsonContent['type']);
+
+        // Client data is nested directly (NOT as array) because fragment_selector type is "object"
+        $this->assertArrayHasKey('client', $jsonContent);
+        $this->assertIsArray($jsonContent['client']);
+
+        // CRITICAL: It should NOT be wrapped in an array - accessing directly, not via [0]
+        $this->assertArrayHasKey('id', $jsonContent['client'], 'Client should be an object, not an array');
+        $this->assertEquals($childTeamObject->id, $jsonContent['client']['id']);
+        $this->assertEquals('Client', $jsonContent['client']['type']);
+        $this->assertEquals('123 Main St', $jsonContent['client']['address']);
+        $this->assertEquals('555-1234', $jsonContent['client']['phone']);
     }
 }

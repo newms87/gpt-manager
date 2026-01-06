@@ -237,7 +237,8 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                     Mockery::any(),
                     Mockery::any(),
                     0,
-                    $existingTeamObject->id
+                    $existingTeamObject->id,
+                    null  // parentObjectId
                 )
                 ->once()
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
@@ -377,7 +378,8 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                     Mockery::on(fn($g) => $g['object_type'] === 'Client'),
                     Mockery::on(fn($r) => isset($r['data']['client_name'])),
                     0,
-                    null
+                    null,  // matchId
+                    null   // parentObjectId
                 )
                 ->once()
                 ->andReturn($builtArtifact);
@@ -594,6 +596,63 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Then: Returns a TeamObject
         $this->assertInstanceOf(TeamObject::class, $result);
+    }
+
+    // =========================================================================
+    // execute() - Empty name handling tests
+    // =========================================================================
+
+    #[Test]
+    public function execute_returns_null_when_no_identity_data_found(): void
+    {
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        $identityGroup = [
+            'name'              => 'Demand',
+            'object_type'       => 'Demand',
+            'identity_fields'   => ['name', 'accident_date'],
+            'fragment_selector' => [
+                'children' => [
+                    'name'          => ['type' => 'string'],
+                    'accident_date' => ['type' => 'string'],
+                ],
+            ],
+        ];
+
+        $thread = AgentThread::factory()->create([
+            'agent_id' => $this->agent->id,
+            'team_id'  => $this->user->currentTeam->id,
+        ]);
+
+        $this->mockAgentThreadBuilder($thread);
+
+        // Mock LLM returns empty strings - no data found scenario
+        $this->mockAgentThreadService([
+            'data'         => [
+                'name'          => '',
+                'accident_date' => '',
+            ],
+            'search_query' => ['name' => '%%'],
+        ]);
+
+        // When: Executing identity extraction with empty data from LLM
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            identityGroup: $identityGroup,
+            level: 0,
+            parentObjectId: null
+        );
+
+        // Then: Returns null (no data found, no TeamObject created)
+        $this->assertNull($result);
     }
 
     // =========================================================================

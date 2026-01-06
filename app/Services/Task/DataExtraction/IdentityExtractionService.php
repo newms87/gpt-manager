@@ -8,6 +8,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
@@ -42,7 +43,7 @@ class IdentityExtractionService
     /**
      * Execute identity extraction for a task process.
      *
-     * Returns the created/resolved TeamObject or null if extraction failed.
+     * Returns the created/resolved TeamObject or null if no identity data found.
      */
     public function execute(
         TaskRun $taskRun,
@@ -77,6 +78,41 @@ class IdentityExtractionService
             return null;
         }
 
+        // Check if extraction found any usable identity data
+        $identificationData = $extractionResult['data'] ?? [];
+
+        // Unwrap nested data using the wrapper key from fragment_selector
+        // The LLM returns data under the key specified in fragment_selector.children (e.g., 'incidents')
+        // which may differ from object_type (e.g., 'Incident' singular vs 'incidents' plural)
+        $fragmentSelector  = $identityGroup['fragment_selector'] ?? [];
+        $wrapperKey        = array_key_first($fragmentSelector['children'] ?? []);
+        $firstChildSchema  = $fragmentSelector['children'][$wrapperKey] ?? [];
+        $firstChildType    = $firstChildSchema['type']                  ?? null;
+
+        // Only unwrap if the wrapper key represents an object or array, not a scalar type
+        if ($wrapperKey && in_array($firstChildType, ['object', 'array'], true) && isset($identificationData[$wrapperKey])) {
+            $unwrapped = $identificationData[$wrapperKey];
+
+            // If it's an array of arrays (fragment_selector says type: "array"), take the first element
+            if (is_array($unwrapped) && isset($unwrapped[0]) && is_array($unwrapped[0])) {
+                $identificationData = $unwrapped[0];
+            } else {
+                $identificationData = $unwrapped;
+            }
+        }
+
+        $identityFields = $identityGroup['identity_fields'] ?? [];
+        $name           = $this->resolveObjectName($identificationData, $identityFields);
+
+        // If no name could be resolved, this means no data was found - return null
+        if ($name === null) {
+            static::logDebug("Identity extraction found no data for {$identityGroup['object_type']} - no identifiable name in response", [
+                'identification_data' => $identificationData,
+            ]);
+
+            return null;
+        }
+
         // Resolve duplicates using DuplicateRecordResolver
         $matchId = $this->resolveDuplicate(
             taskRun: $taskRun,
@@ -90,7 +126,8 @@ class IdentityExtractionService
         $teamObject = $this->resolveOrCreateTeamObject(
             taskRun: $taskRun,
             objectType: $identityGroup['object_type'],
-            identificationData: $extractionResult['data'] ?? [],
+            identificationData: $identificationData,
+            name: $name,
             existingId: $matchId,
             parentObjectId: $parentObjectId
         );
@@ -117,7 +154,8 @@ class IdentityExtractionService
             group: $identityGroup,
             extractionResult: $extractionResult,
             level: $level,
-            matchId: $matchId
+            matchId: $matchId,
+            parentObjectId: $parentObjectId
         );
 
         return $teamObject;
@@ -176,7 +214,11 @@ class IdentityExtractionService
 
         $thread = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
             ->named('Identity Data Extraction')
-            ->withArtifacts($artifacts)
+            ->withArtifacts($artifacts, new ArtifactFilter(
+                includeFiles: false,
+                includeJson: false,
+                includeMeta: false
+            ))
             ->build();
 
         $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 60;
@@ -267,6 +309,7 @@ class IdentityExtractionService
         TaskRun $taskRun,
         string $objectType,
         array $identificationData,
+        string $name,
         ?int $existingId,
         ?int $parentObjectId
     ): TeamObject {
@@ -295,7 +338,9 @@ class IdentityExtractionService
             }
         }
 
-        $name = $identificationData['name'] ?? $identificationData['id'] ?? 'Unknown';
+        // Ensure the identificationData has the resolved name to prevent empty string from being
+        // filled by updateTeamObject (which is called by createTeamObject)
+        $identificationData['name'] = $name;
 
         $teamObject = $mapper->createTeamObject($objectType, $name, $identificationData);
 
@@ -339,6 +384,23 @@ class IdentityExtractionService
                 'value' => $fieldValue,
             ]);
         }
+    }
+
+    /**
+     * Resolve a name for the TeamObject from identification data.
+     * Returns null if no usable name can be found (indicating no data was extracted).
+     *
+     * Only checks fields specified in $identityFields - no hardcoded fallbacks.
+     */
+    protected function resolveObjectName(array $identificationData, array $identityFields): ?string
+    {
+        foreach ($identityFields as $field) {
+            if (!empty($identificationData[$field]) && is_string($identificationData[$field])) {
+                return $identificationData[$field];
+            }
+        }
+
+        return null;
     }
 
     /**

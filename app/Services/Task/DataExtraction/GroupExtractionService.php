@@ -7,6 +7,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
+use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
@@ -169,7 +170,11 @@ class GroupExtractionService
         // Create agent thread with artifacts
         $thread = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
             ->named('Group Data Extraction')
-            ->withArtifacts($artifacts)
+            ->withArtifacts($artifacts, new ArtifactFilter(
+                includeFiles: false,
+                includeJson: false,
+                includeMeta: false
+            ))
             ->withMessage($prompt)
             ->build();
 
