@@ -5,12 +5,15 @@ namespace App\Services\Task\Debug;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\TaskRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
 class DebugTaskRunService
 {
+    use DebugOutputHelper;
+
     /**
      * Resolve TaskRun from ID (can be TaskRun ID or TaskProcess ID).
      *
@@ -46,11 +49,7 @@ class DebugTaskRunService
      */
     public function showOverview(TaskRun $taskRun, Command $command): void
     {
-        $command->info("=== TaskRun {$taskRun->id} ===");
-        $command->line("Status: {$taskRun->status}");
-        $command->line("TaskDefinition: {$taskRun->taskDefinition->name}");
-        $command->line("Runner: {$taskRun->taskDefinition->task_runner_name}");
-        $command->newLine();
+        $this->showTaskRunHeader($taskRun, $command);
 
         // Show task processes grouped by operation
         $command->info('=== Task Processes ===');
@@ -104,9 +103,7 @@ class DebugTaskRunService
             $content = $message->content;
 
             // Truncate long content
-            if (strlen($content) > 1500) {
-                $content = substr($content, 0, 1500) . '... [truncated]';
-            }
+            $content = $this->truncate($content, 1500);
 
             $command->line($content);
             $command->newLine();
@@ -122,9 +119,7 @@ class DebugTaskRunService
         foreach ($inputArtifacts->take(5) as $artifact) {
             $command->line("Artifact #{$artifact->id}: {$artifact->name}");
             if ($artifact->json_content) {
-                $jsonContent = json_encode($artifact->json_content, JSON_PRETTY_PRINT);
-                $truncated   = strlen($jsonContent) > 1000 ? substr($jsonContent, 0, 1000) . '... [truncated]' : $jsonContent;
-                $command->line('  ' . str_replace("\n", "\n  ", $truncated));
+                $this->showJsonContent($artifact->json_content, $command, 1000, 2);
             }
             $command->newLine();
         }
@@ -136,9 +131,7 @@ class DebugTaskRunService
         foreach ($outputArtifacts->take(5) as $artifact) {
             $command->line("Artifact #{$artifact->id}: {$artifact->name}");
             if ($artifact->json_content) {
-                $jsonContent = json_encode($artifact->json_content, JSON_PRETTY_PRINT);
-                $truncated   = strlen($jsonContent) > 1000 ? substr($jsonContent, 0, 1000) . '... [truncated]' : $jsonContent;
-                $command->line('  ' . str_replace("\n", "\n  ", $truncated));
+                $this->showJsonContent($artifact->json_content, $command, 1000, 2);
             }
             $command->newLine();
         }
@@ -201,7 +194,7 @@ class DebugTaskRunService
             $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
             if ($artifact->json_content) {
                 $command->line('    JSON Content:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->json_content, JSON_PRETTY_PRINT)));
+                $command->line($this->indentContent(json_encode($artifact->json_content, JSON_PRETTY_PRINT), 4));
             }
         }
         $command->newLine();
@@ -215,11 +208,11 @@ class DebugTaskRunService
             $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
             if ($artifact->json_content) {
                 $command->line('    JSON Content:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->json_content, JSON_PRETTY_PRINT)));
+                $command->line($this->indentContent(json_encode($artifact->json_content, JSON_PRETTY_PRINT), 4));
             }
             if ($artifact->meta) {
                 $command->line('    Meta:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->meta, JSON_PRETTY_PRINT)));
+                $command->line($this->indentContent(json_encode($artifact->meta, JSON_PRETTY_PRINT), 4));
             }
         }
         $command->newLine();
@@ -276,6 +269,43 @@ class DebugTaskRunService
     }
 
     /**
+     * Show task processes filtered by status.
+     */
+    public function showProcessesByStatus(TaskRun $taskRun, string $status, Command $command): void
+    {
+        $this->showTaskRunHeader($taskRun, $command);
+
+        $command->info("=== Processes with Status: $status ===");
+
+        $processes = $taskRun->taskProcesses()
+            ->where('status', $status)
+            ->get();
+
+        if ($processes->isEmpty()) {
+            $command->line("No processes found with status: $status");
+
+            return;
+        }
+
+        $command->line("Found: {$processes->count()} processes");
+        $command->newLine();
+
+        foreach ($processes as $process) {
+            $command->line("Process ID: {$process->id}");
+            $command->line("  Operation: {$process->operation}");
+            $command->line('  Activity: ' . ($process->activity ?? '(none)'));
+            if ($process->failed_at) {
+                $command->line("  Failed at: {$process->failed_at}");
+            }
+            if ($process->meta) {
+                $metaJson = json_encode($process->meta);
+                $command->line('  Meta: ' . $this->truncate($metaJson, 200));
+            }
+            $command->newLine();
+        }
+    }
+
+    /**
      * Reset and re-dispatch an existing task run.
      */
     public function resetAndRerunTaskRun(TaskRun $taskRun, Command $command): int
@@ -314,5 +344,88 @@ class DebugTaskRunService
         $command->info("Re-started TaskRun {$taskRun->id}");
 
         return 0;
+    }
+
+    /**
+     * Show timing information for task processes.
+     */
+    public function showTiming(TaskRun $taskRun, Command $command): void
+    {
+        $this->showTaskRunHeader($taskRun, $command);
+
+        $command->info('=== Process Timing ===');
+
+        $processes = $taskRun->taskProcesses()->get();
+
+        if ($processes->isEmpty()) {
+            $command->line('No processes found');
+
+            return;
+        }
+
+        // Group by operation
+        $groupedByOperation = $processes->groupBy('operation');
+
+        foreach ($groupedByOperation as $operation => $operationProcesses) {
+            $count = $operationProcesses->count();
+
+            // Calculate durations for completed processes
+            $durations = [];
+            foreach ($operationProcesses as $process) {
+                if ($process->started_at && $process->completed_at) {
+                    $durations[] = $process->started_at->diffInSeconds($process->completed_at);
+                } elseif ($process->started_at && $process->failed_at) {
+                    $durations[] = $process->started_at->diffInSeconds($process->failed_at);
+                }
+            }
+
+            if (empty($durations)) {
+                $command->line("  $operation ($count processes): no timing data");
+
+                continue;
+            }
+
+            $total = array_sum($durations);
+            $avg   = $total / count($durations);
+
+            $command->line(sprintf(
+                '  %s (%d processes): avg %s, total %s',
+                $operation,
+                $count,
+                $this->formatDuration($avg),
+                $this->formatDuration($total)
+            ));
+        }
+
+        $command->newLine();
+
+        // Show total TaskRun duration
+        if ($taskRun->started_at) {
+            $endTime       = $taskRun->completed_at ?? now();
+            $totalDuration = $taskRun->started_at->diffInSeconds($endTime);
+            $command->line('Total TaskRun duration: ' . $this->formatDuration($totalDuration));
+        }
+    }
+
+    /**
+     * Format duration in seconds to human-readable string.
+     */
+    protected function formatDuration(float $seconds): string
+    {
+        if ($seconds < 60) {
+            return sprintf('%.1fs', $seconds);
+        }
+
+        if ($seconds < 3600) {
+            $minutes = floor($seconds / 60);
+            $secs    = $seconds % 60;
+
+            return sprintf('%dm %ds', $minutes, $secs);
+        }
+
+        $hours   = floor($seconds / 3600);
+        $minutes = floor(($seconds % 3600) / 60);
+
+        return sprintf('%dh %dm', $hours, $minutes);
     }
 }

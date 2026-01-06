@@ -5,6 +5,8 @@ namespace App\Services\Task\Debug;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -13,16 +15,14 @@ use Throwable;
 
 class ExtractDataDebugService
 {
+    use DebugOutputHelper;
+
     /**
      * Show task run overview.
      */
     public function showOverview(TaskRun $taskRun, Command $command): void
     {
-        $command->info("=== TaskRun {$taskRun->id} ===");
-        $command->line("Status: {$taskRun->status}");
-        $command->line("TaskDefinition: {$taskRun->taskDefinition->name}");
-        $command->line("Runner: {$taskRun->taskDefinition->task_runner_name}");
-        $command->newLine();
+        $this->showTaskRunHeader($taskRun, $command);
 
         // Show task definition prompt
         $command->info('=== Task Definition Prompt ===');
@@ -74,10 +74,10 @@ class ExtractDataDebugService
         int $count,
         Command $command
     ): void {
-        $completed = $operationProcesses->where('status', 'Completed')->count();
-        $pending   = $operationProcesses->where('status', 'Pending')->count();
-        $running   = $operationProcesses->where('status', 'Running')->count();
-        $failed    = $operationProcesses->where('status', 'Failed')->count();
+        $completed = $operationProcesses->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
+        $pending   = $operationProcesses->where('status', WorkflowStatesContract::STATUS_PENDING)->count();
+        $running   = $operationProcesses->where('status', WorkflowStatesContract::STATUS_RUNNING)->count();
+        $failed    = $operationProcesses->where('status', WorkflowStatesContract::STATUS_FAILED)->count();
 
         $command->line("    Completed: $completed, Pending: $pending, Running: $running, Failed: $failed");
 
@@ -111,10 +111,10 @@ class ExtractDataDebugService
         Collection $operationProcesses,
         Command $command
     ): void {
-        $completed = $operationProcesses->where('status', 'Completed')->count();
-        $pending   = $operationProcesses->where('status', 'Pending')->count();
-        $running   = $operationProcesses->where('status', 'Running')->count();
-        $failed    = $operationProcesses->where('status', 'Failed')->count();
+        $completed = $operationProcesses->where('status', WorkflowStatesContract::STATUS_COMPLETED)->count();
+        $pending   = $operationProcesses->where('status', WorkflowStatesContract::STATUS_PENDING)->count();
+        $running   = $operationProcesses->where('status', WorkflowStatesContract::STATUS_RUNNING)->count();
+        $failed    = $operationProcesses->where('status', WorkflowStatesContract::STATUS_FAILED)->count();
 
         $command->line("    Completed: $completed, Failed: $failed, Pending: $pending, Running: $running");
 
@@ -245,87 +245,6 @@ class ExtractDataDebugService
 
             $command->newLine();
         }
-    }
-
-    /**
-     * Show detailed view of a specific process.
-     */
-    public function showProcessDetail(TaskRun $taskRun, int $processId, Command $command): int
-    {
-        $process = $taskRun->taskProcesses()->find($processId);
-
-        if (!$process) {
-            $command->error("TaskProcess $processId not found in TaskRun {$taskRun->id}");
-
-            return 1;
-        }
-
-        $command->info("=== TaskProcess $processId Details ===");
-        $command->line("Status: {$process->status}");
-        $command->line("Operation: {$process->operation}");
-        $command->line("Activity: {$process->activity}");
-        $command->newLine();
-
-        // Show meta data
-        if ($process->meta) {
-            $command->info('=== Meta Data ===');
-            $command->line(json_encode($process->meta, JSON_PRETTY_PRINT));
-            $command->newLine();
-        }
-
-        // Show input artifacts
-        $command->info('=== Input Artifacts ===');
-        $inputArtifacts = $process->inputArtifacts;
-        $command->line("Total: {$inputArtifacts->count()} artifacts");
-
-        foreach ($inputArtifacts as $artifact) {
-            $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
-            if ($artifact->json_content) {
-                $command->line('    JSON Content:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->json_content, JSON_PRETTY_PRINT)));
-            }
-        }
-        $command->newLine();
-
-        // Show output artifacts with full JSON content
-        $command->info('=== Output Artifacts ===');
-        $outputArtifacts = $process->outputArtifacts;
-        $command->line("Total: {$outputArtifacts->count()} artifacts");
-
-        foreach ($outputArtifacts as $artifact) {
-            $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
-
-            // Show parent artifact info
-            $parentId   = $artifact->parent_artifact_id;
-            $parentName = $artifact->parent?->name ?? '(none)';
-            $command->line('    parent_artifact_id: ' . ($parentId ?? 'NULL') . " ($parentName)");
-
-            if ($artifact->json_content) {
-                $command->line('    JSON Content:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->json_content, JSON_PRETTY_PRINT)));
-            }
-            if ($artifact->meta) {
-                $command->line('    Meta:');
-                $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->meta, JSON_PRETTY_PRINT)));
-            }
-        }
-        $command->newLine();
-
-        // Show agent thread messages (full content, not truncated)
-        if ($process->agentThread) {
-            $command->info('=== Agent Thread Messages ===');
-            $thread = $process->agentThread;
-            $command->line("Thread ID: {$thread->id}");
-            $command->newLine();
-
-            foreach ($thread->messages()->orderBy('created_at')->get() as $message) {
-                $command->line("[$message->role] - {$message->created_at}");
-                $command->line($message->content);
-                $command->newLine();
-            }
-        }
-
-        return 0;
     }
 
     /**
@@ -491,9 +410,7 @@ class ExtractDataDebugService
 
                     // Show first 100 chars of meta data if present
                     if ($teamObject->meta) {
-                        $metaJson  = json_encode($teamObject->meta);
-                        $truncated = strlen($metaJson) > 100 ? substr($metaJson, 0, 100) . '...' : $metaJson;
-                        $command->line("      Data: $truncated");
+                        $command->line('      Data: ' . $this->truncate(json_encode($teamObject->meta), 100, '...'));
                     }
 
                     $command->newLine();

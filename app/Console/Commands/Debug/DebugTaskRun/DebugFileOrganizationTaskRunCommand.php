@@ -73,22 +73,8 @@ class DebugFileOrganizationTaskRunCommand extends DebugTaskRunCommand
     #[Override]
     protected function showOverview(DebugTaskRunService $debugService): int
     {
-        $showRaw       = $this->option('raw');
-        $showArtifacts = $this->option('artifacts');
-        $showMessages  = $this->option('messages');
-        $showDedup     = $this->option('dedup');
-        $verbose       = $this->option('verbose');
-
         $fileOrgService = app(FileOrganizationDebugService::class);
-        $fileOrgService->showOverview(
-            $this->taskRun,
-            $this,
-            $showRaw,
-            $showArtifacts,
-            $showMessages,
-            $showDedup,
-            $verbose
-        );
+        $fileOrgService->showOverview($this->taskRun, $this);
 
         return 0;
     }

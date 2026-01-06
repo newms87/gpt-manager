@@ -14,6 +14,8 @@ class DebugTaskRunCommand extends Command
         {--artifacts : Show artifact JSON content}
         {--raw : Show raw artifact data}
         {--process= : Show detailed info for specific task process ID}
+        {--status= : Filter processes by status (Pending, Running, Completed, Failed)}
+        {--timing : Show process timing information}
         {--run : Create new task run with same inputs}
         {--rerun : Reset and re-dispatch task run}';
 
@@ -41,6 +43,18 @@ class DebugTaskRunCommand extends Command
 
         if ($this->option('process')) {
             return $debugService->showProcessDetail($this->taskRun, (int)$this->option('process'), $this);
+        }
+
+        if ($statusFilter = $this->option('status')) {
+            $debugService->showProcessesByStatus($this->taskRun, $statusFilter, $this);
+
+            return 0;
+        }
+
+        if ($this->option('timing')) {
+            $debugService->showTiming($this->taskRun, $this);
+
+            return 0;
         }
 
         return $this->showOverview($debugService);

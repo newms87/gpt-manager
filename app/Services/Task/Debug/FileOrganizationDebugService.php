@@ -4,6 +4,8 @@ namespace App\Services\Task\Debug;
 
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\FileOrganization\ResolutionOrchestrator;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
@@ -12,23 +14,20 @@ use Illuminate\Support\Collection;
 
 class FileOrganizationDebugService
 {
+    use DebugOutputHelper;
+
     /**
      * Show full overview of a FileOrganization task run.
      */
-    public function showOverview(
-        TaskRun $taskRun,
-        Command $command,
-        bool $showRaw = false,
-        bool $showArtifacts = false,
-        bool $showMessages = false,
-        bool $showDedup = false,
-        bool $verbose = false
-    ): void {
-        $command->info("=== TaskRun {$taskRun->id} ===");
-        $command->line("Status: {$taskRun->status}");
-        $command->line("TaskDefinition: {$taskRun->taskDefinition->name}");
-        $command->line("Runner: {$taskRun->taskDefinition->task_runner_name}");
-        $command->newLine();
+    public function showOverview(TaskRun $taskRun, Command $command): void
+    {
+        $showRaw       = $command->option('raw');
+        $showArtifacts = $command->option('artifacts');
+        $showMessages  = $command->option('messages');
+        $showDedup     = $command->option('dedup');
+        $verbose       = $command->option('verbose');
+
+        $this->showTaskRunHeader($taskRun, $command);
 
         // Show task definition prompt
         $command->info("=== User's Task Definition Prompt ===");
@@ -393,12 +392,12 @@ class FileOrganizationDebugService
         $mergeProcess->outputArtifacts()->detach();
 
         // Reset status and meta
-        $mergeProcess->status   = 'Pending';
+        $mergeProcess->status   = WorkflowStatesContract::STATUS_PENDING;
         $mergeProcess->meta     = [];
         $mergeProcess->is_ready = true;
         $mergeProcess->save();
 
-        $command->info('Merge process reset to Pending status');
+        $command->info('Merge process reset to ' . WorkflowStatesContract::STATUS_PENDING . ' status');
 
         // Dispatch to rerun
         TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
@@ -451,12 +450,12 @@ class FileOrganizationDebugService
         $dedupProcess->outputArtifacts()->detach();
 
         // Reset status and meta - preserve groups_for_deduplication
-        $dedupProcess->status   = 'Pending';
+        $dedupProcess->status   = WorkflowStatesContract::STATUS_PENDING;
         $dedupProcess->meta     = ['groups_for_deduplication' => $groupsForDeduplication];
         $dedupProcess->is_ready = true;
         $dedupProcess->save();
 
-        $command->info('Duplicate group resolution process reset to Pending status');
+        $command->info('Duplicate group resolution process reset to ' . WorkflowStatesContract::STATUS_PENDING . ' status');
 
         // Dispatch to rerun
         TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
@@ -640,13 +639,11 @@ class FileOrganizationDebugService
             if ($showArtifacts && $artifact) {
                 $command->newLine();
                 $command->line('    [ARTIFACT] JSON Content (first 1000 chars):');
-                $jsonContent = json_encode($artifact->json_content, JSON_PRETTY_PRINT);
-                $truncated   = strlen($jsonContent) > 1000 ? substr($jsonContent, 0, 1000) . '... [truncated]' : $jsonContent;
-                $command->line('    ' . str_replace("\n", "\n    ", $truncated));
+                $this->showJsonContent($artifact->json_content, $command, 1000, 4);
 
                 if ($artifact->meta) {
                     $command->line('    [ARTIFACT] Meta:');
-                    $command->line('    ' . str_replace("\n", "\n    ", json_encode($artifact->meta, JSON_PRETTY_PRINT)));
+                    $this->showJsonContent($artifact->meta, $command, 1000, 4);
                 }
                 $command->newLine();
             }
@@ -663,9 +660,8 @@ class FileOrganizationDebugService
                     $command->newLine();
                     $command->line("    [AGENT] Thread ID: {$thread->id}");
                     $command->line('    [AGENT] Last Assistant Message (first 1500 chars):');
-                    $content   = $lastAssistantMessage->content;
-                    $truncated = strlen($content) > 1500 ? substr($content, 0, 1500) . '... [truncated]' : $content;
-                    $command->line('    ' . str_replace("\n", "\n    ", $truncated));
+                    $content = $this->truncate($lastAssistantMessage->content, 1500);
+                    $command->line($this->indentContent($content, 4));
                     $command->newLine();
                 }
             }
@@ -891,12 +887,7 @@ class FileOrganizationDebugService
 
             foreach ($thread->messages()->orderBy('created_at')->get() as $message) {
                 $role    = $message->role;
-                $content = $message->content;
-
-                // Truncate long content
-                if (strlen($content) > 500) {
-                    $content = substr($content, 0, 500) . '... [truncated]';
-                }
+                $content = $this->truncate($message->content, 500);
 
                 $command->line("[$role] $content");
                 $command->newLine();
