@@ -15,6 +15,8 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
         {--process= : Show detailed info for specific task process ID}
         {--run : Create new task run with same inputs}
         {--rerun : Reset and re-dispatch task run}
+        {--status= : Filter processes by status (Pending, Running, Completed, Failed)}
+        {--timing : Show process timing information}
         {--run-process= : Run a specific task process ID synchronously to debug exceptions}
         {--classify-status : Show status of all classify processes}
         {--artifact-tree : Show parent/child artifact hierarchy}

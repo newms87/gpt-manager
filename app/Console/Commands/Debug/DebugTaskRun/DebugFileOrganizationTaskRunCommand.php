@@ -15,6 +15,8 @@ class DebugFileOrganizationTaskRunCommand extends DebugTaskRunCommand
         {--process= : Show detailed info for specific task process ID}
         {--run : Create new task run with same inputs}
         {--rerun : Reset and re-dispatch task run}
+        {--status= : Filter processes by status (Pending, Running, Completed, Failed)}
+        {--timing : Show process timing information}
         {--dedup : Show full deduplication metadata}
         {--window= : Show detailed info for specific window (e.g., 1-10)}
         {--page= : Show all data about a specific page number across all windows}
