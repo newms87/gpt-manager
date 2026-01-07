@@ -123,7 +123,7 @@ class JSONSchemaDataToDatabaseMapper
                 $input[$propName] = $input[$propName]['value'] ?? null;
             }
 
-            if (array_key_exists($propName, $input) && $input[$propName] === null) {
+            if (array_key_exists($propName, $input) && ($input[$propName] === null || $input[$propName] === '')) {
                 unset($input[$propName]);
             }
         }
