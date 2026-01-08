@@ -12,6 +12,8 @@ use App\Services\Task\Runners\ExtractDataTaskRunner;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Throwable;
 
 class ExtractDataDebugService
@@ -364,6 +366,16 @@ class ExtractDataDebugService
      */
     protected function resetProcess(TaskProcess $process): void
     {
+        // Delete job dispatches associated with this process (clears API logs from previous runs)
+        $jobDispatchIds = DB::table('job_dispatchables')
+            ->where('model_type', get_class($process))
+            ->where('model_id', $process->id)
+            ->pluck('job_dispatch_id');
+
+        if ($jobDispatchIds->isNotEmpty()) {
+            JobDispatch::whereIn('id', $jobDispatchIds)->get()->each->delete();
+        }
+
         // Get output artifact IDs for this process and delete them
         // Using relationship instead of JSON query to avoid PostgreSQL unicode issues
         $artifactIds = $process->outputArtifacts()->pluck('artifacts.id');

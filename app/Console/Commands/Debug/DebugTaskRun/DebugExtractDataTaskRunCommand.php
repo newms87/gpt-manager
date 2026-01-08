@@ -17,6 +17,9 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
         {--rerun : Reset and re-dispatch task run}
         {--status= : Filter processes by status (Pending, Running, Completed, Failed)}
         {--timing : Show process timing information}
+        {--api-logs : Show API logs for the task process (uses most recent job dispatch)}
+        {--job-dispatches : List all job dispatches for the task process}
+        {--job-dispatch= : Specify which job dispatch ID to show API logs for (use with --api-logs)}
         {--run-process= : Run a specific task process ID synchronously to debug exceptions}
         {--classify-status : Show status of all classify processes}
         {--artifact-tree : Show parent/child artifact hierarchy}

@@ -9,6 +9,7 @@ use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\TaskRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Models\Job\JobDispatch;
 
 class DebugTaskRunService
 {
@@ -427,5 +428,95 @@ class DebugTaskRunService
         $minutes = floor(($seconds % 3600) / 60);
 
         return sprintf('%dh %dm', $hours, $minutes);
+    }
+
+    /**
+     * Show all job dispatches for a task process in a table format.
+     */
+    public function showJobDispatches(TaskProcess $taskProcess, Command $command): void
+    {
+        $command->info("=== Job Dispatches for TaskProcess {$taskProcess->id} ===");
+        $command->newLine();
+
+        $jobDispatches = $taskProcess->jobDispatches()->get();
+
+        if ($jobDispatches->isEmpty()) {
+            $command->line('No job dispatches found for this task process.');
+
+            return;
+        }
+
+        $rows = $jobDispatches->map(fn(JobDispatch $dispatch) => [
+            $dispatch->id,
+            $dispatch->status,
+            $dispatch->job_tag ?? '(none)',
+            $dispatch->count,
+            $dispatch->created_at?->format('Y-m-d H:i:s') ?? '(none)',
+        ])->toArray();
+
+        $command->table(
+            ['ID', 'Status', 'Job Tag', 'Count', 'Created At'],
+            $rows
+        );
+
+        $command->newLine();
+        $command->line("Total: {$jobDispatches->count()} job dispatch(es)");
+        $command->line('Use --api-logs --job-dispatch=<ID> to view API logs for a specific job dispatch.');
+    }
+
+    /**
+     * Show API logs for a task process's job dispatch.
+     */
+    public function showApiLogs(TaskProcess $taskProcess, ?int $jobDispatchId, Command $command): void
+    {
+        // Get the specific job dispatch or the most recent one
+        if ($jobDispatchId) {
+            $jobDispatch = $taskProcess->jobDispatches()->where('job_dispatch.id', $jobDispatchId)->first();
+
+            if (!$jobDispatch) {
+                $command->error("JobDispatch #{$jobDispatchId} not found for TaskProcess {$taskProcess->id}");
+
+                return;
+            }
+        } else {
+            $jobDispatch = $taskProcess->jobDispatches()->first();
+
+            if (!$jobDispatch) {
+                $command->line('No job dispatches found for this task process.');
+
+                return;
+            }
+        }
+
+        $command->info("=== API Logs for JobDispatch #{$jobDispatch->id} ===");
+        $command->line("Status: {$jobDispatch->status}");
+        $command->line('Job Tag: ' . ($jobDispatch->job_tag ?? '(none)'));
+        $command->newLine();
+
+        // Get the running audit request for the job dispatch
+        $auditRequest = $jobDispatch->runningAuditRequest;
+
+        if (!$auditRequest) {
+            $command->line('No audit request found for this job dispatch.');
+
+            return;
+        }
+
+        $apiLogs = $auditRequest->apiLogs()->orderBy('id')->get();
+
+        if ($apiLogs->isEmpty()) {
+            $command->line('No API logs found for this job dispatch.');
+
+            return;
+        }
+
+        $command->line("Found {$apiLogs->count()} API log(s):");
+        $command->newLine();
+
+        foreach ($apiLogs as $apiLog) {
+            $command->line("--- ApiLog #{$apiLog->id} ---");
+            $command->line((string)$apiLog);
+            $command->newLine();
+        }
     }
 }

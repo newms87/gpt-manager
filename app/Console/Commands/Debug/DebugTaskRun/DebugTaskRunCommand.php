@@ -17,7 +17,10 @@ class DebugTaskRunCommand extends Command
         {--status= : Filter processes by status (Pending, Running, Completed, Failed)}
         {--timing : Show process timing information}
         {--run : Create new task run with same inputs}
-        {--rerun : Reset and re-dispatch task run}';
+        {--rerun : Reset and re-dispatch task run}
+        {--api-logs : Show API logs for the task process (uses most recent job dispatch)}
+        {--job-dispatches : List all job dispatches for the task process}
+        {--job-dispatch= : Specify which job dispatch ID to show API logs for (use with --api-logs)}';
 
     protected $description = 'Debug a TaskRun to understand agent communication and results';
 
@@ -39,6 +42,14 @@ class DebugTaskRunCommand extends Command
 
         if ($this->option('rerun')) {
             return $debugService->resetAndRerunTaskRun($this->taskRun, $this);
+        }
+
+        if ($this->option('job-dispatches')) {
+            return $this->handleJobDispatches($debugService);
+        }
+
+        if ($this->option('api-logs')) {
+            return $this->handleApiLogs($debugService);
         }
 
         if ($this->option('process')) {
@@ -114,6 +125,41 @@ class DebugTaskRunCommand extends Command
         if ($this->option('raw')) {
             $debugService->showRawArtifactData($inputArtifacts, $outputArtifacts, $this);
         }
+
+        return 0;
+    }
+
+    /**
+     * Handle --job-dispatches option to list all job dispatches for a task process.
+     */
+    protected function handleJobDispatches(DebugTaskRunService $debugService): int
+    {
+        if (!$this->taskProcess) {
+            $this->error('The --job-dispatches option requires a TaskProcess ID.');
+            $this->line('Please specify a TaskProcess ID directly, or use --process= to specify which process to view.');
+
+            return 1;
+        }
+
+        $debugService->showJobDispatches($this->taskProcess, $this);
+
+        return 0;
+    }
+
+    /**
+     * Handle --api-logs option to show API logs for a task process.
+     */
+    protected function handleApiLogs(DebugTaskRunService $debugService): int
+    {
+        if (!$this->taskProcess) {
+            $this->error('The --api-logs option requires a TaskProcess ID.');
+            $this->line('Please specify a TaskProcess ID directly, or use --process= to specify which process to view.');
+
+            return 1;
+        }
+
+        $jobDispatchId = $this->option('job-dispatch') ? (int)$this->option('job-dispatch') : null;
+        $debugService->showApiLogs($this->taskProcess, $jobDispatchId, $this);
 
         return 0;
     }
