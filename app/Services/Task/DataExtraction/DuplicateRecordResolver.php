@@ -237,6 +237,17 @@ class DuplicateRecordResolver
             $fieldValue = $extractedData[$fieldName];
 
             if (!isset($candidateData[$fieldName])) {
+                // If extracted value is also empty, treat as match (both are effectively empty)
+                $extractedNormalized = $this->normalizeValue($fieldValue);
+                if ($extractedNormalized === '') {
+                    static::logDebug("Field '{$fieldName}' empty in both (extracted empty, candidate missing)", [
+                        'candidate_id' => $candidate->id,
+                    ]);
+
+                    continue; // This field matches - both are effectively empty
+                }
+
+                // Extracted has value but candidate is missing - not a match
                 static::logDebug("Field '{$fieldName}' missing in candidate", [
                     'candidate_id'     => $candidate->id,
                     'extracted_value'  => $fieldValue,

@@ -329,4 +329,57 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $this->assertNotNull($match, 'Expected match on TeamObjectAttribute field using getValue()');
         $this->assertEquals($candidate->id, $match->id);
     }
+
+    #[Test]
+    public function quickMatchCheck_treats_empty_extracted_value_and_missing_candidate_field_as_match(): void
+    {
+        // Given: TeamObject with only name set (no date)
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Client',
+            'date'    => null,
+        ]);
+
+        $candidate->load('attributes');
+        $candidates = collect([$candidate]);
+
+        // When: Quick matching with name that matches and date that is empty string
+        // Using identity fields to explicitly include 'date' in the comparison
+        $match = $this->resolver->quickMatchCheck(
+            extractedData: ['name' => 'Test Client', 'date' => ''],
+            candidates: $candidates,
+            identityFields: ['name', 'date']
+        );
+
+        // Then: Returns match because both extracted (empty string) and candidate (missing) are effectively empty
+        $this->assertNotNull($match, 'Expected match when both extracted and candidate values are empty');
+        $this->assertEquals($candidate->id, $match->id);
+    }
+
+    #[Test]
+    public function quickMatchCheck_returns_null_when_extracted_has_value_but_candidate_field_missing(): void
+    {
+        // Given: TeamObject with only name set (no date)
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Client',
+            'date'    => null,
+        ]);
+
+        $candidate->load('attributes');
+        $candidates = collect([$candidate]);
+
+        // When: Quick matching with name that matches but date has a value while candidate has none
+        // Using identity fields to explicitly include 'date' in the comparison
+        $match = $this->resolver->quickMatchCheck(
+            extractedData: ['name' => 'Test Client', 'date' => '2024-01-15'],
+            candidates: $candidates,
+            identityFields: ['name', 'date']
+        );
+
+        // Then: Returns null because extracted has a date value but candidate does not
+        $this->assertNull($match, 'Expected no match when extracted has value but candidate field is missing');
+    }
 }
