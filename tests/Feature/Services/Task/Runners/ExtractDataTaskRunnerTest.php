@@ -521,19 +521,36 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function extract_identity_operation_updates_level_progress(): void
     {
-        // Given: TaskRun with cached plan in TaskDefinition.meta and no identification groups
+        // Given: TaskRun with cached plan in TaskDefinition.meta
         $this->taskDefinition->meta = [
             'extraction_plan' => [
                 'levels' => [
                     [
                         'level'      => 0,
-                        'identities' => [], // No identity groups
+                        'identities' => [
+                            [
+                                'name'              => 'Client',
+                                'object_type'       => 'Client',
+                                'identity_fields'   => ['client_name'],
+                                'skim_fields'       => ['client_name'],
+                                'search_mode'       => 'skim',
+                                'fragment_selector' => [
+                                    'type'     => 'object',
+                                    'children' => [
+                                        'client_name' => ['type' => 'string'],
+                                    ],
+                                ],
+                            ],
+                        ],
                         'remaining'  => [
                             [
+                                'name'              => 'Client Address',
+                                'key'               => 'client_address',
                                 'object_type'       => 'Client',
                                 'fields'            => ['address'],
                                 'search_mode'       => 'exhaustive',
                                 'fragment_selector' => [
+                                    'type'     => 'object',
                                     'children' => [
                                         'address' => ['type' => 'string'],
                                     ],
@@ -551,24 +568,94 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             'meta'               => [],
         ]);
 
+        // Create input artifact with classification
+        $inputArtifact = Artifact::factory()->create([
+            'team_id'     => $this->user->currentTeam->id,
+            'task_run_id' => $taskRun->id,
+            'name'        => 'Page 1',
+            'meta'        => [
+                'classification' => [
+                    'client_identification' => true,
+                ],
+            ],
+        ]);
+
+        $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'page_number' => 1,
+            'filename'    => 'page-1.jpg',
+            'filepath'    => 'test/page-1.jpg',
+            'disk'        => 'public',
+            'mime'        => 'image/jpeg',
+        ]);
+
+        $inputArtifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
+
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
             'meta'        => [
                 'level'          => 0,
                 'identity_group' => [
+                    'name'              => 'Client',
                     'object_type'       => 'Client',
                     'identity_fields'   => ['client_name'],
                     'skim_fields'       => ['client_name'],
                     'search_mode'       => 'skim',
-                    'fragment_selector' => [],
+                    'fragment_selector' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
                 ],
             ],
             'started_at'  => now(),
         ]);
 
+        // Attach artifact as input to process
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Mock AgentThreadBuilderService to return a real thread
+        $thread = \App\Models\Agent\AgentThread::factory()->create([
+            'agent_id' => $this->agent->id,
+            'team_id'  => $this->user->currentTeam->id,
+        ]);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadBuilderService::class, function ($mock) use ($thread) {
+            $builderMock = \Mockery::mock();
+            $builderMock->shouldReceive('named')->andReturnSelf();
+            $builderMock->shouldReceive('withArtifacts')->andReturnSelf();
+            $builderMock->shouldReceive('build')->andReturn($thread);
+
+            $mock->shouldReceive('for')->andReturn($builderMock);
+        });
+
+        // Mock AgentThreadService to avoid actual LLM calls
+        $mockMessage = $this->createMock(\App\Models\Agent\AgentThreadMessage::class);
+        $mockMessage->method('getJsonContent')->willReturn([
+            'data'         => ['client_name' => 'Test Client'],
+            'search_query' => ['client_name' => '%Test%'],
+        ]);
+
+        $mockThreadRun              = $this->mock(\App\Models\Agent\AgentThreadRun::class)->makePartial();
+        $mockThreadRun->lastMessage = $mockMessage;
+        $mockThreadRun->shouldReceive('isCompleted')->andReturn(true);
+
+        $this->mock(\App\Services\AgentThread\AgentThreadService::class, function ($mock) use ($mockThreadRun) {
+            $mock->shouldReceive('withResponseFormat')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('withTimeout')
+                ->once()
+                ->andReturnSelf();
+            $mock->shouldReceive('run')
+                ->once()
+                ->andReturn($mockThreadRun);
+        });
+
         // When: Running extract identity
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($taskProcess);
+        $freshTaskRun = TaskRun::with('taskDefinition.agent')->find($taskRun->id);
+        $this->runner->setTaskRun($freshTaskRun)->setTaskProcess($taskProcess);
         $this->runner->run();
 
         // Then: Level progress is updated
@@ -1281,11 +1368,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess->inputArtifacts()->attach($childArtifact->id);
 
         // Mock GroupExtractionService to return extracted data
-        $this->mock(\App\Services\Task\DataExtraction\GroupExtractionService::class, function ($mock) use ($childArtifact) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->once()
-                ->andReturn(collect([$childArtifact]));
-
+        $this->mock(\App\Services\Task\DataExtraction\GroupExtractionService::class, function ($mock) {
             $mock->shouldReceive('extractExhaustive')
                 ->once()
                 ->andReturn([

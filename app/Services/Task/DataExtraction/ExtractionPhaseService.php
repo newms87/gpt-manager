@@ -95,6 +95,19 @@ class ExtractionPhaseService
                 static::logDebug('Identity completed - creating Extract Remaining processes', ['level' => $currentLevel]);
                 $processes = $orchestrator->createExtractRemainingProcesses($taskRun, $plan, $currentLevel);
                 if (empty($processes)) {
+                    // Check if there are already existing remaining processes for this level
+                    $existingRemaining = $taskRun->taskProcesses()
+                        ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING)
+                        ->where('meta->level', $currentLevel)
+                        ->exists();
+
+                    if ($existingRemaining) {
+                        // Remaining processes exist but weren't created in this call - wait for them
+                        static::logDebug('Existing remaining processes found - waiting for completion', ['level' => $currentLevel]);
+
+                        return;
+                    }
+
                     // No remaining processes needed - mark extraction complete and continue
                     // to check level progression (don't return early!)
                     static::logDebug('No extract remaining processes needed - marking extraction complete', ['level' => $currentLevel]);

@@ -149,8 +149,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: The thread should have been created and captured
@@ -239,8 +238,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Should return null because no data was extracted
@@ -320,8 +318,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then
@@ -395,8 +392,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Diagnostic output

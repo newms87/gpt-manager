@@ -78,7 +78,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     // =========================================================================
 
     #[Test]
-    public function execute_returns_null_when_no_input_artifacts(): void
+    public function execute_throws_exception_when_no_input_artifacts(): void
     {
         // Given: TaskProcess with no input artifacts
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
@@ -90,17 +90,17 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'identity_fields' => ['client_name'],
         ];
 
-        // When: Executing identity extraction
-        $result = $this->service->execute(
+        // Then: Expect exception
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('has no input artifacts');
+
+        // When: Executing identity extraction - should throw
+        $this->service->execute(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
-
-        // Then: Returns null
-        $this->assertNull($result);
     }
 
     // =========================================================================
@@ -164,8 +164,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns a new TeamObject
@@ -237,8 +236,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                     Mockery::any(),
                     Mockery::any(),
                     0,
-                    $existingTeamObject->id,
-                    null  // parentObjectId
+                    $existingTeamObject->id
                 )
                 ->once()
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
@@ -249,8 +247,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns the existing TeamObject
@@ -318,8 +315,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 1,
-            parentObjectId: null
+            level: 1
         );
 
         // Then: TeamObject was created and stored
@@ -378,8 +374,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                     Mockery::on(fn($g) => $g['object_type'] === 'Client'),
                     Mockery::on(fn($r) => isset($r['data']['client_name'])),
                     0,
-                    null,  // matchId
-                    null   // parentObjectId
+                    null  // matchId
                 )
                 ->once()
                 ->andReturn($builtArtifact);
@@ -390,8 +385,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns a TeamObject
@@ -470,8 +464,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns the existing TeamObject resolved via LLM
@@ -523,8 +516,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns null
@@ -534,26 +526,47 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_handles_parent_object_id(): void
     {
-        // Given: Parent object exists
+        // Given: Parent object exists (Demand is parent of Provider)
         $parentObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Case',
+            'type'    => 'Demand',
         ]);
 
+        // Input artifact with resolved_objects containing the parent
         $inputArtifact = Artifact::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'team_id'     => $this->user->currentTeam->id,
+            'meta'        => [
+                'resolved_objects' => [
+                    'Demand' => [$parentObject->id],
+                ],
+            ],
         ]);
 
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector: getNestingKeys returns ['demand', 'provider']
+        // getParentType returns second-to-last = 'demand' => 'Demand' (title case)
+        // This represents: demand > provider > {scalar fields} (2-level hierarchy)
         $identityGroup = [
-            'name'              => 'Client',
-            'object_type'       => 'Client',
-            'identity_fields'   => ['client_name'],
+            'name'              => 'Provider',
+            'object_type'       => 'Provider',
+            'identity_fields'   => ['provider_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'children' => [
+                    'demand' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'provider' => [
+                                'type'     => 'array',
+                                'children' => [
+                                    'provider_name' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -564,14 +577,14 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
         $this->mockAgentThreadService([
-            'data'         => ['client_name' => 'Child Client'],
-            'search_query' => ['client_name' => '%Child%'],
+            'data'         => ['provider_name' => 'Some Provider'],
+            'search_query' => ['provider_name' => '%Some%Provider%'],
         ]);
 
         // Mock DuplicateRecordResolver to verify parent scope is passed
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) use ($parentObject) {
             $mock->shouldReceive('findCandidates')
-                ->with('Client', Mockery::any(), $parentObject->id, Mockery::any())
+                ->with('Provider', Mockery::any(), $parentObject->id, Mockery::any())
                 ->andReturn(collect());
         });
 
@@ -580,18 +593,22 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            // Return the single provider when unwrapping (array-type extraction path)
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn([
+                    ['provider_name' => 'Some Provider'],
+                ]);
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
                 Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
             );
         });
 
-        // When: Executing identity extraction with parent object
+        // When: Executing identity extraction (parent is now resolved from artifacts)
         $result = $this->service->execute(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 1,
-            parentObjectId: $parentObject->id
+            level: 1
         );
 
         // Then: Returns a TeamObject
@@ -647,12 +664,129 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            level: 0,
-            parentObjectId: null
+            level: 0
         );
 
         // Then: Returns null (no data found, no TeamObject created)
         $this->assertNull($result);
+    }
+
+    // =========================================================================
+    // execute() - Array-type identity extraction tests
+    // =========================================================================
+
+    #[Test]
+    public function execute_creates_multiple_team_objects_for_array_type_identity(): void
+    {
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Identity group with array-type at root level (simplest case)
+        // The key is that 'diagnosis' has type: 'array' - multiple diagnoses per document
+        $identityGroup = [
+            'name'              => 'Diagnosis',
+            'object_type'       => 'Diagnosis',
+            'identity_fields'   => ['name'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'diagnosis' => [
+                        'type'     => 'array',  // <-- Array type - multiple items!
+                        'children' => [
+                            'name'        => ['type' => 'string'],
+                            'date'        => ['type' => 'string'],
+                            'description' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $thread = AgentThread::factory()->create([
+            'agent_id' => $this->agent->id,
+            'team_id'  => $this->user->currentTeam->id,
+        ]);
+
+        $this->mockAgentThreadBuilder($thread);
+
+        // Mock LLM returns 3 diagnoses in an array
+        $this->mockAgentThreadService([
+            'data' => [
+                'diagnosis' => [
+                    ['name' => 'G44.319', 'date' => '2024-01-15', 'description' => 'Headache'],
+                    ['name' => 'M54.2', 'date' => '2024-01-15', 'description' => 'Cervicalgia'],
+                    ['name' => 'S13.4', 'date' => '2024-01-15', 'description' => 'Sprain'],
+                ],
+            ],
+            'search_query' => ['name' => '%G44%'],
+        ]);
+
+        // Mock DuplicateRecordResolver - no duplicates found for any
+        $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
+            $mock->shouldReceive('findCandidates')->andReturn(collect());
+        });
+
+        // Track how many times storeResolvedObjectId is called
+        $storedObjectIds = [];
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) use (&$storedObjectIds) {
+            $mock->shouldReceive('storeResolvedObjectId')
+                ->andReturnUsing(function ($taskRun, $objectType, $objectId, $level) use (&$storedObjectIds) {
+                    $storedObjectIds[] = $objectId;
+                });
+        });
+
+        // Track how many artifacts are built
+        $builtArtifacts = [];
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use (&$builtArtifacts) {
+            // Return the array of diagnoses when unwrapping
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn([
+                    ['name' => 'G44.319', 'date' => '2024-01-15', 'description' => 'Headache'],
+                    ['name' => 'M54.2', 'date' => '2024-01-15', 'description' => 'Cervicalgia'],
+                    ['name' => 'S13.4', 'date' => '2024-01-15', 'description' => 'Sprain'],
+                ]);
+            $mock->shouldReceive('buildIdentityArtifact')
+                ->andReturnUsing(function () use (&$builtArtifacts) {
+                    $artifact         = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
+                    $builtArtifacts[] = $artifact;
+
+                    return $artifact;
+                });
+        });
+
+        // When: Executing identity extraction
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            identityGroup: $identityGroup,
+            level: 0
+        );
+
+        // Then: Should have created 3 TeamObjects (one for each diagnosis)
+        $createdTeamObjects = TeamObject::where('team_id', $this->user->currentTeam->id)
+            ->where('type', 'Diagnosis')
+            ->get();
+
+        $this->assertCount(
+            3,
+            $createdTeamObjects,
+            'Expected 3 TeamObjects to be created for 3 diagnoses, but got ' . $createdTeamObjects->count()
+        );
+
+        // Verify all 3 diagnoses were stored
+        $this->assertCount(3, $storedObjectIds, 'Expected 3 resolved object IDs to be stored');
+
+        // Verify all 3 names are present
+        $names = $createdTeamObjects->pluck('name')->toArray();
+        $this->assertContains('G44.319', $names);
+        $this->assertContains('M54.2', $names);
+        $this->assertContains('S13.4', $names);
     }
 
     // =========================================================================

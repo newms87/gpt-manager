@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\DataExtraction;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
@@ -13,38 +14,10 @@ use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 class GroupExtractionService
 {
     use HasDebugLogging;
-
-    /**
-     * Get classified artifacts for a specific extraction group.
-     */
-    public function getClassifiedArtifactsForGroup(TaskRun $taskRun, array $group): Collection
-    {
-        $groupKey = $group['key'] ?? ($group['name'] ? Str::snake($group['name']) : null);
-
-        if (!$groupKey) {
-            static::logDebug('No group key found for artifact classification');
-
-            return collect();
-        }
-
-        // Get the parent output artifact and its classified children
-        $parentArtifact = $taskRun->outputArtifacts()->whereNull('parent_artifact_id')->first();
-        if (!$parentArtifact) {
-            static::logDebug('No parent output artifact found');
-
-            return collect();
-        }
-
-        $classificationService = app(ClassificationExecutorService::class);
-        $allArtifacts          = $parentArtifact->children;
-
-        return $classificationService->getArtifactsForCategory($allArtifacts, $groupKey);
-    }
 
     /**
      * Extract data using skim mode.
@@ -164,6 +137,13 @@ class GroupExtractionService
             $fragmentSelector
         );
 
+        // Create a temporary in-memory SchemaDefinition with the filtered fragment schema
+        // This ensures only the fields specified in fragment_selector are requested from the LLM
+        $tempSchemaDefinition = new SchemaDefinition([
+            'name'   => 'group-extraction-' . ($group['name'] ?? 'unknown'),
+            'schema' => $fragmentSchema,
+        ]);
+
         // Build extraction prompt
         $prompt = $this->buildExtractionPrompt($group, $teamObject, $fragmentSelector, $includeConfidence);
 
@@ -178,13 +158,13 @@ class GroupExtractionService
             ->withMessage($prompt)
             ->build();
 
-        // Get timeout from config
-        $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 60;
+        // Get timeout from config (default 5 minutes for large extractions)
+        $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 300;
         $timeout = max(1, min((int)$timeout, 600)); // Between 1-600 seconds
 
-        // Run extraction
+        // Run extraction with the filtered fragment schema (not the full schema)
         $threadRun = app(AgentThreadService::class)
-            ->withResponseFormat($schemaDefinition, null, $jsonSchemaService)
+            ->withResponseFormat($tempSchemaDefinition, null, $jsonSchemaService)
             ->withTimeout($timeout)
             ->run($thread);
 

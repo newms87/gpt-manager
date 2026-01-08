@@ -9,7 +9,10 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\TeamObject\TeamObjectAttribute;
+use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\Task\DataExtraction\GroupExtractionService;
 use Mockery;
@@ -29,157 +32,6 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->service = app(GroupExtractionService::class);
-    }
-
-    // =========================================================================
-    // getClassifiedArtifactsForGroup() tests
-    // =========================================================================
-
-    #[Test]
-    public function getClassifiedArtifactsForGroup_returns_artifacts_matching_group_key(): void
-    {
-        // Given: TaskRun with parent artifact and classified children
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-
-        // Create parent artifact (no parent_artifact_id)
-        $parentArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-        ]);
-
-        // Create classified child artifacts
-        $matchingArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => $parentArtifact->id,
-            'meta'               => ['classification' => ['client_info' => true]],
-        ]);
-
-        $nonMatchingArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => $parentArtifact->id,
-            'meta'               => ['classification' => ['client_info' => false]],
-        ]);
-
-        // Attach as output artifacts
-        $taskRun->outputArtifacts()->attach([$parentArtifact->id, $matchingArtifact->id, $nonMatchingArtifact->id]);
-
-        $group = ['key' => 'client_info', 'name' => 'Client Info'];
-
-        // When: Getting classified artifacts
-        $result = $this->service->getClassifiedArtifactsForGroup($taskRun, $group);
-
-        // Then: Returns only matching artifact
-        $this->assertCount(1, $result);
-        $this->assertEquals($matchingArtifact->id, $result->first()->id);
-    }
-
-    #[Test]
-    public function getClassifiedArtifactsForGroup_returns_empty_collection_when_no_artifacts_match(): void
-    {
-        // Given: TaskRun with parent artifact and non-matching children
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-        ]);
-
-        $artifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => $parentArtifact->id,
-            'meta'               => ['classification' => ['other_category' => true]],
-        ]);
-
-        $taskRun->outputArtifacts()->attach([$parentArtifact->id, $artifact->id]);
-
-        $group = ['key' => 'client_info'];
-
-        // When: Getting classified artifacts for non-matching key
-        $result = $this->service->getClassifiedArtifactsForGroup($taskRun, $group);
-
-        // Then: Returns empty collection
-        $this->assertCount(0, $result);
-    }
-
-    #[Test]
-    public function getClassifiedArtifactsForGroup_returns_empty_collection_when_no_parent_artifact(): void
-    {
-        // Given: TaskRun with no parent output artifact
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-
-        // All artifacts have parent_artifact_id set
-        $artifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => 999, // Has a parent, won't be found as root
-        ]);
-
-        $taskRun->outputArtifacts()->attach([$artifact->id]);
-
-        $group = ['key' => 'client_info'];
-
-        // When: Getting classified artifacts
-        $result = $this->service->getClassifiedArtifactsForGroup($taskRun, $group);
-
-        // Then: Returns empty collection
-        $this->assertCount(0, $result);
-    }
-
-    #[Test]
-    public function getClassifiedArtifactsForGroup_handles_group_with_name_converted_to_snake_case(): void
-    {
-        // Given: TaskRun with classified artifacts using snake_case key
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-        ]);
-
-        $artifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => $parentArtifact->id,
-            'meta'               => ['classification' => ['client_identification' => true]],
-        ]);
-
-        $taskRun->outputArtifacts()->attach([$parentArtifact->id, $artifact->id]);
-
-        // Group has 'name' but no 'key' - should convert to snake_case
-        $group = ['name' => 'Client Identification'];
-
-        // When: Getting classified artifacts
-        $result = $this->service->getClassifiedArtifactsForGroup($taskRun, $group);
-
-        // Then: Returns matching artifact
-        $this->assertCount(1, $result);
-        $this->assertEquals($artifact->id, $result->first()->id);
-    }
-
-    #[Test]
-    public function getClassifiedArtifactsForGroup_returns_empty_when_group_has_no_key_or_name(): void
-    {
-        // Given: TaskRun with artifacts
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-        ]);
-
-        $taskRun->outputArtifacts()->attach([$parentArtifact->id]);
-
-        // Group has neither key nor name (name is explicitly null)
-        $group = ['key' => null, 'name' => null, 'fragment_selector' => ['children' => []]];
-
-        // When: Getting classified artifacts
-        $result = $this->service->getClassifiedArtifactsForGroup($taskRun, $group);
-
-        // Then: Returns empty collection
-        $this->assertCount(0, $result);
     }
 
     // =========================================================================
@@ -898,5 +750,134 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         // Then: JSON value is preferred
         $this->assertArrayHasKey('mixed_field', $data);
         $this->assertEquals(['preferred' => 'json value'], $data['mixed_field']);
+    }
+
+    // =========================================================================
+    // runExtractionOnArtifacts() - Schema filtering tests
+    // =========================================================================
+
+    #[Test]
+    public function runExtractionOnArtifacts_uses_fragment_schema_not_full_schema(): void
+    {
+        // Given: A full schema with many fields
+        $fullSchema = [
+            'type'       => 'object',
+            'properties' => [
+                'care_summary' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        'name'                          => ['type' => 'string'],
+                        'surgery'                       => ['type' => 'string'],
+                        'causation'                     => ['type' => 'string'],
+                        'diagnosis'                     => ['type' => 'string'],
+                        'delay_in_care_gap_in_treatment' => ['type' => 'string'],
+                        'impairment_rating'             => ['type' => 'string'],
+                        'dates_of_service'              => ['type' => 'string'],
+                        // Many more fields that should NOT be extracted...
+                    ],
+                    'required' => ['name', 'surgery', 'causation', 'diagnosis', 'delay_in_care_gap_in_treatment', 'impairment_rating', 'dates_of_service'],
+                ],
+            ],
+        ];
+
+        $agent            = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'schema'  => $fullSchema,
+        ]);
+
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'agent_id'             => $agent->id,
+            'schema_definition_id' => $schemaDefinition->id,
+            'task_runner_config'   => ['extraction_timeout' => 60],
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $taskRun->id]);
+        $teamObject  = TeamObject::factory()->create(['team_id' => $this->user->currentTeam->id, 'type' => 'Care Summary']);
+
+        $artifact = Artifact::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        // Fragment selector that only requests 2 fields
+        $group = [
+            'name'              => 'Care Continuity',
+            'object_type'       => 'Care Summary',
+            'fields'            => ['delay_in_care_gap_in_treatment', 'impairment_rating'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'care_summary' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'delay_in_care_gap_in_treatment' => ['type' => 'string'],
+                            'impairment_rating'              => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Create mock AgentThreadRun
+        $mockMessage   = $this->mock(AgentThreadMessage::class)->makePartial();
+        $mockMessage->shouldReceive('getJsonContent')->andReturn([
+            'care_summary' => ['delay_in_care_gap_in_treatment' => 'test', 'impairment_rating' => '5%'],
+        ]);
+
+        $mockThreadRun              = $this->mock(AgentThreadRun::class)->makePartial();
+        $mockThreadRun->lastMessage = $mockMessage;
+        $mockThreadRun->shouldReceive('isCompleted')->andReturn(true);
+
+        // Capture the schema passed to withResponseFormat
+        $capturedSchema = null;
+        $this->mock(AgentThreadService::class, function (MockInterface $mock) use (&$capturedSchema, $mockThreadRun) {
+            $mock->shouldReceive('withResponseFormat')
+                ->once()
+                ->andReturnUsing(function ($schema) use ($mock, &$capturedSchema) {
+                    $capturedSchema = $schema;
+
+                    return $mock;
+                });
+            $mock->shouldReceive('withTimeout')->andReturnSelf();
+            $mock->shouldReceive('run')->andReturn($mockThreadRun);
+        });
+
+        // When: Running extraction
+        $this->service->runExtractionOnArtifacts(
+            $taskRun,
+            $taskProcess,
+            $group,
+            collect([$artifact]),
+            $teamObject,
+            false
+        );
+
+        // Then: The schema passed should only contain the 2 fields from fragment_selector, NOT the full schema
+        $this->assertNotNull($capturedSchema, 'Schema should have been captured');
+
+        // The captured schema should be the filtered fragment schema, not the full SchemaDefinition
+        // Currently the bug passes the full SchemaDefinition which has 7+ fields
+        // After fix, it should pass a schema with only delay_in_care_gap_in_treatment and impairment_rating
+        if ($capturedSchema instanceof SchemaDefinition) {
+            $schemaToCheck = $capturedSchema->schema;
+        } else {
+            $schemaToCheck = $capturedSchema->schema ?? $capturedSchema;
+        }
+
+        // The fragment schema should only have the 2 fields specified in fragment_selector
+        $careSummaryProps = $schemaToCheck['properties']['care_summary']['properties'] ?? [];
+        $this->assertArrayHasKey('delay_in_care_gap_in_treatment', $careSummaryProps, 'Should have delay_in_care_gap_in_treatment field');
+        $this->assertArrayHasKey('impairment_rating', $careSummaryProps, 'Should have impairment_rating field');
+
+        // Should NOT have the other fields from full schema
+        $this->assertArrayNotHasKey('name', $careSummaryProps, 'Should NOT have name field - fragment_selector only requests 2 fields');
+        $this->assertArrayNotHasKey('surgery', $careSummaryProps, 'Should NOT have surgery field - fragment_selector only requests 2 fields');
+        $this->assertArrayNotHasKey('diagnosis', $careSummaryProps, 'Should NOT have diagnosis field - fragment_selector only requests 2 fields');
     }
 }

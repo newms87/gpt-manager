@@ -6,9 +6,9 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Traits\HasDebugLogging;
+use App\Traits\TeamObjectRelationshipHelper;
 use Illuminate\Support\Str;
 
 /**
@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 class ExtractionArtifactBuilder
 {
     use HasDebugLogging;
+    use TeamObjectRelationshipHelper;
 
     /**
      * Build and attach an identity extraction artifact.
@@ -29,17 +30,15 @@ class ExtractionArtifactBuilder
         array $group,
         array $extractionResult,
         int $level,
-        ?int $matchId,
-        ?int $parentObjectId = null
+        ?int $matchId
     ): Artifact {
         $artifact = $this->createArtifact(
             taskRun: $taskRun,
             name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
             jsonContent: $this->buildHierarchicalJson(
-                $teamObject,
-                $extractionResult['data'] ?? [],
-                $group,
-                $parentObjectId
+                teamObject: $teamObject,
+                extractedData: $extractionResult['data'] ?? [],
+                group: $group
             ),
             meta: [
                 'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
@@ -64,6 +63,14 @@ class ExtractionArtifactBuilder
     }
 
     /**
+     * Check if the leaf level in the fragment_selector is an array type.
+     */
+    public function isLeafArrayType(array $group): bool
+    {
+        return app(FragmentSelectorService::class)->isLeafArrayType($group);
+    }
+
+    /**
      * Build and attach a remaining extraction artifact.
      */
     public function buildRemainingArtifact(
@@ -73,17 +80,15 @@ class ExtractionArtifactBuilder
         array $group,
         array $extractedData,
         int $level,
-        string $searchMode,
-        ?int $parentObjectId = null
+        string $searchMode
     ): Artifact {
         $artifact = $this->createArtifact(
             taskRun: $taskRun,
             name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
             jsonContent: $this->buildHierarchicalJson(
-                $teamObject,
-                $extractedData,
-                $group,
-                $parentObjectId
+                teamObject: $teamObject,
+                extractedData: $extractedData,
+                group: $group
             ),
             meta: [
                 'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
@@ -106,130 +111,92 @@ class ExtractionArtifactBuilder
     }
 
     /**
-     * Get the schema relation key from the fragment selector.
-     * Falls back to snake_case of object_type if not found.
+     * Unwrap extracted data while preserving array at the leaf level.
+     * Used by RemainingExtractionService for array extraction.
      */
-    protected function getSchemaRelationKey(array $group): string
+    public function unwrapExtractedDataPreservingLeaf(array $extractedData, array $fragmentSelector): array
     {
-        $fragmentSelector = $group['fragment_selector']   ?? [];
-        $children         = $fragmentSelector['children'] ?? [];
-
-        // The first key in children is the schema relation key
-        if (!empty($children)) {
-            return array_key_first($children);
-        }
-
-        // Fallback to snake_case of object_type
-        return Str::snake($group['object_type'] ?? '');
-    }
-
-    /**
-     * Check if the schema key represents an array type in the fragment selector.
-     */
-    protected function isArrayType(array $group, string $schemaKey): bool
-    {
-        $fragmentSelector = $group['fragment_selector']   ?? [];
-        $children         = $fragmentSelector['children'] ?? [];
-
-        if (isset($children[$schemaKey]['type'])) {
-            return $children[$schemaKey]['type'] === 'array';
-        }
-
-        // Default to array for backwards compatibility with edge cases
-        return true;
+        return app(FragmentSelectorService::class)->unwrapData($extractedData, $fragmentSelector, preserveLeafArray: true);
     }
 
     /**
      * Build hierarchical JSON structure for artifact content.
-     * Level 0: flat structure (object is root)
-     * Level 1+: traverse up to root and nest under full ancestor chain
+     * Uses DB relationships via team_object_relationships table to build ancestor chain.
+     * Root objects (no ancestors): flat structure
+     * Child objects: nested under full ancestor hierarchy
      */
     protected function buildHierarchicalJson(
         TeamObject $teamObject,
         array $extractedData,
-        array $group,
-        ?int $parentObjectId
+        array $group
     ): array {
-        $objectType = $group['object_type'] ?? '';
-        $schemaKey  = $this->getSchemaRelationKey($group);
+        $objectType       = $group['object_type']       ?? '';
+        $fragmentSelector = $group['fragment_selector'] ?? [];
 
-        // Unwrap extracted data if it's nested under the schema key
-        if (isset($extractedData[$schemaKey]) && is_array($extractedData[$schemaKey])) {
-            $unwrapped = $extractedData[$schemaKey];
-            if (isset($unwrapped[0]) && is_array($unwrapped[0])) {
-                $extractedData = $unwrapped[0];
-            } elseif (!isset($unwrapped[0])) {
-                // It's a single object, not an array
-                $extractedData = $unwrapped;
-            }
-        }
+        // Unwrap extracted data recursively through fragment_selector hierarchy
+        $extractedData = app(FragmentSelectorService::class)->unwrapData($extractedData, $fragmentSelector);
 
         $currentData = array_merge(
             ['id' => $teamObject->id, 'type' => $objectType],
             $extractedData
         );
 
-        // Level 0: current object IS the root
-        if (!$parentObjectId) {
-            return $currentData;
-        }
+        // Get ancestors from actual DB relationships
+        $ancestors = $this->getAncestorChain($teamObject);
 
-        // Build ancestor chain by traversing relationships up to root
-        // Each entry: ['object' => TeamObject, 'relationshipName' => string]
-        $ancestors = [];
-        $currentId = $parentObjectId;
-
-        while ($currentId) {
-            $parentObject = TeamObject::find($currentId);
-            if (!$parentObject) {
-                break;
-            }
-
-            // Find how this object relates to its parent (if any)
-            $relationship = TeamObjectRelationship::where('related_team_object_id', $currentId)->first();
-
-            // Prepend to ancestors (so root is first)
-            array_unshift($ancestors, [
-                'object'           => $parentObject,
-                'relationshipName' => $relationship?->relationship_name,
-            ]);
-
-            // Move up to next parent
-            $currentId = $relationship?->team_object_id;
-        }
-
-        // If no ancestors found, return flat structure
+        // If no ancestors, this is a root object - return flat structure
         if (empty($ancestors)) {
             return $currentData;
         }
 
-        // Build nested structure from root down
-        // Each level wraps its child in an array under the schema key
+        // Build nested structure under ancestors
+        return $this->nestDataUnderAncestors($currentData, $ancestors, $group);
+    }
 
-        // Start with current data (deepest level - the extracted object)
+    /**
+     * Nest the current object's data under its ancestors from root down.
+     *
+     * @param  array  $currentData  The current object data (id, type, extracted fields)
+     * @param  array  $ancestors  Array of TeamObject ancestors [root, ..., immediate parent]
+     * @param  array  $group  The extraction group with fragment_selector
+     */
+    protected function nestDataUnderAncestors(array $currentData, array $ancestors, array $group): array
+    {
+        $fragmentSelector        = $group['fragment_selector'] ?? [];
+        $fragmentSelectorService = app(FragmentSelectorService::class);
+
+        // Get the leaf schema key using the service
+        $schemaKey   = $fragmentSelectorService->getLeafKey($fragmentSelector, $group['object_type'] ?? null);
+        $currentType = $currentData['type'] ?? '';
+
+        // Start with current data
         $result = $currentData;
 
-        // Work backwards through ancestors (from immediate parent to root)
-        // ancestors[0] is root, ancestors[last] is immediate parent
-        for ($i = count($ancestors) - 1; $i >= 0; $i--) {
-            $ancestor       = $ancestors[$i];
-            $ancestorObject = $ancestor['object'];
+        // Work backwards from immediate parent to root
+        // For each ancestor, wrap the current result
+        $ancestorCount = count($ancestors);
 
-            // Determine the relationship key for nesting this level under the parent
-            if ($i === count($ancestors) - 1) {
-                // Immediate parent - nest current under schema key from fragment_selector
-                $nestKey = $schemaKey;
+        for ($i = $ancestorCount - 1; $i >= 0; $i--) {
+            $ancestor = $ancestors[$i];
+
+            // Determine the nesting key for this level
+            if ($i === $ancestorCount - 1) {
+                // Immediate parent - use schema key from fragment_selector or snake_case of current type
+                $nestKey = $schemaKey ?: Str::snake($currentType);
             } else {
-                // Higher ancestor - use the next level's object type
+                // Higher parent - need the type of the next level down (which is now wrapped in $result)
+                // This is the type of ancestors[$i + 1]
                 $nextAncestor = $ancestors[$i + 1];
-                $nestKey      = Str::snake($nextAncestor['object']->type);
+                $nestKey      = Str::snake($nextAncestor->type);
             }
 
-            // Nest under the parent - wrap in array only if fragment_selector type is 'array'
-            $isArray = $this->isArrayType($group, $nestKey);
-            $result  = [
-                'id'     => $ancestorObject->id,
-                'type'   => $ancestorObject->type,
+            // Determine if this should be an array or object based on fragment_selector
+            $keyIndex = $i;
+            $isArray  = $fragmentSelectorService->isArrayTypeAtLevel($fragmentSelector, $keyIndex);
+
+            $result = [
+                'id'     => $ancestor->id,
+                'type'   => $ancestor->type,
                 $nestKey => $isArray ? [$result] : $result,
             ];
         }

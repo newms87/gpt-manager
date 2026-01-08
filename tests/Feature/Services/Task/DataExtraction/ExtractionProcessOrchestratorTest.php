@@ -319,6 +319,26 @@ class ExtractionProcessOrchestratorTest extends AuthenticatedTestCase
             ],
         ]);
 
+        // Create parent artifact attached to task run's output artifacts
+        $parentArtifact = Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'team_id'            => $this->user->currentTeam->id,
+            'parent_artifact_id' => null,
+        ]);
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+
+        // Create classified child artifact(s) - group key = Str::snake('Client Details') = 'client_details'
+        Artifact::factory()->create([
+            'task_run_id'        => $taskRun->id,
+            'team_id'            => $this->user->currentTeam->id,
+            'parent_artifact_id' => $parentArtifact->id,
+            'meta'               => [
+                'classification' => [
+                    'client_details' => true,
+                ],
+            ],
+        ]);
+
         $plan = [
             'levels' => [
                 [

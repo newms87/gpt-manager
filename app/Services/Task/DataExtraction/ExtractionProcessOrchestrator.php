@@ -2,7 +2,6 @@
 
 namespace App\Services\Task\DataExtraction;
 
-use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Traits\HasDebugLogging;
@@ -121,8 +120,6 @@ class ExtractionProcessOrchestrator
         $identities = $levelData['identities'] ?? [];
 
         foreach ($identities as $index => $identity) {
-            $parentObjectId = $this->getParentObjectIdForLevel($taskRun, $level);
-
             // Filter children by this group's classification
             $groupKey       = Str::snake("{$identity['object_type']} Identification");
             $groupArtifacts = $classificationService->getArtifactsForCategory($allChildren, $groupKey);
@@ -150,7 +147,6 @@ class ExtractionProcessOrchestrator
                 'meta'      => [
                     'level'             => $level,
                     'identity_group'    => $identity,
-                    'parent_object_id'  => $parentObjectId,
                     'parent_object_ids' => $this->getParentObjectIds($taskRun, $level),
                 ],
                 'is_ready' => true,
@@ -221,10 +217,21 @@ class ExtractionProcessOrchestrator
             }
 
             // Filter children by this group's classification key (only if we have children)
-            $groupKey       = $group['key'] ?? Str::snake($group['name'] ?? "Group $groupIndex");
+            $groupKey       = Str::snake($group['name']);
             $groupArtifacts = $allChildren
                 ? $classificationService->getArtifactsForCategory($allChildren, $groupKey)
                 : collect();
+
+            // Skip if no artifacts match this group's classification
+            if ($groupArtifacts->isEmpty()) {
+                static::logDebug('No classified artifacts for remaining group, skipping process creation', [
+                    'level'     => $level,
+                    'group'     => $group['name'] ?? "Group $groupIndex",
+                    'group_key' => $groupKey,
+                ]);
+
+                continue;
+            }
 
             static::logDebug('Filtered artifacts for remaining group', [
                 'level'           => $level,
@@ -235,8 +242,6 @@ class ExtractionProcessOrchestrator
 
             // Create process for each resolved object
             foreach ($objectIds as $objectId) {
-                $parentObjectId = $this->getParentObjectIdForLevel($taskRun, $level);
-
                 $process = $taskRun->taskProcesses()->create([
                     'name'      => $this->buildProcessName(
                         'Remaining',
@@ -247,21 +252,18 @@ class ExtractionProcessOrchestrator
                     'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
                     'activity'  => sprintf('Extracting %s data', $group['name'] ?? 'group'),
                     'meta'      => [
-                        'level'             => $level,
-                        'operation'         => 'extract_remaining',
-                        'extraction_group'  => $group,
-                        'object_id'         => $objectId,
-                        'parent_object_id'  => $parentObjectId,
-                        'search_mode'       => $group['search_mode'] ?? 'exhaustive',
+                        'level'            => $level,
+                        'operation'        => 'extract_remaining',
+                        'extraction_group' => $group,
+                        'object_id'        => $objectId,
+                        'search_mode'      => $group['search_mode'] ?? 'exhaustive',
                     ],
                     'is_ready'  => true,
                 ]);
 
                 // Attach filtered children as input artifacts
-                if ($groupArtifacts->isNotEmpty()) {
-                    $process->inputArtifacts()->attach($groupArtifacts->pluck('id')->toArray());
-                    $process->updateRelationCounter('inputArtifacts');
-                }
+                $process->inputArtifacts()->attach($groupArtifacts->pluck('id')->toArray());
+                $process->updateRelationCounter('inputArtifacts');
 
                 $processes[] = $process;
 
@@ -460,16 +462,6 @@ class ExtractionProcessOrchestrator
         }
 
         return array_unique($objectIds);
-    }
-
-    /**
-     * Get parent object ID for current level (first parent from previous level).
-     */
-    protected function getParentObjectIdForLevel(TaskRun $taskRun, int $level): ?int
-    {
-        $parentObjectIds = $this->getParentObjectIds($taskRun, $level);
-
-        return $parentObjectIds[0] ?? null;
     }
 
     /**

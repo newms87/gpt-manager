@@ -677,8 +677,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 0,
-            matchId: null,
-            parentObjectId: null  // No parent - flat structure expected
+            matchId: null
         );
 
         // Then: json_content shows flat structure with object data at root level
@@ -709,7 +708,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Provider A',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'provider',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Provider',
@@ -729,11 +742,10 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 1,
-            matchId: null,
-            parentObjectId: $parentTeamObject->id  // Has parent - hierarchical structure expected
+            matchId: null
         );
 
-        // Then: json_content shows hierarchical structure with parent at root
+        // Then: json_content shows hierarchical structure with parent at root (derived from DB relationships)
         $jsonContent = $artifact->json_content;
 
         // Parent's id and type are at root level
@@ -782,8 +794,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractedData: $extractedData,
             level: 0,
-            searchMode: 'exhaustive',
-            parentObjectId: null  // No parent - flat structure expected
+            searchMode: 'exhaustive'
         );
 
         // Then: json_content shows flat structure with object data at root level
@@ -814,7 +825,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Provider B',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'provider',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Provider Details',
@@ -834,11 +859,10 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractedData: $extractedData,
             level: 1,
-            searchMode: 'exhaustive',
-            parentObjectId: $parentTeamObject->id  // Has parent - hierarchical structure expected
+            searchMode: 'exhaustive'
         );
 
-        // Then: json_content shows hierarchical structure with parent at root
+        // Then: json_content shows hierarchical structure with parent at root (derived from DB relationships)
         $jsonContent = $artifact->json_content;
 
         // Parent's id and type are at root level
@@ -874,7 +898,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Physical Therapy',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'treatment_received',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Treatment Received',
@@ -894,8 +932,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 1,
-            matchId: null,
-            parentObjectId: $parentTeamObject->id
+            matchId: null
         );
 
         // Then: Relationship key is snake_case version of object type
@@ -928,7 +965,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Dr. Smith',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'provider',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Provider',
@@ -948,8 +999,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 1,
-            matchId: null,
-            parentObjectId: $parentTeamObject->id
+            matchId: null
         );
 
         // Then: "Provider" becomes "provider" (lowercase snake_case)
@@ -980,20 +1030,26 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Therapy Session',
         ]);
 
-        // Create TeamObjectRelationships to link hierarchy
-        TeamObjectRelationship::create([
-            'team_object_id'         => $demandObject->id,        // parent
-            'related_team_object_id' => $providerObject->id,      // child
+        // Create DB relationships: Demand -> Provider -> Treatment
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $demandObject->id,
+            'related_team_object_id' => $providerObject->id,
             'relationship_name'      => 'provider',
         ]);
-
-        TeamObjectRelationship::create([
-            'team_object_id'         => $providerObject->id,      // parent
-            'related_team_object_id' => $treatmentObject->id,     // child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $providerObject->id,
+            'related_team_object_id' => $treatmentObject->id,
             'relationship_name'      => 'treatment',
         ]);
 
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Treatment Details',
@@ -1014,11 +1070,11 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractedData: $extractedData,
             level: 2,
-            searchMode: 'exhaustive',
-            parentObjectId: $providerObject->id  // Immediate parent
+            searchMode: 'exhaustive'
         );
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
+        // Hierarchy is derived from DB relationships, not passed parentObjectId
         $jsonContent = $artifact->json_content;
 
         // Root is Demand (not Provider!)
@@ -1075,26 +1131,31 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'CPT 99213',
         ]);
 
-        // Create TeamObjectRelationships to link hierarchy
-        TeamObjectRelationship::create([
+        // Create DB relationships: Demand -> Provider -> Treatment -> LineItem
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $demandObject->id,
             'related_team_object_id' => $providerObject->id,
             'relationship_name'      => 'provider',
         ]);
-
-        TeamObjectRelationship::create([
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $providerObject->id,
             'related_team_object_id' => $treatmentObject->id,
             'relationship_name'      => 'treatment',
         ]);
-
-        TeamObjectRelationship::create([
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $treatmentObject->id,
             'related_team_object_id' => $lineItemObject->id,
             'relationship_name'      => 'line_item',
         ]);
 
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Line Item',
@@ -1114,11 +1175,11 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 3,
-            matchId: null,
-            parentObjectId: $treatmentObject->id  // Immediate parent
+            matchId: null
         );
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
+        // Hierarchy is derived from DB relationships, not passed parentObjectId
         $jsonContent = $artifact->json_content;
 
         // Root is Demand
@@ -1181,32 +1242,36 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Modifier 59',
         ]);
 
-        // Create TeamObjectRelationships to link hierarchy
-        TeamObjectRelationship::create([
+        // Create DB relationships: Demand -> Provider -> Treatment -> LineItem -> Modifier
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $demandObject->id,
             'related_team_object_id' => $providerObject->id,
             'relationship_name'      => 'provider',
         ]);
-
-        TeamObjectRelationship::create([
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $providerObject->id,
             'related_team_object_id' => $treatmentObject->id,
             'relationship_name'      => 'treatment',
         ]);
-
-        TeamObjectRelationship::create([
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $treatmentObject->id,
             'related_team_object_id' => $lineItemObject->id,
             'relationship_name'      => 'line_item',
         ]);
-
-        TeamObjectRelationship::create([
+        TeamObjectRelationship::factory()->create([
             'team_object_id'         => $lineItemObject->id,
             'related_team_object_id' => $modifierObject->id,
             'relationship_name'      => 'modifier',
         ]);
 
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $group = [
             'name'        => 'Modifier Details',
@@ -1227,11 +1292,11 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractedData: $extractedData,
             level: 4,
-            searchMode: 'exhaustive',
-            parentObjectId: $lineItemObject->id  // Immediate parent
+            searchMode: 'exhaustive'
         );
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
+        // Hierarchy is derived from DB relationships, not passed parentObjectId
         $jsonContent = $artifact->json_content;
 
         // Root is Demand
@@ -1287,7 +1352,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Abdi, Abdinasir',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'client',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Group with fragment_selector specifying client as "object" type (NOT array)
         $group = [
@@ -1320,11 +1399,11 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 1,
-            matchId: null,
-            parentObjectId: $parentTeamObject->id
+            matchId: null
         );
 
         // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
+        // Hierarchy is derived from DB relationships
         $jsonContent = $artifact->json_content;
 
         // Parent's id and type are at root level
@@ -1360,7 +1439,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'Car Accident',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'incidents',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Group with fragment_selector specifying incidents as "array" type
         $group = [
@@ -1394,8 +1487,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractionResult: $extractionResult,
             level: 1,
-            matchId: null,
-            parentObjectId: $parentTeamObject->id
+            matchId: null
         );
 
         // Then: json_content shows hierarchical structure WITH array wrapping for incidents
@@ -1436,7 +1528,21 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             'name'    => 'John Doe',
         ]);
 
+        // Create DB relationship: parent -> child
+        TeamObjectRelationship::factory()->create([
+            'team_object_id'         => $parentTeamObject->id,
+            'related_team_object_id' => $childTeamObject->id,
+            'relationship_name'      => 'client',
+        ]);
+
+        // Create input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Group with fragment_selector specifying client as "object" type (NOT array)
         $group = [
@@ -1469,11 +1575,11 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
             group: $group,
             extractedData: $extractedData,
             level: 1,
-            searchMode: 'exhaustive',
-            parentObjectId: $parentTeamObject->id
+            searchMode: 'exhaustive'
         );
 
         // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
+        // Hierarchy is derived from DB relationships
         $jsonContent = $artifact->json_content;
 
         // Parent's id and type are at root level

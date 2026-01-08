@@ -9,6 +9,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
+use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\DataExtraction\GroupExtractionService;
 use App\Services\Task\DataExtraction\RemainingExtractionService;
@@ -100,9 +101,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function execute_returns_empty_when_no_classified_artifacts(): void
+    public function execute_throws_exception_when_no_input_artifacts(): void
     {
-        // Given: TeamObject exists but no classified artifacts match
+        // Given: TeamObject exists but task process has no input artifacts attached
         $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Client',
@@ -110,6 +111,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ]);
 
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        // No artifacts attached to task process
 
         $extractionGroup = [
             'name'        => 'Client Address',
@@ -117,15 +119,12 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'object_type' => 'Client',
         ];
 
-        // Mock GroupExtractionService to return empty collection
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->once()
-                ->andReturn(collect());
-        });
+        // Then: Expect exception
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('has no input artifacts');
 
-        // When: Executing with no matching artifacts
-        $result = $this->service->execute(
+        // When: Executing with no input artifacts - should throw
+        $this->service->execute(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             extractionGroup: $extractionGroup,
@@ -133,10 +132,6 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             teamObjectId: $teamObject->id,
             searchMode: 'exhaustive'
         );
-
-        // Then: Returns empty array
-        $this->assertIsArray($result);
-        $this->assertEmpty($result);
     }
 
     // =========================================================================
@@ -161,6 +156,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'meta'        => ['classification' => ['client_address' => true]],
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'              => 'Client Address',
             'key'               => 'client_address',
@@ -179,11 +177,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         // Mock GroupExtractionService
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->once()
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify skim mode is called
             $mock->shouldReceive('extractWithSkimMode')
                 ->once()
@@ -195,6 +189,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock ExtractionArtifactBuilder
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
@@ -232,6 +228,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'meta'        => ['classification' => ['client_address' => true]],
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'              => 'Client Address',
             'key'               => 'client_address',
@@ -252,11 +251,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         // Mock GroupExtractionService
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->once()
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify exhaustive mode is called
             $mock->shouldReceive('extractExhaustive')
                 ->once()
@@ -268,6 +263,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock ExtractionArtifactBuilder
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
@@ -303,6 +300,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'        => 'Test Group',
             'object_type' => 'Client',
@@ -311,10 +311,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         $extractedData = ['field' => 'value'];
 
         // Mock GroupExtractionService
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify extractExhaustive is called for unknown mode
             $mock->shouldReceive('extractExhaustive')
                 ->once()
@@ -324,6 +321,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
         });
@@ -363,6 +362,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'        => 'Client Details',
             'object_type' => 'Client',
@@ -374,10 +376,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         // Mock GroupExtractionService and verify updateTeamObjectWithExtractedData is called
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData, $teamObject) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData, $teamObject) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn($extractedData);
 
@@ -392,6 +391,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
         });
@@ -431,6 +432,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'        => 'Contact Info',
             'object_type' => 'Client',
@@ -439,10 +443,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         $extractedData = ['phone' => '555-0000'];
 
         // Mock GroupExtractionService
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn($extractedData);
 
@@ -453,6 +454,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         $builtArtifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($builtArtifact, $teamObject, $extractedData) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->with(
                     Mockery::type(TaskRun::class),
@@ -497,16 +500,16 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'        => 'Empty Group',
             'object_type' => 'Client',
         ];
 
         // Mock GroupExtractionService to return empty data
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn([]);  // Empty extraction result
 
@@ -554,6 +557,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         $extractionGroup = [
             'name'        => 'Claim Details',
             'object_type' => 'Claim',
@@ -561,10 +567,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $extractedData = ['claim_amount' => 50000];
 
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn($extractedData);
 
@@ -573,6 +576,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Verify level is passed correctly to artifact builder
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->with(
                     Mockery::any(),
@@ -581,7 +586,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
                     Mockery::any(),
                     Mockery::any(),
                     2,  // Level should be 2
-                    Mockery::any()
+                    Mockery::any()  // searchMode
                 )
                 ->once()
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
@@ -617,6 +622,9 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'team_id'     => $this->user->currentTeam->id,
         ]);
 
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
         // Group has object_type but no name
         $extractionGroup = [
             'object_type' => 'Accident',
@@ -624,10 +632,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $extractedData = ['location' => 'Highway 101'];
 
-        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($classifiedArtifact, $extractedData) {
-            $mock->shouldReceive('getClassifiedArtifactsForGroup')
-                ->andReturn(collect([$classifiedArtifact]));
-
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn($extractedData);
 
@@ -635,6 +640,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
         });
@@ -651,5 +658,421 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Then: Returns extracted data (service handles missing name gracefully)
         $this->assertEquals($extractedData, $result);
+    }
+
+    // =========================================================================
+    // execute() - Array extraction tests
+    // =========================================================================
+
+    #[Test]
+    public function execute_creates_multiple_team_objects_for_array_type_leaf(): void
+    {
+        // Given: Parent TeamObject and classified artifacts
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'CareSummary',
+            'name'    => 'Care Summary 1',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $classifiedArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        // Attach artifact to task process (artifacts are now accessed via inputArtifacts)
+        $taskProcess->inputArtifacts()->attach($classifiedArtifact->id);
+
+        // Array extraction group - treatments are an array type leaf
+        $extractionGroup = [
+            'name'              => 'Treatments',
+            'object_type'       => 'Treatment',
+            'fragment_selector' => [
+                'children' => [
+                    'treatment' => [
+                        'type'     => 'array',  // Array type - triggers array extraction
+                        'children' => [
+                            'name'        => ['type' => 'string'],
+                            'description' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Extracted data contains array of treatments
+        $extractedData = [
+            'treatment' => [
+                ['name' => 'Physical Therapy', 'description' => 'Weekly sessions'],
+                ['name' => 'Medication', 'description' => 'Pain management'],
+                ['name' => 'Surgery', 'description' => 'Scheduled for next month'],
+            ],
+        ];
+
+        // Mock GroupExtractionService
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('extractExhaustive')
+                ->andReturn($extractedData);
+
+            // updateTeamObjectWithExtractedData should NOT be called for array extraction
+            $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
+        });
+
+        // Mock ExtractionArtifactBuilder - isLeafArrayType returns true for array extraction path
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(true);
+
+            // unwrapExtractedDataPreservingLeaf returns the array of items
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn($extractedData['treatment']);
+
+            $mock->shouldReceive('buildRemainingArtifact')
+                ->once()
+                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+        });
+
+        // When: Executing array extraction
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            extractionGroup: $extractionGroup,
+            level: 0,
+            teamObjectId: $parentObject->id,
+            searchMode: 'exhaustive'
+        );
+
+        // Then: Returns extracted data and creates TeamObjects
+        $this->assertEquals($extractedData, $result);
+
+        // Verify TeamObjects were created for each array item
+        $createdTreatments = TeamObject::where('type', 'Treatment')->get();
+        $this->assertCount(3, $createdTreatments);
+
+        // Verify names match extracted data
+        $treatmentNames = $createdTreatments->pluck('name')->toArray();
+        $this->assertContains('Physical Therapy', $treatmentNames);
+        $this->assertContains('Medication', $treatmentNames);
+        $this->assertContains('Surgery', $treatmentNames);
+    }
+
+    #[Test]
+    public function execute_stores_all_array_items_in_resolved_objects(): void
+    {
+        // Given: Parent TeamObject with input artifact to store resolved objects
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Claimant',
+            'name'    => 'John Doe',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create input artifact for the task process to store resolved objects
+        // This artifact serves both as the input artifact AND the classified artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+            'meta'        => [],
+        ]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Array extraction group for complaints
+        $extractionGroup = [
+            'name'              => 'Complaints',
+            'object_type'       => 'Complaint',
+            'fragment_selector' => [
+                'children' => [
+                    'complaint' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name' => ['type' => 'string'],
+                            'area' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Extracted complaints
+        $extractedData = [
+            'complaint' => [
+                ['name' => 'Back Pain', 'area' => 'Lower back'],
+                ['name' => 'Neck Pain', 'area' => 'Cervical'],
+            ],
+        ];
+
+        // Mock GroupExtractionService
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('extractExhaustive')
+                ->andReturn($extractedData);
+
+            $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
+        });
+
+        // Mock ExtractionArtifactBuilder
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(true);
+
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn($extractedData['complaint']);
+
+            $mock->shouldReceive('buildRemainingArtifact')
+                ->once()
+                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+        });
+
+        // When: Executing array extraction
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            extractionGroup: $extractionGroup,
+            level: 0,
+            teamObjectId: $parentObject->id,
+            searchMode: 'exhaustive'
+        );
+
+        // Then: Returns extracted data
+        $this->assertEquals($extractedData, $result);
+
+        // Verify resolved objects are stored in input artifact
+        $inputArtifact->refresh();
+        $resolvedObjects = $inputArtifact->meta['resolved_objects'] ?? [];
+
+        $this->assertArrayHasKey('Complaint', $resolvedObjects);
+        $this->assertCount(2, $resolvedObjects['Complaint']);
+
+        // Verify the IDs point to actual TeamObjects
+        $createdComplaints = TeamObject::whereIn('id', $resolvedObjects['Complaint'])->get();
+        $this->assertCount(2, $createdComplaints);
+
+        $complaintNames = $createdComplaints->pluck('name')->toArray();
+        $this->assertContains('Back Pain', $complaintNames);
+        $this->assertContains('Neck Pain', $complaintNames);
+    }
+
+    #[Test]
+    public function execute_performs_duplicate_resolution_scoped_to_parent(): void
+    {
+        // Given: Two parent TeamObjects (Parent A and Parent B)
+        $parentA = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Claimant',
+            'name'    => 'Parent A',
+        ]);
+
+        $parentB = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Claimant',
+            'name'    => 'Parent B',
+        ]);
+
+        // Create existing child "Back Pain" under Parent A
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Complaint',
+            'name'    => 'Back Pain',
+        ]);
+
+        // Create the parent-child relationship: Parent A -> existing child
+        TeamObjectRelationship::create([
+            'team_object_id'         => $parentA->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'complaints',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+            'meta'        => [],
+        ]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Array extraction group for complaints
+        $extractionGroup = [
+            'name'              => 'Complaints',
+            'object_type'       => 'Complaint',
+            'fragment_selector' => [
+                'children' => [
+                    'complaint' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name' => ['type' => 'string'],
+                            'area' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Extract "Back Pain" under Parent B (different parent than existing)
+        $extractedData = [
+            'complaint' => [
+                ['name' => 'Back Pain', 'area' => 'Lumbar'],
+            ],
+        ];
+
+        // Mock GroupExtractionService
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('extractExhaustive')
+                ->andReturn($extractedData);
+
+            $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
+        });
+
+        // Mock ExtractionArtifactBuilder
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(true);
+
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn($extractedData['complaint']);
+
+            $mock->shouldReceive('buildRemainingArtifact')
+                ->once()
+                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+        });
+
+        $initialBackPainCount = TeamObject::where('type', 'Complaint')
+            ->where('name', 'Back Pain')
+            ->count();
+
+        // When: Executing array extraction on Parent B (NOT Parent A)
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            extractionGroup: $extractionGroup,
+            level: 0,
+            teamObjectId: $parentB->id,  // Parent B, not Parent A
+            searchMode: 'exhaustive'
+        );
+
+        // Then: A NEW TeamObject is created because duplicate check is scoped to Parent B only
+        $this->assertEquals($extractedData, $result);
+
+        $finalBackPainCount = TeamObject::where('type', 'Complaint')
+            ->where('name', 'Back Pain')
+            ->count();
+
+        // Should have 2 "Back Pain" objects now (one under each parent)
+        $this->assertEquals($initialBackPainCount + 1, $finalBackPainCount);
+        $this->assertEquals(2, $finalBackPainCount);
+    }
+
+    #[Test]
+    public function execute_updates_existing_child_when_duplicate_found(): void
+    {
+        // Given: Parent TeamObject with existing child
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Claimant',
+            'name'    => 'Test Claimant',
+        ]);
+
+        // Create existing child "Back Pain" under the parent
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Complaint',
+            'name'    => 'Back Pain',
+            'meta'    => ['area' => 'Upper back'],  // Original data
+        ]);
+
+        // Create the parent-child relationship
+        TeamObjectRelationship::create([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'complaints',
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+            'meta'        => [],
+        ]);
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
+
+        // Array extraction group for complaints
+        $extractionGroup = [
+            'name'              => 'Complaints',
+            'object_type'       => 'Complaint',
+            'fragment_selector' => [
+                'children' => [
+                    'complaint' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name' => ['type' => 'string'],
+                            'area' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // Extract "Back Pain" with updated data (same name, different area)
+        $extractedData = [
+            'complaint' => [
+                ['name' => 'Back Pain', 'area' => 'Lumbar'],  // Same name, new area
+            ],
+        ];
+
+        // Mock GroupExtractionService
+        $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('extractExhaustive')
+                ->andReturn($extractedData);
+
+            $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
+        });
+
+        // Mock ExtractionArtifactBuilder
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($extractedData) {
+            $mock->shouldReceive('isLeafArrayType')
+                ->andReturn(true);
+
+            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
+                ->andReturn($extractedData['complaint']);
+
+            $mock->shouldReceive('buildRemainingArtifact')
+                ->once()
+                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+        });
+
+        $initialComplaintCount = TeamObject::where('type', 'Complaint')
+            ->where('name', 'Back Pain')
+            ->count();
+
+        // When: Executing array extraction on the same parent
+        $result = $this->service->execute(
+            taskRun: $this->taskRun,
+            taskProcess: $taskProcess,
+            extractionGroup: $extractionGroup,
+            level: 0,
+            teamObjectId: $parentObject->id,
+            searchMode: 'exhaustive'
+        );
+
+        // Then: No new TeamObject created (count stays at 1)
+        $this->assertEquals($extractedData, $result);
+
+        $finalComplaintCount = TeamObject::where('type', 'Complaint')
+            ->where('name', 'Back Pain')
+            ->count();
+
+        // Should still be just 1 "Back Pain" object (was updated, not created)
+        $this->assertEquals($initialComplaintCount, $finalComplaintCount);
+        $this->assertEquals(1, $finalComplaintCount);
+
+        // Verify the existing child object is returned in the resolved objects
+        $inputArtifact->refresh();
+        $resolvedObjects = $inputArtifact->meta['resolved_objects'] ?? [];
+
+        $this->assertArrayHasKey('Complaint', $resolvedObjects);
+        $this->assertCount(1, $resolvedObjects['Complaint']);
+        $this->assertEquals($existingChild->id, $resolvedObjects['Complaint'][0]);
     }
 }

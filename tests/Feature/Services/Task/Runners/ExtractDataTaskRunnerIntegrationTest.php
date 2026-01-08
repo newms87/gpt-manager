@@ -164,6 +164,25 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
         $defaultTaskProcess->refresh();
         $this->assertNotNull($defaultTaskProcess->completed_at);
 
+        // Get the NEWLY created parent artifact (created by runner->run())
+        $newParentArtifact = $this->taskRun->outputArtifacts()
+            ->whereNull('parent_artifact_id')
+            ->latest('id')
+            ->first();
+
+        // Set classification meta on the NEW child artifacts to simulate classification completion
+        // Keys are Str::snake() of group names: "Demand Identification" -> demand_identification, "Demand Damages" -> demand_damages, "Injuries" -> injuries
+        foreach ($newParentArtifact->children as $childArtifact) {
+            $childArtifact->meta = array_merge($childArtifact->meta ?? [], [
+                'classification' => [
+                    'demand_identification' => true,
+                    'demand_damages'        => true,
+                    'injuries'              => true,
+                ],
+            ]);
+            $childArtifact->save();
+        }
+
         // STEP 4: Simulate ALL classification processes completing
         foreach ($classificationProcesses as $process) {
             $process->update([
