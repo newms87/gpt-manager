@@ -360,6 +360,7 @@ class ExtractDataDebugService
      * Reset a task process so it can be re-attempted.
      *
      * This performs a full reset including:
+     * - Deleting job dispatches and API logs from previous runs
      * - Deleting output artifacts linked to this process
      * - Clearing output artifact relationships
      * - Resetting all timestamps and status fields

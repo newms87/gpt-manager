@@ -25,7 +25,10 @@ use Newms87\Danx\Exceptions\ValidationError;
  * // Find potential duplicate candidates
  * $candidates = $resolver->findCandidates(
  *     objectType: 'Demand',
- *     extractedData: ['client_name' => 'John Smith', 'accident_date' => '2024-01-15'],
+ *     searchQueries: [
+ *         ['client_name' => '%John Smith%'],
+ *         ['client_name' => '%John Smith%', 'accident_date' => '%2024-01-15%'],
+ *     ],
  *     parentObjectId: null,
  *     schemaDefinitionId: 123
  * );
@@ -59,17 +62,23 @@ class DuplicateRecordResolver
     use HasDebugLogging;
 
     /**
-     * Find potential duplicate TeamObjects within the specified scope.
+     * Find potential duplicate TeamObjects within the specified scope using search queries.
+     *
+     * Iterates through search queries from least to most restrictive:
+     * - If a query returns 1-5 results: return those (good match set)
+     * - If a query returns >5 results: try the next more restrictive query
+     * - If a more restrictive query returns 0: fall back to previous results (limit 20)
+     * - If all queries return >5: return last query results (limit 20)
      *
      * @param  string  $objectType  Type of object to search for
-     * @param  array  $extractedData  Extracted identifying data to match against
+     * @param  array  $searchQueries  Array of search query objects with SQL LIKE patterns
      * @param  int|null  $parentObjectId  Optional parent object scope
      * @param  int|null  $schemaDefinitionId  Optional schema scope
      * @return Collection<TeamObject> Collection of candidate objects
      */
     public function findCandidates(
         string $objectType,
-        array $extractedData,
+        array $searchQueries,
         ?int $parentObjectId = null,
         ?int $schemaDefinitionId = null
     ): Collection {
@@ -81,29 +90,119 @@ class DuplicateRecordResolver
             return collect();
         }
 
-        static::logDebug('Finding duplicate candidates', [
+        static::logDebug('Finding duplicate candidates with search queries', [
             'object_type'          => $objectType,
             'parent_object_id'     => $parentObjectId,
             'schema_definition_id' => $schemaDefinitionId,
-            'extracted_fields'     => array_keys($extractedData),
+            'search_query_count'   => count($searchQueries),
         ]);
 
-        // Query for candidates within scope
-        $candidates = TeamObject::query()
+        // If no search queries provided, fall back to basic scope-only query
+        if (empty($searchQueries)) {
+            return $this->executeSearchQuery($objectType, [], $parentObjectId, $schemaDefinitionId);
+        }
+
+        $previousResults = collect();
+
+        foreach ($searchQueries as $index => $query) {
+            if (!is_array($query)) {
+                continue;
+            }
+
+            $results = $this->executeSearchQuery($objectType, $query, $parentObjectId, $schemaDefinitionId);
+
+            static::logDebug("Search query {$index} results", [
+                'query'        => $query,
+                'result_count' => $results->count(),
+            ]);
+
+            // If we get 1-5 results, this is a good match set
+            if ($results->count() >= 1 && $results->count() <= 5) {
+                static::logDebug('Found optimal candidate set', ['count' => $results->count()]);
+
+                return $results;
+            }
+
+            // If this more restrictive query returned 0 results, fall back to previous
+            if ($results->count() === 0 && $previousResults->isNotEmpty()) {
+                static::logDebug('Query too restrictive, falling back to previous results', [
+                    'previous_count' => $previousResults->count(),
+                ]);
+
+                return $previousResults->take(20);
+            }
+
+            $previousResults = $results;
+        }
+
+        // If all queries returned >5, use the last query results (limit 20)
+        static::logDebug('All queries returned many results, limiting to 20', [
+            'total_found' => $previousResults->count(),
+        ]);
+
+        return $previousResults->take(20);
+    }
+
+    /**
+     * Execute a single search query against TeamObjects.
+     *
+     * Applies LIKE patterns for:
+     * - 'name' field: searches TeamObject.name column
+     * - 'date' field: searches TeamObject.date column (formatted as Y-m-d)
+     * - Other fields: searches in team_object_attributes table
+     *
+     * @param  string  $objectType  Type of object to search for
+     * @param  array  $query  Search query with field => LIKE pattern mappings
+     * @param  int|null  $parentObjectId  Optional parent object scope
+     * @param  int|null  $schemaDefinitionId  Optional schema scope
+     * @return Collection<TeamObject> Collection of matching objects
+     */
+    protected function executeSearchQuery(
+        string $objectType,
+        array $query,
+        ?int $parentObjectId,
+        ?int $schemaDefinitionId
+    ): Collection {
+        $currentTeam = team();
+
+        $baseQuery = TeamObject::query()
             ->where('team_id', $currentTeam->id)
             ->where('type', $objectType)
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
-            ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId))
-            ->orderBy('created_at', 'desc')
-            ->limit(50) // Reasonable limit for comparison
-            ->with(['attributes', 'schemaDefinition']) // Eager load for comparison
+            ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId));
+
+        // Apply LIKE filters for non-null query fields
+        foreach ($query as $field => $pattern) {
+            // Skip null patterns (means "don't filter on this field")
+            if ($pattern === null || $pattern === '') {
+                continue;
+            }
+
+            if ($field === 'name') {
+                // Search in TeamObject.name column
+                $baseQuery->where('name', 'LIKE', $pattern);
+            } elseif ($field === 'date') {
+                // Search in TeamObject.date column (formatted as Y-m-d)
+                // PostgreSQL uses TO_CHAR for date formatting
+                $baseQuery->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') LIKE ?", [$pattern]);
+            } else {
+                // Search in team_object_attributes table
+                $baseQuery->whereHas('attributes', function ($q) use ($field, $pattern) {
+                    $q->where('name', $field)
+                        ->where(function ($sub) use ($pattern) {
+                            // Search in both text_value and json_value columns
+                            // PostgreSQL: cast json to text for LIKE comparison
+                            $sub->where('text_value', 'LIKE', $pattern)
+                                ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
+                        });
+                });
+            }
+        }
+
+        return $baseQuery->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->with(['attributes', 'schemaDefinition'])
             ->get();
-
-        static::logDebug('Found duplicate candidates', [
-            'candidate_count' => $candidates->count(),
-        ]);
-
-        return $candidates;
     }
 
     /**
@@ -200,20 +299,7 @@ class DuplicateRecordResolver
      */
     protected function isExactMatch(array $extractedData, TeamObject $candidate, array $identityFields = []): bool
     {
-        // Build candidate data from object properties and attributes
-        $candidateData = [];
-
-        if ($candidate->name) {
-            $candidateData['name'] = $candidate->name;
-        }
-
-        if ($candidate->date) {
-            $candidateData['date'] = $candidate->date->format('Y-m-d');
-        }
-
-        foreach ($candidate->attributes as $attribute) {
-            $candidateData[$attribute->name] = $attribute->getValue();
-        }
+        $candidateData = $this->buildCandidateData($candidate);
 
         static::logDebug("Comparing against candidate ID {$candidate->id}", [
             'candidate_data' => $candidateData,
@@ -283,6 +369,28 @@ class DuplicateRecordResolver
     }
 
     /**
+     * Build candidate data array from TeamObject properties and attributes.
+     */
+    protected function buildCandidateData(TeamObject $candidate): array
+    {
+        $data = [];
+
+        if ($candidate->name) {
+            $data['name'] = $candidate->name;
+        }
+
+        if ($candidate->date) {
+            $data['date'] = $candidate->date->format('Y-m-d');
+        }
+
+        foreach ($candidate->attributes as $attribute) {
+            $data[$attribute->name] = $attribute->getValue();
+        }
+
+        return $data;
+    }
+
+    /**
      * Normalize a value for comparison.
      */
     protected function normalizeValue(mixed $value): string
@@ -314,21 +422,7 @@ class DuplicateRecordResolver
             $candidateNumber = $index + 1;
             $prompt .= "{$candidateNumber}. **ID: {$candidate->id}**\n\n";
 
-            // Include object properties
-            $candidateData = [];
-
-            if ($candidate->name) {
-                $candidateData['name'] = $candidate->name;
-            }
-
-            if ($candidate->date) {
-                $candidateData['date'] = $candidate->date->format('Y-m-d');
-            }
-
-            // Include attributes
-            foreach ($candidate->attributes as $attribute) {
-                $candidateData[$attribute->name] = $attribute->getValue();
-            }
+            $candidateData = $this->buildCandidateData($candidate);
 
             $prompt .= "```json\n";
             $prompt .= json_encode($candidateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

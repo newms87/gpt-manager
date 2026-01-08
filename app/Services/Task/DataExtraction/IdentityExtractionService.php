@@ -418,7 +418,7 @@ class IdentityExtractionService
             'created_count' => count($createdObjects),
         ]);
 
-        // Return first object for backwards compatibility
+        // Return first created object (method signature requires single TeamObject return)
         return $createdObjects[0];
     }
 
@@ -615,25 +615,32 @@ class IdentityExtractionService
     }
 
     /**
-     * Build the _search_query schema object with properties for identity fields.
+     * Build the _search_query schema as an array of query objects from least to most restrictive.
+     *
+     * The LLM will return multiple search queries where:
+     * - First query uses only the most identifying field (usually name)
+     * - Subsequent queries add more fields to narrow results
      *
      * @param  array<string>  $identityFields
-     * @return array{type: string, description: string, properties: array}
+     * @return array{type: string, description: string, items: array}
      */
     protected function buildSearchQuerySchema(array $identityFields): array
     {
         $properties = [];
         foreach ($identityFields as $field) {
             $properties[$field] = [
-                'type'        => 'string',
-                'description' => "SQL LIKE pattern for searching {$field} (use % wildcards)",
+                'type'        => ['string', 'null'],
+                'description' => "SQL LIKE pattern for searching {$field} (use % wildcards), or null to skip this field",
             ];
         }
 
         return [
-            'type'        => 'object',
-            'description' => 'SQL LIKE patterns for finding matching records for THIS specific object',
-            'properties'  => $properties,
+            'type'        => 'array',
+            'description' => 'Array of search queries from LEAST to MOST restrictive. First query should use only the most identifying field (usually name). Add more fields in subsequent queries only if needed to narrow results. Use SQL LIKE patterns with % wildcards. Set field to null to skip it in that query.',
+            'items'       => [
+                'type'       => 'object',
+                'properties' => $properties,
+            ],
         ];
     }
 
@@ -735,16 +742,21 @@ class IdentityExtractionService
         ?int $parentObjectId
     ): ?int {
         $extractedData = $extractionResult['data']         ?? [];
-        $searchQuery   = $extractionResult['search_query'] ?? $extractedData;
+        $searchQuery   = $extractionResult['search_query'] ?? [];
 
         if (empty($extractedData)) {
             return null;
         }
 
+        // Convert search query to array format if needed
+        // The LLM returns an array of queries from least to most restrictive
+        // If we got a single object (backwards compat), wrap it in an array
+        $searchQueries = $this->normalizeSearchQueries($searchQuery, $extractedData);
+
         $resolver   = app(DuplicateRecordResolver::class);
         $candidates = $resolver->findCandidates(
             objectType: $identityGroup['object_type'],
-            extractedData: $searchQuery,
+            searchQueries: $searchQueries,
             parentObjectId: $parentObjectId,
             schemaDefinitionId: $taskRun->taskDefinition->schema_definition_id
         );
@@ -777,6 +789,35 @@ class IdentityExtractionService
         }
 
         return null;
+    }
+
+    /**
+     * Normalize search queries to array format.
+     *
+     * The LLM returns _search_query as an array of query objects from least to most restrictive.
+     * If we receive a single object (old format) or empty array, create a reasonable fallback.
+     *
+     * @param  array  $searchQuery  Raw search query data from extraction
+     * @param  array  $extractedData  The extracted identity data as fallback
+     * @return array<array> Array of search query objects
+     */
+    protected function normalizeSearchQueries(array $searchQuery, array $extractedData): array
+    {
+        // If already an array of query objects (new format), use as-is
+        if (!empty($searchQuery) && isset($searchQuery[0]) && is_array($searchQuery[0])) {
+            return $searchQuery;
+        }
+
+        // If empty or single object format, create a single query from extracted data
+        // Use LIKE patterns for loose matching
+        $singleQuery = [];
+        foreach ($extractedData as $field => $value) {
+            if (is_string($value) && $value !== '') {
+                $singleQuery[$field] = '%' . $value . '%';
+            }
+        }
+
+        return !empty($singleQuery) ? [$singleQuery] : [];
     }
 
     /**

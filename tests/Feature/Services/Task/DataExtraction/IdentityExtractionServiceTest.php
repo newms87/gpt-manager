@@ -1012,10 +1012,15 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('_search_query', $itemProperties,
             'Each object should have embedded _search_query property');
 
-        // Verify _search_query has the identity fields
-        $searchQueryProperties = $itemProperties['_search_query']['properties'] ?? [];
-        $this->assertArrayHasKey('name', $searchQueryProperties);
-        $this->assertArrayHasKey('title', $searchQueryProperties);
+        // Verify _search_query is now an array type with items containing identity fields
+        $searchQuerySchema = $itemProperties['_search_query'];
+        $this->assertEquals('array', $searchQuerySchema['type'],
+            '_search_query should be an array type for progressive query refinement');
+
+        // Verify the items schema has the identity fields
+        $searchQueryItemProperties = $searchQuerySchema['items']['properties'] ?? [];
+        $this->assertArrayHasKey('name', $searchQueryItemProperties);
+        $this->assertArrayHasKey('title', $searchQueryItemProperties);
     }
 
     #[Test]

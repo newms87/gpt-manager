@@ -3,6 +3,7 @@
 namespace Tests\Feature\Services\Task\DataExtraction;
 
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Team\Team;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Services\Task\DataExtraction\DuplicateRecordResolver;
@@ -33,17 +34,17 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
             'name'    => 'John Smith',
         ]);
 
-        $otherTeam       = \App\Models\Team\Team::factory()->create();
+        $otherTeam       = Team::factory()->create();
         $otherTeamObject = TeamObject::factory()->create([
             'team_id' => $otherTeam->id,
             'type'    => 'Client',
             'name'    => 'John Smith',
         ]);
 
-        // When: Finding candidates
+        // When: Finding candidates with LIKE pattern search
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'John Smith'],
+            searchQueries: [['name' => '%John Smith%']],
             parentObjectId: null,
             schemaDefinitionId: null
         );
@@ -64,7 +65,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
             'name'    => 'John Smith',
         ]);
 
-        $accident = TeamObject::factory()->create([
+        TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Accident',
             'name'    => 'Car Accident',
@@ -73,7 +74,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         // When: Finding candidates for Client type
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'John Smith'],
+            searchQueries: [['name' => '%John%']],
             parentObjectId: null,
             schemaDefinitionId: null
         );
@@ -93,19 +94,21 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $object1 = TeamObject::factory()->create([
             'team_id'              => $this->user->currentTeam->id,
             'type'                 => 'Client',
+            'name'                 => 'Test Client',
             'schema_definition_id' => $schema1->id,
         ]);
 
-        $object2 = TeamObject::factory()->create([
+        TeamObject::factory()->create([
             'team_id'              => $this->user->currentTeam->id,
             'type'                 => 'Client',
+            'name'                 => 'Test Client',
             'schema_definition_id' => $schema2->id,
         ]);
 
         // When: Finding candidates for schema1
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'Test'],
+            searchQueries: [['name' => '%Test%']],
             parentObjectId: null,
             schemaDefinitionId: $schema1->id
         );
@@ -127,19 +130,21 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $childObject = TeamObject::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'type'           => 'Client',
+            'name'           => 'Test Client',
             'root_object_id' => $parentObject->id,
         ]);
 
-        $orphanObject = TeamObject::factory()->create([
+        TeamObject::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'type'           => 'Client',
+            'name'           => 'Other Client',
             'root_object_id' => null,
         ]);
 
         // When: Finding candidates with parent scope
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'Test'],
+            searchQueries: [['name' => '%Test%']],
             parentObjectId: $parentObject->id,
             schemaDefinitionId: null
         );
@@ -156,17 +161,18 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         TeamObject::factory()->count(100)->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Client',
+            'name'    => 'Client Name',
         ]);
 
-        // When: Finding candidates
+        // When: Finding candidates with empty search query (falls back to scope-only)
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'Test'],
+            searchQueries: [],
             parentObjectId: null,
             schemaDefinitionId: null
         );
 
-        // Then: Returns limited number of results
+        // Then: Returns limited number of results (limit 50 in executeSearchQuery, then take 20)
         $this->assertLessThanOrEqual(50, $candidates->count());
     }
 
@@ -177,25 +183,28 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $oldest = TeamObject::factory()->create([
             'team_id'    => $this->user->currentTeam->id,
             'type'       => 'Client',
+            'name'       => 'Client',
             'created_at' => now()->subDays(2),
         ]);
 
         $middle = TeamObject::factory()->create([
             'team_id'    => $this->user->currentTeam->id,
             'type'       => 'Client',
+            'name'       => 'Client',
             'created_at' => now()->subDay(),
         ]);
 
         $newest = TeamObject::factory()->create([
             'team_id'    => $this->user->currentTeam->id,
             'type'       => 'Client',
+            'name'       => 'Client',
             'created_at' => now(),
         ]);
 
         // When: Finding candidates
         $candidates = $this->resolver->findCandidates(
             objectType: 'Client',
-            extractedData: ['name' => 'Test'],
+            searchQueries: [['name' => '%Client%']],
             parentObjectId: null,
             schemaDefinitionId: null
         );
@@ -205,6 +214,161 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $this->assertEquals($newest->id, $ids[0]);
         $this->assertEquals($middle->id, $ids[1]);
         $this->assertEquals($oldest->id, $ids[2]);
+    }
+
+    #[Test]
+    public function findCandidates_applies_like_pattern_to_name_field(): void
+    {
+        // Given: TeamObjects with similar names
+        $lichtenberg = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Dr. Lichtenberg',
+        ]);
+
+        TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Dr. Smith',
+        ]);
+
+        // When: Searching with LIKE pattern
+        $candidates = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%Lichtenberg%']],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Only returns matching name
+        $this->assertCount(1, $candidates);
+        $this->assertEquals($lichtenberg->id, $candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_applies_like_pattern_to_attributes(): void
+    {
+        // Given: TeamObjects with attributes
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Client',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $candidate->id,
+            'name'           => 'title',
+            'text_value'     => 'MD',
+        ]);
+
+        $otherCandidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Other Client',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherCandidate->id,
+            'name'           => 'title',
+            'text_value'     => 'PhD',
+        ]);
+
+        // When: Searching with LIKE pattern on attribute
+        $candidates = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['title' => '%MD%']],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Only returns matching attribute
+        $this->assertCount(1, $candidates);
+        $this->assertEquals($candidate->id, $candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_returns_optimal_set_when_1_to_5_results(): void
+    {
+        // Given: 3 matching TeamObjects
+        TeamObject::factory()->count(3)->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'John Smith',
+        ]);
+
+        // When: Searching
+        $candidates = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%John Smith%']],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Returns all 3 (within 1-5 optimal range)
+        $this->assertCount(3, $candidates);
+    }
+
+    #[Test]
+    public function findCandidates_tries_more_restrictive_query_when_too_many_results(): void
+    {
+        // Given: Many TeamObjects, some with additional attribute
+        TeamObject::factory()->count(10)->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Smith',
+        ]);
+
+        $specificMatch = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Smith',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $specificMatch->id,
+            'name'           => 'title',
+            'text_value'     => 'MD',
+        ]);
+
+        // When: Searching with progressive queries (loose then restrictive)
+        $candidates = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [
+                ['name' => '%Smith%', 'title' => null],          // Loose: all 11 Smiths
+                ['name' => '%Smith%', 'title' => '%MD%'],        // Restrictive: only MD
+            ],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Returns the more specific match
+        $this->assertCount(1, $candidates);
+        $this->assertEquals($specificMatch->id, $candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_falls_back_to_previous_when_too_restrictive(): void
+    {
+        // Given: TeamObjects that match loose query but not restrictive
+        TeamObject::factory()->count(3)->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Smith',
+        ]);
+
+        // When: Second query is too restrictive (returns 0)
+        $candidates = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [
+                ['name' => '%Smith%'],                           // Returns 3
+                ['name' => '%Smith%', 'title' => '%Nonexistent%'], // Returns 0
+            ],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Falls back to first query results
+        $this->assertCount(3, $candidates);
     }
 
     #[Test]
