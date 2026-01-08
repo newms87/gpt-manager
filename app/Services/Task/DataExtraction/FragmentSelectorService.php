@@ -62,11 +62,27 @@ class FragmentSelectorService
     /**
      * Get the leaf (deepest) schema key from fragment_selector.
      * Returns the key whose children are all scalar types.
+     *
+     * For flat structures (where ALL children at root are scalar types),
+     * returns the fallback object_type as snake_case since the root IS the leaf.
      */
     public function getLeafKey(array $fragmentSelector, ?string $fallbackObjectType = null): string
     {
         $children = $fragmentSelector['children'] ?? [];
-        $lastKey  = null;
+
+        // If no children, use fallback
+        if (empty($children)) {
+            return Str::snake($fallbackObjectType ?? '');
+        }
+
+        // Check if ALL children at root level are scalar types (flat structure)
+        // If so, the root IS the leaf - no nested hierarchy to traverse
+        if ($this->hasOnlyScalarChildren($children)) {
+            return Str::snake($fallbackObjectType ?? '');
+        }
+
+        // Standard traversal for nested structures
+        $lastKey = null;
 
         while (!empty($children)) {
             $key     = array_key_first($children);
@@ -96,6 +112,23 @@ class FragmentSelectorService
     }
 
     /**
+     * Check if all children are scalar types (string, number, boolean, etc.).
+     * Returns true if no children have type 'object' or 'array'.
+     */
+    public function hasOnlyScalarChildren(array $children): bool
+    {
+        foreach ($children as $child) {
+            $childType = $child['type'] ?? null;
+            // If type is null, object, or array - it's a nested structure
+            if ($childType === null || in_array($childType, ['object', 'array'], true)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Get the parent type (second-to-last key) from fragment_selector.
      * For: provider > care_summary > professional > {fields}
      * Returns: "Care Summary" (title case)
@@ -114,6 +147,10 @@ class FragmentSelectorService
 
     /**
      * Check if a specific key represents an array type in the fragment_selector.
+     *
+     * For flat structures where the key is not found in children (because children
+     * contain scalar fields, not the object type itself), returns false since
+     * flat structures produce single objects, not arrays.
      */
     public function isArrayType(array $fragmentSelector, string $schemaKey): bool
     {
@@ -128,11 +165,18 @@ class FragmentSelectorService
             $children = $children[$key]['children'] ?? [];
         }
 
-        return true; // Default to array if key not found
+        // Key not found - this happens for flat structures where children are scalar fields
+        // (e.g., name, accident_date) and the schemaKey (e.g., "demand") doesn't appear in
+        // the hierarchy. Flat structures produce single objects, not arrays.
+        return false;
     }
 
     /**
      * Check if the relationship at a specific nesting level is an array type.
+     *
+     * Returns true if level not found because hierarchical artifact building
+     * (ExtractionArtifactBuilder::nestDataUnderAncestors) typically wraps data in arrays.
+     * This differs from isArrayType() which returns false for flat structures.
      */
     public function isArrayTypeAtLevel(array $fragmentSelector, int $level): bool
     {
@@ -151,7 +195,9 @@ class FragmentSelectorService
             $currentLevel++;
         }
 
-        return true; // Default to array
+        // Level not found - for hierarchical artifact building, default to array wrapping
+        // since nested structures typically use arrays at each level
+        return true;
     }
 
     /**

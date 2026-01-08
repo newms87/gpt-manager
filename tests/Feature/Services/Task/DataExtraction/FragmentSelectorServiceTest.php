@@ -130,4 +130,51 @@ class FragmentSelectorServiceTest extends TestCase
         // Then: Should be 'Care Summary' (second-to-last in path)
         $this->assertEquals('Care Summary', $parentType);
     }
+
+    #[Test]
+    public function getLeafKey_returns_fallback_object_type_for_flat_structure(): void
+    {
+        // Given: A flat fragment_selector where ALL children are scalar types (no nested objects)
+        // This represents root-level extraction like "Demand" where fields are at the root
+        $fragmentSelector = [
+            'type'     => 'object',
+            'children' => [
+                'name'          => ['type' => 'string'],
+                'accident_date' => ['type' => 'string'],
+                'description'   => ['type' => 'string'],
+            ],
+        ];
+
+        // When: Getting leaf key with fallback object type
+        $leafKey = $this->service->getLeafKey($fragmentSelector, 'Demand');
+
+        // Then: Should return the fallback object_type as snake_case since structure is flat
+        // (the root IS the leaf - no nested hierarchy to traverse)
+        $this->assertEquals('demand', $leafKey,
+            'For flat structures (all scalar children), should return object_type as snake_case');
+    }
+
+    #[Test]
+    public function getLeafKey_returns_first_key_for_nested_structure(): void
+    {
+        // Given: A fragment_selector with nested object structure
+        $fragmentSelector = [
+            'type'     => 'object',
+            'children' => [
+                'client' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'name'          => ['type' => 'string'],
+                        'date_of_birth' => ['type' => 'string'],
+                    ],
+                ],
+            ],
+        ];
+
+        // When: Getting leaf key
+        $leafKey = $this->service->getLeafKey($fragmentSelector, 'Client');
+
+        // Then: Should return 'client' as the leaf key (the nested object key)
+        $this->assertEquals('client', $leafKey);
+    }
 }

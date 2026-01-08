@@ -76,6 +76,7 @@ class IdentityExtractionService
         // LLM Call #1: Extract identity fields + search query
         $extractionResult = $this->extractIdentityWithSearchQuery(
             $taskRun,
+            $taskProcess,
             $artifacts,
             $identityGroup,
             $possibleParentIds
@@ -92,7 +93,17 @@ class IdentityExtractionService
         $resolvedParentId = $extractionResult['parent_id'] ?? $parentObjectId;
 
         // Check if this is an array-type extraction (e.g., multiple diagnoses per document)
-        if (app(FragmentSelectorService::class)->isLeafArrayType($identityGroup)) {
+        $fragmentSelectorService = app(FragmentSelectorService::class);
+        $isLeafArrayType         = $fragmentSelectorService->isLeafArrayType($identityGroup);
+
+        static::logDebug('Determining extraction path', [
+            'object_type'        => $identityGroup['object_type'] ?? 'unknown',
+            'is_leaf_array_type' => $isLeafArrayType,
+            'fragment_selector'  => $identityGroup['fragment_selector'] ?? [],
+            'extraction_path'    => $isLeafArrayType ? 'array' : 'single',
+        ]);
+
+        if ($isLeafArrayType) {
             return $this->executeArrayIdentityExtraction(
                 taskRun: $taskRun,
                 taskProcess: $taskProcess,
@@ -427,6 +438,7 @@ class IdentityExtractionService
      */
     protected function extractIdentityWithSearchQuery(
         TaskRun $taskRun,
+        TaskProcess $taskProcess,
         Collection $artifacts,
         array $group,
         array $possibleParentIds = []
@@ -450,6 +462,7 @@ class IdentityExtractionService
         // Build and run the LLM thread
         return $this->runExtractionThread(
             $taskRun,
+            $taskProcess,
             $artifacts,
             $responseSchema,
             $possibleParentIds
@@ -544,6 +557,9 @@ class IdentityExtractionService
 
     /**
      * Extract the leaf-level schema by navigating through the fragment selector hierarchy.
+     *
+     * For flat structures (where ALL children at root are scalar types),
+     * returns the full schema since the root IS the leaf.
      */
     protected function extractLeafSchema(array $schema, array $fragmentSelector): array
     {
@@ -551,6 +567,12 @@ class IdentityExtractionService
         $children   = $fragmentSelector['children'] ?? [];
 
         if (empty($children)) {
+            return $schema;
+        }
+
+        // Check if ALL children at root level are scalar types (flat structure)
+        // If so, the root IS the leaf - return the full schema
+        if (app(FragmentSelectorService::class)->hasOnlyScalarChildren($children)) {
             return $schema;
         }
 
@@ -655,6 +677,7 @@ class IdentityExtractionService
      */
     protected function runExtractionThread(
         TaskRun $taskRun,
+        TaskProcess $taskProcess,
         Collection $artifacts,
         array $responseSchema,
         array $possibleParentIds
@@ -663,6 +686,9 @@ class IdentityExtractionService
 
         // Build thread with artifacts and optional parent context
         $thread = $this->buildExtractionThread($taskRun, $artifacts, $possibleParentIds);
+
+        // Associate thread with task process for debugging
+        $taskProcess->agentThread()->associate($thread)->save();
 
         // Get timeout from config (default 5 minutes for large extractions)
         $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 300;

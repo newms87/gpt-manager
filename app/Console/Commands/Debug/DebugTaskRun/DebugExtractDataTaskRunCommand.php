@@ -27,7 +27,8 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
         {--taskrun-meta : Show the full TaskRun meta data}
         {--level-progress : Show extraction level progress for each level}
         {--cached-plan : Show cached extraction plan fragment selectors}
-        {--clear-cached-plan : Clear cached extraction plan}';
+        {--clear-cached-plan : Clear cached extraction plan}
+        {--show-schema= : Show the extraction response schema for a specific task process ID}';
 
     protected $description = 'Debug an ExtractData TaskRun with specialized extraction debugging options';
 
@@ -85,6 +86,12 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
 
         if ($this->option('clear-cached-plan')) {
             $extractDataService->clearCachedPlan($this->taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('show-schema')) {
+            $extractDataService->showExtractionSchema($this->taskRun, (int)$this->option('show-schema'), $this);
 
             return 0;
         }

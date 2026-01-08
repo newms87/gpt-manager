@@ -7,6 +7,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\DataExtraction\IdentityExtractionService;
 use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use Illuminate\Console\Command;
@@ -14,6 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Job\JobDispatch;
+use ReflectionMethod;
 use Throwable;
 
 class ExtractDataDebugService
@@ -314,6 +316,9 @@ class ExtractDataDebugService
             // Refresh and show final status
             $process->refresh();
             $command->line("Final Status: {$process->status}");
+
+            // Show the agent thread messages if any
+            $this->showAgentThreadMessages($process, $command);
 
             return 0;
         } catch (Throwable $e) {
@@ -693,5 +698,99 @@ class ExtractDataDebugService
         $taskDef->save();
 
         $command->info("Cleared extraction_plan from TaskDefinition {$taskDef->id}");
+    }
+
+    /**
+     * Show the extraction response schema for a task process.
+     */
+    public function showExtractionSchema(TaskRun $taskRun, int $processId, Command $command): void
+    {
+        $process = $taskRun->taskProcesses()->find($processId);
+
+        if (!$process) {
+            $command->error("TaskProcess $processId not found in TaskRun {$taskRun->id}");
+
+            return;
+        }
+
+        $meta          = $process->meta          ?? [];
+        $identityGroup = $meta['identity_group'] ?? null;
+
+        if (!$identityGroup) {
+            $command->warn('No identity_group in task process meta');
+
+            return;
+        }
+
+        $schemaDefinition = $taskRun->taskDefinition->schemaDefinition;
+
+        if (!$schemaDefinition) {
+            $command->warn('No schema definition found');
+
+            return;
+        }
+
+        $command->info('=== Extraction Response Schema ===');
+        $command->line('Process ID: ' . $processId);
+        $command->line('Operation: ' . ($process->operation ?? 'unknown'));
+        $command->line('Object Type: ' . ($identityGroup['object_type'] ?? 'unknown'));
+        $command->line('Identity Fields: ' . json_encode($identityGroup['identity_fields'] ?? []));
+        $command->newLine();
+
+        // Use reflection to call protected method
+        $service = app(IdentityExtractionService::class);
+        $method  = new ReflectionMethod($service, 'buildExtractionResponseSchema');
+
+        $schema = $method->invoke($service, $schemaDefinition, $identityGroup, []);
+
+        $command->info('=== Response Schema (sent to LLM) ===');
+        $command->line(json_encode($schema, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Display agent thread messages from a task process.
+     */
+    protected function showAgentThreadMessages(TaskProcess $process, Command $command): void
+    {
+        $thread = $process->agentThread;
+
+        if (!$thread) {
+            $command->warn('No agent thread associated with this process');
+
+            return;
+        }
+
+        $command->newLine();
+        $command->info('=== Agent Thread Messages ===');
+        $command->line("Thread ID: {$thread->id}");
+        $command->newLine();
+
+        $messages = $thread->messages()->orderBy('id')->get();
+
+        if ($messages->isEmpty()) {
+            $command->warn('No messages in thread');
+
+            return;
+        }
+
+        foreach ($messages as $message) {
+            $role = strtoupper($message->role ?? 'unknown');
+            $command->line("[$role]");
+
+            // Show title if present
+            if ($message->title) {
+                $command->line("Title: {$message->title}");
+            }
+
+            // Show content (truncate if very long)
+            $content = $message->content ?? '';
+            if (strlen($content) > 2000) {
+                $content = substr($content, 0, 2000) . "\n... (truncated, " . strlen($message->content) . ' chars total)';
+            }
+            $command->line($content);
+            $command->newLine();
+        }
+
+        $command->line("Total messages: {$messages->count()}");
     }
 }

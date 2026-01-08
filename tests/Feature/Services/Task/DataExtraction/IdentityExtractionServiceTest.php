@@ -1024,6 +1024,64 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
+    public function build_extraction_response_schema_includes_all_fields_for_flat_structure(): void
+    {
+        // Given: Flat fragment_selector - no nested hierarchy, fields at root level
+        // This represents a root-level extraction like "Demand" where all children are scalar types
+        $identityGroup = [
+            'object_type'       => 'Demand',
+            'identity_fields'   => ['name', 'accident_date'],
+            'skim_fields'       => ['name', 'accident_date', 'description'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'name'          => ['type' => 'string'],
+                    'accident_date' => ['type' => 'string'],
+                    'description'   => ['type' => 'string'],
+                ],
+            ],
+        ];
+
+        // Create schema definition with matching structure
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'name'          => ['type' => 'string', 'title' => 'Name'],
+                    'accident_date' => ['type' => 'string', 'title' => 'Accident Date'],
+                    'description'   => ['type' => 'string', 'title' => 'Description'],
+                ],
+            ],
+        ]);
+
+        // When: Building the extraction response schema
+        $result = $this->invokeProtectedMethod(
+            app(IdentityExtractionService::class),
+            'buildExtractionResponseSchema',
+            [$schemaDefinition, $identityGroup, []]
+        );
+
+        // Then: For flat structures, the leaf key should be the object type (snake_case)
+        $this->assertArrayHasKey('demand', $result['properties']['data']['properties'],
+            'For flat structure, leaf key should be object_type as snake_case (demand)');
+
+        $demandSchema = $result['properties']['data']['properties']['demand'];
+
+        // Should have ALL fields, not just 'name' (first child key)
+        $this->assertArrayHasKey('properties', $demandSchema,
+            'Demand schema should have properties');
+        $this->assertArrayHasKey('name', $demandSchema['properties'],
+            'Should include name field');
+        $this->assertArrayHasKey('accident_date', $demandSchema['properties'],
+            'Should include accident_date field');
+        $this->assertArrayHasKey('description', $demandSchema['properties'],
+            'Should include description field');
+        $this->assertArrayHasKey('_search_query', $demandSchema['properties'],
+            'Should include _search_query field');
+    }
+
+    #[Test]
     public function build_extraction_response_schema_for_single_object_embeds_search_query(): void
     {
         // Given: A schema for single object extraction (not array)
