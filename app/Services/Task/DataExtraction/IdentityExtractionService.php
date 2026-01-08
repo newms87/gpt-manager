@@ -198,12 +198,30 @@ class IdentityExtractionService
         int $level,
         ?int $parentObjectId
     ): ?TeamObject {
-        // Recursively unwrap nested data according to fragment_selector structure
-        // For deeply nested schemas (e.g., provider -> care_summary -> professional -> {name, title}),
-        // this traverses through all object/array wrappers until reaching the identity fields level
-        $fragmentSelector   = $identityGroup['fragment_selector'] ?? [];
-        $identificationData = $extractionResult['data']           ?? [];
-        $identificationData = app(FragmentSelectorService::class)->unwrapData($identificationData, $fragmentSelector);
+        // The data is now simplified to leaf level only: { leaf_key: { fields..., _search_query: {...} } }
+        // We need to extract the leaf key's content directly
+        $fragmentSelector = $identityGroup['fragment_selector'] ?? [];
+        $objectType       = $identityGroup['object_type']       ?? '';
+        $leafKey          = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
+
+        // Get the data for the leaf key (no complex unwrapping needed - schema is already simplified)
+        $extractedData      = $extractionResult['data'] ?? [];
+        $identificationData = $extractedData[$leafKey]  ?? [];
+
+        // If identification data is not an array, we cannot extract identity fields - return null
+        if (!is_array($identificationData)) {
+            static::logDebug("Identity extraction found non-array data for {$identityGroup['object_type']} - cannot extract identity fields", [
+                'identification_data' => $identificationData,
+            ]);
+
+            return null;
+        }
+
+        // Extract embedded _search_query from the object data
+        $searchQuery = $identificationData['_search_query'] ?? $identificationData;
+
+        // Remove _search_query from identification data (it's not an identity field)
+        unset($identificationData['_search_query']);
 
         $identityFields = $identityGroup['identity_fields'] ?? [];
         $name           = $this->resolveObjectName($identificationData, $identityFields);
@@ -217,12 +235,18 @@ class IdentityExtractionService
             return null;
         }
 
+        // Build extraction result with per-object search query
+        $itemExtractionResult = [
+            'data'         => $identificationData,
+            'search_query' => $searchQuery,
+        ];
+
         // Resolve duplicates using DuplicateRecordResolver
         $matchId = $this->resolveDuplicate(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
-            extractionResult: $extractionResult,
+            extractionResult: $itemExtractionResult,
             parentObjectId: $parentObjectId
         );
 
@@ -260,7 +284,7 @@ class IdentityExtractionService
             taskProcess: $taskProcess,
             teamObject: $teamObject,
             group: $identityGroup,
-            extractionResult: $extractionResult,
+            extractionResult: $itemExtractionResult,
             level: $level,
             matchId: $matchId
         );
@@ -290,9 +314,9 @@ class IdentityExtractionService
         $identityFields   = $identityGroup['identity_fields']   ?? [];
         $objectType       = $identityGroup['object_type'];
 
-        // Unwrap to get array of items (preserving the array at leaf level)
-        $artifactBuilder = app(ExtractionArtifactBuilder::class);
-        $items           = $artifactBuilder->unwrapExtractedDataPreservingLeaf($extractedData, $fragmentSelector);
+        // Get the leaf key - the schema is now simplified to just { leaf_key: [...items...] }
+        $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
+        $items   = $extractedData[$leafKey] ?? [];
 
         if (!is_array($items) || empty($items) || !isset($items[0])) {
             static::logDebug('No array items found in identity extraction result');
@@ -306,12 +330,19 @@ class IdentityExtractionService
             'parent_id'   => $parentObjectId,
         ]);
 
-        $createdObjects = [];
+        $createdObjects  = [];
+        $artifactBuilder = app(ExtractionArtifactBuilder::class);
 
         foreach ($items as $itemData) {
             if (!is_array($itemData)) {
                 continue;
             }
+
+            // Extract embedded _search_query from this item
+            $searchQuery = $itemData['_search_query'] ?? $itemData;
+
+            // Remove _search_query from item data (it's not an identity field)
+            unset($itemData['_search_query']);
 
             // Resolve name for this item
             $name = $this->resolveObjectName($itemData, $identityFields);
@@ -321,10 +352,10 @@ class IdentityExtractionService
                 continue;
             }
 
-            // Build item-specific extraction result for duplicate resolution
+            // Build item-specific extraction result with per-object search query
             $itemExtractionResult = [
                 'data'         => $itemData,
-                'search_query' => $extractionResult['search_query'] ?? $itemData,
+                'search_query' => $searchQuery,
             ];
 
             // Resolve duplicates for this item (scoped to parent)
@@ -428,10 +459,12 @@ class IdentityExtractionService
     /**
      * Build the response schema for identity extraction.
      *
-     * Creates a schema that includes:
-     * - data: The extracted identity fields based on fragment_selector
-     * - search_query: SQL LIKE patterns for duplicate searching
+     * Creates a simplified schema at leaf level with embedded _search_query:
+     * - data: { leaf_key: { fields..., _search_query: {...} } }
      * - parent_id: (optional) When multiple parent options exist
+     *
+     * The schema is simplified to only include the leaf-level objects, not the full hierarchy.
+     * Each object includes an embedded _search_query property for per-object duplicate resolution.
      *
      * @param  array<int>  $possibleParentIds
      */
@@ -442,29 +475,33 @@ class IdentityExtractionService
     ): array {
         $fragmentSelector = $group['fragment_selector'] ?? [];
         $identityFields   = $group['identity_fields']   ?? [];
+        $objectType       = $group['object_type']       ?? '';
 
-        // Build search_query schema from identity fields
-        $searchQueryProperties = $this->buildSearchQueryProperties($identityFields);
+        // Build _search_query schema from identity fields (embedded in each object)
+        $searchQuerySchema = $this->buildSearchQuerySchema($identityFields);
 
-        // Use applyFragmentSelector to convert fragment_selector (with 'children')
-        // to proper JSON Schema (with 'properties')
-        $jsonSchemaService = app(JsonSchemaService::class);
-        $dataSchema        = $jsonSchemaService->applyFragmentSelector(
-            $schemaDefinition->schema,
-            $fragmentSelector
+        // Get the leaf key and build simplified schema
+        $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
+
+        // Build the leaf-level schema with embedded _search_query
+        $leafSchema = $this->buildLeafSchemaWithSearchQuery(
+            $schemaDefinition,
+            $fragmentSelector,
+            $searchQuerySchema,
+            $leafKey
         );
 
         $responseSchema = [
             'type'       => 'object',
             'properties' => [
-                'data'         => $dataSchema,
-                'search_query' => [
-                    'type'        => 'object',
-                    'description' => 'SQL LIKE patterns for finding matching records',
-                    'properties'  => $searchQueryProperties,
+                'data' => [
+                    'type'       => 'object',
+                    'properties' => [
+                        $leafKey => $leafSchema,
+                    ],
                 ],
             ],
-            'required' => ['data', 'search_query'],
+            'required' => ['data'],
         ];
 
         // Add parent_id field when multiple parents exist
@@ -480,29 +517,134 @@ class IdentityExtractionService
     }
 
     /**
-     * Build search query properties schema from identity fields.
+     * Build the leaf-level schema with embedded _search_query property.
+     *
+     * Navigates through the fragment selector to find the leaf schema,
+     * then adds _search_query to each object.
+     */
+    protected function buildLeafSchemaWithSearchQuery(
+        SchemaDefinition $schemaDefinition,
+        array $fragmentSelector,
+        array $searchQuerySchema,
+        string $leafKey
+    ): array {
+        // Use applyFragmentSelector to get the full schema, then extract leaf level
+        $jsonSchemaService = app(JsonSchemaService::class);
+        $fullSchema        = $jsonSchemaService->applyFragmentSelector(
+            $schemaDefinition->schema,
+            $fragmentSelector
+        );
+
+        // Navigate to the leaf schema
+        $leafSchema = $this->extractLeafSchema($fullSchema, $fragmentSelector);
+
+        // Add _search_query to the leaf schema (handling both object and array types)
+        return $this->injectSearchQueryIntoSchema($leafSchema, $searchQuerySchema);
+    }
+
+    /**
+     * Extract the leaf-level schema by navigating through the fragment selector hierarchy.
+     */
+    protected function extractLeafSchema(array $schema, array $fragmentSelector): array
+    {
+        $properties = $schema['properties']         ?? [];
+        $children   = $fragmentSelector['children'] ?? [];
+
+        if (empty($children)) {
+            return $schema;
+        }
+
+        $key = array_key_first($children);
+
+        if (!isset($properties[$key])) {
+            return $schema;
+        }
+
+        $childSchema    = $properties[$key];
+        $childSelector  = $children[$key];
+        $childChildren  = $childSelector['children'] ?? [];
+
+        // Check if we're at the leaf level (children are scalar types)
+        $hasNestedStructure = false;
+        foreach ($childChildren as $grandchild) {
+            if (isset($grandchild['type']) && in_array($grandchild['type'], ['object', 'array'], true)) {
+                $hasNestedStructure = true;
+                break;
+            }
+        }
+
+        if (!$hasNestedStructure) {
+            // We're at leaf level, return this schema
+            return $childSchema;
+        }
+
+        // For array types, we need to look at items
+        if (($childSchema['type'] ?? '') === 'array') {
+            $itemSchema = $childSchema['items'] ?? [];
+
+            return $this->extractLeafSchema($itemSchema, $childSelector);
+        }
+
+        // Continue traversing for object types
+        return $this->extractLeafSchema($childSchema, $childSelector);
+    }
+
+    /**
+     * Inject _search_query property into the schema (handles both object and array types).
+     */
+    protected function injectSearchQueryIntoSchema(array $schema, array $searchQuerySchema): array
+    {
+        $type = $schema['type'] ?? 'object';
+
+        if ($type === 'array') {
+            // For arrays, add _search_query to each item
+            $items = $schema['items'] ?? [];
+            if (!empty($items)) {
+                $itemProperties                    = $items['properties'] ?? [];
+                $itemProperties['_search_query']   = $searchQuerySchema;
+                $schema['items']['properties']     = $itemProperties;
+            }
+        } else {
+            // For objects, add _search_query directly
+            $properties                    = $schema['properties'] ?? [];
+            $properties['_search_query']   = $searchQuerySchema;
+            $schema['properties']          = $properties;
+        }
+
+        return $schema;
+    }
+
+    /**
+     * Build the _search_query schema object with properties for identity fields.
      *
      * @param  array<string>  $identityFields
-     * @return array<string, array{type: string, description: string}>
+     * @return array{type: string, description: string, properties: array}
      */
-    protected function buildSearchQueryProperties(array $identityFields): array
+    protected function buildSearchQuerySchema(array $identityFields): array
     {
-        $searchQueryProperties = [];
+        $properties = [];
         foreach ($identityFields as $field) {
-            $searchQueryProperties[$field] = [
+            $properties[$field] = [
                 'type'        => 'string',
                 'description' => "SQL LIKE pattern for searching {$field} (use % wildcards)",
             ];
         }
 
-        return $searchQueryProperties;
+        return [
+            'type'        => 'object',
+            'description' => 'SQL LIKE patterns for finding matching records for THIS specific object',
+            'properties'  => $properties,
+        ];
     }
 
     /**
      * Run the LLM extraction thread and return parsed results.
      *
+     * The response contains data with embedded _search_query in each object.
+     * NOTE: search_query is no longer a top-level field - it's now embedded as _search_query in each object.
+     *
      * @param  array<int>  $possibleParentIds
-     * @return array{data: array, search_query: array, parent_id: int|null}
+     * @return array{data: array, parent_id: int|null}
      */
     protected function runExtractionThread(
         TaskRun $taskRun,
@@ -541,10 +683,11 @@ class IdentityExtractionService
             return [];
         }
 
+        // Note: _search_query is now embedded in each object within data,
+        // not returned as a separate top-level field
         return [
-            'data'         => $data['data']         ?? [],
-            'search_query' => $data['search_query'] ?? [],
-            'parent_id'    => $data['parent_id']    ?? null,
+            'data'      => $data['data']      ?? [],
+            'parent_id' => $data['parent_id'] ?? null,
         ];
     }
 

@@ -100,12 +100,21 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($artifact->id);
 
+        // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -113,6 +122,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         $capturedThread = null;
 
         // Mock AgentThreadService - capture the thread and return mock success
+        // Data is wrapped in leaf key 'client' (from the fragment_selector structure)
         $this->mock(AgentThreadService::class, function (MockInterface $mock) use (&$capturedThread) {
             $mock->shouldReceive('withResponseFormat')->andReturnSelf();
             $mock->shouldReceive('withTimeout')->andReturnSelf();
@@ -121,8 +131,12 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                     $capturedThread = $thread;
 
                     return $this->createMockThreadRun([
-                        'data'         => ['client_name' => 'John Smith'],
-                        'search_query' => ['client_name' => '%John%Smith%'],
+                        'data' => [
+                            'client' => [
+                                'client_name'   => 'John Smith',
+                                '_search_query' => ['client_name' => '%John%Smith%'],
+                            ],
+                        ],
                     ]);
                 });
         });
@@ -274,17 +288,27 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($artifact->id);
 
+        // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
         $capturedThread = null;
 
+        // Data is wrapped in leaf key 'client' (from the fragment_selector structure)
         $this->mock(AgentThreadService::class, function (MockInterface $mock) use (&$capturedThread) {
             $mock->shouldReceive('withResponseFormat')->andReturnSelf();
             $mock->shouldReceive('withTimeout')->andReturnSelf();
@@ -293,8 +317,12 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                     $capturedThread = $thread;
 
                     return $this->createMockThreadRun([
-                        'data'         => ['client_name' => 'Jane Doe'],
-                        'search_query' => ['client_name' => '%Jane%Doe%'],
+                        'data' => [
+                            'client' => [
+                                'client_name'   => 'Jane Doe',
+                                '_search_query' => ['client_name' => '%Jane%Doe%'],
+                            ],
+                        ],
                     ]);
                 });
         });
@@ -348,17 +376,27 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($artifact->id);
 
+        // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
         $capturedThread = null;
 
+        // Data is wrapped in leaf key 'client' (from the fragment_selector structure)
         $this->mock(AgentThreadService::class, function (MockInterface $mock) use (&$capturedThread) {
             $mock->shouldReceive('withResponseFormat')->andReturnSelf();
             $mock->shouldReceive('withTimeout')->andReturnSelf();
@@ -367,8 +405,12 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                     $capturedThread = $thread;
 
                     return $this->createMockThreadRun([
-                        'data'         => ['client_name' => 'John Smith'],
-                        'search_query' => ['client_name' => '%John%Smith%'],
+                        'data' => [
+                            'client' => [
+                                'client_name'   => 'John Smith',
+                                '_search_query' => ['client_name' => '%John%Smith%'],
+                            ],
+                        ],
                     ]);
                 });
         });

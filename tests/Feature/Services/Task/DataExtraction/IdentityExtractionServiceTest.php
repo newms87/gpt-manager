@@ -119,12 +119,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -136,10 +145,14 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
 
-        // Mock AgentThreadService to return extraction result
+        // Mock AgentThreadService with new schema format (leaf key with embedded _search_query)
         $this->mockAgentThreadService([
-            'data'         => ['client_name' => 'New Client Corp'],
-            'search_query' => ['client_name' => '%New%Client%'],
+            'data' => [
+                'client' => [
+                    'client_name'   => 'New Client Corp',
+                    '_search_query' => ['client_name' => '%New%Client%'],
+                ],
+            ],
         ]);
 
         // Mock DuplicateRecordResolver to return no match
@@ -190,12 +203,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -207,10 +229,14 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
 
-        // Mock AgentThreadService
+        // Mock AgentThreadService with new schema format
         $this->mockAgentThreadService([
-            'data'         => ['client_name' => 'Existing Client'],
-            'search_query' => ['client_name' => '%Existing%Client%'],
+            'data' => [
+                'client' => [
+                    'client_name'   => 'Existing Client',
+                    '_search_query' => ['client_name' => '%Existing%Client%'],
+                ],
+            ],
         ]);
 
         // Mock DuplicateRecordResolver to return existing object via quick match
@@ -267,12 +293,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Demand',
             'object_type'       => 'Demand',
             'identity_fields'   => ['demand_id'],
             'fragment_selector' => [
-                'children' => ['demand_id' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'demand' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'demand_id' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -284,8 +319,12 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
         $this->mockAgentThreadService([
-            'data'         => ['demand_id' => 'DEM-001'],
-            'search_query' => ['demand_id' => '%DEM-001%'],
+            'data' => [
+                'demand' => [
+                    'demand_id'     => 'DEM-001',
+                    '_search_query' => ['demand_id' => '%DEM-001%'],
+                ],
+            ],
         ]);
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
@@ -334,12 +373,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -350,8 +398,12 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
         $this->mockAgentThreadService([
-            'data'         => ['client_name' => 'Test Client'],
-            'search_query' => ['client_name' => '%Test%'],
+            'data' => [
+                'client' => [
+                    'client_name'   => 'Test Client',
+                    '_search_query' => ['client_name' => '%Test%'],
+                ],
+            ],
         ]);
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
@@ -414,12 +466,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -430,8 +491,12 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
         $this->mockAgentThreadService([
-            'data'         => ['client_name' => 'John Smith'],
-            'search_query' => ['client_name' => '%John%Smith%'],
+            'data' => [
+                'client' => [
+                    'client_name'   => 'John Smith',
+                    '_search_query' => ['client_name' => '%John%Smith%'],
+                ],
+            ],
         ]);
 
         // Mock DuplicateRecordResolver to use LLM resolution
@@ -484,12 +549,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
             'object_type'       => 'Client',
             'identity_fields'   => ['client_name'],
             'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'client_name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
             ],
         ];
 
@@ -576,9 +650,16 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         ]);
 
         $this->mockAgentThreadBuilder($thread);
+        // New schema format: leaf key with array of items, each having embedded _search_query
         $this->mockAgentThreadService([
-            'data'         => ['provider_name' => 'Some Provider'],
-            'search_query' => ['provider_name' => '%Some%Provider%'],
+            'data' => [
+                'provider' => [
+                    [
+                        'provider_name' => 'Some Provider',
+                        '_search_query' => ['provider_name' => '%Some%Provider%'],
+                    ],
+                ],
+            ],
         ]);
 
         // Mock DuplicateRecordResolver to verify parent scope is passed
@@ -593,11 +674,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
-            // Return the single provider when unwrapping (array-type extraction path)
-            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
-                ->andReturn([
-                    ['provider_name' => 'Some Provider'],
-                ]);
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
                 Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
             );
@@ -631,14 +707,21 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
+        // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Demand',
             'object_type'       => 'Demand',
             'identity_fields'   => ['name', 'accident_date'],
             'fragment_selector' => [
+                'type'     => 'object',
                 'children' => [
-                    'name'          => ['type' => 'string'],
-                    'accident_date' => ['type' => 'string'],
+                    'demand' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'name'          => ['type' => 'string'],
+                            'accident_date' => ['type' => 'string'],
+                        ],
+                    ],
                 ],
             ],
         ];
@@ -652,11 +735,13 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock LLM returns empty strings - no data found scenario
         $this->mockAgentThreadService([
-            'data'         => [
-                'name'          => '',
-                'accident_date' => '',
+            'data' => [
+                'demand' => [
+                    'name'          => '',
+                    'accident_date' => '',
+                    '_search_query' => ['name' => '%%'],
+                ],
             ],
-            'search_query' => ['name' => '%%'],
         ]);
 
         // When: Executing identity extraction with empty data from LLM
@@ -715,16 +800,15 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mockAgentThreadBuilder($thread);
 
-        // Mock LLM returns 3 diagnoses in an array
+        // Mock LLM returns 3 diagnoses with embedded _search_query in each item
         $this->mockAgentThreadService([
             'data' => [
                 'diagnosis' => [
-                    ['name' => 'G44.319', 'date' => '2024-01-15', 'description' => 'Headache'],
-                    ['name' => 'M54.2', 'date' => '2024-01-15', 'description' => 'Cervicalgia'],
-                    ['name' => 'S13.4', 'date' => '2024-01-15', 'description' => 'Sprain'],
+                    ['name' => 'G44.319', 'date' => '2024-01-15', 'description' => 'Headache', '_search_query' => ['name' => '%G44%']],
+                    ['name' => 'M54.2', 'date' => '2024-01-15', 'description' => 'Cervicalgia', '_search_query' => ['name' => '%M54%']],
+                    ['name' => 'S13.4', 'date' => '2024-01-15', 'description' => 'Sprain', '_search_query' => ['name' => '%S13%']],
                 ],
             ],
-            'search_query' => ['name' => '%G44%'],
         ]);
 
         // Mock DuplicateRecordResolver - no duplicates found for any
@@ -744,13 +828,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Track how many artifacts are built
         $builtArtifacts = [];
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use (&$builtArtifacts) {
-            // Return the array of diagnoses when unwrapping
-            $mock->shouldReceive('unwrapExtractedDataPreservingLeaf')
-                ->andReturn([
-                    ['name' => 'G44.319', 'date' => '2024-01-15', 'description' => 'Headache'],
-                    ['name' => 'M54.2', 'date' => '2024-01-15', 'description' => 'Cervicalgia'],
-                    ['name' => 'S13.4', 'date' => '2024-01-15', 'description' => 'Sprain'],
-                ]);
             $mock->shouldReceive('buildIdentityArtifact')
                 ->andReturnUsing(function () use (&$builtArtifacts) {
                     $artifact         = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -790,8 +867,229 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     }
 
     // =========================================================================
+    // buildExtractionResponseSchema() - Schema structure tests
+    // =========================================================================
+
+    #[Test]
+    public function build_extraction_response_schema_simplifies_to_leaf_level_only(): void
+    {
+        // Given: A deeply nested schema (provider > care_summary > professional > {name, title})
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'provider' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'care_summary' => [
+                                'type'       => 'object',
+                                'properties' => [
+                                    'professional' => [
+                                        'type'  => 'array',
+                                        'items' => [
+                                            'type'       => 'object',
+                                            'properties' => [
+                                                'name'  => ['type' => 'string'],
+                                                'title' => ['type' => 'string'],
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Fragment selector that navigates through the hierarchy
+        $identityGroup = [
+            'name'              => 'Professional',
+            'object_type'       => 'Professional',
+            'identity_fields'   => ['name', 'title'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'provider' => [
+                        'type'     => 'object',
+                        'children' => [
+                            'care_summary' => [
+                                'type'     => 'object',
+                                'children' => [
+                                    'professional' => [
+                                        'type'     => 'array',
+                                        'children' => [
+                                            'name'  => ['type' => 'string'],
+                                            'title' => ['type' => 'string'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When: Building the extraction response schema
+        $responseSchema = $this->invokeProtectedMethod(
+            $this->service,
+            'buildExtractionResponseSchema',
+            [$schemaDefinition, $identityGroup, []]
+        );
+
+        // Then: Schema should be simplified to leaf level only
+        // Expected: { data: { professional: [...] }, ... } - NOT the full hierarchy
+        $dataProperties = $responseSchema['properties']['data']['properties'] ?? [];
+
+        // Should have 'professional' at the top level of data, NOT 'provider'
+        $this->assertArrayHasKey('professional', $dataProperties,
+            'Schema should be simplified to leaf key (professional), not full hierarchy');
+        $this->assertArrayNotHasKey('provider', $dataProperties,
+            'Schema should NOT include parent keys like provider');
+    }
+
+    #[Test]
+    public function build_extraction_response_schema_embeds_search_query_in_each_object(): void
+    {
+        // Given: A schema for array-type extraction (multiple items)
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'professional' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'name'  => ['type' => 'string'],
+                                'title' => ['type' => 'string'],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $identityGroup = [
+            'name'              => 'Professional',
+            'object_type'       => 'Professional',
+            'identity_fields'   => ['name', 'title'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'professional' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name'  => ['type' => 'string'],
+                            'title' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When: Building the extraction response schema
+        $responseSchema = $this->invokeProtectedMethod(
+            $this->service,
+            'buildExtractionResponseSchema',
+            [$schemaDefinition, $identityGroup, []]
+        );
+
+        // Then: _search_query should be embedded in each object, NOT at top level
+        $this->assertArrayNotHasKey('search_query', $responseSchema['properties'],
+            '_search_query should NOT be at top level');
+
+        // Get the items schema for the array
+        $dataProperties = $responseSchema['properties']['data']['properties'] ?? [];
+        $this->assertArrayHasKey('professional', $dataProperties);
+
+        $itemsSchema    = $dataProperties['professional']['items'] ?? [];
+        $itemProperties = $itemsSchema['properties']               ?? [];
+
+        $this->assertArrayHasKey('_search_query', $itemProperties,
+            'Each object should have embedded _search_query property');
+
+        // Verify _search_query has the identity fields
+        $searchQueryProperties = $itemProperties['_search_query']['properties'] ?? [];
+        $this->assertArrayHasKey('name', $searchQueryProperties);
+        $this->assertArrayHasKey('title', $searchQueryProperties);
+    }
+
+    #[Test]
+    public function build_extraction_response_schema_for_single_object_embeds_search_query(): void
+    {
+        // Given: A schema for single object extraction (not array)
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'client' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'name'    => ['type' => 'string'],
+                            'address' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        $identityGroup = [
+            'name'              => 'Client',
+            'object_type'       => 'Client',
+            'identity_fields'   => ['name'],
+            'fragment_selector' => [
+                'type'     => 'object',
+                'children' => [
+                    'client' => [
+                        'type'     => 'object',  // Single object, not array
+                        'children' => [
+                            'name'    => ['type' => 'string'],
+                            'address' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // When: Building the extraction response schema
+        $responseSchema = $this->invokeProtectedMethod(
+            $this->service,
+            'buildExtractionResponseSchema',
+            [$schemaDefinition, $identityGroup, []]
+        );
+
+        // Then: _search_query should be embedded in the object, NOT at top level
+        $this->assertArrayNotHasKey('search_query', $responseSchema['properties'],
+            '_search_query should NOT be at top level for single object');
+
+        $dataProperties = $responseSchema['properties']['data']['properties'] ?? [];
+        $this->assertArrayHasKey('client', $dataProperties);
+
+        $clientProperties = $dataProperties['client']['properties'] ?? [];
+        $this->assertArrayHasKey('_search_query', $clientProperties,
+            'Single object should have embedded _search_query property');
+    }
+
+    // =========================================================================
     // Helper methods
     // =========================================================================
+
+    /**
+     * Invoke a protected method on an object for testing.
+     */
+    private function invokeProtectedMethod(object $object, string $methodName, array $parameters = []): mixed
+    {
+        $reflection = new \ReflectionClass($object);
+        $method     = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($object, $parameters);
+    }
 
     private function mockAgentThreadBuilder(AgentThread $thread): void
     {
