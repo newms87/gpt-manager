@@ -21,6 +21,8 @@ class ApiLogResource extends ActionResource
             'request_headers'  => $apiLog->request_headers,
             'response_headers' => $apiLog->response_headers,
             'run_time_ms'      => $apiLog->run_time_ms,
+            'started_at'       => $apiLog->started_at,
+            'finished_at'      => $apiLog->finished_at,
             'created_at'       => $apiLog->created_at,
         ];
     }

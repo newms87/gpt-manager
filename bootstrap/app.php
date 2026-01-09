@@ -19,8 +19,6 @@ use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Middleware\AppVersionMiddleware;
 use Newms87\Danx\Middleware\AuditingMiddleware;
 
-require_once __DIR__ . '/helpers.php';
-
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',

@@ -111,7 +111,8 @@
       "Bash(/home/newms/web/gpt-manager/vendor/bin/sail test:*)",
       "Bash(npx vue-tsc:*)",
       "Bash(npm run test:run:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(yarn test:*)"
     ],
     "deny": [],
     "additionalDirectories": [

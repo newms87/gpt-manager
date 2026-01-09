@@ -3,17 +3,17 @@
 namespace App\Models;
 
 use App\Models\Authorization\Role;
-use App\Models\Team\Team;
 use Cache;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Newms87\Danx\Traits\HasTeams;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, HasTeams, Notifiable;
 
     protected $fillable = [
         'name',
@@ -26,19 +26,12 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public ?Team $currentTeam = null;
-
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password'          => 'hashed',
         ];
-    }
-
-    public function teams(): BelongsToMany|Team
-    {
-        return $this->belongsToMany(Team::class)->withTimestamps();
     }
 
     public function delete(): ?bool
@@ -100,12 +93,5 @@ class User extends Authenticatable
     public function forgetCachedPermissions(): void
     {
         Cache::forget("user_permissions:$this->id");
-    }
-
-    public function setCurrentTeam($uuid): static
-    {
-        $this->currentTeam = $uuid ? $this->teams()->firstWhere('uuid', $uuid) : null;
-
-        return $this;
     }
 }

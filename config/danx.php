@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'models' => [
+        'team' => \App\Models\Team\Team::class,
+    ],
+
     'encryption' => [
         'key' => env('LARAVEL_ENV_ENCRYPTION_KEY'),
     ],

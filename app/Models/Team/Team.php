@@ -11,28 +11,15 @@ use App\Models\Task\TaskDefinition;
 use App\Models\User;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Newms87\Danx\Contracts\AuditableContract;
-use Newms87\Danx\Traits\ActionModelTrait;
-use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Models\Team\Team as DanxTeam;
+use Override;
 
-class Team extends Model implements AuditableContract
+class Team extends DanxTeam
 {
-    use ActionModelTrait, AuditableTrait, HasFactory, HasUuids, SoftDeletes;
-
-    protected $guarded = ['id', 'created_at', 'updated_at', 'deleted_at'];
-
-    public function uniqueIds(): array
-    {
-        return ['uuid'];
-    }
-
-    public function users(): BelongsToMany|User
+    #[Override]
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();
     }
@@ -75,10 +62,5 @@ class Team extends Model implements AuditableContract
     public function billingHistory(): HasMany
     {
         return $this->hasMany(BillingHistory::class);
-    }
-
-    public function __toString()
-    {
-        return "<Team id='$this->id' name='$this->name'>";
     }
 }
