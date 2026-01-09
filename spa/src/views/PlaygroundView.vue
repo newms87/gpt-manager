@@ -28,35 +28,151 @@
         </div>
       </div>
     </div>
+
+    <!-- CodeViewer Component Section -->
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold mb-4 text-slate-300">CodeViewer Component</h2>
+      <div class="grid grid-cols-2 gap-6">
+        <!-- YAML CodeViewer -->
+        <div class="flex flex-col">
+          <h3 class="text-md font-semibold mb-3 text-slate-400">YAML Format (Editable)</h3>
+          <div class="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <CodeViewer
+              v-model="yamlContent"
+              format="yaml"
+              can-edit
+              editor-class="min-h-[300px]"
+            />
+          </div>
+        </div>
+
+        <!-- JSON CodeViewer -->
+        <div class="flex flex-col">
+          <h3 class="text-md font-semibold mb-3 text-slate-400">JSON Format (Editable)</h3>
+          <div class="bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+            <CodeViewer
+              v-model="jsonContent"
+              format="json"
+              can-edit
+              editor-class="min-h-[300px]"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { MarkdownEditor } from "quasar-ui-danx";
+import { CodeViewer, MarkdownEditor } from "quasar-ui-danx";
 
-const markdownContent = ref(`# Markdown Editor Test
+const markdownContent = ref(`# Markdown Editor Demo
 
-This playground tests the new WYSIWYG Markdown Editor.
+Welcome to the **WYSIWYG Markdown Editor**! This editor supports *hotkey-driven* formatting with real-time two-way sync.
 
-## Try These Features
+## Text Formatting
 
-### Keyboard Shortcuts
-- **Ctrl+1** through **Ctrl+6**: Set heading level
-- **Ctrl+0**: Convert to paragraph
-- **Ctrl+>**: Increase heading level
-- **Ctrl+<**: Decrease heading level
-- **Ctrl+\\**: Show all shortcuts
+Make text **bold** with \`Ctrl+B\`, *italic* with \`Ctrl+I\`, or ~~strikethrough~~ with \`Ctrl+Shift+S\`.
 
-### Character Sequences
-Type these at the start of a line:
-- \`# \` through \`###### \` for headings
+Use \`Ctrl+E\` for \`inline code\` like variable names or commands.
 
-## Edit in Either Panel
+## Headings
 
-Changes in the **raw markdown textarea** will appear in the editor.
-Changes in the **WYSIWYG editor** will appear in the textarea.
+Use \`Ctrl+1\` through \`Ctrl+6\` to set heading levels, or type \`# \` at the start of a line.
 
-Try it out!
+### This is H3
+#### This is H4
+##### This is H5
+###### This is H6
+
+## Lists
+
+### Bullet List
+
+Create with \`Ctrl+Shift+[\` or type \`- \` at line start:
+
+- First item
+- Second item
+  - Nested item (press Tab to indent)
+  - Another nested item
+    - Even deeper nesting
+- Third item
+
+### Numbered List
+
+Create with \`Ctrl+Shift+]\` or type \`1. \` at line start:
+
+1. Step one
+2. Step two
+   1. Sub-step A
+   2. Sub-step B
+3. Step three
+
+## Code Blocks
+
+Type \\\`\\\`\\\`yaml and press Enter, or use \`Ctrl+Shift+K\`:
+
+\`\`\`yaml
+name: Markdown Editor
+version: 1.0.0
+features:
+  - headings
+  - formatting
+  - lists
+  - code_blocks
+settings:
+  theme: dark
+  autosave: true
+\`\`\`
+
+## Two-Way Sync
+
+Edit in either panel:
+- Changes in the **raw markdown textarea** appear in the WYSIWYG editor
+- Changes in the **WYSIWYG editor** appear in the textarea
+
+## Keyboard Shortcuts Reference
+
+| Action | Shortcut |
+|--------|----------|
+| Bold | Ctrl+B |
+| Italic | Ctrl+I |
+| Strikethrough | Ctrl+Shift+S |
+| Inline Code | Ctrl+E |
+| Heading 1-6 | Ctrl+1-6 |
+| Paragraph | Ctrl+0 |
+| Bullet List | Ctrl+Shift+[ |
+| Numbered List | Ctrl+Shift+] |
+| Code Block | Ctrl+Shift+K |
+| Indent | Tab |
+| Outdent | Shift+Tab |
+| Show Help | Ctrl+\\ |
+
+Try editing this content to see all features in action!
 `);
+
+const yamlContent = ref({
+	name: "Sample Configuration",
+	version: "1.0.0",
+	settings: {
+		enabled: true,
+		maxRetries: 3,
+		timeout: 30
+	},
+	features: ["feature-a", "feature-b", "feature-c"]
+});
+
+const jsonContent = ref({
+	title: "JSON Example",
+	description: "This is a sample JSON object for testing",
+	metadata: {
+		createdAt: "2024-01-15",
+		author: "Developer"
+	},
+	items: [
+		{ id: 1, name: "Item One" },
+		{ id: 2, name: "Item Two" }
+	]
+});
 </script>
