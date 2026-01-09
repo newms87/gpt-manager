@@ -77,6 +77,12 @@ Make text **bold** with \`Ctrl+B\`, *italic* with \`Ctrl+I\`, or ~~strikethrough
 
 Use \`Ctrl+E\` for \`inline code\` like variable names or commands.
 
+Use \`Ctrl+Shift+H\` for ==highlighted text== and \`Ctrl+U\` for <u>underlined text</u>.
+
+## Links
+
+Create links with \`Ctrl+K\`. Try it: [Example Link](https://example.com)
+
 ## Headings
 
 Use \`Ctrl+1\` through \`Ctrl+6\` to set heading levels, or type \`# \` at the start of a line.
@@ -85,6 +91,14 @@ Use \`Ctrl+1\` through \`Ctrl+6\` to set heading levels, or type \`# \` at the s
 #### This is H4
 ##### This is H5
 ###### This is H6
+
+## Blockquotes
+
+Create blockquotes with \`Ctrl+Shift+Q\`:
+
+> This is a blockquote. It's great for highlighting important information or quoting text from other sources.
+>
+> You can have multiple paragraphs in a blockquote.
 
 ## Lists
 
@@ -126,6 +140,16 @@ settings:
   autosave: true
 \`\`\`
 
+Use \`Ctrl+Alt+L\` to cycle languages, or \`Ctrl+Alt+Shift+L\` to search all languages.
+
+---
+
+## Horizontal Rules
+
+Insert a horizontal rule with \`Ctrl+Enter\` (that's a horizontal line above this section).
+
+---
+
 ## Two-Way Sync
 
 Edit in either panel:
@@ -138,16 +162,23 @@ Edit in either panel:
 |--------|----------|
 | Bold | Ctrl+B |
 | Italic | Ctrl+I |
+| Underline | Ctrl+U |
 | Strikethrough | Ctrl+Shift+S |
+| Highlight | Ctrl+Shift+H |
 | Inline Code | Ctrl+E |
+| Link | Ctrl+K |
 | Heading 1-6 | Ctrl+1-6 |
 | Paragraph | Ctrl+0 |
+| Blockquote | Ctrl+Shift+Q |
 | Bullet List | Ctrl+Shift+[ |
 | Numbered List | Ctrl+Shift+] |
 | Code Block | Ctrl+Shift+K |
+| Horizontal Rule | Ctrl+Enter |
+| Language Cycle | Ctrl+Alt+L |
+| Language Search | Ctrl+Alt+Shift+L |
 | Indent | Tab |
 | Outdent | Shift+Tab |
-| Show Help | Ctrl+\\ |
+| Show Help | Ctrl+/ |
 
 Try editing this content to see all features in action!
 `);
