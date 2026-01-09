@@ -356,7 +356,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $this->assertStringContainsString('Test error', $errors->first()->full_message);
     }
 
-    public function test_error_count_persists_on_task_process_restart()
+    public function test_error_count_resets_on_task_process_restart()
     {
         // Given - Task process with errors (failed)
         $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -372,6 +372,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
         $jobDispatch = $this->createJobDispatchWithErrors(5);
         $taskProcess->jobDispatches()->attach($jobDispatch->id);
+        $taskProcess->updateRelationCounter('jobDispatches');
 
         // Update error count
         $taskProcess->refresh();
@@ -380,14 +381,28 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
 
         $taskProcess->refresh();
         $this->assertEquals(5, $taskProcess->error_count, 'Non-retryable errors should be counted');
+        $this->assertEquals(1, $taskProcess->job_dispatch_count, 'Job dispatches should be counted');
 
-        // When - Restart the task process (clears failed_at)
+        // Verify the old job dispatch is still associated
+        $oldJobDispatchId = $jobDispatch->id;
+        $this->assertTrue(
+            $taskProcess->jobDispatches->contains('id', $oldJobDispatchId),
+            'Old job dispatch should be associated before restart'
+        );
+
+        // When - Restart the task process (clears failed_at and job dispatches)
         TaskProcessRunnerService::restart($taskProcess);
 
-        // Then - Error count persists (non-retryable errors are always counted)
+        // Then - Old job dispatches are cleared (error count resets)
+        // Note: In sync queue mode, a new job is dispatched and runs immediately after restart,
+        // which associates a new job dispatch. We verify the OLD dispatch is detached.
         $taskProcess->refresh();
-        $this->assertEquals(5, $taskProcess->error_count,
-            'Non-retryable errors persist after restart (they represent real issues)');
+        $this->assertEquals(0, $taskProcess->error_count,
+            'Error count resets on restart because old job dispatches are cleared');
+        $this->assertFalse(
+            $taskProcess->jobDispatches->contains('id', $oldJobDispatchId),
+            'Old job dispatch should be detached after restart'
+        );
         $this->assertTrue($taskProcess->is_ready, 'Task process should be ready after restart');
         $this->assertNull($taskProcess->failed_at, 'Failed timestamp should be cleared');
     }

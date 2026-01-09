@@ -112,7 +112,8 @@
       "Bash(npx vue-tsc:*)",
       "Bash(npm run test:run:*)",
       "Bash(npm test:*)",
-      "Bash(yarn test:*)"
+      "Bash(yarn test:*)",
+      "Bash(xxd:*)"
     ],
     "deny": [],
     "additionalDirectories": [

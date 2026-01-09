@@ -13,6 +13,7 @@ use App\Services\Task\Runners\BaseTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Jobs\Job;
 use Newms87\Danx\Services\Error\RetryableErrorChecker;
@@ -139,7 +140,7 @@ class TaskProcessRunnerService
             // Always make sure the user and team is setup when running a task
             if (!user() && $taskProcess->lastJobDispatch?->user_id) {
                 $user   = $taskProcess->lastJobDispatch->user;
-                $teamId = $taskProcess->lastJobDispatch->data['team_id'] ?? null;
+                $teamId = $taskProcess->lastJobDispatch?->team_id;
                 if ($teamId) {
                     $user->currentTeam = Team::find($teamId);
                 }
@@ -230,6 +231,11 @@ class TaskProcessRunnerService
                 throw new ValidationError('TaskProcess is currently running, cannot restart');
             }
             $taskProcess->clearOutputArtifacts();
+
+            // Clear previously associated job dispatches
+            $taskProcess->jobDispatches()->detach();
+            $taskProcess->updateRelationCounter('jobDispatches');
+            $taskProcess->last_job_dispatch_id = null;
 
             static::halt($taskProcess);
 
