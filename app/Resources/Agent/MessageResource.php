@@ -3,8 +3,8 @@
 namespace App\Resources\Agent;
 
 use App\Models\Agent\AgentThreadMessage;
-use App\Resources\Audit\ApiLogResource;
 use Newms87\Danx\Resources\ActionResource;
+use Newms87\Danx\Resources\Audit\ApiLogResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
 class MessageResource extends ActionResource

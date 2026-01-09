@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Events\ApiLogUpdatedEvent;
-use App\Events\JobDispatchUpdatedEvent;
 use App\Events\UsageEventCreated;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\UiDemandUsageSubscriber;
@@ -14,6 +12,8 @@ use App\Models\Workflow\WorkflowRun;
 use App\Services\Task\TaskProcessErrorTrackingService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Newms87\Danx\Events\ApiLogUpdatedEvent;
+use Newms87\Danx\Events\JobDispatchUpdatedEvent;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Audit\ApiLog;
 use Newms87\Danx\Models\Audit\ErrorLogEntry;

@@ -5,9 +5,9 @@ namespace App\Resources\Agent;
 use App\Http\Resources\Assistant\AssistantActionResource;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
-use App\Resources\Audit\JobDispatchResource;
 use App\Resources\Usage\UsageSummaryResource;
 use Newms87\Danx\Resources\ActionResource;
+use Newms87\Danx\Resources\Job\JobDispatchResource;
 
 class AgentThreadResource extends ActionResource
 {

@@ -15,14 +15,14 @@ export const audits = {
 	jobDispatches: buildApiUrl("/job-dispatches"),
 
 	/**
-	 * Activity logs endpoint
-	 * @endpoint /activity-logs
-	 */
-	activityLogs: buildApiUrl("/activity-logs"),
-
-	/**
 	 * Audit requests endpoint
 	 * @endpoint /audit-requests
 	 */
 	auditRequests: buildApiUrl("/audit-requests"),
+
+	/**
+	 * API logs endpoint
+	 * @endpoint /api-logs
+	 */
+	apiLogs: buildApiUrl("/api-logs"),
 } as const;

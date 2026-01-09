@@ -27,7 +27,6 @@ use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
 use App\Http\Controllers\Assistant\AssistantActionsController;
 use App\Http\Controllers\Assistant\UniversalAssistantController;
-use App\Http\Controllers\Audit\AuditRequestsController;
 use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\PusherSubscriptionController;
 use App\Http\Controllers\Team\TeamsController;
@@ -36,6 +35,7 @@ use App\Http\Controllers\UiDemandsController;
 use App\Http\Controllers\Usage\UsageEventsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Newms87\Danx\DanxServiceProvider;
 use Newms87\Danx\Http\Routes\ActionRoute;
 use Newms87\Danx\Http\Routes\FileUploadRoute;
 
@@ -143,7 +143,7 @@ ActionRoute::routes('team-objects', new TeamObjectsController, function () {
 });
 
 // Audits
-ActionRoute::routes('audit-requests', new AuditRequestsController);
+DanxServiceProvider::registerAuditRoutes();
 
 // UI Demands
 ActionRoute::routes('ui-demands', new UiDemandsController, function () {

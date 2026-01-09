@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Events;
 
-use App\Events\JobDispatchUpdatedEvent;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Newms87\Danx\Events\JobDispatchUpdatedEvent;
 use Newms87\Danx\Models\Job\JobDispatch;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;

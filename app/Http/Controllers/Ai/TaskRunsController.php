@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Ai;
 
 use App\Models\Task\TaskRun;
 use App\Repositories\TaskRunRepository;
-use App\Resources\Audit\ErrorLogEntryResource;
 use App\Resources\TaskDefinition\TaskRunResource;
 use Newms87\Danx\Http\Controllers\ActionController;
+use Newms87\Danx\Resources\Audit\ErrorLogEntryResource;
 
 class TaskRunsController extends ActionController
 {

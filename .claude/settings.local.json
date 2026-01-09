@@ -113,7 +113,8 @@
       "Bash(npm run test:run:*)",
       "Bash(npm test:*)",
       "Bash(yarn test:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(yarn tsc:*)"
     ],
     "deny": [],
     "additionalDirectories": [

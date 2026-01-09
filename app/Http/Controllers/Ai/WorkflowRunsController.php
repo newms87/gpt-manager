@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Ai;
 
 use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowRunRepository;
-use App\Resources\Audit\ErrorLogEntryResource;
-use App\Resources\Audit\JobDispatchResource;
 use App\Resources\Workflow\WorkflowRunResource;
 use App\Services\Task\TaskProcessDispatcherService;
 use Newms87\Danx\Http\Controllers\ActionController;
 use Newms87\Danx\Requests\PagerRequest;
+use Newms87\Danx\Resources\Audit\ErrorLogEntryResource;
+use Newms87\Danx\Resources\Job\JobDispatchResource;
 
 class WorkflowRunsController extends ActionController
 {
