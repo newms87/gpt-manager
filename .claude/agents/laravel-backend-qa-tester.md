@@ -3,35 +3,32 @@ name: laravel-backend-qa-tester
 description: |
     Use this agent when you need to review Laravel backend code for quality assurance, ensuring proper unit test coverage, code cleanliness, and adherence to project standards. This agent should be triggered after backend code has been written or modified, particularly when you want to verify that all user paths are tested, code follows DRY principles, and no legacy patterns or dead code have been introduced. The agent will analyze recent changes using git status, write missing tests, and identify refactoring needs.
 
-<example>
-Context:
-    The user has just finished implementing a new service class for merging team objects.
-user: "I've implemented the TeamObjectMergeService. Can you review it and make sure it has proper test coverage?"
-assistant: "I'll use the laravel-backend-qa-tester agent to review your TeamObjectMergeService implementation and ensure it has comprehensive test coverage."
-<commentary>
-Since the user has written backend code and wants to ensure quality and test coverage, use the laravel-backend-qa-tester agent to review the code and write any missing tests.
-</commentary>
-</example>
+    <example>
+    Context: The user has just finished implementing a new service class for merging team objects.
+    user: "I've implemented the TeamObjectMergeService. Can you review it and make sure it has proper test coverage?"
+    assistant: "I'll use the laravel-backend-qa-tester agent to review your TeamObjectMergeService implementation and ensure it has comprehensive test coverage."
+    <commentary>
+    Since the user has written backend code and wants to ensure quality and test coverage, use the laravel-backend-qa-tester agent to review the code and write any missing tests.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    Multiple Laravel files have been modified in a recent development session.
-user: "I've made several changes to the backend. Please check if everything is properly tested."
-assistant: "Let me use the laravel-backend-qa-tester agent to review all your recent backend changes and ensure they have proper test coverage."
-<commentary>
-The user has made backend changes and wants comprehensive testing verification, so the laravel-backend-qa-tester agent should be used to review all changes and ensure quality.
-</commentary>
-</example>
+    <example>
+    Context: Multiple Laravel files have been modified in a recent development session.
+    user: "I've made several changes to the backend. Please check if everything is properly tested."
+    assistant: "Let me use the laravel-backend-qa-tester agent to review all your recent backend changes and ensure they have proper test coverage."
+    <commentary>
+    The user has made backend changes and wants comprehensive testing verification, so the laravel-backend-qa-tester agent should be used to review all changes and ensure quality.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    A new API endpoint has been created.
-user: "I just added a new merge endpoint to the TeamObjectsController"
-assistant: "I'll use the laravel-backend-qa-tester agent to review your new endpoint and ensure it has proper unit tests covering all scenarios."
-<commentary>
-A new endpoint has been added which needs testing verification, making this a perfect use case for the laravel-backend-qa-tester agent.
-</commentary>
-</example>
+    <example>
+    Context: A new API endpoint has been created.
+    user: "I just added a new merge endpoint to the TeamObjectsController"
+    assistant: "I'll use the laravel-backend-qa-tester agent to review your new endpoint and ensure it has proper unit tests covering all scenarios."
+    <commentary>
+    A new endpoint has been added which needs testing verification, making this a perfect use case for the laravel-backend-qa-tester agent.
+    </commentary>
+    </example>
 tools: Bash, Glob, Grep, LS, ExitPlanMode, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
 color: orange
 ---

@@ -1,36 +1,33 @@
 ---
 name: vue-spa-reviewer
 description: |
-    Use this agent when you need expert review of Vue.js and Tailwind CSS code in the gpt-manager codebase. This includes reviewing components after creation or modification, ensuring adherence to project-specific patterns, validating proper use of quasar-ui-danx library, checking for DRY principle violations, and maintaining the zero-tech-debt policy. Examples:
+    Use this agent when you need expert review of Vue.js and Tailwind CSS code in the gpt-manager codebase. This includes reviewing components after creation or modification, ensuring adherence to project-specific patterns, validating proper use of quasar-ui-danx library, checking for DRY principle violations, and maintaining the zero-tech-debt policy.
 
-<example>
-Context:
-    The user has just created a new Vue component for displaying team objects.
-user: "I've created a new TeamObjectCard component, can you review it?"
-assistant: "I'll use the vue-spa-reviewer agent to review your TeamObjectCard component for adherence to our Vue.js and Tailwind CSS standards."
-<commentary>
-Since the user has created a new Vue component, use the vue-spa-reviewer agent to ensure it follows project standards.
-</commentary>
-</example>
+    <example>
+    Context: The user has just created a new Vue component for displaying team objects.
+    user: "I've created a new TeamObjectCard component, can you review it?"
+    assistant: "I'll use the vue-spa-reviewer agent to review your TeamObjectCard component for adherence to our Vue.js and Tailwind CSS standards."
+    <commentary>
+    Since the user has created a new Vue component, use the vue-spa-reviewer agent to ensure it follows project standards.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    The user has modified several components to add new functionality.
-user: "I've updated the AgentList and AgentDetails components to support bulk actions"
-assistant: "Let me use the vue-spa-reviewer agent to review these component updates and ensure they follow our established patterns."
-<commentary>
-The user has modified existing Vue components, so the vue-spa-reviewer should check for proper implementation.
-</commentary>
-</example>
+    <example>
+    Context: The user has modified several components to add new functionality.
+    user: "I've updated the AgentList and AgentDetails components to support bulk actions"
+    assistant: "Let me use the vue-spa-reviewer agent to review these component updates and ensure they follow our established patterns."
+    <commentary>
+    The user has modified existing Vue components, so the vue-spa-reviewer should check for proper implementation.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    After implementing a new feature with multiple components.
-assistant: "I've implemented the new workflow builder feature. Now I'll use the vue-spa-reviewer agent to review all the Vue components I've created."
-<commentary>
-Proactively using the reviewer after creating new Vue/Tailwind code to ensure quality.
-</commentary>
-</example>
+    <example>
+    Context: After implementing a new feature with multiple components.
+    assistant: "I've implemented the new workflow builder feature. Now I'll use the vue-spa-reviewer agent to review all the Vue components I've created."
+    <commentary>
+    Proactively using the reviewer after creating new Vue/Tailwind code to ensure quality.
+    </commentary>
+    </example>
 tools: Bash, Edit, MultiEdit, Write, NotebookEdit, Glob, Grep, LS, ExitPlanMode, Read, NotebookRead, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
 color: yellow
 ---

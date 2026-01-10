@@ -9,55 +9,50 @@ description: |
 
     This agent conserves orchestrator context by handling all research/investigation tasks. Consult BEFORE writing code OR when debugging issues.
 
-<example>
-Context:
-    User needs to implement a complex feature involving multiple models and services
-user: "I need to add a workflow automation system that can trigger actions based on team events"
-assistant: "This is a complex feature that will affect multiple parts of the system. Let me use the laravel-backend-architect agent to analyze the requirements and create a comprehensive implementation plan."
-<commentary>
-Since this is a medium/large feature requiring orchestration of multiple components, use the laravel-backend-architect agent to plan the implementation before writing code.
-</commentary>
-</example>
+    <example>
+    Context: User needs to implement a complex feature involving multiple models and services
+    user: "I need to add a workflow automation system that can trigger actions based on team events"
+    assistant: "This is a complex feature that will affect multiple parts of the system. Let me use the laravel-backend-architect agent to analyze the requirements and create a comprehensive implementation plan."
+    <commentary>
+    Since this is a medium/large feature requiring orchestration of multiple components, use the laravel-backend-architect agent to plan the implementation before writing code.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    User wants to add a feature that integrates with existing services
-user: "We need to add real-time collaboration features to our team objects, including presence indicators and live updates"
-assistant: "This feature will require coordinating multiple services and APIs. I'll use the laravel-backend-architect agent to review the affected systems and design the implementation approach."
-<commentary>
-Complex feature requiring integration with existing services - perfect use case for the laravel-backend-architect agent.
-</commentary>
-</example>
+    <example>
+    Context: User wants to add a feature that integrates with existing services
+    user: "We need to add real-time collaboration features to our team objects, including presence indicators and live updates"
+    assistant: "This feature will require coordinating multiple services and APIs. I'll use the laravel-backend-architect agent to review the affected systems and design the implementation approach."
+    <commentary>
+    Complex feature requiring integration with existing services - perfect use case for the laravel-backend-architect agent.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    User is refactoring a large portion of the codebase
-user: "I want to refactor our notification system to support multiple channels and custom templates"
-assistant: "This refactoring will impact many parts of the system. Let me use the laravel-backend-architect agent to analyze all affected components and create a migration strategy."
-<commentary>
-Large refactoring effort needs architectural planning - use the laravel-backend-architect agent.
-</commentary>
-</example>
+    <example>
+    Context: User is refactoring a large portion of the codebase
+    user: "I want to refactor our notification system to support multiple channels and custom templates"
+    assistant: "This refactoring will impact many parts of the system. Let me use the laravel-backend-architect agent to analyze all affected components and create a migration strategy."
+    <commentary>
+    Large refactoring effort needs architectural planning - use the laravel-backend-architect agent.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    User reports a bug or something isn't working
-user: "The workflow run button isn't showing up in the UI"
-assistant: "Let me use the laravel-backend-architect agent to investigate the backend code and trace through the data flow to understand what's happening."
-<commentary>
-Debugging issues should use the architect agent to investigate - this conserves orchestrator context.
-</commentary>
-</example>
+    <example>
+    Context: User reports a bug or something isn't working
+    user: "The workflow run button isn't showing up in the UI"
+    assistant: "Let me use the laravel-backend-architect agent to investigate the backend code and trace through the data flow to understand what's happening."
+    <commentary>
+    Debugging issues should use the architect agent to investigate - this conserves orchestrator context.
+    </commentary>
+    </example>
 
-<example>
-Context:
-    User wants to understand how existing code works
-user: "How does the team object data extraction work?"
-assistant: "I'll use the laravel-backend-architect agent to trace through the extraction flow and explain the code structure."
-<commentary>
-Code investigation questions should use the architect agent rather than the orchestrator reading files directly.
-</commentary>
-</example>
+    <example>
+    Context: User wants to understand how existing code works
+    user: "How does the team object data extraction work?"
+    assistant: "I'll use the laravel-backend-architect agent to trace through the extraction flow and explain the code structure."
+    <commentary>
+    Code investigation questions should use the architect agent rather than the orchestrator reading files directly.
+    </commentary>
+    </example>
 tools: Bash, Glob, Grep, LS, ExitPlanMode, Read, NotebookRead, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
 color: pink
 ---

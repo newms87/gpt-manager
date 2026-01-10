@@ -9,50 +9,50 @@ description: |
 
     This agent conserves orchestrator context by handling all frontend research/investigation tasks.
 
-<example>
-Context: User needs to add a new feature that will affect multiple components
-user: "I need to add a workflow builder feature that allows users to drag and drop workflow steps"
-assistant: "I'll use the vue-spa-architect agent to plan out the component structure and integration approach for this feature"
-<commentary>
-Since this is a complex feature involving multiple components and needs architectural planning, use the vue-spa-architect agent.
-</commentary>
-</example>
+    <example>
+    Context: User needs to add a new feature that will affect multiple components
+    user: "I need to add a workflow builder feature that allows users to drag and drop workflow steps"
+    assistant: "I'll use the vue-spa-architect agent to plan out the component structure and integration approach for this feature"
+    <commentary>
+    Since this is a complex feature involving multiple components and needs architectural planning, use the vue-spa-architect agent.
+    </commentary>
+    </example>
 
-<example>
-Context: User is unsure about component organization
-user: "Where should I put the new TeamMemberInvite component and what existing components should I use?"
-assistant: "Let me consult the vue-spa-architect agent to determine the best organization and component reuse strategy"
-<commentary>
-The user needs guidance on component organization and reuse, which is the vue-spa-architect's expertise.
-</commentary>
-</example>
+    <example>
+    Context: User is unsure about component organization
+    user: "Where should I put the new TeamMemberInvite component and what existing components should I use?"
+    assistant: "Let me consult the vue-spa-architect agent to determine the best organization and component reuse strategy"
+    <commentary>
+    The user needs guidance on component organization and reuse, which is the vue-spa-architect's expertise.
+    </commentary>
+    </example>
 
-<example>
-Context: User needs to refactor existing components
-user: "The AgentList and WorkflowList components have a lot of duplicate code. How should I refactor them?"
-assistant: "I'll use the vue-spa-architect agent to analyze the components and create a refactoring plan"
-<commentary>
-Refactoring multiple components requires architectural planning to ensure proper abstraction and reuse.
-</commentary>
-</example>
+    <example>
+    Context: User needs to refactor existing components
+    user: "The AgentList and WorkflowList components have a lot of duplicate code. How should I refactor them?"
+    assistant: "I'll use the vue-spa-architect agent to analyze the components and create a refactoring plan"
+    <commentary>
+    Refactoring multiple components requires architectural planning to ensure proper abstraction and reuse.
+    </commentary>
+    </example>
 
-<example>
-Context: User reports a frontend bug
-user: "The run button isn't showing up next to the workflows in the timeline"
-assistant: "Let me use the vue-spa-architect agent to investigate the component code and trace through the rendering logic."
-<commentary>
-Debugging frontend issues should use the architect agent to investigate - this conserves orchestrator context.
-</commentary>
-</example>
+    <example>
+    Context: User reports a frontend bug
+    user: "The run button isn't showing up next to the workflows in the timeline"
+    assistant: "Let me use the vue-spa-architect agent to investigate the component code and trace through the rendering logic."
+    <commentary>
+    Debugging frontend issues should use the architect agent to investigate - this conserves orchestrator context.
+    </commentary>
+    </example>
 
-<example>
-Context: User wants to understand how existing frontend code works
-user: "How does the demand status timeline determine which buttons to show?"
-assistant: "I'll use the vue-spa-architect agent to trace through the component and explain the logic."
-<commentary>
-Code investigation questions should use the architect agent rather than the orchestrator reading files directly.
-</commentary>
-</example>
+    <example>
+    Context: User wants to understand how existing frontend code works
+    user: "How does the demand status timeline determine which buttons to show?"
+    assistant: "I'll use the vue-spa-architect agent to trace through the component and explain the logic."
+    <commentary>
+    Code investigation questions should use the architect agent rather than the orchestrator reading files directly.
+    </commentary>
+    </example>
 tools: Bash, Glob, Grep, LS, ExitPlanMode, Read, NotebookRead, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
 color: purple
 ---
