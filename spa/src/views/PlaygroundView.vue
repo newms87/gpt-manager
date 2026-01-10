@@ -144,9 +144,29 @@ Use \`Ctrl+Alt+L\` to cycle languages, or \`Ctrl+Alt+Shift+L\` to search all lan
 
 ---
 
+## Tables
+
+Create tables with \`Ctrl+Alt+Shift+T\`. Navigate with Tab/Shift+Tab.
+
+| Feature | Hotkey | Description |
+|---------|--------|-------------|
+| Insert table | Ctrl+Alt+Shift+T | Opens dimension selector |
+| Next cell | Tab | Move to next cell |
+| Previous cell | Shift+Tab | Move to previous cell |
+| Row above | Ctrl+Alt+Shift+Up | Insert row above |
+| Row below | Ctrl+Alt+Shift+Down | Insert row below |
+| Column left | Ctrl+Alt+Shift+Left | Insert column left |
+| Column right | Ctrl+Alt+Shift+Right | Insert column right |
+| Delete row | Ctrl+Alt+Backspace | Delete current row |
+| Delete column | Ctrl+Shift+Backspace | Delete current column |
+| Delete table | Ctrl+Alt+Shift+Backspace | Delete entire table |
+| Cycle alignment | Ctrl+Alt+L | Left -> Center -> Right |
+
+---
+
 ## Horizontal Rules
 
-Insert a horizontal rule with \`Ctrl+Enter\` (that's a horizontal line above this section).
+Insert a horizontal rule with \`Ctrl+Shift+Enter\` (that's a horizontal line above this section).
 
 ---
 
@@ -173,7 +193,9 @@ Edit in either panel:
 | Bullet List | Ctrl+Shift+[ |
 | Numbered List | Ctrl+Shift+] |
 | Code Block | Ctrl+Shift+K |
-| Horizontal Rule | Ctrl+Enter |
+| Exit Code Block | Ctrl+Enter |
+| Insert Table | Ctrl+Alt+Shift+T |
+| Horizontal Rule | Ctrl+Shift+Enter |
 | Language Cycle | Ctrl+Alt+L |
 | Language Search | Ctrl+Alt+Shift+L |
 | Indent | Tab |
