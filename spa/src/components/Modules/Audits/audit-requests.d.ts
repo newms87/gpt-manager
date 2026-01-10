@@ -21,6 +21,8 @@ export interface ApiLog {
     request_headers: AnyObject;
     response_headers: AnyObject;
     run_time_ms: number | string;
+    started_at?: string;
+    finished_at?: string;
     created_at: string;
 }
 

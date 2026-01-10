@@ -48,7 +48,7 @@ configure({
 		directory: "stored-files",
 		createPresignedUpload: (path, name, mime) => request.get(`${baseUrl}/file-upload/presigned-upload-url?path=${path}&name=${name}&mime=${mime}`),
 		completePresignedUpload: (fileId) => request.post(`${baseUrl}/file-upload/presigned-upload-url-completed/${fileId}`),
-		refreshFile: (fileId) => request.get(`${baseUrl}/file-upload/refresh/${fileId}`)
+		refreshFile: (fileId) => request.get(`${baseUrl}/stored-files/${fileId}/details`)
 	}
 });
 

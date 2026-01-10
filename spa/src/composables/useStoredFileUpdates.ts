@@ -1,6 +1,6 @@
-import { apiUrls } from "@/api";
+import { storedFileRoutes } from "@/composables/storedFileRoutes";
 import { usePusher } from "@/helpers/pusher";
-import { ActionTargetItem, request, storeObject, UploadedFile } from "quasar-ui-danx";
+import { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 import { onUnmounted, ref } from "vue";
 
 export function useStoredFileUpdates() {
@@ -28,11 +28,8 @@ export function useStoredFileUpdates() {
 			const listener = async (data: ActionTargetItem) => {
 				if (data.id === file.id) {
 					try {
-						// Fetch fresh file data from backend using the refresh endpoint
-						const response = await request.get(`file-upload/refresh/${file.id}`);
-
-						// Store the updated file data (this updates the reactive object in place)
-						storeObject(response);
+						// routes.details() updates the object in-place via storeObject internally
+						await storedFileRoutes.details(file);
 					} catch (error) {
 						console.error(`Failed to refresh StoredFile ${file.id}:`, error);
 					}

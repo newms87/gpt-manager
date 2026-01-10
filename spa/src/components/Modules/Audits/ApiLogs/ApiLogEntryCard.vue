@@ -4,19 +4,13 @@
             <div class="flex-x space-x-3 flex-grow">
                 <LabelPillWidget :label="'api-log: ' + apiLog.id" color="sky" size="xs" />
                 <div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
-                <div
-                    class="rounded-2xl px-3 py-1"
-                    :class="{
-					'bg-red-800': apiLog.status_code >= 400,
-					'bg-yellow-700': apiLog.status_code < 400 && apiLog.status_code >= 300,
-					'bg-green-800': apiLog.status_code < 300
-				}"
-                >
-                    {{ apiLog.status_code }}
-                </div>
+                <ApiStatusCodeBadge :status-code="apiLog.status_code" />
             </div>
             <div class="flex-x flex-shrink-0 space-x-2">
-                <LabelPillWidget :label="fMillisecondsToDuration(apiLog.run_time_ms)" color="blue" size="xs" />
+                <ElapsedTimer
+                    :start-time="apiLog.started_at"
+                    :end-time="apiLog.finished_at"
+                />
                 <LabelPillWidget color="slate" size="sm">
                     {{ fDateTime(apiLog.created_at) }}
                     <QTooltip class="text-base">{{ fDateTimeMs(apiLog.created_at) }}</QTooltip>
@@ -124,14 +118,16 @@
     </QCard>
 </template>
 <script setup lang="ts">
+import { useApiLogUpdates } from "@/components/Modules/Audits/ApiLogs/useApiLogUpdates";
 import OpenAiApiRequestCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiRequestCard.vue";
 import OpenAiApiResponseCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiResponseCard.vue";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
+import ApiStatusCodeBadge from "@/components/Shared/ApiStatusCodeBadge.vue";
+import ElapsedTimer from "@/components/Shared/ElapsedTimer.vue";
 import {
     CodeViewer,
     fDateTime,
     fDateTimeMs,
-    fMillisecondsToDuration,
     fNumber,
     LabelPillWidget,
     ShowHideButton
@@ -141,6 +137,9 @@ import { computed, ref } from "vue";
 const props = defineProps<{
     apiLog: ApiLog
 }>();
+
+// Subscribe to real-time updates for API logs in progress
+useApiLogUpdates(() => props.apiLog);
 
 const requestHeaders = computed(() => Object.keys(props.apiLog.request_headers).map(name => ({
     name,
