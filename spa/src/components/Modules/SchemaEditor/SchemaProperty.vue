@@ -33,7 +33,6 @@
 						class="w-[60rem]"
 						:readonly="readonlyDescription"
 						:model-value="descriptionText"
-						format="text"
 						@update:model-value="description => onUpdate({description: description as string})"
 					/>
 				</InfoDialog>
@@ -52,19 +51,17 @@
 				:readonly="readonlyDescription"
 				:model-value="descriptionText"
 				editor-class="text-slate-400 rounded w-full"
-				format="text"
 				@update:model-value="description => onUpdate({description: description as string})"
 			/>
 		</div>
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentSelector";
 import SchemaPropertyTypeMenu from "@/components/Modules/SchemaEditor/SchemaPropertyTypeMenu";
 import { FragmentSelector, JsonSchema } from "@/types";
 import { FaSolidFileLines as DescriptionIcon } from "danx-icon";
-import { ActionButton, EditableDiv, InfoDialog, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, EditableDiv, InfoDialog, MarkdownEditor, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 const emit = defineEmits(["update", "remove"]);

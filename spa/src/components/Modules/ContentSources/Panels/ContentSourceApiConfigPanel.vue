@@ -10,9 +10,9 @@
 			prepend-label
 			@update="onUpdate"
 		/>
-		<MarkdownEditor
+		<CodeViewer
 			class="mt-4"
-			sync-model-changes
+			can-edit
 			:model-value="input.config"
 			format="json"
 			@update:model-value="onUpdateConfig"
@@ -27,7 +27,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { CodeViewer } from "quasar-ui-danx";
 import { dxContentSource } from "@/components/Modules/ContentSources";
 import { ContentSource } from "@/types";
 import { NumberField, SelectField } from "quasar-ui-danx";

@@ -4,14 +4,13 @@
 			v-model="promptValue"
 			:label="label"
 			:placeholder="placeholder"
-			:max-length="maxLength"
 			@update:model-value="debouncedUpdate"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { MarkdownEditor } from "quasar-ui-danx";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
@@ -21,11 +20,9 @@ const props = withDefaults(defineProps<{
 	taskDefinition: TaskDefinition;
 	label?: string;
 	placeholder?: string;
-	maxLength?: number;
 }>(), {
 	label: "Prompt",
-	placeholder: "Enter your prompt instructions...",
-	maxLength: 64000
+	placeholder: "Enter your prompt instructions..."
 });
 
 const promptValue = ref(props.taskDefinition.prompt || "");

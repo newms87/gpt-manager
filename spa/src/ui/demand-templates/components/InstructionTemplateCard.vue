@@ -58,7 +58,6 @@
             <div class="text-sm font-medium text-slate-700 mb-2">Content:</div>
             <MarkdownEditor
                 :model-value="template.content || ''"
-                :max-length="60000"
                 placeholder="Enter your instructions..."
                 @update:model-value="content => debouncedUpdateAction.trigger(template, { content })"
             />
@@ -105,12 +104,11 @@
 </template>
 
 <script setup lang="ts">
-import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/config";
 import type { WorkflowInput } from "@/types";
 import { FaSolidFile, FaSolidPencil as EditIcon } from "danx-icon";
 import { QSpinner } from "quasar";
-import { ActionButton, EditableDiv, fDate, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, EditableDiv, fDate, MarkdownEditor, SaveStateIndicator, ShowHideButton } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const props = defineProps<{

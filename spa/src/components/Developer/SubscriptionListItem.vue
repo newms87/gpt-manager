@@ -49,9 +49,8 @@
 						<QPopupProxy>
 							<div class="bg-slate-800 border border-slate-600 rounded-lg p-4 max-w-2xl">
 								<div class="text-xs text-slate-400 mb-2 font-semibold">Filter JSON:</div>
-								<MarkdownEditor
+								<CodeViewer
 									:model-value="filterJsonContent"
-									:readonly="true"
 									format="json"
 									editor-class="w-full bg-slate-900 text-white"
 								/>
@@ -142,12 +141,11 @@
 
 <script setup lang="ts">
 import EventLogItem from "@/components/Developer/EventLogItem.vue";
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor.vue";
 import PaginationNavigator from "@/components/Shared/Utilities/PaginationNavigator.vue";
 import TimestampPill from "@/components/Developer/TimestampPill.vue";
 import type { PusherEvent } from "@/types/pusher-debug";
 import { QPopupProxy, QTooltip } from "quasar";
-import { ActionButton, LabelPillWidget } from "quasar-ui-danx";
+import { ActionButton, CodeViewer, LabelPillWidget } from "quasar-ui-danx";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 
 interface Subscription {

@@ -78,20 +78,26 @@
         <template v-if="showMessage">
             <QSeparator class="bg-slate-500 mx-3" />
             <div class="text-sm flex-grow m-3">
-                <MarkdownEditor
+                <CodeViewer
+                    v-if="isJSON(content)"
                     v-model="content"
-                    sync-model-changes
+                    format="yaml"
+                    :can-edit="!readonly"
+                    editor-class="text-slate-200 bg-slate-800 rounded"
+                    @update:model-value="updateDebouncedAction.trigger(message, {content})"
+                />
+                <MarkdownEditor
+                    v-else
+                    v-model="content"
                     :readonly="readonly"
                     editor-class="text-slate-200 bg-slate-800 rounded"
-                    :format="isJSON(content) ? 'yaml' : 'text'"
                     @update:model-value="updateDebouncedAction.trigger(message, {content})"
                 />
                 <template v-if="message.data">
                     <div class="text-sm font-bold mt-3 mb-2">Data Content (read only)</div>
-                    <MarkdownEditor
-                        readonly
+                    <CodeViewer
                         :model-value="message.data"
-                        sync-model-changes
+                        format="yaml"
                     />
                 </template>
                 <div v-if="summary">
@@ -99,7 +105,6 @@
                     <MarkdownEditor
                         v-model="summary"
                         :readonly="readonly"
-                        sync-model-changes
                         @update:model-value="updateDebouncedAction.trigger(message, {summary})"
                     />
                 </div>
@@ -122,7 +127,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import ApiLogEntryCard from "@/components/Modules/Audits/ApiLogs/ApiLogEntryCard.vue";
 import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { dxThreadMessage } from "@/components/Modules/Agents/Threads/ThreadMessage/config";
@@ -138,10 +142,12 @@ import {
 import {
     ActionButton,
     AnyObject,
+    CodeViewer,
     EditOnClickTextField,
     fDateTime,
     isJSON,
     ListTransition,
+    MarkdownEditor,
     MultiFileField,
     ShowHideButton,
     UploadedFile

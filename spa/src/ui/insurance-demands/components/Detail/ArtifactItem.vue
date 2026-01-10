@@ -62,7 +62,6 @@
         <div class="text-xs text-slate-400 mb-1">Text Content</div>
         <MarkdownEditor
           v-model="editedTextContent"
-          format="text"
           :readonly="!editable"
           class="bg-slate-800"
         />
@@ -132,7 +131,6 @@
 </template>
 
 <script setup lang="ts">
-import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import {
   FaSolidBarcode as MetaIcon,
@@ -140,7 +138,7 @@ import {
   FaSolidFile as FilesIcon,
   FaSolidT as TextIcon
 } from "danx-icon";
-import { ActionButton, CodeViewer, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
+import { ActionButton, CodeViewer, fDateTime, FilePreview, LabelPillWidget, ListTransition, MarkdownEditor, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 import { useDemandArtifacts } from "../../composables";
 import { getWorkflowColors } from "../../config";

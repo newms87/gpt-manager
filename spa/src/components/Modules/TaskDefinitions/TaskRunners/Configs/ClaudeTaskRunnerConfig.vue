@@ -34,10 +34,9 @@
 					</div>
 				</div>
 
-				<MarkdownEditor
+				<CodeViewer
 					:model-value="taskDefinition.task_runner_config?.generated_code"
 					format="ts"
-					readonly
 					editor-class="min-h-[300px] font-mono text-xs"
 				/>
 			</div>
@@ -87,10 +86,9 @@
 
 				<div v-if="streamingCode" class="border border-slate-600 rounded bg-slate-900 p-2">
 					<div class="text-xs text-slate-400 mb-2">Generated Code (Live):</div>
-					<MarkdownEditor
+					<CodeViewer
 						:model-value="streamingCode"
 						format="ts"
-						readonly
 						editor-class="min-h-[200px] font-mono text-xs"
 					/>
 				</div>
@@ -113,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor.vue";
+import { CodeViewer } from "quasar-ui-danx";
 import { usePusher } from "@/helpers/pusher";
 import { TaskDefinition } from "@/types";
 import { FaSolidCircleInfo, FaSolidCode, FaSolidPlay } from "danx-icon";

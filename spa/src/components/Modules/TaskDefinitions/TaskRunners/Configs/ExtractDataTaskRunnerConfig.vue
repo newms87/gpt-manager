@@ -197,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { MarkdownEditor } from "quasar-ui-danx";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition } from "@/types";
 import { useDebounceFn } from "@vueuse/core";

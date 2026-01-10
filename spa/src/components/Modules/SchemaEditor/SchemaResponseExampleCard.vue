@@ -14,16 +14,16 @@
 				@click="generateExampleAction.trigger(schemaDefinition)"
 			/>
 		</div>
-		<MarkdownEditor
+		<CodeViewer
 			:model-value="schemaDefinition.response_example || ''"
-			sync-model-changes
+			can-edit
 			:format="schemaDefinition.schema_format"
 			@update:model-value="updateDebouncedAction.trigger(schemaDefinition, { response_example: $event })"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { CodeViewer } from "quasar-ui-danx";
 import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { SchemaDefinition } from "@/types";
 import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";

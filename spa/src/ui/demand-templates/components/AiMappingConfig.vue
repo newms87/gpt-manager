@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { MarkdownEditor } from "quasar-ui-danx";
 import { FaSolidCircleInfo } from "danx-icon";
 import type { TemplateVariable } from "../types";
 

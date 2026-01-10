@@ -21,7 +21,6 @@
         <div v-if="isEditing" class="mt-2">
             <MarkdownEditor
                 :model-value="promptDirective.directive_text"
-                :max-length="64000"
                 @update:model-value="debouncedUpdatePromptDirectiveAction.trigger(promptDirective, {directive_text: $event})"
             />
         </div>
@@ -29,11 +28,10 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxPromptDirective } from "@/components/Modules/Prompts/Directives";
 import { Agent, PromptDirective } from "@/types";
 import { FaSolidFileLines as DirectiveIcon } from "danx-icon";
-import { SelectionMenuField } from "quasar-ui-danx";
+import { MarkdownEditor, SelectionMenuField } from "quasar-ui-danx";
 import { ref } from "vue";
 
 const emit = defineEmits(["deleted"]);

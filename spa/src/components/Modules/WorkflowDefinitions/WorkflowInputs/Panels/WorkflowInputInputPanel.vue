@@ -12,10 +12,9 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs";
 import { WorkflowInput } from "@/types";
-import { Form, IntegerField, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";
+import { Form, IntegerField, MarkdownEditor, MultiFileField, RenderedForm, SelectField } from "quasar-ui-danx";
 import { h, ref, watch } from "vue";
 
 const props = defineProps<{
@@ -44,7 +43,7 @@ const workflowForm: Form = {
 	fields: [
 		{
 			name: "content",
-			vnode: (props) => h(MarkdownEditor, { ...props, maxLength: 100000 }),
+			vnode: (props) => h(MarkdownEditor, { ...props }),
 			label: "Data / Content"
 		},
 		{

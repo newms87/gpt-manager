@@ -24,7 +24,6 @@
 					v-model="namingInstructions"
 					label="Artifact Naming Instructions"
 					placeholder="Enter custom instructions for naming artifacts..."
-					:max-length="1000"
 					editor-class="min-h-[120px] bg-slate-800"
 					@update:model-value="debounceChange"
 				/>
@@ -51,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor.vue";
+import { MarkdownEditor } from "quasar-ui-danx";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition } from "@/types";
 import { useDebounceFn } from "@vueuse/core";

@@ -80,7 +80,6 @@
 		<div v-if="isEditing && !readonly" class="mt-4">
 			<MarkdownEditor
 				:model-value="workflowInput.content"
-				:max-length="60000"
 				@update:model-value="content => debouncedUpdateAction.trigger(workflowInput, { content })"
 			/>
 			<SaveStateIndicator
@@ -92,7 +91,6 @@
 	</div>
 </template>
 <script setup lang="ts">
-import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { dxWorkflowInput } from "@/components/Modules/WorkflowDefinitions/WorkflowInputs/config";
 import {
 	availableTeamObjectsByType,
@@ -105,6 +103,7 @@ import { FaSolidIndustry as TeamObjectIcon, FaSolidPencil as EditIcon } from "da
 import {
 	ActionButton,
 	EditableDiv,
+	MarkdownEditor,
 	MultiFileField,
 	SaveStateIndicator,
 	SelectField,

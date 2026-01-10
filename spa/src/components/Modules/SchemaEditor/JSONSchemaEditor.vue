@@ -36,12 +36,10 @@
 				class="min-w-64"
 			/>
 
-			<MarkdownEditor
+			<CodeViewer
 				v-else
 				v-model="editableSchema"
-				sync-model-changes
-				:readonly="readonly"
-				label=""
+				:can-edit="!readonly"
 				:format="schemaDefinition.schema_format"
 			/>
 		</div>
@@ -62,12 +60,10 @@
 				class="min-w-64"
 			/>
 
-			<MarkdownEditor
+			<CodeViewer
 				v-else
 				v-model="editableSchema"
-				sync-model-changes
-				:readonly="readonly"
-				label=""
+				:can-edit="!readonly"
 				:format="schemaDefinition.schema_format"
 			/>
 		</FullScreenDialog>
@@ -81,7 +77,7 @@
 	</div>
 </template>
 <script setup lang="ts">
-import MarkdownEditor from "@/components/MarkdownEditor/MarkdownEditor";
+import { CodeViewer } from "quasar-ui-danx";
 import SchemaObject from "@/components/Modules/SchemaEditor/SchemaObject";
 import SchemaRevisionHistoryMenu from "@/components/Modules/SchemaEditor/SchemaRevisionHistoryMenu";
 import SchemaUndoActions from "@/components/Modules/SchemaEditor/SchemaUndoActions";

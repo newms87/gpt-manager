@@ -1,15 +1,15 @@
 <template>
 	<div>
-		<MarkdownEditor
+		<CodeViewer
 			:model-value="fragmentSelector"
 			format="yaml"
-			editor-class=""
+			can-edit
 			@update:model-value="debounceUpdate"
 		/>
 	</div>
 </template>
 <script setup lang="ts">
-import { MarkdownEditor } from "@/components/MarkdownEditor";
+import { CodeViewer } from "quasar-ui-danx";
 import { FragmentSelector } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
 
