@@ -54,6 +54,16 @@ For full documentation, see `docs/guides/ARTISAN_COMMANDS.md`. Key commands:
 | `test:file-organization {input}` | Test FileOrganizationTaskRunner |
 | `task:timeout` | Check for timed out task processes |
 | `workspace:clean` | Delete workspace data (runs, inputs, auditing) |
+| `audit:debug {id?}` | **⚠️ READ BEFORE USE** Debug API logs, jobs, errors, server logs |
+
+### 📋 audit:debug Command (Logging & Auditing)
+
+**When to use:** Whenever you need to debug API requests/responses, job dispatches, error logs, server logs, or model audit records. This is the ONLY authorized way to access audit data - **DO NOT use tinker**.
+
+**Before using this command**, you MUST read the full command file:
+`/home/newms/web/danx/src/Console/Commands/AuditDebugCommand.php`
+
+The command class docblock contains comprehensive documentation of all options, filters, and usage patterns.
 
 ---
 

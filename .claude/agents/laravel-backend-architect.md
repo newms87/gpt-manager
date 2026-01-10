@@ -143,6 +143,20 @@ For full documentation, see `docs/guides/ARTISAN_COMMANDS.md`. Key commands for 
 | `workflow:build` | Interactive AI-powered workflow builder |
 | `prompt:test [test]` | Run prompt engineering tests |
 | `workspace:clean` | Delete workspace data (runs, inputs, auditing) |
+| `audit:debug {id?}` | **⚠️ READ BEFORE USE** Debug API logs, jobs, errors, server logs |
+
+### 📋 audit:debug Command (Logging & Auditing)
+
+**When to use:** For any debugging involving API logs (OpenAI, Stripe, etc.), job dispatches, error logs with stack traces, server logs, or model audit records. Essential for tracing request flow, identifying performance issues, and understanding error chains.
+
+**Before using this command**, you MUST read the full command file:
+`/home/newms/web/danx/src/Console/Commands/AuditDebugCommand.php`
+
+The command class docblock contains comprehensive documentation including:
+- All options and filter patterns
+- Key concepts (AuditRequest as central hub, error chains, job relationships)
+- Debugging workflow examples
+- JSON output for programmatic analysis
 
 ---
 

@@ -235,6 +235,25 @@ The preamble is required because:
 - Vue 3 Composition API with quasar-ui-danx components
 - Zero tech debt policy with immediate replacement requirements
 
+## 📋 Debugging with audit:debug Command
+
+**When to use:** For ANY debugging involving logging, auditing, API requests/responses, job dispatches, error logs, or model changes. This is the ONLY authorized method - **DO NOT use tinker**.
+
+**Before using this command**, you MUST read the full command file:
+`/home/newms/web/danx/src/Console/Commands/AuditDebugCommand.php`
+
+Key capabilities:
+- `--recent=N` - Find recent audit requests to investigate
+- `--recent-api-logs=N` - Find recent API logs (OpenAI, Stripe, etc.)
+- `--recent-jobs=N` - Find recent job dispatches
+- `--recent-errors=N` - Find recent errors with stack traces
+- `--logs` - View server logs for a specific request
+- `--api-id=ID` - View full API request/response details
+- `--error-id=ID` - View error with full stack trace and chain
+- `--json` - Output as JSON for programmatic analysis
+
+The command docblock contains comprehensive documentation of all options and debugging workflows.
+
 ---
 
 ## 🚨 quasar-ui-danx: NEVER Rebuild
