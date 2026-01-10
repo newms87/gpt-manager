@@ -38,4 +38,10 @@ export const agents = {
 	 * @endpoint /threads
 	 */
 	threads: buildApiUrl("/threads"),
+
+	/**
+	 * Messages endpoint
+	 * @endpoint /messages
+	 */
+	messages: buildApiUrl("/messages"),
 } as const;

@@ -24,7 +24,6 @@ export { API_BASE_URL, buildApiUrl, createUrlBuilder } from "./config";
 // Import all domain endpoints
 import { auth } from "./endpoints/auth";
 import { agents } from "./endpoints/agents";
-import { assistant } from "./endpoints/assistant";
 import { workflows } from "./endpoints/workflows";
 import { tasks } from "./endpoints/tasks";
 import { schemas } from "./endpoints/schemas";
@@ -49,7 +48,6 @@ import { prompts } from "./endpoints/prompts";
 export const apiUrls = {
 	auth,
 	agents,
-	assistant,
 	workflows,
 	tasks,
 	schemas,

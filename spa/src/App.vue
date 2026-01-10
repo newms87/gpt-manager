@@ -6,7 +6,6 @@ import { useQuasar } from "quasar";
 import { FlashMessages } from "quasar-ui-danx";
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
-import { UniversalAssistant } from "./components/Modules/Assistant";
 
 const { showDebugPanel } = usePusherDebug();
 
@@ -18,6 +17,5 @@ onMounted(() => {
 
 <template>
 	<RouterView />
-	<UniversalAssistant />
 	<PusherDebugPanel v-if="showDebugPanel" @close="showDebugPanel = false" />
 </template>

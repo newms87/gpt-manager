@@ -25,8 +25,6 @@ use App\Http\Controllers\Api\Auth\OAuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
-use App\Http\Controllers\Assistant\AssistantActionsController;
-use App\Http\Controllers\Assistant\UniversalAssistantController;
 use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\PusherSubscriptionController;
 use App\Http\Controllers\Team\TeamsController;
@@ -110,16 +108,6 @@ ActionRoute::routes('prompt/directives', new PromptDirectivesController);
 
 // Usage Events
 ActionRoute::routes('usage-events', new UsageEventsController);
-
-// Assistant Actions
-ActionRoute::routes('assistant/actions', new AssistantActionsController);
-
-// Universal Assistant
-Route::prefix('assistant')->group(function () {
-    Route::post('start-chat', [UniversalAssistantController::class, 'startChat']);
-    Route::post('threads/{agentThread}/chat', [UniversalAssistantController::class, 'chat']);
-    Route::get('capabilities', [UniversalAssistantController::class, 'getContextCapabilities']);
-});
 
 // Generic OAuth for all services
 Route::prefix('oauth')->group(function () {
