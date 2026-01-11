@@ -8,7 +8,7 @@ use Override;
 
 class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
 {
-    protected $signature = 'debug:extract-data-task-run {task-run : TaskRun ID or TaskProcess ID}
+    protected $signature = 'debug:extract-data-task-run {task-run? : TaskRun ID, TaskProcess ID, or JobDispatch ID}
         {--messages : Show agent thread messages}
         {--artifacts : Show artifact JSON content}
         {--raw : Show raw artifact data}
@@ -20,6 +20,7 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
         {--api-logs : Show API logs for the task process (uses most recent job dispatch)}
         {--job-dispatches : List all job dispatches for the task process}
         {--job-dispatch= : Specify which job dispatch ID to show API logs for (use with --api-logs)}
+        {--list-dispatches : List recent job dispatches to find IDs}
         {--run-process= : Run a specific task process ID synchronously to debug exceptions}
         {--classify-status : Show status of all classify processes}
         {--artifact-tree : Show parent/child artifact hierarchy}
@@ -36,6 +37,11 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
     public function handle(): int
     {
         $debugService = app(DebugTaskRunService::class);
+
+        // Handle --list-dispatches before requiring task-run argument
+        if ($this->option('list-dispatches')) {
+            return $this->listRecentJobDispatches($debugService);
+        }
 
         if (!$this->resolveTaskRun($debugService)) {
             return 1;

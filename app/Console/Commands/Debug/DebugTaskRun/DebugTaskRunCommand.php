@@ -6,10 +6,11 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Debug\DebugTaskRunService;
 use Illuminate\Console\Command;
+use Newms87\Danx\Models\Job\JobDispatch;
 
 class DebugTaskRunCommand extends Command
 {
-    protected $signature = 'debug:task-run {task-run : TaskRun ID or TaskProcess ID}
+    protected $signature = 'debug:task-run {task-run? : TaskRun ID, TaskProcess ID, or JobDispatch ID}
         {--messages : Show agent thread messages}
         {--artifacts : Show artifact JSON content}
         {--raw : Show raw artifact data}
@@ -20,7 +21,8 @@ class DebugTaskRunCommand extends Command
         {--rerun : Reset and re-dispatch task run}
         {--api-logs : Show API logs for the task process (uses most recent job dispatch)}
         {--job-dispatches : List all job dispatches for the task process}
-        {--job-dispatch= : Specify which job dispatch ID to show API logs for (use with --api-logs)}';
+        {--job-dispatch= : Specify which job dispatch ID to show API logs for (use with --api-logs)}
+        {--list-dispatches : List recent job dispatches to find IDs}';
 
     protected $description = 'Debug a TaskRun to understand agent communication and results';
 
@@ -28,9 +30,16 @@ class DebugTaskRunCommand extends Command
 
     protected ?TaskProcess $taskProcess = null;
 
+    protected ?JobDispatch $jobDispatch = null;
+
     public function handle(): int
     {
         $debugService = app(DebugTaskRunService::class);
+
+        // Handle --list-dispatches before requiring task-run argument
+        if ($this->option('list-dispatches')) {
+            return $this->listRecentJobDispatches($debugService);
+        }
 
         if (!$this->resolveTaskRun($debugService)) {
             return 1;
@@ -72,7 +81,7 @@ class DebugTaskRunCommand extends Command
     }
 
     /**
-     * Resolve TaskRun from argument (can be TaskRun ID or TaskProcess ID)
+     * Resolve TaskRun from argument (can be TaskRun ID, TaskProcess ID, or JobDispatch ID)
      */
     protected function resolveTaskRun(DebugTaskRunService $debugService): bool
     {
@@ -81,18 +90,40 @@ class DebugTaskRunCommand extends Command
             return true;
         }
 
-        $result = $debugService->resolveTaskRun($this->argument('task-run'));
+        $taskRunArg = $this->argument('task-run');
+
+        if (!$taskRunArg) {
+            $this->error('A TaskRun ID, TaskProcess ID, or JobDispatch ID is required.');
+            $this->line('Use --list-dispatches to find recent JobDispatch IDs.');
+
+            return false;
+        }
+
+        $result = $debugService->resolveTaskRun($taskRunArg);
 
         if (!$result) {
-            $this->error("No TaskRun or TaskProcess found with ID: {$this->argument('task-run')}");
+            $this->error("No TaskRun, TaskProcess, or JobDispatch found with ID: {$this->argument('task-run')}");
 
             return false;
         }
 
         $this->taskRun     = $result['taskRun'];
         $this->taskProcess = $result['taskProcess'];
+        $this->jobDispatch = $result['jobDispatch'] ?? null;
 
-        if ($this->taskProcess) {
+        if ($this->jobDispatch) {
+            $this->info("Resolved JobDispatch {$this->jobDispatch->id} ({$this->jobDispatch->status}) -> TaskProcess {$this->taskProcess->id} -> TaskRun {$this->taskRun->id}");
+
+            // Auto-set --process option if not already set
+            if (!$this->option('process')) {
+                $this->input->setOption('process', $this->taskProcess->id);
+            }
+
+            // Auto-set --job-dispatch option if not already set
+            if (!$this->option('job-dispatch')) {
+                $this->input->setOption('job-dispatch', $this->jobDispatch->id);
+            }
+        } elseif ($this->taskProcess) {
             $this->info("Resolved TaskProcess {$this->taskProcess->id} -> TaskRun {$this->taskRun->id}");
 
             // Auto-set --process option if not already set
@@ -160,6 +191,16 @@ class DebugTaskRunCommand extends Command
 
         $jobDispatchId = $this->option('job-dispatch') ? (int)$this->option('job-dispatch') : null;
         $debugService->showApiLogs($this->taskProcess, $jobDispatchId, $this);
+
+        return 0;
+    }
+
+    /**
+     * List recent job dispatches to help find IDs for debugging.
+     */
+    protected function listRecentJobDispatches(DebugTaskRunService $debugService): int
+    {
+        $debugService->listRecentJobDispatches($this);
 
         return 0;
     }

@@ -9,6 +9,7 @@ use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\TaskRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Job\JobDispatch;
 
 class DebugTaskRunService
@@ -16,9 +17,9 @@ class DebugTaskRunService
     use DebugOutputHelper;
 
     /**
-     * Resolve TaskRun from ID (can be TaskRun ID or TaskProcess ID).
+     * Resolve TaskRun from ID (can be TaskRun ID, TaskProcess ID, or JobDispatch ID).
      *
-     * @return array{taskRun: TaskRun, taskProcess: TaskProcess|null}|null
+     * @return array{taskRun: TaskRun, taskProcess: TaskProcess|null, jobDispatch: JobDispatch|null}|null
      */
     public function resolveTaskRun(string $id): ?array
     {
@@ -29,20 +30,45 @@ class DebugTaskRunService
             return [
                 'taskRun'     => $taskRun,
                 'taskProcess' => null,
+                'jobDispatch' => null,
             ];
         }
 
         // Try to find as TaskProcess
         $taskProcess = TaskProcess::find($id);
 
-        if (!$taskProcess) {
-            return null;
+        if ($taskProcess) {
+            return [
+                'taskRun'     => $taskProcess->taskRun,
+                'taskProcess' => $taskProcess,
+                'jobDispatch' => null,
+            ];
         }
 
-        return [
-            'taskRun'     => $taskProcess->taskRun,
-            'taskProcess' => $taskProcess,
-        ];
+        // Try to find as JobDispatch
+        $jobDispatch = JobDispatch::find($id);
+
+        if ($jobDispatch) {
+            // Get TaskProcess from pivot table
+            $pivotRecord = DB::table('job_dispatchables')
+                ->where('job_dispatch_id', $id)
+                ->where('model_type', TaskProcess::class)
+                ->first();
+
+            if ($pivotRecord) {
+                $taskProcess = TaskProcess::find($pivotRecord->model_id);
+
+                if ($taskProcess) {
+                    return [
+                        'taskRun'     => $taskProcess->taskRun,
+                        'taskProcess' => $taskProcess,
+                        'jobDispatch' => $jobDispatch,
+                    ];
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -193,6 +219,10 @@ class DebugTaskRunService
 
         foreach ($inputArtifacts as $artifact) {
             $command->line("  Artifact #{$artifact->id}: {$artifact->name}");
+            if ($artifact->meta) {
+                $command->line('    Meta:');
+                $command->line($this->indentContent(json_encode($artifact->meta, JSON_PRETTY_PRINT), 4));
+            }
             if ($artifact->json_content) {
                 $command->line('    JSON Content:');
                 $command->line($this->indentContent(json_encode($artifact->json_content, JSON_PRETTY_PRINT), 4));
@@ -518,5 +548,48 @@ class DebugTaskRunService
             $command->line((string)$apiLog);
             $command->newLine();
         }
+    }
+
+    /**
+     * List recent job dispatches in a table format for finding IDs.
+     */
+    public function listRecentJobDispatches(Command $command): void
+    {
+        $command->info('=== Recent Job Dispatches ===');
+        $command->newLine();
+
+        $jobDispatches = JobDispatch::orderByDesc('id')->take(20)->get();
+
+        if ($jobDispatches->isEmpty()) {
+            $command->line('No job dispatches found.');
+
+            return;
+        }
+
+        $rows = $jobDispatches->map(function (JobDispatch $dispatch) {
+            // Look up associated TaskProcess from pivot table
+            $pivotRecord = DB::table('job_dispatchables')
+                ->where('job_dispatch_id', $dispatch->id)
+                ->where('model_type', TaskProcess::class)
+                ->first();
+
+            $taskProcessId = $pivotRecord?->model_id ?? '-';
+
+            return [
+                $dispatch->id,
+                $dispatch->status,
+                $dispatch->ref                                ?? '-',
+                $dispatch->created_at?->format('Y-m-d H:i:s') ?? '-',
+                $taskProcessId,
+            ];
+        })->toArray();
+
+        $command->table(
+            ['ID', 'Status', 'Ref', 'Created At', 'TaskProcess ID'],
+            $rows
+        );
+
+        $command->newLine();
+        $command->line('Use: ./vendor/bin/sail artisan debug:task-run <ID> to debug a specific dispatch.');
     }
 }
