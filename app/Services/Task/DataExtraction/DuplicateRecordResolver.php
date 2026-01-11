@@ -9,6 +9,8 @@ use App\Models\TeamObject\TeamObject;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
+use Carbon\Carbon;
+use Exception;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
@@ -60,6 +62,29 @@ use Newms87\Danx\Exceptions\ValidationError;
 class DuplicateRecordResolver
 {
     use HasDebugLogging;
+
+    // Field type constants
+    protected const string TYPE_NATIVE_NAME = 'native_name';
+
+    protected const string TYPE_NATIVE_DATE = 'native_date';
+
+    protected const string TYPE_DATE = 'date';
+
+    protected const string TYPE_DATETIME = 'date-time';
+
+    protected const string TYPE_BOOLEAN = 'boolean';
+
+    protected const string TYPE_NUMBER = 'number';
+
+    protected const string TYPE_INTEGER = 'integer';
+
+    protected const string TYPE_STRING = 'string';
+
+    // Native columns on TeamObject that bypass attribute lookup
+    protected const array NATIVE_COLUMNS = [
+        'name' => self::TYPE_NATIVE_NAME,
+        'date' => self::TYPE_NATIVE_DATE,
+    ];
 
     /**
      * Find potential duplicate TeamObjects within the specified scope using search queries.
@@ -146,10 +171,9 @@ class DuplicateRecordResolver
     /**
      * Execute a single search query against TeamObjects.
      *
-     * Applies LIKE patterns for:
-     * - 'name' field: searches TeamObject.name column
-     * - 'date' field: searches TeamObject.date column (formatted as Y-m-d)
-     * - Other fields: searches in team_object_attributes table
+     * Applies type-aware filters based on field type resolution:
+     * - Native columns (name, date): Direct column queries
+     * - Schema-typed fields: Type-specific attribute queries
      *
      * @param  string  $objectType  Type of object to search for
      * @param  array  $query  Search query with field => LIKE pattern mappings
@@ -165,44 +189,200 @@ class DuplicateRecordResolver
     ): Collection {
         $currentTeam = team();
 
+        // Load schema once for field type detection
+        $schema = null;
+        if ($schemaDefinitionId) {
+            $schemaDefinition = SchemaDefinition::find($schemaDefinitionId);
+            $schema           = $schemaDefinition?->schema;
+        }
+
         $baseQuery = TeamObject::query()
             ->where('team_id', $currentTeam->id)
             ->where('type', $objectType)
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
             ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId));
 
-        // Apply LIKE filters for non-null query fields
+        // Apply type-aware filters for non-null query fields
         foreach ($query as $field => $pattern) {
-            // Skip null patterns (means "don't filter on this field")
             if ($pattern === null || $pattern === '') {
                 continue;
             }
 
-            if ($field === 'name') {
-                // Search in TeamObject.name column
-                $baseQuery->where('name', 'LIKE', $pattern);
-            } elseif ($field === 'date') {
-                // Search in TeamObject.date column (formatted as Y-m-d)
-                // PostgreSQL uses TO_CHAR for date formatting
-                $baseQuery->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') LIKE ?", [$pattern]);
-            } else {
-                // Search in team_object_attributes table
-                $baseQuery->whereHas('attributes', function ($q) use ($field, $pattern) {
-                    $q->where('name', $field)
-                        ->where(function ($sub) use ($pattern) {
-                            // Search in both text_value and json_value columns
-                            // PostgreSQL: cast json to text for LIKE comparison
-                            $sub->where('text_value', 'LIKE', $pattern)
-                                ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
-                        });
-                });
-            }
+            $fieldType = $this->getFieldType($field, $schema);
+            $this->applyFieldFilter($baseQuery, $field, $pattern, $fieldType);
         }
 
         return $baseQuery->orderBy('created_at', 'desc')
             ->limit(50)
             ->with(['attributes', 'schemaDefinition'])
             ->get();
+    }
+
+    /**
+     * Determine the effective type of a field for query building.
+     *
+     * Resolution priority:
+     * 1. Native TeamObject columns (name, date)
+     * 2. Schema format (date, date-time)
+     * 3. Schema type (boolean, number, integer, string)
+     * 4. Default to string
+     */
+    protected function getFieldType(string $fieldName, ?array $schema): string
+    {
+        // 1. Check native columns first
+        if (isset(self::NATIVE_COLUMNS[$fieldName])) {
+            return self::NATIVE_COLUMNS[$fieldName];
+        }
+
+        // 2. Check schema definition
+        if (!$schema) {
+            return self::TYPE_STRING;
+        }
+
+        $properties = $schema['properties']   ?? [];
+        $fieldDef   = $properties[$fieldName] ?? null;
+
+        if (!$fieldDef) {
+            return self::TYPE_STRING;
+        }
+
+        // 3. Check format first (more specific than type)
+        $format = $fieldDef['format'] ?? null;
+        if ($format === 'date') {
+            return self::TYPE_DATE;
+        }
+        if ($format === 'date-time') {
+            return self::TYPE_DATETIME;
+        }
+
+        // 4. Check type
+        $type = $fieldDef['type'] ?? null;
+
+        return match ($type) {
+            'boolean' => self::TYPE_BOOLEAN,
+            'number'  => self::TYPE_NUMBER,
+            'integer' => self::TYPE_INTEGER,
+            default   => self::TYPE_STRING,
+        };
+    }
+
+    /**
+     * Apply the appropriate filter for a field based on its resolved type.
+     */
+    protected function applyFieldFilter($query, string $field, string $pattern, string $type): void
+    {
+        match ($type) {
+            self::TYPE_NATIVE_NAME => $this->applyNativeNameFilter($query, $pattern),
+            self::TYPE_NATIVE_DATE => $this->applyNativeDateFilter($query, $pattern),
+            self::TYPE_DATE, self::TYPE_DATETIME => $this->applyDateAttributeFilter($query, $field, $pattern),
+            self::TYPE_BOOLEAN => $this->applyBooleanAttributeFilter($query, $field, $pattern),
+            self::TYPE_NUMBER, self::TYPE_INTEGER => $this->applyNumericAttributeFilter($query, $field, $pattern),
+            default => $this->applyStringAttributeFilter($query, $field, $pattern),
+        };
+    }
+
+    protected function applyNativeNameFilter($query, string $pattern): void
+    {
+        $query->where('name', 'LIKE', $pattern);
+    }
+
+    protected function applyNativeDateFilter($query, string $pattern): void
+    {
+        $normalizedPattern = $this->normalizeDateSearchPattern($pattern) ?? $pattern;
+        $query->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') LIKE ?", [$normalizedPattern]);
+    }
+
+    protected function applyDateAttributeFilter($query, string $field, string $pattern): void
+    {
+        $normalizedPattern = $this->normalizeDateSearchPattern($pattern);
+        if (!$normalizedPattern) {
+            return;
+        }
+
+        $query->whereHas('attributes', function ($q) use ($field, $normalizedPattern) {
+            $q->where('name', $field)
+                ->where(function ($sub) use ($normalizedPattern) {
+                    $sub->where('text_value', 'LIKE', $normalizedPattern)
+                        ->orWhereRaw('json_value::text LIKE ?', [$normalizedPattern]);
+                });
+        });
+    }
+
+    protected function applyBooleanAttributeFilter($query, string $field, string $pattern): void
+    {
+        $cleanPattern = strtolower(trim($pattern, '%'));
+        $boolValue    = in_array($cleanPattern, ['true', '1', 'yes'], true);
+
+        $query->whereHas('attributes', function ($q) use ($field, $boolValue) {
+            $q->where('name', $field)
+                ->where(function ($sub) use ($boolValue) {
+                    $textValue = $boolValue ? 'true' : 'false';
+                    $sub->where('text_value', $textValue)
+                        ->orWhereRaw('json_value::text = ?', [$boolValue ? 'true' : 'false']);
+                });
+        });
+    }
+
+    protected function applyNumericAttributeFilter($query, string $field, string $pattern): void
+    {
+        $query->whereHas('attributes', function ($q) use ($field, $pattern) {
+            $q->where('name', $field)
+                ->where(function ($sub) use ($pattern) {
+                    $sub->where('text_value', 'LIKE', $pattern)
+                        ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
+                });
+        });
+    }
+
+    protected function applyStringAttributeFilter($query, string $field, string $pattern): void
+    {
+        $query->whereHas('attributes', function ($q) use ($field, $pattern) {
+            $q->where('name', $field)
+                ->where(function ($sub) use ($pattern) {
+                    $sub->where('text_value', 'LIKE', $pattern)
+                        ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
+                });
+        });
+    }
+
+    /**
+     * Normalize a date search pattern to ISO format (YYYY-MM-DD) for database comparison.
+     *
+     * Handles various input formats like:
+     * - %10/23/2017% (MM/DD/YYYY)
+     * - %2017-10-23% (already ISO)
+     * - %Oct 23, 2017%
+     *
+     * @param  string  $pattern  The LIKE pattern containing a date
+     * @return string|null The normalized pattern with ISO date, or null if parsing fails
+     */
+    protected function normalizeDateSearchPattern(string $pattern): ?string
+    {
+        // Extract the date portion from the LIKE pattern (remove % wildcards)
+        $dateString = trim($pattern, '%');
+
+        if (empty($dateString)) {
+            return $pattern; // Keep wildcards-only patterns as-is
+        }
+
+        try {
+            // Use Carbon::parse to parse various date formats
+            $parsedDate = Carbon::parse($dateString);
+            $isoDate    = $parsedDate->format('Y-m-d');
+
+            // Reconstruct the LIKE pattern with normalized date
+            $prefix = str_starts_with($pattern, '%') ? '%' : '';
+            $suffix = str_ends_with($pattern, '%') ? '%' : '';
+
+            return $prefix . $isoDate . $suffix;
+        } catch (Exception $e) {
+            static::logDebug('Failed to parse date pattern', [
+                'pattern' => $pattern,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
