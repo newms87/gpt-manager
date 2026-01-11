@@ -10,6 +10,7 @@ use App\Services\Task\TaskRunnerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Newms87\Danx\Models\Audit\ApiLog;
 use Newms87\Danx\Models\Job\JobDispatch;
 
 class DebugTaskRunService
@@ -523,24 +524,49 @@ class DebugTaskRunService
         $command->line('Job Tag: ' . ($jobDispatch->job_tag ?? '(none)'));
         $command->newLine();
 
-        // Get the running audit request for the job dispatch
-        $auditRequest = $jobDispatch->runningAuditRequest;
+        $apiLogs           = collect();
+        $sourceDescription = '';
 
-        if (!$auditRequest) {
-            $command->line('No audit request found for this job dispatch.');
-
-            return;
+        // Strategy 1: Via running audit request
+        if ($jobDispatch->runningAuditRequest) {
+            $apiLogs = $jobDispatch->runningAuditRequest->apiLogs()->orderBy('id')->get();
+            if ($apiLogs->isNotEmpty()) {
+                $sourceDescription = "via running audit request #{$jobDispatch->running_audit_request_id}";
+            }
         }
 
-        $apiLogs = $auditRequest->apiLogs()->orderBy('id')->get();
+        // Strategy 2: Via dispatch audit request
+        if ($apiLogs->isEmpty() && $jobDispatch->dispatchAuditRequest) {
+            $apiLogs = $jobDispatch->dispatchAuditRequest->apiLogs()->orderBy('id')->get();
+            if ($apiLogs->isNotEmpty()) {
+                $sourceDescription = "via dispatch audit request #{$jobDispatch->dispatch_audit_request_id}";
+            }
+        }
+
+        // Strategy 3: Find by time range during job execution
+        if ($apiLogs->isEmpty() && $jobDispatch->ran_at) {
+            $startTime = $jobDispatch->ran_at->subSeconds(5);
+            $endTime   = $jobDispatch->completed_at ?? now();
+
+            $apiLogs = ApiLog::query()
+                ->where('created_at', '>=', $startTime)
+                ->where('created_at', '<=', $endTime)
+                ->orderBy('id')
+                ->get();
+
+            if ($apiLogs->isNotEmpty()) {
+                $sourceDescription = "via time range search ({$startTime} to {$endTime})";
+            }
+        }
 
         if ($apiLogs->isEmpty()) {
             $command->line('No API logs found for this job dispatch.');
+            $command->line('Checked: runningAuditRequest, dispatchAuditRequest, and time-based search');
 
             return;
         }
 
-        $command->line("Found {$apiLogs->count()} API log(s):");
+        $command->line("Found {$apiLogs->count()} API log(s) {$sourceDescription}:");
         $command->newLine();
 
         foreach ($apiLogs as $apiLog) {

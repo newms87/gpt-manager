@@ -6,6 +6,7 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Str;
+use Newms87\Danx\Helpers\LockHelper;
 
 /**
  * Orchestrates creation and progression of extraction processes across hierarchical levels.
@@ -328,27 +329,34 @@ class ExtractionProcessOrchestrator
 
     /**
      * Store resolved object ID in TaskRun.meta.
+     * Uses locking to prevent race conditions when multiple processes complete concurrently.
      */
     public function storeResolvedObjectId(TaskRun $taskRun, string $objectType, int $objectId, int $level): void
     {
-        $meta = $taskRun->meta ?? [];
+        LockHelper::acquire($taskRun);
 
-        $meta['resolved_objects']                      ??= [];
-        $meta['resolved_objects'][$objectType]         ??= [];
-        $meta['resolved_objects'][$objectType][$level] ??= [];
+        try {
+            $meta = $taskRun->meta ?? [];
 
-        if (!in_array($objectId, $meta['resolved_objects'][$objectType][$level])) {
-            $meta['resolved_objects'][$objectType][$level][] = $objectId;
+            $meta['resolved_objects']                      ??= [];
+            $meta['resolved_objects'][$objectType]         ??= [];
+            $meta['resolved_objects'][$objectType][$level] ??= [];
+
+            if (!in_array($objectId, $meta['resolved_objects'][$objectType][$level])) {
+                $meta['resolved_objects'][$objectType][$level][] = $objectId;
+            }
+
+            $taskRun->meta = $meta;
+            $taskRun->save();
+
+            static::logDebug('Stored resolved object ID', [
+                'object_type' => $objectType,
+                'object_id'   => $objectId,
+                'level'       => $level,
+            ]);
+        } finally {
+            LockHelper::release($taskRun);
         }
-
-        $taskRun->meta = $meta;
-        $taskRun->save();
-
-        static::logDebug('Stored resolved object ID', [
-            'object_type' => $objectType,
-            'object_id'   => $objectId,
-            'level'       => $level,
-        ]);
     }
 
     /**
@@ -363,23 +371,30 @@ class ExtractionProcessOrchestrator
 
     /**
      * Update level progress in TaskRun.meta.
+     * Uses locking to prevent race conditions when multiple processes complete concurrently.
      */
     public function updateLevelProgress(TaskRun $taskRun, int $level, string $key, bool $value): void
     {
-        $meta = $taskRun->meta ?? [];
+        LockHelper::acquire($taskRun);
 
-        $meta['level_progress']         ??= [];
-        $meta['level_progress'][$level] ??= [];
-        $meta['level_progress'][$level][$key] = $value;
+        try {
+            $meta = $taskRun->meta ?? [];
 
-        $taskRun->meta = $meta;
-        $taskRun->save();
+            $meta['level_progress']         ??= [];
+            $meta['level_progress'][$level] ??= [];
+            $meta['level_progress'][$level][$key] = $value;
 
-        static::logDebug('Updated level progress', [
-            'level' => $level,
-            'key'   => $key,
-            'value' => $value,
-        ]);
+            $taskRun->meta = $meta;
+            $taskRun->save();
+
+            static::logDebug('Updated level progress', [
+                'level' => $level,
+                'key'   => $key,
+                'value' => $value,
+            ]);
+        } finally {
+            LockHelper::release($taskRun);
+        }
     }
 
     /**

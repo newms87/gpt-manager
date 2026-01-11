@@ -1178,15 +1178,17 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         });
 
         // Mock AgentThreadService to return extraction result with data matching fragment_selector
-        // The fragment_selector specifies: children.client_name => type: string
-        // The fix ensures applyFragmentSelector() properly converts this to JSON Schema,
-        // so the LLM returns actual data in the 'data' field
+        // The fragment_selector specifies: children.client_name => type: string (scalar only = flat structure)
+        // For flat structures, getLeafKey returns snake_case of object_type: 'Client' -> 'client'
+        // So the data must be nested under the 'client' key
         $mockMessage = $this->createMock(\App\Models\Agent\AgentThreadMessage::class);
         $mockMessage->method('getJsonContent')->willReturn([
-            'data'         => [
-                'client_name' => 'John Doe Insurance',
+            'data' => [
+                'client' => [  // leaf key = snake_case of object_type
+                    'client_name'   => 'John Doe Insurance',
+                    '_search_query' => [['client_name' => '%John%Doe%']],  // embedded search query
+                ],
             ],
-            'search_query' => ['client_name' => '%John%Doe%'],
         ]);
 
         $mockThreadRun              = $this->mock(\App\Models\Agent\AgentThreadRun::class)->makePartial();
@@ -1232,7 +1234,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         // Verify meta contains operational fields
         $meta = $outputArtifact->meta;
         $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY, $meta['operation']);
-        $this->assertEquals(['client_name' => '%John%Doe%'], $meta['search_query']);
+        $this->assertEquals([['client_name' => '%John%Doe%']], $meta['search_query']);
         $this->assertArrayHasKey('was_existing', $meta);
         $this->assertArrayHasKey('match_id', $meta);
         $this->assertEquals($taskProcess->id, $meta['task_process_id']);
