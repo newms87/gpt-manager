@@ -237,7 +237,30 @@ The preamble is required because:
 
 ## 📋 Debugging with audit:debug Command
 
-**When to use:** For ANY debugging involving logging, auditing, API requests/responses, job dispatches, error logs, or model changes. This is the ONLY authorized method - **DO NOT use tinker**.
+**⚠️ PREFER DEBUG COMMANDS OVER TINKER ⚠️**
+
+When a debugging command exists for what you're investigating, ALWAYS use it instead of tinker:
+
+| Debugging Task | Command |
+|----------------|---------|
+| Task Run / Task Process | `./vendor/bin/sail artisan debug:extract-data-task-run {id}` |
+| File Organization Tasks | `./vendor/bin/sail artisan debug:file-organization-task-run {id}` |
+| General Task Runs | `./vendor/bin/sail artisan debug:task-run {id}` |
+| Audit Requests / API Logs | `./vendor/bin/sail artisan audit:debug` |
+
+**Why debug commands over tinker:**
+- Debug commands are pre-approved and run autonomously
+- Tinker requires manual approval and blocks autonomous operation
+- Debug commands have optimized output formatting for investigation
+- Debug commands can re-run processes, show schemas, view messages, etc.
+
+**Only use tinker when:**
+- No debug command exists for your specific use case
+- You need to run a one-off query that isn't covered by debug commands
+
+---
+
+**When to use audit:debug:** For ANY debugging involving logging, auditing, API requests/responses, job dispatches, error logs, or model changes.
 
 **Before using this command**, you MUST read the full command file:
 `/home/newms/web/danx/src/Console/Commands/AuditDebugCommand.php`
