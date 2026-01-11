@@ -125,7 +125,7 @@ async function refreshJobDispatch() {
 	isLoadingJobDispatch.value = true;
 	await dxAgentThread.routes.details(props.agentThread, {
 		"*": false,
-		jobDispatch: { logs: true, errors: true, apiLogs: true }
+		jobDispatch: { logs: true }
 	});
 	isLoadingJobDispatch.value = false;
 }

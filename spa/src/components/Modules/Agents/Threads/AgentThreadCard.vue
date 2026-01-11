@@ -73,7 +73,7 @@ const {
 function loadJobDispatch() {
 	dxAgentThread.routes.details(props.thread, {
 		"*": false,
-		jobDispatch: { logs: true, errors: true, apiLogs: true }
+		jobDispatch: { logs: true }
 	});
 }
 </script>

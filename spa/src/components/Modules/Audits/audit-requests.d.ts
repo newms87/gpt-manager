@@ -41,6 +41,10 @@ export interface JobDispatch {
     count: string;
     created_at: string;
 
+    api_log_count: number;
+    error_log_count: number;
+    log_line_count: number;
+
     logs?: string;
     errors?: ErrorLogEntry[];
     apiLogs?: ApiLog[];

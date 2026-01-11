@@ -149,7 +149,7 @@ const isShowingOutputArtifacts = ref(false);
 const operationColor = useHashedColor(computed(() => props.taskProcess.operation));
 
 async function refreshJobDispatchesRelation() {
-	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true, apiLogs: true, errors: true } });
+	await dxTaskProcess.routes.details(props.taskProcess, { jobDispatches: { logs: true } });
 }
 
 watch(() => props.taskProcess.status, () => {

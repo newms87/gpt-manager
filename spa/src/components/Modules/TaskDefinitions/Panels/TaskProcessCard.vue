@@ -142,7 +142,7 @@ const isShowingJobDispatches = ref(false);
 const agentThreadField = { messages: { files: { thumb: true } } };
 
 // Defines the fields to fetch when requesting JobDispatches
-const jobDispatchesField = { logs: true, apiLogs: true, errors: true };
+const jobDispatchesField = { logs: true };
 
 // Initialize pusher
 const pusher = usePusher();

@@ -13,18 +13,16 @@
                 <div class="text-sm">{{ job.name }}</div>
             </div>
             <div class="flex space-x-2 items-center">
-                <ShowHideButton v-model="isShowingLogs" label="Logs" class="bg-slate-950 text-slate-400" />
+                <ShowHideButton v-model="isShowingLogs" :label="`Logs: ${job.log_line_count}`" class="bg-slate-950 text-slate-400" />
                 <ShowHideButton
-                    v-if="job.apiLogs"
                     v-model="isShowingApiLogs"
                     class="bg-sky-900 text-sky-300"
-                    :label="`Api Logs: ${job.apiLogs.length}`"
+                    :label="`Api Logs: ${job.api_log_count}`"
                 />
                 <ShowHideButton
-                    v-if="job.errors"
                     v-model="isShowingErrors"
                     class="bg-red-950 text-red-300"
-                    :label="`Errors: ${job.errors.length}`"
+                    :label="`Errors: ${job.error_log_count}`"
                 />
                 <LabelPillWidget :label="jobStatus.value" :class="jobStatus.classPrimary" size="sm" />
             </div>
@@ -53,12 +51,18 @@
             <LabelValueBlock label="Run Time" :value="fMillisecondsToDuration(+job.run_time_ms)" />
         </div>
         <AuditRequestLogsCard v-if="isShowingLogs" :logs="job.logs" />
-        <ListTransition v-if="isShowingApiLogs">
-            <ApiLogEntryCard v-for="apiLog in job.apiLogs" :key="apiLog.id" :api-log="apiLog" class="my-2" />
-        </ListTransition>
-        <ListTransition v-if="isShowingErrors">
-            <ErrorLogEntryCard v-for="error in job.errors" :key="error.id" :error="error" class="my-2" />
-        </ListTransition>
+        <div v-if="isShowingApiLogs" class="p-2">
+            <QSkeleton v-if="isLoadingApiLogs" class="h-24" />
+            <ListTransition v-else>
+                <ApiLogEntryCard v-for="apiLog in job.apiLogs" :key="apiLog.id" :api-log="apiLog" class="my-2" />
+            </ListTransition>
+        </div>
+        <div v-if="isShowingErrors" class="p-2">
+            <QSkeleton v-if="isLoadingErrors" class="h-24" />
+            <ListTransition v-else>
+                <ErrorLogEntryCard v-for="error in job.errors" :key="error.id" :error="error" class="my-2" />
+            </ListTransition>
+        </div>
     </QCard>
 </template>
 <script setup lang="ts">
@@ -66,7 +70,9 @@ import ApiLogEntryCard from "@/components/Modules/Audits/ApiLogs/ApiLogEntryCard
 import { JobDispatch } from "@/components/Modules/Audits/audit-requests";
 import AuditRequestLogsCard from "@/components/Modules/Audits/AuditRequestLogs/AuditRequestLogsCard";
 import ErrorLogEntryCard from "@/components/Modules/Audits/ErrorLogs/ErrorLogEntryCard";
+import { jobDispatchRoutes } from "@/components/Modules/Audits/JobDispatches/jobDispatchRoutes";
 import { JOB_DISPATCH_STATUS } from "@/components/Modules/Audits/JobDispatches/statuses";
+import { useJobDispatchUpdates } from "@/components/Modules/Audits/JobDispatches/useJobDispatchUpdates";
 import {
     fDateTime,
     fMillisecondsToDuration,
@@ -75,7 +81,7 @@ import {
     ListTransition,
     ShowHideButton
 } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{
     job: JobDispatch
@@ -84,5 +90,28 @@ const props = defineProps<{
 const isShowingLogs = ref(false);
 const isShowingApiLogs = ref(false);
 const isShowingErrors = ref(false);
+const isLoadingApiLogs = ref(false);
+const isLoadingErrors = ref(false);
 const jobStatus = computed(() => JOB_DISPATCH_STATUS.resolve(props.job.status));
+
+// Subscribe to real-time updates for in-progress job dispatches
+useJobDispatchUpdates(() => props.job);
+
+// Lazy load API logs when the user toggles them on
+watch(isShowingApiLogs, async (isShowing) => {
+    if (isShowing && !props.job.apiLogs) {
+        isLoadingApiLogs.value = true;
+        await jobDispatchRoutes.details(props.job, { apiLogs: true });
+        isLoadingApiLogs.value = false;
+    }
+});
+
+// Lazy load errors when the user toggles them on
+watch(isShowingErrors, async (isShowing) => {
+    if (isShowing && !props.job.errors) {
+        isLoadingErrors.value = true;
+        await jobDispatchRoutes.details(props.job, { errors: true });
+        isLoadingErrors.value = false;
+    }
+});
 </script>
