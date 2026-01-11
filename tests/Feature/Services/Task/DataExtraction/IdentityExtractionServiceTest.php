@@ -606,18 +606,19 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'type'    => 'Demand',
         ]);
 
-        // Input artifact with resolved_objects containing the parent
+        // Input artifact for the process
         $inputArtifact = Artifact::factory()->create([
             'task_run_id' => $this->taskRun->id,
             'team_id'     => $this->user->currentTeam->id,
-            'meta'        => [
-                'resolved_objects' => [
-                    'Demand' => [$parentObject->id],
-                ],
-            ],
         ]);
 
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+        // Task process with parent_object_ids in meta (set by ExtractionProcessOrchestrator)
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'meta'        => [
+                'parent_object_ids' => [$parentObject->id],
+            ],
+        ]);
         $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Fragment selector: getNestingKeys returns ['demand', 'provider']

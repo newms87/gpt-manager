@@ -64,7 +64,7 @@ class IdentityExtractionService
         }
 
         // Resolve parent object context
-        [$parentObjectId, $possibleParentIds] = $this->resolveParentContext($artifacts, $identityGroup, $level);
+        [$parentObjectId, $possibleParentIds] = $this->resolveParentContext($taskProcess, $identityGroup, $level);
 
         static::logDebug('Running identity extraction', [
             'level'                  => $level,
@@ -126,26 +126,27 @@ class IdentityExtractionService
     }
 
     /**
-     * Resolve parent object context from artifacts and identity group configuration.
+     * Resolve parent object context from process meta.
      *
      * Returns [resolvedParentId, possibleParentIds] tuple:
      * - resolvedParentId: Single parent ID if determinable, null if multiple or none
      * - possibleParentIds: Array of all possible parent IDs for LLM resolution
      *
+     * Parent object IDs are set during process creation by ExtractionProcessOrchestrator.
+     *
      * @return array{?int, array<int>}
      */
-    protected function resolveParentContext(Collection $artifacts, array $identityGroup, int $level): array
+    protected function resolveParentContext(TaskProcess $taskProcess, array $identityGroup, int $level): array
     {
         // Get parent type from fragment_selector (second-to-last key in path)
         $fragmentSelector = $identityGroup['fragment_selector'] ?? [];
         $parentType       = app(FragmentSelectorService::class)->getParentType($fragmentSelector);
 
-        // Combine resolved_objects from ALL input artifacts
-        $combinedResolvedObjects = app(ResolvedObjectsService::class)->combineFromArtifacts($artifacts);
-        $possibleParentIds       = $combinedResolvedObjects[$parentType] ?? [];
-
         // Determine if this is a root object (no parent type = fragment_selector path < 2)
         $isRootObject = $parentType === null;
+
+        // Parent object IDs are set during process creation by ExtractionProcessOrchestrator
+        $possibleParentIds = $taskProcess->meta['parent_object_ids'] ?? [];
 
         $parentObjectId = $this->determineParentObjectId(
             $possibleParentIds,
