@@ -1374,9 +1374,12 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             $mock->shouldReceive('extractExhaustive')
                 ->once()
                 ->andReturn([
-                    'address' => '123 Main Street',
-                    'city'    => 'Springfield',
-                    'state'   => 'IL',
+                    'data' => [
+                        'address' => '123 Main Street',
+                        'city'    => 'Springfield',
+                        'state'   => 'IL',
+                    ],
+                    'page_sources' => [],
                 ]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')

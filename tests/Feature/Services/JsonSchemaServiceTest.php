@@ -893,4 +893,43 @@ class JsonSchemaServiceTest extends AuthenticatedTestCase
         // Then
         $this->assertEquals(['nicknames' => $data['nicknames']], $filteredData);
     }
+
+    public function test_formatAndCleanSchema_refEntriesArePassedThroughUnchanged(): void
+    {
+        // Given
+        $name   = 'test-schema';
+        $schema = [
+            'type'       => 'object',
+            'properties' => [
+                'name'   => [
+                    'type' => 'string',
+                ],
+                'source' => [
+                    '$ref' => '#/$defs/pageSource',
+                ],
+            ],
+        ];
+
+        // When
+        $formattedSchema = app(JsonSchemaService::class)->formatAndCleanSchema($name, $schema);
+
+        // Then
+        $this->assertEquals([
+            'name'   => $name,
+            'strict' => true,
+            'schema' => [
+                'type'                 => 'object',
+                'properties'           => [
+                    'name'   => [
+                        'type' => 'string',
+                    ],
+                    'source' => [
+                        '$ref' => '#/$defs/pageSource',
+                    ],
+                ],
+                'required'             => ['name', 'source'],
+                'additionalProperties' => false,
+            ],
+        ], $formattedSchema);
+    }
 }

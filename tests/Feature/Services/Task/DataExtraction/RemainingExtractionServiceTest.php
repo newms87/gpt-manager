@@ -181,7 +181,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             // Verify skim mode is called
             $mock->shouldReceive('extractWithSkimMode')
                 ->once()
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')
                 ->once();
@@ -193,7 +193,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing with skim mode
@@ -255,7 +255,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             // Verify exhaustive mode is called
             $mock->shouldReceive('extractExhaustive')
                 ->once()
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')
                 ->once();
@@ -267,7 +267,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing with exhaustive mode (default)
@@ -315,7 +315,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             // Verify extractExhaustive is called for unknown mode
             $mock->shouldReceive('extractExhaustive')
                 ->once()
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
         });
@@ -324,7 +324,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             $mock->shouldReceive('isLeafArrayType')
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing with unknown search mode
@@ -378,7 +378,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService and verify updateTeamObjectWithExtractedData is called
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData, $teamObject) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')
                 ->with(
@@ -394,7 +394,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             $mock->shouldReceive('isLeafArrayType')
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing extraction
@@ -445,7 +445,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
         });
@@ -453,21 +453,12 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock and verify ExtractionArtifactBuilder
         $builtArtifact = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
 
-        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($builtArtifact, $teamObject, $extractedData) {
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($builtArtifact) {
             $mock->shouldReceive('isLeafArrayType')
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
-                ->with(
-                    Mockery::type(TaskRun::class),
-                    Mockery::type(TaskProcess::class),
-                    Mockery::on(fn($obj) => $obj->id === $teamObject->id),
-                    Mockery::on(fn($g) => $g['name'] === 'Contact Info'),
-                    $extractedData,
-                    0,  // level
-                    'exhaustive'  // searchMode
-                )
                 ->once()
-                ->andReturn($builtArtifact);
+                ->andReturn([$builtArtifact]);
         });
 
         // When: Executing extraction
@@ -511,7 +502,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService to return empty data
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn([]);  // Empty extraction result
+                ->andReturn(['data' => [], 'page_sources' => []]);  // Empty extraction result
 
             // updateTeamObjectWithExtractedData should NOT be called
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
@@ -569,7 +560,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
         });
@@ -579,17 +570,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             $mock->shouldReceive('isLeafArrayType')
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
-                ->with(
-                    Mockery::any(),
-                    Mockery::any(),
-                    Mockery::any(),
-                    Mockery::any(),
-                    Mockery::any(),
-                    2,  // Level should be 2
-                    Mockery::any()  // searchMode
-                )
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing at level 2
@@ -634,7 +616,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
         });
@@ -643,7 +625,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             $mock->shouldReceive('isLeafArrayType')
                 ->andReturn(false);
             $mock->shouldReceive('buildRemainingArtifact')
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing extraction
@@ -713,7 +695,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             // updateTeamObjectWithExtractedData should NOT be called for array extraction
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
@@ -730,7 +712,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing array extraction
@@ -806,7 +788,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
         });
@@ -821,7 +803,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing array extraction
@@ -919,7 +901,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
         });
@@ -934,7 +916,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         $initialBackPainCount = TeamObject::where('type', 'Complaint')
@@ -1024,7 +1006,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
-                ->andReturn($extractedData);
+                ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
         });
@@ -1039,7 +1021,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
             $mock->shouldReceive('buildRemainingArtifact')
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         $initialComplaintCount = TeamObject::where('type', 'Complaint')

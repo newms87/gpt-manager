@@ -61,7 +61,7 @@ class RemainingExtractionService
         $groupExtractionService = app(GroupExtractionService::class);
 
         // Route to appropriate extraction mode
-        $extractedData = match ($searchMode) {
+        $extractionResult = match ($searchMode) {
             'skim' => $groupExtractionService->extractWithSkimMode(
                 $taskRun,
                 $taskProcess,
@@ -78,6 +78,9 @@ class RemainingExtractionService
             ),
         };
 
+        $extractedData = $extractionResult['data']         ?? [];
+        $pageSources   = $extractionResult['page_sources'] ?? [];
+
         if (empty($extractedData)) {
             static::logDebug('Extraction returned no data');
 
@@ -88,13 +91,14 @@ class RemainingExtractionService
         $artifactBuilder = app(ExtractionArtifactBuilder::class);
         if ($artifactBuilder->isLeafArrayType($extractionGroup)) {
             return $this->executeArrayExtraction(
-                $taskRun,
-                $taskProcess,
-                $extractionGroup,
-                $level,
-                $teamObject,
-                $extractedData,
-                $searchMode
+                taskRun: $taskRun,
+                taskProcess: $taskProcess,
+                extractionGroup: $extractionGroup,
+                level: $level,
+                parentObject: $teamObject,
+                extractedData: $extractedData,
+                searchMode: $searchMode,
+                pageSources: !empty($pageSources) ? $pageSources : null
             );
         }
 
@@ -107,7 +111,7 @@ class RemainingExtractionService
             $extractionGroup
         );
 
-        // Build and attach output artifact
+        // Build and attach output artifact(s)
         $artifactBuilder->buildRemainingArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -115,7 +119,8 @@ class RemainingExtractionService
             group: $extractionGroup,
             extractedData: $extractedData,
             level: $level,
-            searchMode: $searchMode
+            searchMode: $searchMode,
+            pageSources: !empty($pageSources) ? $pageSources : null
         );
 
         static::logDebug('Remaining extraction completed', [
@@ -136,7 +141,8 @@ class RemainingExtractionService
         int $level,
         TeamObject $parentObject,
         array $extractedData,
-        string $searchMode
+        string $searchMode,
+        ?array $pageSources = null
     ): array {
         $artifactBuilder  = app(ExtractionArtifactBuilder::class);
         $fragmentSelector = $extractionGroup['fragment_selector'] ?? [];
@@ -189,7 +195,7 @@ class RemainingExtractionService
         $objectIds = array_map(fn($obj) => $obj->id, $createdObjects);
         app(ResolvedObjectsService::class)->storeMultipleInProcessArtifacts($taskProcess, $objectType, $objectIds);
 
-        // Build single artifact containing all extracted data
+        // Build single artifact(s) containing all extracted data
         $artifactBuilder->buildRemainingArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -197,7 +203,8 @@ class RemainingExtractionService
             group: $extractionGroup,
             extractedData: $extractedData,
             level: $level,
-            searchMode: $searchMode
+            searchMode: $searchMode,
+            pageSources: $pageSources
         );
 
         static::logDebug('Array extraction completed', [

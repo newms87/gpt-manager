@@ -3,14 +3,14 @@
 namespace Tests\Feature\Services\Task\DataExtraction;
 
 use App\Models\Agent\Agent;
+use App\Models\Agent\AgentThreadMessage;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Models\Agent\AgentThreadMessage;
-use App\Models\Agent\AgentThreadRun;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
@@ -153,7 +153,8 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
 
         // Then: Stopped early after first batch (high confidence)
         $this->assertEquals(1, $batchCount);
-        $this->assertArrayHasKey('name', $result);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('name', $result['data']);
     }
 
     #[Test]
@@ -274,8 +275,9 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
 
         // Then: Called once with all artifacts (no batching)
         $this->assertEquals(1, $callCount);
-        $this->assertArrayHasKey('name', $result);
-        $this->assertEquals('Extracted Name', $result['name']);
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('name', $result['data']);
+        $this->assertEquals('Extracted Name', $result['data']['name']);
     }
 
     // =========================================================================
@@ -766,13 +768,13 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
                 'care_summary' => [
                     'type'       => 'object',
                     'properties' => [
-                        'name'                          => ['type' => 'string'],
-                        'surgery'                       => ['type' => 'string'],
-                        'causation'                     => ['type' => 'string'],
-                        'diagnosis'                     => ['type' => 'string'],
+                        'name'                           => ['type' => 'string'],
+                        'surgery'                        => ['type' => 'string'],
+                        'causation'                      => ['type' => 'string'],
+                        'diagnosis'                      => ['type' => 'string'],
                         'delay_in_care_gap_in_treatment' => ['type' => 'string'],
-                        'impairment_rating'             => ['type' => 'string'],
-                        'dates_of_service'              => ['type' => 'string'],
+                        'impairment_rating'              => ['type' => 'string'],
+                        'dates_of_service'               => ['type' => 'string'],
                         // Many more fields that should NOT be extracted...
                     ],
                     'required' => ['name', 'surgery', 'causation', 'diagnosis', 'delay_in_care_gap_in_treatment', 'impairment_rating', 'dates_of_service'],

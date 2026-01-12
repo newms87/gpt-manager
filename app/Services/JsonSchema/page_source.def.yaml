@@ -1,0 +1,8 @@
+type: integer
+title: Page Source
+minimum: 1
+description: |
+  The PRIMARY page number where this field's value was found.
+  * Choose the page with the MOST CONTEXT about the value
+  * If context is roughly equal across pages, use the FIRST page
+  * Use page numbers provided in the extraction context (1-indexed)

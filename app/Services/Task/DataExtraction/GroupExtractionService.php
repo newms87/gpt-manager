@@ -22,6 +22,8 @@ class GroupExtractionService
     /**
      * Extract data using skim mode.
      * Process artifacts in batches, stopping early when all fields have sufficient confidence.
+     *
+     * @return array{data: array, page_sources: array}
      */
     public function extractWithSkimMode(
         TaskRun $taskRun,
@@ -34,8 +36,9 @@ class GroupExtractionService
         $confidenceThreshold = $config['confidence_threshold'] ?? 3;
         $batchSize           = $config['skim_batch_size']      ?? 5;
 
-        $extractedData        = [];
-        $cumulativeConfidence = [];
+        $extractedData         = [];
+        $cumulativeConfidence  = [];
+        $cumulativePageSources = [];
 
         static::logDebug('Starting skim mode extraction', [
             'artifact_count'       => $artifacts->count(),
@@ -51,6 +54,9 @@ class GroupExtractionService
 
             // Merge batch data with cumulative data
             $extractedData = array_replace_recursive($extractedData, $batchResult['data']);
+
+            // Merge page sources (later batches override earlier ones)
+            $cumulativePageSources = array_merge($cumulativePageSources, $batchResult['page_sources'] ?? []);
 
             // Update confidence scores (take the highest confidence for each field)
             foreach ($batchResult['confidence'] ?? [] as $field => $score) {
@@ -71,12 +77,14 @@ class GroupExtractionService
             }
         }
 
-        return $extractedData;
+        return ['data' => $extractedData, 'page_sources' => $cumulativePageSources];
     }
 
     /**
      * Extract data using exhaustive mode.
      * Process all artifacts and aggregate results.
+     *
+     * @return array{data: array, page_sources: array}
      */
     public function extractExhaustive(
         TaskRun $taskRun,
@@ -91,7 +99,7 @@ class GroupExtractionService
 
         $result = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $artifacts, $teamObject, false);
 
-        return $result['data'];
+        return ['data' => $result['data'], 'page_sources' => $result['page_sources'] ?? []];
     }
 
     /**
@@ -127,7 +135,7 @@ class GroupExtractionService
         if (!$fragmentSelector) {
             static::logDebug('No fragment selector found for group');
 
-            return ['data' => [], 'confidence' => []];
+            return ['data' => [], 'confidence' => [], 'page_sources' => []];
         }
 
         // Build schema from fragment selector
@@ -137,15 +145,21 @@ class GroupExtractionService
             $fragmentSelector
         );
 
-        // Create a temporary in-memory SchemaDefinition with the filtered fragment schema
+        // Get the fields from fragment selector for page source tracking
+        $extractableFields = $this->getExtractableFieldsFromFragmentSelector($fragmentSelector);
+
+        // Inject __source__ properties and add $defs for page source tracking
+        $fragmentSchema = $this->injectPageSourceSchema($fragmentSchema, $extractableFields);
+
+        // Create a temporary in-memory SchemaDefinition with the enhanced fragment schema
         // This ensures only the fields specified in fragment_selector are requested from the LLM
         $tempSchemaDefinition = new SchemaDefinition([
             'name'   => 'group-extraction-' . ($group['name'] ?? 'unknown'),
             'schema' => $fragmentSchema,
         ]);
 
-        // Build extraction prompt
-        $prompt = $this->buildExtractionPrompt($group, $teamObject, $fragmentSelector, $includeConfidence);
+        // Build extraction prompt with page source instructions
+        $prompt = $this->buildExtractionPrompt($group, $teamObject, $fragmentSelector, $includeConfidence, $artifacts);
 
         // Create agent thread with artifacts
         $thread = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
@@ -173,7 +187,7 @@ class GroupExtractionService
                 'error' => $threadRun->error ?? 'Unknown error',
             ]);
 
-            return ['data' => [], 'confidence' => []];
+            return ['data' => [], 'confidence' => [], 'page_sources' => []];
         }
 
         // Parse response using getJsonContent() method
@@ -182,25 +196,38 @@ class GroupExtractionService
         if (!$result || !is_array($result)) {
             static::logDebug('Failed to get JSON content from response');
 
-            return ['data' => [], 'confidence' => []];
+            return ['data' => [], 'confidence' => [], 'page_sources' => []];
         }
 
+        // Extract page sources BEFORE cleaning the data (while __source__ fields still exist)
+        $pageSourceService = app(PageSourceService::class);
+        $pageSources       = $pageSourceService->extractPageSources($result);
+
+        // Remove __source__ fields from the result
+        $cleanedResult = $pageSourceService->removeSourceFields($result);
+
         // Separate data from confidence if present
-        if ($includeConfidence && isset($result['confidence'])) {
+        if ($includeConfidence && isset($cleanedResult['confidence'])) {
             return [
-                'data'       => $result['data']       ?? $result,
-                'confidence' => $result['confidence'] ?? [],
+                'data'         => $cleanedResult['data']       ?? $cleanedResult,
+                'confidence'   => $cleanedResult['confidence'] ?? [],
+                'page_sources' => $pageSources,
             ];
         }
 
-        return ['data' => $result, 'confidence' => []];
+        return ['data' => $cleanedResult, 'confidence' => [], 'page_sources' => $pageSources];
     }
 
     /**
      * Build extraction prompt for LLM.
      */
-    public function buildExtractionPrompt(array $group, TeamObject $teamObject, array $fragmentSelector, bool $includeConfidence): string
-    {
+    public function buildExtractionPrompt(
+        array $group,
+        TeamObject $teamObject,
+        array $fragmentSelector,
+        bool $includeConfidence,
+        ?Collection $artifacts = null
+    ): string {
         $groupName = $group['name'] ?? 'data';
 
         // Get existing object data
@@ -220,6 +247,14 @@ class GroupExtractionService
         $prompt .= "- Extract the requested fields from the provided documents\n";
         $prompt .= "- If a field cannot be found, set it to null\n";
         $prompt .= "- Merge with existing data where appropriate (update or append as needed)\n";
+
+        // Add page source instructions if artifacts are provided
+        if ($artifacts !== null) {
+            $pageSourceInstructions = app(PageSourceService::class)->buildPageSourceInstructions($artifacts);
+            if ($pageSourceInstructions !== '') {
+                $prompt .= '- ' . str_replace("\n", "\n- ", $pageSourceInstructions) . "\n";
+            }
+        }
 
         if ($includeConfidence) {
             $prompt .= "- Rate your confidence (1-5) for each extracted field:\n";
@@ -352,5 +387,84 @@ class GroupExtractionService
         $mapper->updateTeamObject($teamObject, $extractedData);
 
         static::logDebug('TeamObject updated successfully');
+    }
+
+    /**
+     * Get extractable field names from fragment selector (leaf-level scalar fields).
+     *
+     * @return array<string>
+     */
+    protected function getExtractableFieldsFromFragmentSelector(array $fragmentSelector): array
+    {
+        $fields   = [];
+        $children = $fragmentSelector['children'] ?? [];
+
+        foreach ($children as $key => $child) {
+            $childType = $child['type'] ?? 'object';
+
+            // Scalar types are extractable fields
+            if (!in_array($childType, ['object', 'array'], true)) {
+                $fields[] = $key;
+            } else {
+                // Recursively check nested objects/arrays for more fields
+                $nestedFields = $this->getExtractableFieldsFromFragmentSelector($child);
+                $fields       = array_merge($fields, $nestedFields);
+            }
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Inject __source__ properties and $defs into the schema for page source tracking.
+     */
+    protected function injectPageSourceSchema(array $schema, array $fieldNames): array
+    {
+        if (empty($fieldNames)) {
+            return $schema;
+        }
+
+        // Add $defs with pageSource definition
+        $schema['$defs'] = array_merge(
+            $schema['$defs'] ?? [],
+            ['pageSource' => app(PageSourceService::class)->getPageSourceDef()]
+        );
+
+        // Inject __source__ properties into the schema
+        $schema = $this->injectPageSourcePropertiesRecursive($schema, $fieldNames);
+
+        return $schema;
+    }
+
+    /**
+     * Recursively inject __source__ properties into schema for each field.
+     */
+    protected function injectPageSourcePropertiesRecursive(array $schema, array $fieldNames): array
+    {
+        $type = $schema['type'] ?? 'object';
+
+        if ($type === 'array') {
+            // Handle array items
+            if (isset($schema['items'])) {
+                $schema['items'] = $this->injectPageSourcePropertiesRecursive($schema['items'], $fieldNames);
+            }
+        } elseif ($type === 'object' && isset($schema['properties'])) {
+            // Inject __source__ properties for matching fields
+            $schema['properties'] = app(PageSourceService::class)->injectPageSourceProperties($schema['properties'], $fieldNames);
+
+            // Recursively process nested objects
+            foreach ($schema['properties'] as $key => $propSchema) {
+                if (str_starts_with($key, '__source__')) {
+                    continue; // Skip already injected source properties
+                }
+
+                $propType = $propSchema['type'] ?? null;
+                if (in_array($propType, ['object', 'array'], true)) {
+                    $schema['properties'][$key] = $this->injectPageSourcePropertiesRecursive($propSchema, $fieldNames);
+                }
+            }
+        }
+
+        return $schema;
     }
 }

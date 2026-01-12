@@ -17,6 +17,7 @@ use App\Traits\SchemaFieldHelper;
 use App\Traits\TeamObjectRelationshipHelper;
 use Exception;
 use Illuminate\Support\Collection;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Handles the complete identity extraction workflow for a task process.
@@ -222,6 +223,10 @@ class IdentityExtractionService
         $extractedData      = $extractionResult['data'] ?? [];
         $identificationData = $extractedData[$leafKey]  ?? [];
 
+        // Extract page sources BEFORE cleaning the data (while __source__ fields still exist)
+        $pageSourceService = app(PageSourceService::class);
+        $pageSources       = is_array($identificationData) ? $pageSourceService->extractPageSources($identificationData) : null;
+
         // If identification data is not an array, we cannot extract identity fields - return null
         if (!is_array($identificationData)) {
             static::logDebug("Identity extraction found non-array data for {$identityGroup['object_type']} - cannot extract identity fields", [
@@ -236,6 +241,9 @@ class IdentityExtractionService
 
         // Remove _search_query from identification data (it's not an identity field)
         unset($identificationData['_search_query']);
+
+        // Remove __source__ fields from identification data (but we already extracted them above)
+        $identificationData = $pageSourceService->removeSourceFields($identificationData);
 
         $identityFields = $identityGroup['identity_fields'] ?? [];
         $name           = $this->resolveObjectName($identificationData, $identityFields);
@@ -292,7 +300,7 @@ class IdentityExtractionService
             'resolved_parent_id' => $parentObjectId,
         ]);
 
-        // Build and attach output artifact
+        // Build and attach output artifact(s)
         app(ExtractionArtifactBuilder::class)->buildIdentityArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -300,7 +308,8 @@ class IdentityExtractionService
             group: $identityGroup,
             extractionResult: $itemExtractionResult,
             level: $level,
-            matchId: $matchId
+            matchId: $matchId,
+            pageSources: !empty($pageSources) ? $pageSources : null
         );
 
         return $teamObject;
@@ -344,19 +353,26 @@ class IdentityExtractionService
             'parent_id'   => $parentObjectId,
         ]);
 
-        $createdObjects  = [];
-        $artifactBuilder = app(ExtractionArtifactBuilder::class);
+        $createdObjects    = [];
+        $artifactBuilder   = app(ExtractionArtifactBuilder::class);
+        $pageSourceService = app(PageSourceService::class);
 
         foreach ($items as $itemData) {
             if (!is_array($itemData)) {
                 continue;
             }
 
+            // Extract page sources BEFORE cleaning the data (while __source__ fields still exist)
+            $pageSources = $pageSourceService->extractPageSources($itemData);
+
             // Extract embedded _search_query from this item
             $searchQuery = $itemData['_search_query'] ?? $itemData;
 
             // Remove _search_query from item data (it's not an identity field)
             unset($itemData['_search_query']);
+
+            // Remove __source__ fields from item data (but we already extracted them above)
+            $itemData = $pageSourceService->removeSourceFields($itemData);
 
             // Resolve name for this item
             $name = $this->resolveObjectName($itemData, $identityFields);
@@ -401,7 +417,7 @@ class IdentityExtractionService
                 $level
             );
 
-            // Build individual identity artifact for this item
+            // Build individual identity artifact(s) for this item
             $artifactBuilder->buildIdentityArtifact(
                 taskRun: $taskRun,
                 taskProcess: $taskProcess,
@@ -409,7 +425,8 @@ class IdentityExtractionService
                 group: $identityGroup,
                 extractionResult: $itemExtractionResult,
                 level: $level,
-                matchId: $matchId
+                matchId: $matchId,
+                pageSources: !empty($pageSources) ? $pageSources : null
             );
 
             static::logDebug('Processed array identity item', [
@@ -475,12 +492,15 @@ class IdentityExtractionService
     /**
      * Build the response schema for identity extraction.
      *
-     * Creates a simplified schema at leaf level with embedded _search_query:
-     * - data: { leaf_key: { fields..., _search_query: {...} } }
+     * Creates a simplified schema at leaf level with embedded _search_query and __source__ fields:
+     * - data: { leaf_key: { fields..., __source__field1: pageSource, _search_query: {...} } }
      * - parent_id: (optional) When multiple parent options exist
+     * - $defs: { pageSource, stringSearch, dateSearch, booleanSearch, numericSearch, integerSearch }
      *
      * The schema is simplified to only include the leaf-level objects, not the full hierarchy.
-     * Each object includes an embedded _search_query property for per-object duplicate resolution.
+     * Each object includes:
+     * - __source__ properties for each identity field referencing $defs/pageSource
+     * - embedded _search_query property with $ref to search type definitions
      *
      * @param  array<int>  $possibleParentIds
      */
@@ -493,6 +513,9 @@ class IdentityExtractionService
         $identityFields   = $group['identity_fields']   ?? [];
         $objectType       = $group['object_type']       ?? '';
 
+        // Build $defs for the root schema (pageSource + search query types)
+        $defs = $this->buildSchemaDefinitions($schemaDefinition->schema, $identityFields);
+
         // Build _search_query schema from identity fields (embedded in each object)
         // Pass schema to enable type-aware search queries for dates, booleans, numbers
         $searchQuerySchema = $this->buildSearchQuerySchema($identityFields, $schemaDefinition->schema);
@@ -500,12 +523,13 @@ class IdentityExtractionService
         // Get the leaf key and build simplified schema
         $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
 
-        // Build the leaf-level schema with embedded _search_query
+        // Build the leaf-level schema with embedded _search_query and __source__ properties
         $leafSchema = $this->buildLeafSchemaWithSearchQuery(
             $schemaDefinition,
             $fragmentSelector,
             $searchQuerySchema,
-            $leafKey
+            $leafKey,
+            $identityFields
         );
 
         $responseSchema = [
@@ -519,6 +543,7 @@ class IdentityExtractionService
                 ],
             ],
             'required' => ['data'],
+            '$defs'    => $defs,
         ];
 
         // Add parent_id field when multiple parents exist
@@ -534,16 +559,75 @@ class IdentityExtractionService
     }
 
     /**
-     * Build the leaf-level schema with embedded _search_query property.
+     * Build the $defs section for the schema containing pageSource and search query type definitions.
+     *
+     * @param  array<string>  $identityFields
+     */
+    protected function buildSchemaDefinitions(?array $schema, array $identityFields): array
+    {
+        $defs = [];
+
+        // Add pageSource definition
+        $defs['pageSource'] = app(PageSourceService::class)->getPageSourceDef();
+
+        // Add search query type definitions from yaml
+        $searchQueryDefs = $this->getSearchQueryDefs();
+
+        // Only include the defs that are actually used based on field types
+        $usedTypes = $this->determineUsedSearchTypes($identityFields, $schema);
+
+        foreach ($usedTypes as $type) {
+            if (isset($searchQueryDefs[$type])) {
+                $defs[$type] = $searchQueryDefs[$type];
+            }
+        }
+
+        return $defs;
+    }
+
+    /**
+     * Determine which search type definitions are needed based on identity field types.
+     *
+     * @param  array<string>  $identityFields
+     * @return array<string>
+     */
+    protected function determineUsedSearchTypes(array $identityFields, ?array $schema): array
+    {
+        $usedTypes = [];
+
+        foreach ($identityFields as $field) {
+            $fieldType = $this->determineFieldType($field, $schema);
+
+            $searchType = match ($fieldType) {
+                'date', 'date-time' => 'dateSearch',
+                'boolean'           => 'booleanSearch',
+                'integer'           => 'integerSearch',
+                'number'            => 'numericSearch',
+                default             => 'stringSearch',
+            };
+
+            if (!in_array($searchType, $usedTypes, true)) {
+                $usedTypes[] = $searchType;
+            }
+        }
+
+        return $usedTypes;
+    }
+
+    /**
+     * Build the leaf-level schema with embedded _search_query and __source__ properties.
      *
      * Navigates through the fragment selector to find the leaf schema,
-     * then adds _search_query to each object.
+     * then adds _search_query and __source__{field} properties to each object.
+     *
+     * @param  array<string>  $identityFields  Fields that should have corresponding __source__ properties
      */
     protected function buildLeafSchemaWithSearchQuery(
         SchemaDefinition $schemaDefinition,
         array $fragmentSelector,
         array $searchQuerySchema,
-        string $leafKey
+        string $leafKey,
+        array $identityFields = []
     ): array {
         // Use applyFragmentSelector to get the full schema, then extract leaf level
         $jsonSchemaService = app(JsonSchemaService::class);
@@ -555,8 +639,9 @@ class IdentityExtractionService
         // Navigate to the leaf schema
         $leafSchema = $this->extractLeafSchema($fullSchema, $fragmentSelector);
 
-        // Add _search_query to the leaf schema (handling both object and array types)
-        return $this->injectSearchQueryIntoSchema($leafSchema, $searchQuerySchema);
+        // Add __source__ properties for identity fields, then add _search_query
+        // (handling both object and array types)
+        return $this->injectSearchQueryIntoSchema($leafSchema, $searchQuerySchema, $identityFields);
     }
 
     /**
@@ -616,25 +701,39 @@ class IdentityExtractionService
     }
 
     /**
-     * Inject _search_query property into the schema (handles both object and array types).
+     * Inject _search_query and __source__ properties into the schema (handles both object and array types).
+     *
+     * @param  array<string>  $identityFields  Fields that should have corresponding __source__ properties
      */
-    protected function injectSearchQueryIntoSchema(array $schema, array $searchQuerySchema): array
+    protected function injectSearchQueryIntoSchema(array $schema, array $searchQuerySchema, array $identityFields = []): array
     {
         $type = $schema['type'] ?? 'object';
 
         if ($type === 'array') {
-            // For arrays, add _search_query to each item
+            // For arrays, add __source__ and _search_query to each item
             $items = $schema['items'] ?? [];
             if (!empty($items)) {
-                $itemProperties                    = $items['properties'] ?? [];
-                $itemProperties['_search_query']   = $searchQuerySchema;
-                $schema['items']['properties']     = $itemProperties;
+                $itemProperties = $items['properties'] ?? [];
+
+                // Inject __source__ properties for identity fields
+                if (!empty($identityFields)) {
+                    $itemProperties = app(PageSourceService::class)->injectPageSourceProperties($itemProperties, $identityFields);
+                }
+
+                $itemProperties['_search_query'] = $searchQuerySchema;
+                $schema['items']['properties']   = $itemProperties;
             }
         } else {
-            // For objects, add _search_query directly
-            $properties                    = $schema['properties'] ?? [];
-            $properties['_search_query']   = $searchQuerySchema;
-            $schema['properties']          = $properties;
+            // For objects, add __source__ and _search_query directly
+            $properties = $schema['properties'] ?? [];
+
+            // Inject __source__ properties for identity fields
+            if (!empty($identityFields)) {
+                $properties = app(PageSourceService::class)->injectPageSourceProperties($properties, $identityFields);
+            }
+
+            $properties['_search_query'] = $searchQuerySchema;
+            $schema['properties']        = $properties;
         }
 
         return $schema;
@@ -651,11 +750,12 @@ class IdentityExtractionService
      * This enables efficient duplicate detection by checking for exact matches first,
      * then progressively broadening if needed.
      *
-     * Field types are inferred from the schema definition:
-     * - Strings: Use LIKE pattern with % wildcards
-     * - Dates: Use operator-based comparison (=, <, >, <=, >=, between)
-     * - Booleans: Use true/false directly
-     * - Numbers/Integers: Use operator-based comparison (=, <, >, <=, >=, between)
+     * Field types are inferred from the schema definition and use $ref to search_query.def.yaml:
+     * - Strings: Use stringSearch ($ref) - LIKE pattern with % wildcards
+     * - Dates: Use dateSearch ($ref) - operator-based comparison (=, <, >, <=, >=, between)
+     * - Booleans: Use booleanSearch ($ref) - true/false directly
+     * - Numbers: Use numericSearch ($ref) - operator-based comparison
+     * - Integers: Use integerSearch ($ref) - operator-based comparison with integer values
      *
      * @param  array<string>  $identityFields
      * @param  array|null  $schema  The schema definition to determine field types
@@ -670,7 +770,7 @@ class IdentityExtractionService
 
         return [
             'type'        => 'array',
-            'description' => 'MINIMUM 3 search queries ordered from MOST SPECIFIC to LEAST SPECIFIC (exact match first, then progressively broader). Purpose: Find existing records efficiently - we check for exact matches first, then broaden if needed. Query 1: Most specific - use exact extracted values. Query 2: Less specific - key identifying terms. Query 3: Broadest - general concept only. Example for "Dr. John Smith": [{name: "%Dr. John Smith%"}, {name: "%John Smith%"}, {name: "%Smith%"}].',
+            'description' => 'MINIMUM 3 search queries ordered from MOST SPECIFIC to LEAST SPECIFIC (exact match first, then progressively broader). Purpose: Find existing records efficiently - we check for exact matches first, then broaden if needed. Query 1: Most specific - use exact extracted values. Query 2: Less specific - key identifying terms. Query 3: Broadest - general concept only. Example for "Dr. John Smith": [{name: ["Dr.", "John", "Smith"]}, {name: ["John", "Smith"]}, {name: ["Smith"]}].',
             'items'       => [
                 'type'       => 'object',
                 'properties' => $properties,
@@ -682,22 +782,29 @@ class IdentityExtractionService
     /**
      * Build the search schema for a single field based on its type.
      *
-     * Field types:
-     * - Strings: LIKE pattern with % wildcards
-     * - Dates: Operator-based comparison with ISO format values
-     * - Booleans: Direct true/false
-     * - Numbers/Integers: Operator-based comparison
+     * Uses $ref to reference the appropriate search type definition in $defs.
+     *
+     * Field types map to $defs:
+     * - Strings: $ref to stringSearch
+     * - Dates/DateTimes: $ref to dateSearch
+     * - Booleans: $ref to booleanSearch
+     * - Numbers: $ref to numericSearch
+     * - Integers: $ref to integerSearch
      */
     protected function buildFieldSearchSchema(string $fieldName, ?array $schema): array
     {
         $fieldType = $this->determineFieldType($fieldName, $schema);
 
-        return match ($fieldType) {
-            'date', 'date-time' => $this->buildDateSearchSchema($fieldName),
-            'boolean'           => $this->buildBooleanSearchSchema($fieldName),
-            'number', 'integer' => $this->buildNumericSearchSchema($fieldName, $fieldType),
-            default             => $this->buildStringSearchSchema($fieldName),
+        // Map field type to search definition name
+        $defName = match ($fieldType) {
+            'date', 'date-time' => 'dateSearch',
+            'boolean'           => 'booleanSearch',
+            'integer'           => 'integerSearch',
+            'number'            => 'numericSearch',
+            default             => 'stringSearch',
         };
+
+        return ['$ref' => '#/$defs/' . $defName];
     }
 
     /**
@@ -717,89 +824,6 @@ class IdentityExtractionService
 
         // Delegate to trait for schema-based field type detection
         return $this->getSchemaFieldType($fieldName, $schema);
-    }
-
-    /**
-     * Build search schema for string fields (keyword array).
-     *
-     * Returns a schema for keyword arrays where ALL keywords must be present (AND logic)
-     * but order doesn't matter. This enables flexible matching:
-     * - ['neck', 'pain', 'cervical'] matches 'Cervical neck pain', 'Neck pain - cervical', etc.
-     */
-    protected function buildStringSearchSchema(string $fieldName): array
-    {
-        return [
-            'type'        => ['array', 'null'],
-            'items'       => ['type' => 'string'],
-            'description' => "Keywords to search for in {$fieldName} (ALL must be present, order doesn't matter). Example: ['neck', 'pain', 'cervical'] matches 'Cervical neck pain', 'Neck pain - cervical', etc. Use 2-4 keywords for specific searches, 1-2 for broad searches. Set to null to skip this field.",
-        ];
-    }
-
-    /**
-     * Build search schema for date fields (operator-based).
-     */
-    protected function buildDateSearchSchema(string $fieldName): array
-    {
-        return [
-            'type'        => ['object', 'null'],
-            'properties'  => [
-                'operator' => [
-                    'type'        => 'string',
-                    'enum'        => ['=', '<', '>', '<=', '>=', 'between'],
-                    'description' => 'Comparison operator',
-                ],
-                'value'    => [
-                    'type'        => 'string',
-                    'description' => 'Date value in ISO format YYYY-MM-DD',
-                ],
-                'value2'   => [
-                    'type'        => 'string',
-                    'description' => "End date for 'between' operator in ISO format YYYY-MM-DD",
-                ],
-            ],
-            'required'    => ['operator', 'value'],
-            'description' => "Date comparison for {$fieldName}. Use operator with ISO date value (YYYY-MM-DD). Examples: {\"operator\": \"=\", \"value\": \"2017-10-23\"} for exact match, {\"operator\": \"between\", \"value\": \"2017-01-01\", \"value2\": \"2017-12-31\"} for range. Set to null to skip.",
-        ];
-    }
-
-    /**
-     * Build search schema for boolean fields.
-     */
-    protected function buildBooleanSearchSchema(string $fieldName): array
-    {
-        return [
-            'type'        => ['boolean', 'null'],
-            'description' => "Boolean value for {$fieldName}. Use true or false directly. Set to null to skip.",
-        ];
-    }
-
-    /**
-     * Build search schema for numeric fields (operator-based).
-     */
-    protected function buildNumericSearchSchema(string $fieldName, string $numericType): array
-    {
-        $valueType = $numericType === 'integer' ? 'integer' : 'number';
-
-        return [
-            'type'        => ['object', 'null'],
-            'properties'  => [
-                'operator' => [
-                    'type'        => 'string',
-                    'enum'        => ['=', '<', '>', '<=', '>=', 'between'],
-                    'description' => 'Comparison operator',
-                ],
-                'value'    => [
-                    'type'        => $valueType,
-                    'description' => 'Numeric value to compare',
-                ],
-                'value2'   => [
-                    'type'        => $valueType,
-                    'description' => "End value for 'between' operator",
-                ],
-            ],
-            'required'    => ['operator', 'value'],
-            'description' => "Numeric comparison for {$fieldName}. Use operator with {$numericType} value. Examples: {\"operator\": \"=\", \"value\": 42} for exact match, {\"operator\": \">=\", \"value\": 18} for minimum, {\"operator\": \"between\", \"value\": 10, \"value2\": 100} for range. Set to null to skip.",
-        ];
     }
 
     /**
@@ -875,6 +899,9 @@ class IdentityExtractionService
         // Build additional context for parent hierarchy from database
         $parentContext = $this->buildParentContextForMultipleParents($possibleParentIds);
 
+        // Build page source instructions if we have page numbers
+        $pageSourceInstructions = app(PageSourceService::class)->buildPageSourceInstructions($artifacts);
+
         $threadBuilder = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
             ->named('Identity Data Extraction')
             ->withArtifacts($artifacts, new ArtifactFilter(
@@ -886,6 +913,11 @@ class IdentityExtractionService
         // Add parent context as a system message when available
         if ($parentContext !== '') {
             $threadBuilder->withSystemMessage($parentContext);
+        }
+
+        // Add page source instructions when available
+        if ($pageSourceInstructions !== '') {
+            $threadBuilder->withSystemMessage($pageSourceInstructions);
         }
 
         return $threadBuilder->build();
@@ -1114,6 +1146,17 @@ class IdentityExtractionService
         $schemaDefinition->type   = SchemaDefinition::TYPE_AGENT_RESPONSE;
 
         return $schemaDefinition;
+    }
+
+    /**
+     * Load the search query type definitions from yaml.
+     */
+    protected function getSearchQueryDefs(): array
+    {
+        $path    = app_path('Services/JsonSchema/search_query.def.yaml');
+        $content = Yaml::parseFile($path);
+
+        return $content['$defs'] ?? [];
     }
 
     /**

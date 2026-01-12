@@ -73,7 +73,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -84,6 +84,8 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact has correct structure
+        $this->assertCount(1, $artifacts);
+        $artifact = $artifacts[0];
         $this->assertInstanceOf(Artifact::class, $artifact);
         $this->assertStringContainsString('Identity:', $artifact->name);
         $this->assertStringContainsString('Client', $artifact->name);
@@ -126,7 +128,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact with existing match
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -137,6 +139,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: was_existing and match_id are set correctly
+        $artifact = $artifacts[0];
         $this->assertTrue($artifact->meta['was_existing']);
         $this->assertEquals(999, $artifact->meta['match_id']);
         $this->assertEquals(1, $artifact->meta['level']);
@@ -160,7 +163,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractionResult = ['data' => ['client_name' => 'Test']];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -171,6 +174,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact is attached to process outputs
+        $artifact = $artifacts[0];
         $taskProcess->refresh();
         $outputArtifacts = $taskProcess->outputArtifacts;
 
@@ -203,7 +207,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractionResult = ['data' => ['client_name' => 'Test']];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -214,6 +218,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact is linked as child of input artifact via parent_artifact_id
+        $artifact = $artifacts[0];
         $this->assertEquals($inputArtifact->id, $artifact->parent_artifact_id);
 
         // Input artifact's json_content is NOT modified (data extracted artifacts are children)
@@ -261,7 +266,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building an identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -272,6 +277,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: The returned artifact has parent_artifact_id set to the page artifact's ID
+        $artifact = $artifacts[0];
         $this->assertEquals(
             $pageArtifact->id,
             $artifact->parent_artifact_id,
@@ -306,7 +312,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractionResult = ['data' => ['demand_id' => '12345']];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -317,6 +323,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Uses object_type as identity_group
+        $artifact = $artifacts[0];
         $this->assertEquals('Demand', $artifact->meta['identity_group']);
     }
 
@@ -347,7 +354,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -358,6 +365,8 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact has correct structure
+        $this->assertCount(1, $artifacts);
+        $artifact = $artifacts[0];
         $this->assertInstanceOf(Artifact::class, $artifact);
         $this->assertStringContainsString('Remaining:', $artifact->name);
         $this->assertStringContainsString('Client Address', $artifact->name);
@@ -396,7 +405,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractedData = ['email' => 'test@example.com'];
 
         // When: Building remaining artifact
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -407,6 +416,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact is attached to process outputs
+        $artifact = $artifacts[0];
         $taskProcess->refresh();
         $outputArtifacts = $taskProcess->outputArtifacts;
 
@@ -439,7 +449,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractedData = ['phone' => '555-1234'];
 
         // When: Building remaining artifact
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -450,6 +460,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact is linked as child of input artifact via parent_artifact_id
+        $artifact = $artifacts[0];
         $this->assertEquals($inputArtifact->id, $artifact->parent_artifact_id);
 
         // Input artifact's json_content is NOT modified (data extracted artifacts are children)
@@ -475,7 +486,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractedData = ['field' => 'value'];
 
         // When: Building with skim mode
-        $skimArtifact = $this->builder->buildRemainingArtifact(
+        $skimArtifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -486,7 +497,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Extraction mode is set correctly
-        $this->assertEquals('skim', $skimArtifact->meta['extraction_mode']);
+        $this->assertEquals('skim', $skimArtifacts[0]->meta['extraction_mode']);
     }
 
     #[Test]
@@ -507,7 +518,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractedData = ['claim_amount' => 50000];
 
         // When: Building at level 2
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -518,7 +529,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Level is set correctly
-        $this->assertEquals(2, $artifact->meta['level']);
+        $this->assertEquals(2, $artifacts[0]->meta['level']);
     }
 
     #[Test]
@@ -539,7 +550,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractedData = ['location' => 'Highway 101'];
 
         // When: Building remaining artifact
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -550,6 +561,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Uses name as extraction_group
+        $artifact = $artifacts[0];
         $this->assertEquals('Accident Location', $artifact->meta['extraction_group']);
         $this->assertStringContainsString('Accident Location', $artifact->name);
     }
@@ -578,7 +590,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractionResult = ['data' => ['name' => 'Test']];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -589,6 +601,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Artifact is created without parent link
+        $artifact = $artifacts[0];
         $this->assertNull($artifact->parent_artifact_id);
 
         // And artifact is still attached to process outputs
@@ -625,7 +638,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         $extractionResult = ['data' => ['name' => 'Test']];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -636,6 +649,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Input artifact's json_content is preserved (not modified)
+        $artifact = $artifacts[0];
         $inputArtifact->refresh();
         $this->assertEquals('existing_value', $inputArtifact->json_content['existing_key']);
         $this->assertEquals(5, $inputArtifact->json_content['page_number']);
@@ -670,7 +684,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 0 with no parent
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -681,7 +695,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: json_content shows flat structure with object data at root level
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
         $this->assertEquals($teamObject->id, $jsonContent['id']);
         $this->assertEquals('Demand', $jsonContent['type']);
         $this->assertEquals('DEM-001', $jsonContent['demand_number']);
@@ -735,7 +749,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 1 with parent object
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -746,7 +760,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: json_content shows hierarchical structure with parent at root (derived from DB relationships)
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Parent's id and type are at root level
         $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
@@ -787,7 +801,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact at level 0 with no parent
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $teamObject,
@@ -798,7 +812,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: json_content shows flat structure with object data at root level
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
         $this->assertEquals($teamObject->id, $jsonContent['id']);
         $this->assertEquals('Demand', $jsonContent['type']);
         $this->assertEquals(150000, $jsonContent['total_amount']);
@@ -852,7 +866,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact at level 1 with parent object
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -863,7 +877,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: json_content shows hierarchical structure with parent at root (derived from DB relationships)
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Parent's id and type are at root level
         $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
@@ -925,7 +939,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 1 with parent object
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -936,7 +950,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: Relationship key is snake_case version of object type
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // "Treatment Received" becomes "treatment_received"
         $this->assertArrayHasKey('treatment_received', $jsonContent);
@@ -992,7 +1006,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -1003,7 +1017,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: "Provider" becomes "provider" (lowercase snake_case)
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
         $this->assertArrayHasKey('provider', $jsonContent);
         $this->assertArrayNotHasKey('Provider', $jsonContent);
     }
@@ -1063,7 +1077,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact at level 2 with immediate parent
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $treatmentObject,
@@ -1075,7 +1089,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
         // Hierarchy is derived from DB relationships, not passed parentObjectId
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Root is Demand (not Provider!)
         $this->assertEquals($demandObject->id, $jsonContent['id']);
@@ -1168,7 +1182,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 3 (Line Item under Treatment under Provider under Demand)
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $lineItemObject,
@@ -1180,7 +1194,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
         // Hierarchy is derived from DB relationships, not passed parentObjectId
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Root is Demand
         $this->assertEquals($demandObject->id, $jsonContent['id']);
@@ -1285,7 +1299,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact at level 4 (Modifier under LineItem under Treatment under Provider under Demand)
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $modifierObject,
@@ -1297,7 +1311,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // Then: json_content shows FULL hierarchical structure from root (Demand)
         // Hierarchy is derived from DB relationships, not passed parentObjectId
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Root is Demand
         $this->assertEquals($demandObject->id, $jsonContent['id']);
@@ -1392,7 +1406,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 1 with parent object
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -1404,7 +1418,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
         // Hierarchy is derived from DB relationships
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Parent's id and type are at root level
         $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
@@ -1480,7 +1494,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building identity artifact at level 1 with parent object
-        $artifact = $this->builder->buildIdentityArtifact(
+        $artifacts = $this->builder->buildIdentityArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -1491,7 +1505,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         );
 
         // Then: json_content shows hierarchical structure WITH array wrapping for incidents
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Parent's id and type are at root level
         $this->assertEquals($parentTeamObject->id, $jsonContent['id']);
@@ -1568,7 +1582,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
         ];
 
         // When: Building remaining artifact at level 1 with parent object
-        $artifact = $this->builder->buildRemainingArtifact(
+        $artifacts = $this->builder->buildRemainingArtifact(
             taskRun: $this->taskRun,
             taskProcess: $taskProcess,
             teamObject: $childTeamObject,
@@ -1580,7 +1594,7 @@ class ExtractionArtifactBuilderTest extends AuthenticatedTestCase
 
         // Then: json_content shows hierarchical structure WITHOUT array wrapping for client
         // Hierarchy is derived from DB relationships
-        $jsonContent = $artifact->json_content;
+        $jsonContent = $artifacts[0]->json_content;
 
         // Parent's id and type are at root level
         $this->assertEquals($parentTeamObject->id, $jsonContent['id']);

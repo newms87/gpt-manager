@@ -155,7 +155,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         // Mock ExtractionArtifactBuilder
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -338,7 +338,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -426,7 +426,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 

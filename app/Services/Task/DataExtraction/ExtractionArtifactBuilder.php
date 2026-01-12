@@ -21,7 +21,10 @@ class ExtractionArtifactBuilder
     use TeamObjectRelationshipHelper;
 
     /**
-     * Build and attach an identity extraction artifact.
+     * Build and attach identity extraction artifact(s).
+     * When page sources are provided, creates per-page artifacts linked to their source pages.
+     *
+     * @return array<Artifact> Array of created artifacts
      */
     public function buildIdentityArtifact(
         TaskRun $taskRun,
@@ -30,36 +33,130 @@ class ExtractionArtifactBuilder
         array $group,
         array $extractionResult,
         int $level,
-        ?int $matchId
-    ): Artifact {
-        $artifact = $this->createArtifact(
-            taskRun: $taskRun,
-            name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
-            jsonContent: $this->buildHierarchicalJson(
-                teamObject: $teamObject,
-                extractedData: $extractionResult['data'] ?? [],
-                group: $group
-            ),
-            meta: [
-                'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-                'search_query'    => $extractionResult['search_query'] ?? null,
-                'was_existing'    => $matchId !== null,
-                'match_id'        => $matchId,
-                'task_process_id' => $taskProcess->id,
-                'level'           => $level,
-                'identity_group'  => $group['name'] ?? $group['object_type'],
-            ]
-        );
+        ?int $matchId,
+        ?array $pageSources = null
+    ): array {
+        $extractedData = $extractionResult['data'] ?? [];
 
-        $this->attachToProcessAndLinkParent($artifact, $taskProcess);
+        // If no page sources, create single artifact (backwards compatibility)
+        if (empty($pageSources)) {
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $extractedData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'search_query'    => $extractionResult['search_query'] ?? null,
+                    'was_existing'    => $matchId !== null,
+                    'match_id'        => $matchId,
+                    'task_process_id' => $taskProcess->id,
+                    'level'           => $level,
+                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                ]
+            );
 
-        static::logDebug('Built identity extraction artifact', [
-            'artifact_id'  => $artifact->id,
-            'object_type'  => $group['object_type'],
-            'was_existing' => $matchId !== null,
-        ]);
+            $this->attachToProcessAndLinkParent($artifact, $taskProcess);
 
-        return $artifact;
+            static::logDebug('Built identity extraction artifact (single)', [
+                'artifact_id'  => $artifact->id,
+                'object_type'  => $group['object_type'],
+                'was_existing' => $matchId !== null,
+            ]);
+
+            return [$artifact];
+        }
+
+        // Use PageSourceService to split data by page
+        $pageSourceService = app(PageSourceService::class);
+        $dataByPage        = $pageSourceService->splitDataByPage($extractedData, $pageSources);
+
+        $artifacts      = [];
+        $inputArtifacts = $taskProcess->inputArtifacts;
+
+        foreach ($dataByPage as $pageNumber => $pageData) {
+            // Find the artifact for this page
+            $pageArtifact = $pageSourceService->findArtifactByPage($inputArtifacts, $pageNumber);
+
+            if (!$pageArtifact) {
+                static::logDebug('No page artifact found for page', [
+                    'page_number' => $pageNumber,
+                    'object_type' => $group['object_type'],
+                ]);
+
+                continue;
+            }
+
+            // Create artifact with only this page's data
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Identity: {$group['object_type']} - Page {$pageNumber}",
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $pageData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'page_number'     => $pageNumber,
+                    'source_fields'   => array_keys($pageData),
+                    'search_query'    => $extractionResult['search_query'] ?? null,
+                    'was_existing'    => $matchId !== null,
+                    'match_id'        => $matchId,
+                    'task_process_id' => $taskProcess->id,
+                    'level'           => $level,
+                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                ]
+            );
+
+            // Attach to specific page artifact
+            $this->attachToPageArtifact($artifact, $taskProcess, $pageArtifact);
+
+            $artifacts[] = $artifact;
+
+            static::logDebug('Built identity extraction artifact (per-page)', [
+                'artifact_id'        => $artifact->id,
+                'page_number'        => $pageNumber,
+                'source_fields'      => array_keys($pageData),
+                'parent_artifact_id' => $pageArtifact->id,
+            ]);
+        }
+
+        // If no artifacts were created (all pages missing), fall back to original behavior
+        if (empty($artifacts)) {
+            static::logDebug('No per-page artifacts created, falling back to single artifact', [
+                'object_type'  => $group['object_type'],
+                'page_sources' => $pageSources,
+            ]);
+
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $extractedData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'search_query'    => $extractionResult['search_query'] ?? null,
+                    'was_existing'    => $matchId !== null,
+                    'match_id'        => $matchId,
+                    'task_process_id' => $taskProcess->id,
+                    'level'           => $level,
+                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                ]
+            );
+
+            $this->attachToProcessAndLinkParent($artifact, $taskProcess);
+
+            return [$artifact];
+        }
+
+        return $artifacts;
     }
 
     /**
@@ -71,7 +168,10 @@ class ExtractionArtifactBuilder
     }
 
     /**
-     * Build and attach a remaining extraction artifact.
+     * Build and attach remaining extraction artifact(s).
+     * When page sources are provided, creates per-page artifacts linked to their source pages.
+     *
+     * @return array<Artifact> Array of created artifacts
      */
     public function buildRemainingArtifact(
         TaskRun $taskRun,
@@ -80,34 +180,122 @@ class ExtractionArtifactBuilder
         array $group,
         array $extractedData,
         int $level,
-        string $searchMode
-    ): Artifact {
-        $artifact = $this->createArtifact(
-            taskRun: $taskRun,
-            name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
-            jsonContent: $this->buildHierarchicalJson(
-                teamObject: $teamObject,
-                extractedData: $extractedData,
-                group: $group
-            ),
-            meta: [
-                'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
-                'extraction_mode'  => $searchMode,
-                'task_process_id'  => $taskProcess->id,
-                'level'            => $level,
-                'extraction_group' => $group['name'] ?? $group['object_type'],
-            ]
-        );
+        string $searchMode,
+        ?array $pageSources = null
+    ): array {
+        // If no page sources, create single artifact (backwards compatibility)
+        if (empty($pageSources)) {
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $extractedData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
+                    'extraction_mode'  => $searchMode,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'extraction_group' => $group['name'] ?? $group['object_type'],
+                ]
+            );
 
-        $this->attachToProcessAndLinkParent($artifact, $taskProcess);
+            $this->attachToProcessAndLinkParent($artifact, $taskProcess);
 
-        static::logDebug('Built remaining extraction artifact', [
-            'artifact_id' => $artifact->id,
-            'group_name'  => $group['name'] ?? 'Unknown',
-            'level'       => $level,
-        ]);
+            static::logDebug('Built remaining extraction artifact (single)', [
+                'artifact_id' => $artifact->id,
+                'group_name'  => $group['name'] ?? 'Unknown',
+                'level'       => $level,
+            ]);
 
-        return $artifact;
+            return [$artifact];
+        }
+
+        // Use PageSourceService to split data by page
+        $pageSourceService = app(PageSourceService::class);
+        $dataByPage        = $pageSourceService->splitDataByPage($extractedData, $pageSources);
+
+        $artifacts      = [];
+        $inputArtifacts = $taskProcess->inputArtifacts;
+
+        foreach ($dataByPage as $pageNumber => $pageData) {
+            // Find the artifact for this page
+            $pageArtifact = $pageSourceService->findArtifactByPage($inputArtifacts, $pageNumber);
+
+            if (!$pageArtifact) {
+                static::logDebug('No page artifact found for page', [
+                    'page_number' => $pageNumber,
+                    'group_name'  => $group['name'] ?? 'Unknown',
+                ]);
+
+                continue;
+            }
+
+            // Create artifact with only this page's data
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Remaining: {$group['name']} - Page {$pageNumber}",
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $pageData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
+                    'page_number'      => $pageNumber,
+                    'source_fields'    => array_keys($pageData),
+                    'extraction_mode'  => $searchMode,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'extraction_group' => $group['name'] ?? $group['object_type'],
+                ]
+            );
+
+            // Attach to specific page artifact
+            $this->attachToPageArtifact($artifact, $taskProcess, $pageArtifact);
+
+            $artifacts[] = $artifact;
+
+            static::logDebug('Built remaining extraction artifact (per-page)', [
+                'artifact_id'        => $artifact->id,
+                'page_number'        => $pageNumber,
+                'source_fields'      => array_keys($pageData),
+                'parent_artifact_id' => $pageArtifact->id,
+            ]);
+        }
+
+        // If no artifacts were created (all pages missing), fall back to original behavior
+        if (empty($artifacts)) {
+            static::logDebug('No per-page artifacts created, falling back to single artifact', [
+                'group_name'   => $group['name'] ?? 'Unknown',
+                'page_sources' => $pageSources,
+            ]);
+
+            $artifact = $this->createArtifact(
+                taskRun: $taskRun,
+                name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
+                jsonContent: $this->buildHierarchicalJson(
+                    teamObject: $teamObject,
+                    extractedData: $extractedData,
+                    group: $group
+                ),
+                meta: [
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
+                    'extraction_mode'  => $searchMode,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'extraction_group' => $group['name'] ?? $group['object_type'],
+                ]
+            );
+
+            $this->attachToProcessAndLinkParent($artifact, $taskProcess);
+
+            return [$artifact];
+        }
+
+        return $artifacts;
     }
 
     /**
@@ -244,5 +432,22 @@ class ExtractionArtifactBuilder
 
         // Update parent artifact's child count
         $inputArtifact->updateRelationCounter('children');
+    }
+
+    /**
+     * Attach artifact to process outputs and link as child of specific page artifact.
+     */
+    protected function attachToPageArtifact(Artifact $artifact, TaskProcess $taskProcess, Artifact $pageArtifact): void
+    {
+        // Attach to task process output artifacts
+        $taskProcess->outputArtifacts()->attach($artifact->id);
+        $taskProcess->updateRelationCounter('outputArtifacts');
+
+        // Link as child of the specific page artifact
+        $artifact->parent_artifact_id = $pageArtifact->id;
+        $artifact->save();
+
+        // Update page artifact's child count
+        $pageArtifact->updateRelationCounter('children');
     }
 }

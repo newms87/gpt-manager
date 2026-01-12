@@ -1,0 +1,87 @@
+$defs:
+  stringSearch:
+    type: [array, 'null']
+    items:
+      type: string
+    description: |
+      Keywords to search for (ALL must be present, order doesn't matter).
+      Example: ['neck', 'pain'] matches 'Neck pain', 'Pain in neck', etc.
+      Use 2-4 keywords for specific, 1-2 for broad. Null to skip.
+
+  dateSearch:
+    type: [object, 'null']
+    additionalProperties: false
+    required:
+      - operator
+      - value
+      - value2
+    properties:
+      operator:
+        type: string
+        enum: ['=', '<', '>', '<=', '>=', 'between']
+        description: Comparison operator
+      value:
+        type: string
+        description: Date value in ISO format YYYY-MM-DD
+      value2:
+        type: ['string', 'null']
+        description: End date for 'between' operator in ISO format YYYY-MM-DD. Set to null if not using 'between'.
+    description: |
+      Date comparison query. Use operator with ISO date value (YYYY-MM-DD).
+      Examples: {"operator": "=", "value": "2017-10-23", "value2": null} for exact match,
+      {"operator": "between", "value": "2017-01-01", "value2": "2017-12-31"} for range.
+      Null to skip.
+
+  booleanSearch:
+    type: [boolean, 'null']
+    description: Direct true/false match. Null to skip.
+
+  numericSearch:
+    type: [object, 'null']
+    additionalProperties: false
+    required:
+      - operator
+      - value
+      - value2
+    properties:
+      operator:
+        type: string
+        enum: ['=', '<', '>', '<=', '>=', 'between']
+        description: Comparison operator
+      value:
+        type: number
+        description: Numeric value to compare
+      value2:
+        type: ['number', 'null']
+        description: End value for 'between' operator. Set to null if not using 'between'.
+    description: |
+      Numeric comparison query. Use operator with numeric value.
+      Examples: {"operator": "=", "value": 42, "value2": null} for exact match,
+      {"operator": ">=", "value": 18, "value2": null} for minimum,
+      {"operator": "between", "value": 10, "value2": 100} for range.
+      Null to skip.
+
+  integerSearch:
+    type: [object, 'null']
+    additionalProperties: false
+    required:
+      - operator
+      - value
+      - value2
+    properties:
+      operator:
+        type: string
+        enum: ['=', '<', '>', '<=', '>=', 'between']
+        description: Comparison operator
+      value:
+        type: integer
+        description: Integer value to compare
+      value2:
+        type: ['integer', 'null']
+        description: End value for 'between' operator. Set to null if not using 'between'.
+    description: |
+      Integer comparison query. Use operator with integer value.
+      Examples: {"operator": "=", "value": 42, "value2": null} for exact match,
+      {"operator": ">=", "value": 18, "value2": null} for minimum,
+      {"operator": "between", "value": 10, "value2": 100} for range.
+      Null to skip.

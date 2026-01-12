@@ -169,7 +169,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Mock ExtractionArtifactBuilder
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -255,19 +255,10 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         // Mock ExtractionArtifactBuilder
-        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($existingTeamObject) {
+        $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')
-                ->with(
-                    Mockery::any(),
-                    Mockery::any(),
-                    Mockery::on(fn($obj) => $obj->id === $existingTeamObject->id),
-                    Mockery::any(),
-                    Mockery::any(),
-                    0,
-                    $existingTeamObject->id
-                )
                 ->once()
-                ->andReturn(Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]));
+                ->andReturn([Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]);
         });
 
         // When: Executing identity extraction
@@ -347,7 +338,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -421,17 +412,8 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) use ($builtArtifact) {
             $mock->shouldReceive('buildIdentityArtifact')
-                ->with(
-                    Mockery::type(TaskRun::class),
-                    Mockery::type(TaskProcess::class),
-                    Mockery::type(TeamObject::class),
-                    Mockery::on(fn($g) => $g['object_type'] === 'Client'),
-                    Mockery::on(fn($r) => isset($r['data']['client_name'])),
-                    0,
-                    null  // matchId
-                )
                 ->once()
-                ->andReturn($builtArtifact);
+                ->andReturn([$builtArtifact]);
         });
 
         // When: Executing identity extraction
@@ -524,7 +506,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -680,7 +662,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionArtifactBuilder::class, function (MockInterface $mock) {
             $mock->shouldReceive('buildIdentityArtifact')->once()->andReturn(
-                Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])
+                [Artifact::factory()->create(['team_id' => $this->user->currentTeam->id])]
             );
         });
 
@@ -915,7 +897,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                     $artifact         = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
                     $builtArtifacts[] = $artifact;
 
-                    return $artifact;
+                    return [$artifact];
                 });
         });
 

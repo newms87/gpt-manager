@@ -484,6 +484,12 @@ class JsonSchemaService
             unset($propertyMeta['$defs']);
         }
 
+        // Preserve any $defs from the original schema (e.g., pageSource, stringSearch, dateSearch)
+        // Use array union so internal definitions (id, property_meta) take precedence over input schema defs
+        if (isset($schema['$defs'])) {
+            $formattedSchema['$defs'] = ($formattedSchema['$defs'] ?? []) + $schema['$defs'];
+        }
+
         return [
             'name'   => $name,
             'strict' => true,
@@ -496,6 +502,11 @@ class JsonSchemaService
      */
     public function formatAndCleanSchemaItem($name, $value, $depth = 0, $allowNull = true): ?array
     {
+        // Pass through $ref entries unchanged - they reference definitions in $defs
+        if (isset($value['$ref'])) {
+            return $value;
+        }
+
         $type        = $value['type']        ?? null;
         $title       = $value['title']       ?? null;
         $description = $value['description'] ?? null;
