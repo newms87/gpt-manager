@@ -127,6 +127,21 @@ These patterns are mandatory across the entire codebase:
 
 ---
 
+## Plan Formatting Policy
+
+**Plans must use natural language only - NO CODE BLOCKS**
+
+| Allowed | Not Allowed |
+|---------|-------------|
+| Natural language descriptions | Code snippets or examples |
+| Tables for structured data | Any code blocks (PHP, JS, SQL, Vue, etc.) |
+| Diagrams (ASCII or descriptions) | Implementation details in code |
+| Bullet points and numbered lists | Method signatures with bodies |
+
+**Rationale:** Plans describe WHAT to build and WHY. Implementation details (HOW) belong in the implementation phase, not planning. Code in plans creates confusion about what's finalized vs. exploratory.
+
+---
+
 ## Reference Documentation
 
 **Domain-Specific Guides:**

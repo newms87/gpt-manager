@@ -46,9 +46,9 @@
         </div>
 
         <!-- Input Messages -->
-        <div v-if="requestData?.input?.length">
+        <div v-if="normalizedInput.length">
             <div class="flex items-center justify-between mb-2">
-                <div class="text-sm font-bold">Input Messages ({{ requestData.input.length }})</div>
+                <div class="text-sm font-bold">Input Messages ({{ normalizedInput.length }})</div>
                 <ActionButton
                     :label="allMessagesExpanded ? 'Hide All' : 'Show All'"
                     color="sky"
@@ -58,7 +58,7 @@
             </div>
             <ListTransition>
                 <div
-                    v-for="(inputItem, index) in requestData.input"
+                    v-for="(inputItem, index) in normalizedInput"
                     :key="index"
                     class="bg-slate-900 rounded p-2 mb-2"
                 >
@@ -188,6 +188,15 @@ const expandedMessageFiles = ref<Record<number, boolean>>({});
 const expandedMessageText = ref<Record<number, boolean>>({});
 
 // Computed values
+const normalizedInput = computed(() => {
+    const input = props.requestData?.input;
+    if (!input) return [];
+    if (typeof input === "string") {
+        return [{ role: "user", content: [{ type: "input_text", text: input }] }];
+    }
+    return input;
+});
+
 const instructionsPreview = computed(() => {
     if (!props.requestData?.instructions) return "";
     const instructions = props.requestData.instructions;
@@ -228,11 +237,11 @@ function getMessageTexts(inputItem: any): string[] {
 
 // Input messages toggle helpers
 const allMessagesExpanded = computed(() => {
-    const messageCount = props.requestData?.input?.length || 0;
+    const messageCount = normalizedInput.value.length;
     if (messageCount === 0) return false;
 
     for (let i = 0; i < messageCount; i++) {
-        const inputItem = props.requestData.input[i];
+        const inputItem = normalizedInput.value[i];
         const hasText = getMessageTexts(inputItem).length > 0;
         const hasImages = getMessageImages(inputItem).length > 0;
 
@@ -243,7 +252,7 @@ const allMessagesExpanded = computed(() => {
 });
 
 function toggleAllMessages() {
-    const messageCount = props.requestData?.input?.length || 0;
+    const messageCount = normalizedInput.value.length;
     const shouldExpand = !allMessagesExpanded.value;
 
     for (let i = 0; i < messageCount; i++) {
