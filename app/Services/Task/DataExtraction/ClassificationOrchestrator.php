@@ -18,22 +18,57 @@ class ClassificationOrchestrator
     /**
      * Create classification processes per page.
      * Each page gets its own TaskProcess for parallel classification.
+     * Skips artifacts that already have cached classification results.
      *
      * @param  TaskRun  $taskRun  The task run to create processes for
      * @param  Collection  $childArtifacts  Collection of child artifacts (one per page)
+     * @param  array  $booleanSchema  The classification schema to check cache for
      * @return array Array of created TaskProcess instances
      */
-    public function createClassifyProcessesPerPage(TaskRun $taskRun, Collection $childArtifacts): array
-    {
+    public function createClassifyProcessesPerPage(
+        TaskRun $taskRun,
+        Collection $childArtifacts,
+        array $booleanSchema
+    ): array {
         static::logDebug('Creating classify processes per page', [
             'task_run_id'           => $taskRun->id,
             'child_artifacts_count' => $childArtifacts->count(),
         ]);
 
-        $processes = [];
+        $processes               = [];
+        $classificationExecutor  = app(ClassificationExecutorService::class);
+        $skippedCount            = 0;
 
         foreach ($childArtifacts as $childArtifact) {
             $pageNumber = $childArtifact->position;
+
+            // Check if this artifact has cached classification
+            if ($classificationExecutor->hasCachedClassification($childArtifact, $booleanSchema)) {
+                static::logDebug('Skipping page with cached classification', [
+                    'artifact_id' => $childArtifact->id,
+                    'page_number' => $pageNumber,
+                ]);
+
+                // Get cached result and store in artifact meta
+                $storedFile   = $childArtifact->storedFiles()->first();
+                $cachedResult = $storedFile ? $classificationExecutor->getCachedClassification($storedFile, $booleanSchema) : null;
+
+                if ($cachedResult) {
+                    $meta                   = $childArtifact->meta ?? [];
+                    $meta['classification'] = $cachedResult;
+                    $childArtifact->meta    = $meta;
+                    $childArtifact->save();
+
+                    static::logDebug('Stored cached classification in artifact meta', [
+                        'artifact_id' => $childArtifact->id,
+                        'result'      => $cachedResult,
+                    ]);
+                }
+
+                $skippedCount++;
+
+                continue;
+            }
 
             $process = $taskRun->taskProcesses()->create([
                 'name'      => "Classify Page $pageNumber",
@@ -52,14 +87,15 @@ class ClassificationOrchestrator
             $processes[] = $process;
 
             static::logDebug('Created classify process for page', [
-                'process_id'         => $process->id,
-                'page_number'        => $pageNumber,
-                'child_artifact_id'  => $childArtifact->id,
+                'process_id'        => $process->id,
+                'page_number'       => $pageNumber,
+                'child_artifact_id' => $childArtifact->id,
             ]);
         }
 
         static::logDebug('Created classify processes per page', [
             'processes_count' => count($processes),
+            'skipped_count'   => $skippedCount,
         ]);
 
         return $processes;

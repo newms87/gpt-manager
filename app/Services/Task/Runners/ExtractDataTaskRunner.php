@@ -132,7 +132,11 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
 
             // Create per-page classification processes with child artifacts
             $classificationOrchestrator = app(ClassificationOrchestrator::class);
-            $classificationOrchestrator->createClassifyProcessesPerPage($this->taskRun, $parentArtifact->children);
+            $classificationOrchestrator->createClassifyProcessesPerPage(
+                $this->taskRun,
+                $parentArtifact->children,
+                $booleanSchema
+            );
 
             static::logDebug('Created per-page classification processes', ['pages_count' => $parentArtifact->children->count()]);
 

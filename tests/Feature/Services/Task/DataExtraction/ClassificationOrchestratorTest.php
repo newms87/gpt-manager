@@ -61,8 +61,17 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
 
         $childArtifacts = new Collection([$child1, $child2]);
 
+        // Sample boolean schema for classification
+        $booleanSchema = [
+            'type'       => 'object',
+            'properties' => [
+                'has_diagnosis' => ['type' => 'boolean', 'description' => 'Page contains diagnosis codes'],
+                'has_billing'   => ['type' => 'boolean', 'description' => 'Page contains billing info'],
+            ],
+        ];
+
         // When: Creating classify processes per page
-        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts);
+        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema);
 
         // Then: Process created for each child artifact
         $this->assertCount(2, $processes);
@@ -280,5 +289,82 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
         // Then: Returns only identities
         $this->assertCount(1, $groups);
         $this->assertEquals('Patient', $groups[0]['object_type']);
+    }
+
+    #[Test]
+    public function createClassifyProcessesPerPage_skips_artifacts_with_cached_results(): void
+    {
+        // Given: TaskRun with child artifacts, one with cached classification
+        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+
+        // Create parent artifact
+        $parentArtifact = Artifact::create([
+            'name'               => 'Parent',
+            'task_definition_id' => $taskDefinition->id,
+            'task_run_id'        => $taskRun->id,
+            'team_id'            => $this->user->currentTeam->id,
+        ]);
+
+        // Schema for classification
+        $booleanSchema = [
+            'type'       => 'object',
+            'properties' => [
+                'has_diagnosis' => ['type' => 'boolean'],
+            ],
+        ];
+
+        // Create cached StoredFile for first child
+        $cachedStoredFile = \Newms87\Danx\Models\Utilities\StoredFile::create([
+            'filename'  => 'page1.pdf',
+            'mime_type' => 'application/pdf',
+            'size'      => 1024,
+            'disk'      => 'local',
+            'filepath'  => 'test/page1.pdf',
+            'meta'      => [
+                'classifications' => [
+                    hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) => [
+                        'schema_hash'   => hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
+                        'classified_at' => now()->toIso8601String(),
+                        'result'        => ['has_diagnosis' => true],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Create child artifacts
+        $child1 = Artifact::create([
+            'name'                => 'Page 1',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 1,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+        ]);
+        $child1->storedFiles()->attach($cachedStoredFile->id);
+
+        $child2 = Artifact::create([
+            'name'                => 'Page 2',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 2,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+        ]);
+
+        $childArtifacts = new Collection([$child1, $child2]);
+
+        // When: Creating classify processes per page
+        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema);
+
+        // Then: Only one process created (second page without cache)
+        $this->assertCount(1, $processes);
+        $this->assertEquals('Classify Page 2', $processes[0]->name);
+        $this->assertEquals($child2->id, $processes[0]->meta['child_artifact_id']);
+
+        // Verify cached result was stored in artifact meta
+        $child1->refresh();
+        $this->assertArrayHasKey('classification', $child1->meta);
+        $this->assertEquals(['has_diagnosis' => true], $child1->meta['classification']);
     }
 }

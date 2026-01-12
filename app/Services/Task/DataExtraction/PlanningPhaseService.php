@@ -159,7 +159,11 @@ class PlanningPhaseService
 
         // Create per-page classification processes
         $classificationOrchestrator = app(ClassificationOrchestrator::class);
-        $classificationOrchestrator->createClassifyProcessesPerPage($taskRun, $parentArtifact->children);
+        $classificationOrchestrator->createClassifyProcessesPerPage(
+            $taskRun,
+            $parentArtifact->children,
+            $booleanSchema
+        );
 
         static::logDebug('Transitioned to classification phase', [
             'pages_count' => $parentArtifact->children->count(),

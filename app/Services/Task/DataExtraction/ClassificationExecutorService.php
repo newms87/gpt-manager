@@ -185,6 +185,27 @@ class ClassificationExecutorService
     }
 
     /**
+     * Check if an artifact has cached classification result.
+     * Returns true if the artifact's StoredFile has a cached result for the given schema.
+     *
+     * @param  Artifact  $artifact  The artifact to check
+     * @param  array  $booleanSchema  The schema to check cache for
+     * @return bool True if cached result exists, false otherwise
+     */
+    public function hasCachedClassification(Artifact $artifact, array $booleanSchema): bool
+    {
+        $storedFile = $artifact->storedFiles()->first();
+
+        if (!$storedFile) {
+            return false;
+        }
+
+        $cachedResult = $this->getCachedClassification($storedFile, $booleanSchema);
+
+        return $cachedResult !== null;
+    }
+
+    /**
      * Get artifacts classified for a specific category/group.
      * Filters artifacts based on their classification metadata.
      *
@@ -241,7 +262,7 @@ class ClassificationExecutorService
      * @param  array  $booleanSchema  The schema used for classification
      * @return array|null Cached classification result or null if no cache exists
      */
-    protected function getCachedClassification(StoredFile $storedFile, array $booleanSchema): ?array
+    public function getCachedClassification(StoredFile $storedFile, array $booleanSchema): ?array
     {
         $schemaHash = $this->computeSchemaHash($booleanSchema);
 
