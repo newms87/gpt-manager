@@ -2,6 +2,8 @@
 
 namespace App\Services\Task\DataExtraction;
 
+use App\Models\Agent\AgentThread;
+use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
@@ -9,6 +11,7 @@ use App\Models\TeamObject\TeamObject;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
+use App\Traits\SchemaFieldHelper;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
@@ -18,41 +21,42 @@ use Newms87\Danx\Exceptions\ValidationError;
  * Service for resolving duplicate TeamObjects during data extraction.
  *
  * Before creating a new TeamObject, this service checks if a similar record already exists.
- * It uses LLM-based comparison to handle fuzzy matching (e.g., "John Smith" vs "John W. Smith").
+ * It uses exact matching first, then LLM-based comparison for fuzzy matching
+ * (e.g., "John Smith" vs "John W. Smith").
  *
  * Usage Example:
  * ```php
  * $resolver = app(DuplicateRecordResolver::class);
  *
- * // Find potential duplicate candidates
- * $candidates = $resolver->findCandidates(
+ * // Find potential duplicate candidates (checks exact match first)
+ * $result = $resolver->findCandidates(
  *     objectType: 'Demand',
  *     searchQueries: [
- *         ['client_name' => '%John Smith%'],
- *         ['client_name' => '%John Smith%', 'accident_date' => '%2024-01-15%'],
+ *         ['client_name' => ['John', 'Smith']],  // Keyword array format
+ *         ['client_name' => ['Smith']],           // Broader keyword search
  *     ],
  *     parentObjectId: null,
- *     schemaDefinitionId: 123
+ *     schemaDefinitionId: 123,
+ *     extractedData: ['client_name' => 'John Smith'],
+ *     identityFields: ['client_name']
  * );
  *
- * if ($candidates->isNotEmpty()) {
- *     // Try quick exact match first
- *     if ($quickMatch = $resolver->quickMatchCheck($extractedData, $candidates)) {
- *         // Use existing object
- *         return $quickMatch;
- *     }
+ * // If exact match found, use it immediately
+ * if ($result->hasExactMatch()) {
+ *     return TeamObject::find($result->exactMatchId);
+ * }
  *
- *     // Use LLM for fuzzy comparison
- *     $result = $resolver->resolveDuplicate(
+ * // If candidates found but no exact match, use LLM for fuzzy comparison
+ * if ($result->candidates->isNotEmpty()) {
+ *     $resolution = $resolver->resolveDuplicate(
  *         extractedData: $extractedData,
- *         candidates: $candidates,
+ *         candidates: $result->candidates,
  *         taskRun: $taskRun,
  *         taskProcess: $taskProcess
  *     );
  *
- *     if ($result->hasDuplicate()) {
- *         // Use existing object
- *         return $result->getExistingObject();
+ *     if ($resolution->hasDuplicate()) {
+ *         return $resolution->existingObject;
  *     }
  * }
  *
@@ -62,23 +66,19 @@ use Newms87\Danx\Exceptions\ValidationError;
 class DuplicateRecordResolver
 {
     use HasDebugLogging;
+    use SchemaFieldHelper;
 
-    // Field type constants
-    protected const string TYPE_NATIVE_NAME = 'native_name';
+    // Field type constants for native TeamObject columns
+    protected const string TYPE_NATIVE_NAME = 'native_name',
+        TYPE_NATIVE_DATE                    = 'native_date';
 
-    protected const string TYPE_NATIVE_DATE = 'native_date';
-
-    protected const string TYPE_DATE = 'date';
-
-    protected const string TYPE_DATETIME = 'date-time';
-
-    protected const string TYPE_BOOLEAN = 'boolean';
-
-    protected const string TYPE_NUMBER = 'number';
-
-    protected const string TYPE_INTEGER = 'integer';
-
-    protected const string TYPE_STRING = 'string';
+    // Field type constants for schema-defined attribute types
+    protected const string TYPE_DATE = 'date',
+        TYPE_DATETIME                = 'date-time',
+        TYPE_BOOLEAN                 = 'boolean',
+        TYPE_NUMBER                  = 'number',
+        TYPE_INTEGER                 = 'integer',
+        TYPE_STRING                  = 'string';
 
     // Native columns on TeamObject that bypass attribute lookup
     protected const array NATIVE_COLUMNS = [
@@ -89,30 +89,33 @@ class DuplicateRecordResolver
     /**
      * Find potential duplicate TeamObjects within the specified scope using search queries.
      *
-     * Iterates through search queries from least to most restrictive:
-     * - If a query returns 1-5 results: return those (good match set)
-     * - If a query returns >5 results: try the next more restrictive query
-     * - If a more restrictive query returns 0: fall back to previous results (limit 20)
-     * - If all queries return >5: return last query results (limit 20)
+     * Resolution order (stops at first match):
+     * 1. Exact name match (case-insensitive) - prevents exact duplicates
+     * 2. Search queries from SPECIFIC to BROAD - checks for exact match after each query
+     * 3. Returns smallest non-zero result set for LLM comparison
      *
      * @param  string  $objectType  Type of object to search for
-     * @param  array  $searchQueries  Array of search query objects with SQL LIKE patterns
+     * @param  array  $searchQueries  Array of search query objects (ordered specific to broad)
      * @param  int|null  $parentObjectId  Optional parent object scope
      * @param  int|null  $schemaDefinitionId  Optional schema scope
-     * @return Collection<TeamObject> Collection of candidate objects
+     * @param  array  $extractedData  Extracted data for exact match comparison
+     * @param  array  $identityFields  Fields to compare for exact match
+     * @return FindCandidatesResult Result containing candidates and optional exactMatchId
      */
     public function findCandidates(
         string $objectType,
         array $searchQueries,
         ?int $parentObjectId = null,
-        ?int $schemaDefinitionId = null
-    ): Collection {
+        ?int $schemaDefinitionId = null,
+        array $extractedData = [],
+        array $identityFields = []
+    ): FindCandidatesResult {
         $currentTeam = team();
 
         if (!$currentTeam) {
             static::logDebug('No team context available for finding duplicate candidates');
 
-            return collect();
+            return new FindCandidatesResult(collect());
         }
 
         static::logDebug('Finding duplicate candidates with search queries', [
@@ -122,13 +125,54 @@ class DuplicateRecordResolver
             'search_query_count'   => count($searchQueries),
         ]);
 
-        // If no search queries provided, fall back to basic scope-only query
-        if (empty($searchQueries)) {
-            return $this->executeSearchQuery($objectType, [], $parentObjectId, $schemaDefinitionId);
+        // Step 1: Try exact name match first (prevents exact duplicates)
+        if (!empty($extractedData['name'])) {
+            $exactNameMatch = $this->findByExactName(
+                $objectType,
+                $extractedData['name'],
+                $parentObjectId,
+                $schemaDefinitionId
+            );
+
+            if ($exactNameMatch) {
+                // If identity fields provided, verify ALL identity fields match (not just name)
+                if (!empty($identityFields) && $this->isExactMatch($extractedData, $exactNameMatch, $identityFields)) {
+                    static::logDebug('Exact name match with all identity fields verified', ['object_id' => $exactNameMatch->id]);
+
+                    return new FindCandidatesResult(
+                        candidates: collect([$exactNameMatch]),
+                        exactMatchId: $exactNameMatch->id
+                    );
+                }
+
+                // If no identity fields or identity match failed, just return as candidate for further evaluation
+                if (empty($identityFields)) {
+                    static::logDebug('Exact name match found (no identity fields to verify)', ['object_id' => $exactNameMatch->id]);
+
+                    return new FindCandidatesResult(
+                        candidates: collect([$exactNameMatch]),
+                        exactMatchId: $exactNameMatch->id
+                    );
+                }
+
+                // Identity fields provided but didn't match - continue to search queries
+                static::logDebug('Exact name match found but identity fields did not match, continuing search', [
+                    'object_id'       => $exactNameMatch->id,
+                    'identity_fields' => $identityFields,
+                ]);
+            }
         }
 
-        $previousResults = collect();
+        // Step 2: If no search queries provided, fall back to basic scope-only query
+        if (empty($searchQueries)) {
+            return new FindCandidatesResult(
+                $this->executeSearchQuery($objectType, [], $parentObjectId, $schemaDefinitionId)
+            );
+        }
 
+        $allResultSets = [];
+
+        // Run queries from specific to broad, checking for exact match after each
         foreach ($searchQueries as $index => $query) {
             if (!is_array($query)) {
                 continue;
@@ -136,36 +180,57 @@ class DuplicateRecordResolver
 
             $results = $this->executeSearchQuery($objectType, $query, $parentObjectId, $schemaDefinitionId);
 
-            static::logDebug("Search query {$index} results", [
+            static::logDebug("Search query #{$index} results", [
                 'query'        => $query,
                 'result_count' => $results->count(),
             ]);
 
-            // If we get 1-5 results, this is a good match set
-            if ($results->count() >= 1 && $results->count() <= 5) {
-                static::logDebug('Found optimal candidate set', ['count' => $results->count()]);
-
-                return $results;
+            if ($results->isEmpty()) {
+                continue;
             }
 
-            // If this more restrictive query returned 0 results, fall back to previous
-            if ($results->count() === 0 && $previousResults->isNotEmpty()) {
-                static::logDebug('Query too restrictive, falling back to previous results', [
-                    'previous_count' => $previousResults->count(),
-                ]);
+            // Check for exact match in these results (if extracted data provided)
+            if (!empty($extractedData)) {
+                foreach ($results as $candidate) {
+                    if ($this->isExactMatch($extractedData, $candidate, $identityFields)) {
+                        static::logDebug('Exact match found, stopping search', [
+                            'query_index' => $index,
+                            'object_id'   => $candidate->id,
+                        ]);
 
-                return $previousResults->take(20);
+                        return new FindCandidatesResult(
+                            collect([$candidate]),
+                            $candidate->id
+                        );
+                    }
+                }
             }
 
-            $previousResults = $results;
+            // Track this result set for potential LLM comparison
+            $allResultSets[] = [
+                'query_index' => $index,
+                'count'       => $results->count(),
+                'results'     => $results,
+            ];
         }
 
-        // If all queries returned >5, use the last query results (limit 20)
-        static::logDebug('All queries returned many results, limiting to 20', [
-            'total_found' => $previousResults->count(),
+        // No exact match found - return smallest non-zero result set for LLM comparison
+        if (empty($allResultSets)) {
+            static::logDebug('No candidates found from any query');
+
+            return new FindCandidatesResult(collect());
+        }
+
+        // Sort by count ascending to get smallest set
+        usort($allResultSets, fn($a, $b) => $a['count'] <=> $b['count']);
+
+        $smallest = $allResultSets[0];
+        static::logDebug('No exact match, using smallest result set for LLM comparison', [
+            'query_index'  => $smallest['query_index'],
+            'result_count' => $smallest['count'],
         ]);
 
-        return $previousResults->take(20);
+        return new FindCandidatesResult($smallest['results']);
     }
 
     /**
@@ -203,19 +268,47 @@ class DuplicateRecordResolver
             ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId));
 
         // Apply type-aware filters for non-null query fields
-        foreach ($query as $field => $pattern) {
-            if ($pattern === null || $pattern === '') {
+        foreach ($query as $field => $criteria) {
+            // Skip null, empty strings, or empty arrays
+            if ($criteria === null || $criteria === '' || $criteria === []) {
                 continue;
             }
 
             $fieldType = $this->getFieldType($field, $schema);
-            $this->applyFieldFilter($baseQuery, $field, $pattern, $fieldType);
+            $this->applyFieldFilter($baseQuery, $field, $criteria, $fieldType);
         }
 
         return $baseQuery->orderBy('created_at', 'desc')
             ->limit(50)
             ->with(['attributes', 'schemaDefinition'])
             ->get();
+    }
+
+    /**
+     * Find a TeamObject by exact name match (case-insensitive).
+     *
+     * This is checked before running search queries to immediately catch exact duplicates,
+     * which prevents creating objects with identical names.
+     *
+     * @param  string  $objectType  Type of object to search for
+     * @param  string  $name  Exact name to match (case-insensitive)
+     * @param  int|null  $parentObjectId  Optional parent object scope
+     * @param  int|null  $schemaDefinitionId  Optional schema scope
+     * @return TeamObject|null Matching object or null if not found
+     */
+    protected function findByExactName(
+        string $objectType,
+        string $name,
+        ?int $parentObjectId,
+        ?int $schemaDefinitionId
+    ): ?TeamObject {
+        return TeamObject::query()
+            ->where('team_id', team()->id)
+            ->where('type', $objectType)
+            ->whereRaw('LOWER(name) = LOWER(?)', [$name])
+            ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
+            ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId))
+            ->first();
     }
 
     /**
@@ -229,89 +322,184 @@ class DuplicateRecordResolver
      */
     protected function getFieldType(string $fieldName, ?array $schema): string
     {
-        // 1. Check native columns first
+        // Check native columns first - these have special query handling
         if (isset(self::NATIVE_COLUMNS[$fieldName])) {
             return self::NATIVE_COLUMNS[$fieldName];
         }
 
-        // 2. Check schema definition
-        if (!$schema) {
-            return self::TYPE_STRING;
-        }
+        // Use trait method for schema-based field type detection
+        $schemaType = $this->getSchemaFieldType($fieldName, $schema);
 
-        $properties = $schema['properties']   ?? [];
-        $fieldDef   = $properties[$fieldName] ?? null;
-
-        if (!$fieldDef) {
-            return self::TYPE_STRING;
-        }
-
-        // 3. Check format first (more specific than type)
-        $format = $fieldDef['format'] ?? null;
-        if ($format === 'date') {
-            return self::TYPE_DATE;
-        }
-        if ($format === 'date-time') {
-            return self::TYPE_DATETIME;
-        }
-
-        // 4. Check type
-        $type = $fieldDef['type'] ?? null;
-
-        return match ($type) {
-            'boolean' => self::TYPE_BOOLEAN,
-            'number'  => self::TYPE_NUMBER,
-            'integer' => self::TYPE_INTEGER,
-            default   => self::TYPE_STRING,
+        // Map schema types to internal type constants
+        return match ($schemaType) {
+            'date'      => self::TYPE_DATE,
+            'date-time' => self::TYPE_DATETIME,
+            'boolean'   => self::TYPE_BOOLEAN,
+            'number'    => self::TYPE_NUMBER,
+            'integer'   => self::TYPE_INTEGER,
+            default     => self::TYPE_STRING,
         };
     }
 
     /**
      * Apply the appropriate filter for a field based on its resolved type.
+     *
+     * Handles both string patterns (LIKE) and structured criteria (operator-based).
+     *
+     * @param  mixed  $criteria  Either a string (LIKE pattern) or array (structured criteria)
      */
-    protected function applyFieldFilter($query, string $field, string $pattern, string $type): void
+    protected function applyFieldFilter($query, string $field, mixed $criteria, string $type): void
     {
         match ($type) {
-            self::TYPE_NATIVE_NAME => $this->applyNativeNameFilter($query, $pattern),
-            self::TYPE_NATIVE_DATE => $this->applyNativeDateFilter($query, $pattern),
-            self::TYPE_DATE, self::TYPE_DATETIME => $this->applyDateAttributeFilter($query, $field, $pattern),
-            self::TYPE_BOOLEAN => $this->applyBooleanAttributeFilter($query, $field, $pattern),
-            self::TYPE_NUMBER, self::TYPE_INTEGER => $this->applyNumericAttributeFilter($query, $field, $pattern),
-            default => $this->applyStringAttributeFilter($query, $field, $pattern),
+            self::TYPE_NATIVE_NAME => $this->applyNativeNameFilter($query, $criteria),
+            self::TYPE_NATIVE_DATE => $this->applyNativeDateFilter($query, $criteria),
+            self::TYPE_DATE, self::TYPE_DATETIME => $this->applyDateAttributeFilter($query, $field, $criteria),
+            self::TYPE_BOOLEAN => $this->applyBooleanAttributeFilter($query, $field, $criteria),
+            self::TYPE_NUMBER, self::TYPE_INTEGER => $this->applyNumericAttributeFilter($query, $field, $criteria),
+            default => $this->applyStringAttributeFilter($query, $field, $criteria),
         };
     }
 
-    protected function applyNativeNameFilter($query, string $pattern): void
+    /**
+     * Apply filter for native 'name' column.
+     * Supports both string LIKE patterns and keyword arrays.
+     *
+     * Keyword array format: ['keyword1', 'keyword2', ...]
+     * All keywords must be present (AND logic), but order doesn't matter.
+     */
+    protected function applyNativeNameFilter($query, mixed $criteria): void
     {
-        $query->where('name', 'LIKE', $pattern);
-    }
+        // Keyword array: all keywords must be present (AND logic)
+        if (is_array($criteria) && !empty($criteria) && isset($criteria[0]) && is_string($criteria[0])) {
+            $query->where(function ($q) use ($criteria) {
+                foreach ($criteria as $keyword) {
+                    if (is_string($keyword) && $keyword !== '') {
+                        $q->whereRaw('name ILIKE ?', ['%' . $keyword . '%']);
+                    }
+                }
+            });
 
-    protected function applyNativeDateFilter($query, string $pattern): void
-    {
-        $normalizedPattern = $this->normalizeDateSearchPattern($pattern) ?? $pattern;
-        $query->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') LIKE ?", [$normalizedPattern]);
-    }
-
-    protected function applyDateAttributeFilter($query, string $field, string $pattern): void
-    {
-        $normalizedPattern = $this->normalizeDateSearchPattern($pattern);
-        if (!$normalizedPattern) {
             return;
         }
 
-        $query->whereHas('attributes', function ($q) use ($field, $normalizedPattern) {
-            $q->where('name', $field)
-                ->where(function ($sub) use ($normalizedPattern) {
-                    $sub->where('text_value', 'LIKE', $normalizedPattern)
-                        ->orWhereRaw('json_value::text LIKE ?', [$normalizedPattern]);
+        // String LIKE pattern (alternative to keyword array)
+        if (is_string($criteria)) {
+            $query->whereRaw('name ILIKE ?', [$criteria]);
+        }
+    }
+
+    /**
+     * Apply filter for native 'date' column.
+     * Supports both string patterns and structured criteria.
+     */
+    protected function applyNativeDateFilter($query, mixed $criteria): void
+    {
+        if (is_array($criteria)) {
+            $this->applyNativeDateOperatorFilter($query, $criteria);
+        } else {
+            // String pattern for LIKE matching
+            $normalizedPattern = $this->normalizeDateSearchPattern($criteria) ?? $criteria;
+            $query->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') ILIKE ?", [$normalizedPattern]);
+        }
+    }
+
+    /**
+     * Apply operator-based filter for native 'date' column.
+     */
+    protected function applyNativeDateOperatorFilter($query, array $criteria): void
+    {
+        $operator = $criteria['operator'] ?? '=';
+        $value    = $criteria['value']    ?? null;
+        $value2   = $criteria['value2']   ?? null;
+
+        if ($value === null) {
+            return;
+        }
+
+        // Normalize the date value to ISO format
+        $normalizedValue = $this->normalizeDateValue($value);
+
+        if ($operator === 'between' && $value2 !== null) {
+            $normalizedValue2 = $this->normalizeDateValue($value2);
+            $query->whereBetween('date', [$normalizedValue, $normalizedValue2]);
+        } else {
+            $query->whereRaw("TO_CHAR(date, 'YYYY-MM-DD') {$operator} ?", [$normalizedValue]);
+        }
+    }
+
+    /**
+     * Apply filter for date attributes.
+     * Supports both string patterns and structured criteria.
+     */
+    protected function applyDateAttributeFilter($query, string $field, mixed $criteria): void
+    {
+        if (is_array($criteria)) {
+            $this->applyDateAttributeOperatorFilter($query, $field, $criteria);
+        } else {
+            // String pattern for LIKE matching
+            $normalizedPattern = $this->normalizeDateSearchPattern($criteria);
+            if (!$normalizedPattern) {
+                return;
+            }
+
+            $query->whereHas('attributes', function ($q) use ($field, $normalizedPattern) {
+                $q->where('name', $field)
+                    ->where(function ($sub) use ($normalizedPattern) {
+                        $sub->whereRaw('text_value ILIKE ?', [$normalizedPattern])
+                            ->orWhereRaw('json_value::text ILIKE ?', [$normalizedPattern]);
+                    });
+            });
+        }
+    }
+
+    /**
+     * Apply operator-based filter for date attributes.
+     */
+    protected function applyDateAttributeOperatorFilter($query, string $field, array $criteria): void
+    {
+        $operator = $criteria['operator'] ?? '=';
+        $value    = $criteria['value']    ?? null;
+        $value2   = $criteria['value2']   ?? null;
+
+        if ($value === null) {
+            return;
+        }
+
+        // Normalize the date value to ISO format
+        $normalizedValue = $this->normalizeDateValue($value);
+
+        $query->whereHas('attributes', function ($q) use ($field, $operator, $normalizedValue, $value2) {
+            $q->where('name', $field);
+
+            if ($operator === 'between' && $value2 !== null) {
+                $normalizedValue2 = $this->normalizeDateValue($value2);
+                $q->where(function ($sub) use ($normalizedValue, $normalizedValue2) {
+                    $sub->whereBetween('text_value', [$normalizedValue, $normalizedValue2])
+                        ->orWhereRaw('json_value::text >= ? AND json_value::text <= ?', [$normalizedValue, $normalizedValue2]);
                 });
+            } else {
+                $q->where(function ($sub) use ($operator, $normalizedValue) {
+                    $sub->where('text_value', $operator, $normalizedValue)
+                        ->orWhereRaw("json_value::text {$operator} ?", [$normalizedValue]);
+                });
+            }
         });
     }
 
-    protected function applyBooleanAttributeFilter($query, string $field, string $pattern): void
+    /**
+     * Apply filter for boolean attributes.
+     * Supports both string patterns and direct boolean values.
+     */
+    protected function applyBooleanAttributeFilter($query, string $field, mixed $criteria): void
     {
-        $cleanPattern = strtolower(trim($pattern, '%'));
-        $boolValue    = in_array($cleanPattern, ['true', '1', 'yes'], true);
+        // Handle direct boolean values
+        if (is_bool($criteria)) {
+            $boolValue = $criteria;
+        } else {
+            // String pattern - normalize truthy/falsy strings to boolean
+            $cleanPattern = strtolower(trim((string)$criteria, '%'));
+            $boolValue    = in_array($cleanPattern, ['true', '1', 'yes'], true);
+        }
 
         $query->whereHas('attributes', function ($q) use ($field, $boolValue) {
             $q->where('name', $field)
@@ -323,26 +511,96 @@ class DuplicateRecordResolver
         });
     }
 
-    protected function applyNumericAttributeFilter($query, string $field, string $pattern): void
+    /**
+     * Apply filter for numeric attributes.
+     * Supports both string patterns and structured criteria.
+     */
+    protected function applyNumericAttributeFilter($query, string $field, mixed $criteria): void
     {
-        $query->whereHas('attributes', function ($q) use ($field, $pattern) {
-            $q->where('name', $field)
-                ->where(function ($sub) use ($pattern) {
-                    $sub->where('text_value', 'LIKE', $pattern)
-                        ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
+        if (is_array($criteria)) {
+            $this->applyNumericAttributeOperatorFilter($query, $field, $criteria);
+        } else {
+            // String pattern for LIKE matching
+            $query->whereHas('attributes', function ($q) use ($field, $criteria) {
+                $q->where('name', $field)
+                    ->where(function ($sub) use ($criteria) {
+                        $sub->whereRaw('text_value ILIKE ?', [$criteria])
+                            ->orWhereRaw('json_value::text ILIKE ?', [$criteria]);
+                    });
+            });
+        }
+    }
+
+    /**
+     * Apply operator-based filter for numeric attributes.
+     */
+    protected function applyNumericAttributeOperatorFilter($query, string $field, array $criteria): void
+    {
+        $operator = $criteria['operator'] ?? '=';
+        $value    = $criteria['value']    ?? null;
+        $value2   = $criteria['value2']   ?? null;
+
+        if ($value === null) {
+            return;
+        }
+
+        $query->whereHas('attributes', function ($q) use ($field, $operator, $value, $value2) {
+            $q->where('name', $field);
+
+            if ($operator === 'between' && $value2 !== null) {
+                $q->where(function ($sub) use ($value, $value2) {
+                    // Cast text_value to numeric for proper comparison
+                    $sub->whereRaw('CAST(text_value AS DECIMAL) >= ? AND CAST(text_value AS DECIMAL) <= ?', [$value, $value2])
+                        ->orWhereRaw('CAST(json_value::text AS DECIMAL) >= ? AND CAST(json_value::text AS DECIMAL) <= ?', [$value, $value2]);
                 });
+            } else {
+                $q->where(function ($sub) use ($operator, $value) {
+                    // Cast text_value to numeric for proper comparison
+                    $sub->whereRaw("CAST(text_value AS DECIMAL) {$operator} ?", [$value])
+                        ->orWhereRaw("CAST(json_value::text AS DECIMAL) {$operator} ?", [$value]);
+                });
+            }
         });
     }
 
-    protected function applyStringAttributeFilter($query, string $field, string $pattern): void
+    /**
+     * Apply filter for string attributes.
+     * Supports both string LIKE patterns and keyword arrays.
+     *
+     * Keyword array format: ['keyword1', 'keyword2', ...]
+     * All keywords must be present (AND logic), but order doesn't matter.
+     */
+    protected function applyStringAttributeFilter($query, string $field, mixed $criteria): void
     {
-        $query->whereHas('attributes', function ($q) use ($field, $pattern) {
-            $q->where('name', $field)
-                ->where(function ($sub) use ($pattern) {
-                    $sub->where('text_value', 'LIKE', $pattern)
-                        ->orWhereRaw('json_value::text LIKE ?', [$pattern]);
-                });
-        });
+        // Keyword array: all keywords must be present (AND logic)
+        if (is_array($criteria) && !empty($criteria) && isset($criteria[0]) && is_string($criteria[0])) {
+            $query->whereHas('attributes', function ($q) use ($field, $criteria) {
+                $q->where('name', $field)
+                    ->where(function ($sub) use ($criteria) {
+                        foreach ($criteria as $keyword) {
+                            if (is_string($keyword) && $keyword !== '') {
+                                $sub->where(function ($inner) use ($keyword) {
+                                    $inner->whereRaw('text_value ILIKE ?', ['%' . $keyword . '%'])
+                                        ->orWhereRaw('json_value::text ILIKE ?', ['%' . $keyword . '%']);
+                                });
+                            }
+                        }
+                    });
+            });
+
+            return;
+        }
+
+        // String LIKE pattern (alternative to keyword array)
+        if (is_string($criteria)) {
+            $query->whereHas('attributes', function ($q) use ($field, $criteria) {
+                $q->where('name', $field)
+                    ->where(function ($sub) use ($criteria) {
+                        $sub->whereRaw('text_value ILIKE ?', [$criteria])
+                            ->orWhereRaw('json_value::text ILIKE ?', [$criteria]);
+                    });
+            });
+        }
     }
 
     /**
@@ -433,40 +691,6 @@ class DuplicateRecordResolver
 
         // Parse and return result
         return $this->parseResolutionResult($threadRun, $candidates);
-    }
-
-    /**
-     * Quick check using exact field matching before LLM.
-     *
-     * Performs exact comparison of identity fields to avoid unnecessary LLM calls
-     * for obvious matches.
-     *
-     * @param  array  $extractedData  Extracted identifying data
-     * @param  Collection  $candidates  Collection of candidate TeamObjects
-     * @param  array  $identityFields  Fields to compare (if empty, compare all extracted fields)
-     * @return TeamObject|null Matching object if exact match found, null otherwise
-     */
-    public function quickMatchCheck(array $extractedData, Collection $candidates, array $identityFields = []): ?TeamObject
-    {
-        static::logDebug('Performing quick exact match check', [
-            'extracted_data'   => $extractedData,
-            'candidate_count'  => $candidates->count(),
-            'identity_fields'  => $identityFields,
-        ]);
-
-        foreach ($candidates as $candidate) {
-            if ($this->isExactMatch($extractedData, $candidate, $identityFields)) {
-                static::logDebug('Quick exact match found', [
-                    'object_id' => $candidate->id,
-                ]);
-
-                return $candidate;
-            }
-        }
-
-        static::logDebug('No exact match found');
-
-        return null;
     }
 
     /**
@@ -633,7 +857,7 @@ class DuplicateRecordResolver
         TaskRun $taskRun,
         TaskProcess $taskProcess,
         string $prompt
-    ): \App\Models\Agent\AgentThread {
+    ): AgentThread {
         $taskDefinition = $taskRun->taskDefinition;
 
         if (!$taskDefinition->agent) {
@@ -701,7 +925,7 @@ class DuplicateRecordResolver
     /**
      * Run the comparison agent thread and return the thread run.
      */
-    protected function runComparisonThread(\App\Models\Agent\AgentThread $thread, TaskProcess $taskProcess): \App\Models\Agent\AgentThreadRun
+    protected function runComparisonThread(AgentThread $thread, TaskProcess $taskProcess): AgentThreadRun
     {
         static::logDebug('Running comparison agent thread', [
             'thread_id' => $thread->id,
@@ -740,7 +964,7 @@ class DuplicateRecordResolver
     /**
      * Parse resolution result from LLM response using getJsonContent() method.
      */
-    protected function parseResolutionResult(\App\Models\Agent\AgentThreadRun $threadRun, Collection $candidates): ResolutionResult
+    protected function parseResolutionResult(AgentThreadRun $threadRun, Collection $candidates): ResolutionResult
     {
         static::logDebug('Parsing duplicate resolution result');
 

@@ -42,7 +42,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates with LIKE pattern search
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John Smith%']],
             parentObjectId: null,
@@ -50,9 +50,9 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns objects from current team
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($currentTeamObject->id, $candidates->first()->id);
-        $this->assertNotContains($otherTeamObject->id, $candidates->pluck('id'));
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($currentTeamObject->id, $result->candidates->first()->id);
+        $this->assertNotContains($otherTeamObject->id, $result->candidates->pluck('id'));
     }
 
     #[Test]
@@ -72,7 +72,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates for Client type
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John%']],
             parentObjectId: null,
@@ -80,8 +80,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns Client objects
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($client->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($client->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -106,7 +106,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates for schema1
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test%']],
             parentObjectId: null,
@@ -114,8 +114,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns objects from schema1
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object1->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object1->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -142,7 +142,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates with parent scope
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test%']],
             parentObjectId: $parentObject->id,
@@ -150,8 +150,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns objects with matching parent
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($childObject->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($childObject->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -165,7 +165,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates with empty search query (falls back to scope-only)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [],
             parentObjectId: null,
@@ -173,7 +173,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Returns limited number of results (limit 50 in executeSearchQuery, then take 20)
-        $this->assertLessThanOrEqual(50, $candidates->count());
+        $this->assertLessThanOrEqual(50, $result->candidates->count());
     }
 
     #[Test]
@@ -202,7 +202,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Finding candidates
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Client%']],
             parentObjectId: null,
@@ -210,7 +210,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Results are ordered by most recent first
-        $ids = $candidates->pluck('id')->toArray();
+        $ids = $result->candidates->pluck('id')->toArray();
         $this->assertEquals($newest->id, $ids[0]);
         $this->assertEquals($middle->id, $ids[1]);
         $this->assertEquals($oldest->id, $ids[2]);
@@ -233,7 +233,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with LIKE pattern
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Lichtenberg%']],
             parentObjectId: null,
@@ -241,8 +241,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns matching name
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($lichtenberg->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($lichtenberg->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -274,7 +274,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with LIKE pattern on attribute
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['title' => '%MD%']],
             parentObjectId: null,
@@ -282,8 +282,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only returns matching attribute
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($candidate->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($candidate->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -297,7 +297,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John Smith%']],
             parentObjectId: null,
@@ -305,7 +305,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Returns all 3 (within 1-5 optimal range)
-        $this->assertCount(3, $candidates);
+        $this->assertCount(3, $result->candidates);
     }
 
     #[Test]
@@ -331,7 +331,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with progressive queries (loose then restrictive)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [
                 ['name' => '%Smith%', 'title' => null],          // Loose: all 11 Smiths
@@ -342,8 +342,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Returns the more specific match
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($specificMatch->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($specificMatch->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -357,7 +357,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Second query is too restrictive (returns 0)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [
                 ['name' => '%Smith%'],                           // Returns 3
@@ -368,108 +368,76 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Falls back to first query results
-        $this->assertCount(3, $candidates);
+        $this->assertCount(3, $result->candidates);
     }
 
+    // ========================================================================
+    // Exact Match Edge Case Tests (testing isExactMatch behavior via findCandidates)
+    // ========================================================================
+
     #[Test]
-    public function quickMatchCheck_returns_exact_match_when_name_matches(): void
+    public function findCandidates_treats_empty_extracted_value_and_missing_candidate_field_as_match(): void
     {
-        // Given: Candidate with exact name match
+        // Given: TeamObject with only name set (no date)
         $candidate = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Client',
-            'name'    => 'John Smith',
+            'name'    => 'Test Client',
+            'date'    => null,
         ]);
 
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with exact name
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['name' => 'John Smith'],
-            candidates: $candidates
+        // When: Finding candidates with name that matches and date that is empty string
+        // Using identity fields to explicitly include 'date' in the comparison
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%Test Client%']],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Test Client', 'date' => ''],
+            identityFields: ['name', 'date']
         );
 
-        // Then: Returns the exact match
-        $this->assertNotNull($match);
-        $this->assertEquals($candidate->id, $match->id);
+        // Then: Returns exact match because both extracted (empty string) and candidate (missing) are effectively empty
+        $this->assertTrue($result->hasExactMatch(), 'Expected exact match when both extracted and candidate values are empty');
+        $this->assertEquals($candidate->id, $result->exactMatchId);
     }
 
     #[Test]
-    public function quickMatchCheck_returns_null_when_no_exact_match(): void
+    public function findCandidates_returns_no_exact_match_when_extracted_has_value_but_candidate_field_missing(): void
     {
-        // Given: Candidate with different name
+        // Given: TeamObject with only name set (no date)
         $candidate = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Client',
-            'name'    => 'John Smith',
+            'name'    => 'Test Client',
+            'date'    => null,
         ]);
 
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with different name
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['name' => 'Jane Doe'],
-            candidates: $candidates
+        // When: Finding candidates with name that matches but date has a value while candidate has none
+        // Using identity fields to explicitly include 'date' in the comparison
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%Test Client%']],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Test Client', 'date' => '2024-01-15'],
+            identityFields: ['name', 'date']
         );
 
-        // Then: Returns null
-        $this->assertNull($match);
+        // Then: No exact match because extracted has a date value but candidate does not
+        // Still returns candidate for LLM resolution
+        $this->assertFalse($result->hasExactMatch(), 'Expected no exact match when extracted has value but candidate field is missing');
+        $this->assertCount(1, $result->candidates);
     }
 
     #[Test]
-    public function quickMatchCheck_matches_date_fields(): void
-    {
-        // Given: Candidate with date
-        $candidate = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Accident',
-            'date'    => '2024-01-15',
-        ]);
-
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with matching date
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['date' => '2024-01-15'],
-            candidates: $candidates
-        );
-
-        // Then: Returns the match
-        $this->assertNotNull($match);
-        $this->assertEquals($candidate->id, $match->id);
-    }
-
-    #[Test]
-    public function quickMatchCheck_matches_multiple_fields(): void
-    {
-        // Given: Candidate with multiple matching fields
-        $candidate = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'John Smith',
-            'date'    => '1990-05-20',
-        ]);
-
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with all fields matching
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['name' => 'John Smith', 'date' => '1990-05-20'],
-            candidates: $candidates
-        );
-
-        // Then: Returns the match
-        $this->assertNotNull($match);
-        $this->assertEquals($candidate->id, $match->id);
-    }
-
-    #[Test]
-    public function quickMatchCheck_matches_team_object_attributes(): void
+    public function findCandidates_exact_matches_team_object_attributes(): void
     {
         // Given: TeamObject with a TeamObjectAttribute
         $candidate = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'type'    => 'Accident',
+            'name'    => 'Test Accident',
         ]);
 
         // Create a TeamObjectAttribute with text_value (uses getValue() method)
@@ -479,72 +447,19 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
             'text_value'     => '2024-01-15',
         ]);
 
-        // Reload to get the attributes relationship
-        $candidate->load('attributes');
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with extracted data containing the attribute field
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['accident_date' => '2024-01-15'],
-            candidates: $candidates
+        // When: Finding candidates with extracted data containing the attribute field
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [['name' => '%Test Accident%']],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Test Accident', 'accident_date' => '2024-01-15'],
+            identityFields: ['name', 'accident_date']
         );
 
-        // Then: Returns the match (this tests that getValue() is used correctly)
-        $this->assertNotNull($match, 'Expected match on TeamObjectAttribute field using getValue()');
-        $this->assertEquals($candidate->id, $match->id);
-    }
-
-    #[Test]
-    public function quickMatchCheck_treats_empty_extracted_value_and_missing_candidate_field_as_match(): void
-    {
-        // Given: TeamObject with only name set (no date)
-        $candidate = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Test Client',
-            'date'    => null,
-        ]);
-
-        $candidate->load('attributes');
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with name that matches and date that is empty string
-        // Using identity fields to explicitly include 'date' in the comparison
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['name' => 'Test Client', 'date' => ''],
-            candidates: $candidates,
-            identityFields: ['name', 'date']
-        );
-
-        // Then: Returns match because both extracted (empty string) and candidate (missing) are effectively empty
-        $this->assertNotNull($match, 'Expected match when both extracted and candidate values are empty');
-        $this->assertEquals($candidate->id, $match->id);
-    }
-
-    #[Test]
-    public function quickMatchCheck_returns_null_when_extracted_has_value_but_candidate_field_missing(): void
-    {
-        // Given: TeamObject with only name set (no date)
-        $candidate = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Test Client',
-            'date'    => null,
-        ]);
-
-        $candidate->load('attributes');
-        $candidates = collect([$candidate]);
-
-        // When: Quick matching with name that matches but date has a value while candidate has none
-        // Using identity fields to explicitly include 'date' in the comparison
-        $match = $this->resolver->quickMatchCheck(
-            extractedData: ['name' => 'Test Client', 'date' => '2024-01-15'],
-            candidates: $candidates,
-            identityFields: ['name', 'date']
-        );
-
-        // Then: Returns null because extracted has a date value but candidate does not
-        $this->assertNull($match, 'Expected no match when extracted has value but candidate field is missing');
+        // Then: Returns exact match (this tests that getValue() is used correctly)
+        $this->assertTrue($result->hasExactMatch(), 'Expected exact match on TeamObjectAttribute field using getValue()');
+        $this->assertEquals($candidate->id, $result->exactMatchId);
     }
 
     #[Test]
@@ -559,7 +474,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with MM/DD/YYYY format (how LLM might extract it)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => '%10/23/2017%']], // US date format
             parentObjectId: null,
@@ -567,8 +482,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds the object because date pattern is normalized
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -583,7 +498,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with already ISO format
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => '%2017-10-23%']],
             parentObjectId: null,
@@ -591,8 +506,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Still finds the object
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -629,7 +544,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with MM/DD/YYYY format on attribute (schema identifies it as a date field)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Demand',
             searchQueries: [['accident_date' => '%10/23/2017%']], // US date format
             parentObjectId: null,
@@ -637,8 +552,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds the object because date attribute pattern is normalized
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -675,7 +590,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with non-ISO format (schema identifies it as a date field)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['injury_date' => '%01/15/2024%']],
             parentObjectId: null,
@@ -683,8 +598,55 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds the object because schema defines injury_date as a date field
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_date_search_uses_iso_format_only(): void
+    {
+        // Given: Schema definition with accident_date as a date field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'accident_date' => [
+                        'type'   => 'string',
+                        'format' => 'date',
+                    ],
+                ],
+            ],
+        ]);
+
+        // Given: TeamObject with accident_date stored in ISO format (the ONLY supported format)
+        $object = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Test Demand',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $object->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-23', // ISO format (the only format stored)
+        ]);
+
+        // When: Searching with raw format pattern (e.g., from LLM extraction)
+        // The search pattern is normalized to ISO format before querying
+        $result = $this->resolver->findCandidates(
+            objectType: 'Demand',
+            searchQueries: [['accident_date' => '%10/23/2017%']], // Raw US date format in search
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Finds the object because search pattern is normalized to ISO format
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -704,7 +666,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with pattern containing date-like string in non-date field
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['notes' => '%10/23/2017%']],
             parentObjectId: null,
@@ -712,8 +674,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds the object (pattern NOT normalized, matches raw text)
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($object->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     // ========================================================================
@@ -737,7 +699,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching by name pattern
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John%']],
             parentObjectId: null,
@@ -745,8 +707,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only finds matching name
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($matchingObject->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -792,7 +754,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching for active clients
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_active' => 'true']],
             parentObjectId: null,
@@ -800,8 +762,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Only finds active client
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($activeObject->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($activeObject->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -847,7 +809,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching by price pattern
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Product',
             searchQueries: [['price' => '%99.99%']],
             parentObjectId: null,
@@ -855,8 +817,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds matching product
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($matchingProduct->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingProduct->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -902,7 +864,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching by quantity pattern
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Product',
             searchQueries: [['quantity' => '%42%']],
             parentObjectId: null,
@@ -910,8 +872,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds matching product
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($matchingProduct->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingProduct->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -957,7 +919,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching by email pattern
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['email' => '%example.com%']],
             parentObjectId: null,
@@ -965,8 +927,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds matching client
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($matchingClient->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingClient->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -999,7 +961,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with non-ISO format
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Event',
             searchQueries: [['start_time' => '%01/15/2024%']],
             parentObjectId: null,
@@ -1007,8 +969,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds event due to date normalization
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($event->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($event->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -1054,7 +1016,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching with '1' (truthy value)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_verified' => '1']],
             parentObjectId: null,
@@ -1062,8 +1024,8 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds verified client because '1' is normalized to 'true'
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($verifiedClient->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($verifiedClient->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -1109,7 +1071,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching for non-premium clients
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_premium' => 'false']],
             parentObjectId: null,
@@ -1117,8 +1079,121 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds regular client
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($regularClient->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($regularClient->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_finds_date_field_in_nested_schema(): void
+    {
+        // Given: Schema definition with nested structure (accident_date inside demand object)
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Case',
+            'name'    => 'Nested Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'demand' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'accident_date' => [
+                                'type'   => 'string',
+                                'format' => 'date',
+                            ],
+                            'client_name' => [
+                                'type' => 'string',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Given: TeamObject with accident_date attribute in ISO format
+        $object = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Case',
+            'name'                 => 'Test Case',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $object->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-23', // ISO format stored
+        ]);
+
+        // When: Searching with MM/DD/YYYY format
+        // The resolver should find accident_date in the nested schema and recognize it as a date field
+        $result = $this->resolver->findCandidates(
+            objectType: 'Case',
+            searchQueries: [['accident_date' => '%10/23/2017%']], // US date format
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Finds the object because the resolver searches nested schema properties
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_finds_field_in_array_items_nested_schema(): void
+    {
+        // Given: Schema definition with array items nesting
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Invoice',
+            'name'    => 'Array Items Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'line_items' => [
+                        'type'  => 'array',
+                        'items' => [
+                            'type'       => 'object',
+                            'properties' => [
+                                'due_date' => [
+                                    'type'   => 'string',
+                                    'format' => 'date',
+                                ],
+                                'amount' => [
+                                    'type' => 'number',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+
+        // Given: TeamObject with due_date attribute
+        $object = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Invoice',
+            'name'                 => 'Test Invoice',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $object->id,
+            'name'           => 'due_date',
+            'text_value'     => '2024-03-15', // ISO format stored
+        ]);
+
+        // When: Searching with MM/DD/YYYY format
+        // The resolver should find due_date in the array items schema
+        $result = $this->resolver->findCandidates(
+            objectType: 'Invoice',
+            searchQueries: [['due_date' => '%03/15/2024%']], // US date format
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Finds the object because the resolver searches array items schema
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
     }
 
     #[Test]
@@ -1152,7 +1227,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         ]);
 
         // When: Searching without schema (type defaults to string)
-        $candidates = $this->resolver->findCandidates(
+        $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['custom_field' => '%custom value%']],
             parentObjectId: null,
@@ -1160,7 +1235,975 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         );
 
         // Then: Finds matching object using string LIKE pattern
-        $this->assertCount(1, $candidates);
-        $this->assertEquals($matchingObject->id, $candidates->first()->id);
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    // ========================================================================
+    // Structured Search Criteria Tests (operator-based queries)
+    // ========================================================================
+
+    #[Test]
+    public function findCandidates_filters_native_date_with_equals_operator(): void
+    {
+        // Given: TeamObjects with different dates
+        $matchingObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Accident 1',
+            'date'    => '2017-10-23',
+        ]);
+
+        TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Accident 2',
+            'date'    => '2017-10-24',
+        ]);
+
+        // When: Searching with structured date criteria (equals operator)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [['date' => ['operator' => '=', 'value' => '2017-10-23']]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Only finds matching date
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_native_date_with_between_operator(): void
+    {
+        // Given: TeamObjects with different dates
+        $inRange1 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Accident 1',
+            'date'    => '2017-06-15',
+        ]);
+
+        $inRange2 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Accident 2',
+            'date'    => '2017-09-01',
+        ]);
+
+        TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Accident 3',
+            'date'    => '2018-01-01',
+        ]);
+
+        // When: Searching with between operator
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [[
+                'date' => [
+                    'operator' => 'between',
+                    'value'    => '2017-01-01',
+                    'value2'   => '2017-12-31',
+                ],
+            ]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Finds objects within the date range
+        $this->assertCount(2, $result->candidates);
+        $candidateIds = $result->candidates->pluck('id')->toArray();
+        $this->assertContains($inRange1->id, $candidateIds);
+        $this->assertContains($inRange2->id, $candidateIds);
+    }
+
+    #[Test]
+    public function findCandidates_filters_native_date_with_greater_than_operator(): void
+    {
+        // Given: TeamObjects with different dates
+        TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Old Accident',
+            'date'    => '2017-01-01',
+        ]);
+
+        $newAccident = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'New Accident',
+            'date'    => '2024-06-15',
+        ]);
+
+        // When: Searching with greater than operator
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [['date' => ['operator' => '>', 'value' => '2020-01-01']]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Only finds newer accident
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($newAccident->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_date_attribute_with_equals_operator(): void
+    {
+        // Given: Schema with date field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'accident_date' => ['type' => 'string', 'format' => 'date'],
+                ],
+            ],
+        ]);
+
+        $matchingObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Demand 1',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingObject->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-23',
+        ]);
+
+        $otherObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Demand 2',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherObject->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-24',
+        ]);
+
+        // When: Searching with structured criteria
+        $result = $this->resolver->findCandidates(
+            objectType: 'Demand',
+            searchQueries: [['accident_date' => ['operator' => '=', 'value' => '2017-10-23']]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds matching date
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_date_attribute_with_between_operator(): void
+    {
+        // Given: Schema with date field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'accident_date' => ['type' => 'string', 'format' => 'date'],
+                ],
+            ],
+        ]);
+
+        $inRangeObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Demand 1',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $inRangeObject->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-06-15',
+        ]);
+
+        $outOfRangeObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Demand 2',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $outOfRangeObject->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2018-06-15',
+        ]);
+
+        // When: Searching with between operator
+        $result = $this->resolver->findCandidates(
+            objectType: 'Demand',
+            searchQueries: [[
+                'accident_date' => [
+                    'operator' => 'between',
+                    'value'    => '2017-01-01',
+                    'value2'   => '2017-12-31',
+                ],
+            ]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds object within range
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($inRangeObject->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_boolean_attribute_with_direct_boolean(): void
+    {
+        // Given: Schema with boolean field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'is_active' => ['type' => 'boolean'],
+                ],
+            ],
+        ]);
+
+        $activeClient = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Client',
+            'name'                 => 'Active Client',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $activeClient->id,
+            'name'           => 'is_active',
+            'text_value'     => 'true',
+        ]);
+
+        $inactiveClient = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Client',
+            'name'                 => 'Inactive Client',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $inactiveClient->id,
+            'name'           => 'is_active',
+            'text_value'     => 'false',
+        ]);
+
+        // When: Searching with direct boolean value (new format)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['is_active' => true]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds active client
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($activeClient->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_boolean_attribute_with_false_boolean(): void
+    {
+        // Given: Schema with boolean field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'is_premium' => ['type' => 'boolean'],
+                ],
+            ],
+        ]);
+
+        $premiumClient = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Client',
+            'name'                 => 'Premium Client',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $premiumClient->id,
+            'name'           => 'is_premium',
+            'text_value'     => 'true',
+        ]);
+
+        $regularClient = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Client',
+            'name'                 => 'Regular Client',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $regularClient->id,
+            'name'           => 'is_premium',
+            'text_value'     => 'false',
+        ]);
+
+        // When: Searching with direct false boolean
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['is_premium' => false]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds regular client
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($regularClient->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_numeric_attribute_with_equals_operator(): void
+    {
+        // Given: Schema with number field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Product',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'price' => ['type' => 'number'],
+                ],
+            ],
+        ]);
+
+        $matchingProduct = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Product',
+            'name'                 => 'Product A',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingProduct->id,
+            'name'           => 'price',
+            'text_value'     => '99.99',
+        ]);
+
+        $otherProduct = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Product',
+            'name'                 => 'Product B',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherProduct->id,
+            'name'           => 'price',
+            'text_value'     => '49.99',
+        ]);
+
+        // When: Searching with structured numeric criteria
+        $result = $this->resolver->findCandidates(
+            objectType: 'Product',
+            searchQueries: [['price' => ['operator' => '=', 'value' => 99.99]]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Finds matching product
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingProduct->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_numeric_attribute_with_greater_than_or_equal_operator(): void
+    {
+        // Given: Schema with integer field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Person',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'age' => ['type' => 'integer'],
+                ],
+            ],
+        ]);
+
+        $adult = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Person',
+            'name'                 => 'Adult',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $adult->id,
+            'name'           => 'age',
+            'text_value'     => '25',
+        ]);
+
+        $minor = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Person',
+            'name'                 => 'Minor',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $minor->id,
+            'name'           => 'age',
+            'text_value'     => '15',
+        ]);
+
+        // When: Searching for age >= 18
+        $result = $this->resolver->findCandidates(
+            objectType: 'Person',
+            searchQueries: [['age' => ['operator' => '>=', 'value' => 18]]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds adult
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($adult->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_filters_numeric_attribute_with_between_operator(): void
+    {
+        // Given: Schema with number field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Product',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'price' => ['type' => 'number'],
+                ],
+            ],
+        ]);
+
+        $midRangeProduct = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Product',
+            'name'                 => 'Mid-Range Product',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $midRangeProduct->id,
+            'name'           => 'price',
+            'text_value'     => '75.00',
+        ]);
+
+        $cheapProduct = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Product',
+            'name'                 => 'Cheap Product',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $cheapProduct->id,
+            'name'           => 'price',
+            'text_value'     => '10.00',
+        ]);
+
+        $expensiveProduct = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Product',
+            'name'                 => 'Expensive Product',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $expensiveProduct->id,
+            'name'           => 'price',
+            'text_value'     => '200.00',
+        ]);
+
+        // When: Searching for price between 50 and 100
+        $result = $this->resolver->findCandidates(
+            objectType: 'Product',
+            searchQueries: [[
+                'price' => [
+                    'operator' => 'between',
+                    'value'    => 50,
+                    'value2'   => 100,
+                ],
+            ]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds mid-range product
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($midRangeProduct->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_handles_mixed_criteria_types(): void
+    {
+        // Given: Schema with mixed field types
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'client_name'   => ['type' => 'string'],
+                    'accident_date' => ['type' => 'string', 'format' => 'date'],
+                    'is_active'     => ['type' => 'boolean'],
+                ],
+            ],
+        ]);
+
+        $matchingDemand = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'John Smith Demand',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingDemand->id,
+            'name'           => 'client_name',
+            'text_value'     => 'John Smith',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingDemand->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-23',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingDemand->id,
+            'name'           => 'is_active',
+            'text_value'     => 'true',
+        ]);
+
+        $otherDemand = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Jane Doe Demand',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherDemand->id,
+            'name'           => 'client_name',
+            'text_value'     => 'Jane Doe',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherDemand->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2017-10-23',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $otherDemand->id,
+            'name'           => 'is_active',
+            'text_value'     => 'false',
+        ]);
+
+        // When: Searching with mixed criteria types (string LIKE, date operator, boolean)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Demand',
+            searchQueries: [[
+                'client_name'   => '%John Smith%',                                       // String LIKE
+                'accident_date' => ['operator' => '=', 'value' => '2017-10-23'],         // Date operator
+                'is_active'     => true,                                                  // Boolean
+            ]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds the matching demand
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingDemand->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_skips_empty_array_criteria(): void
+    {
+        // Given: TeamObject
+        $object = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'Test Client',
+        ]);
+
+        // When: Searching with empty array criteria (should be skipped)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%Test%', 'some_field' => []]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Finds object (empty array criteria was skipped)
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
+    }
+
+    // ========================================================================
+    // Exact Name Match Tests
+    // ========================================================================
+
+    #[Test]
+    public function findCandidates_returns_exact_name_match_before_search_queries(): void
+    {
+        // Given: TeamObject with exact name
+        $existingObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical neck pain',
+        ]);
+
+        // When: Finding candidates with extracted name that exactly matches
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['name' => '%Cervical%']],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Cervical neck pain'],
+            identityFields: ['name']
+        );
+
+        // Then: Returns exact match immediately with exactMatchId set
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($existingObject->id, $result->candidates->first()->id);
+        $this->assertTrue($result->hasExactMatch());
+        $this->assertEquals($existingObject->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_exact_name_match_is_case_insensitive(): void
+    {
+        // Given: TeamObject with mixed case name
+        $existingObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical Neck Pain',
+        ]);
+
+        // When: Finding with different case
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'cervical neck pain'],
+            identityFields: ['name']
+        );
+
+        // Then: Still finds exact match (case-insensitive)
+        $this->assertTrue($result->hasExactMatch());
+        $this->assertEquals($existingObject->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_exact_name_match_respects_parent_scope(): void
+    {
+        // Given: Two TeamObjects with same name but different parents
+        $parent1 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Case',
+        ]);
+
+        $parent2 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Case',
+        ]);
+
+        $child1 = TeamObject::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'type'           => 'Diagnosis',
+            'name'           => 'Back pain',
+            'root_object_id' => $parent1->id,
+        ]);
+
+        TeamObject::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'type'           => 'Diagnosis',
+            'name'           => 'Back pain',
+            'root_object_id' => $parent2->id,
+        ]);
+
+        // When: Finding with parent scope
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [],
+            parentObjectId: $parent1->id,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Back pain'],
+            identityFields: ['name']
+        );
+
+        // Then: Only finds the child under parent1
+        $this->assertTrue($result->hasExactMatch());
+        $this->assertEquals($child1->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_proceeds_to_search_when_no_exact_name_match(): void
+    {
+        // Given: TeamObject with similar but not exact name
+        $existingObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical spine pain',
+        ]);
+
+        // When: Finding with different name but matching search query
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['name' => '%Cervical%']],
+            parentObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Cervical neck pain'],
+            identityFields: ['name']
+        );
+
+        // Then: No exact match, but finds via search query
+        $this->assertFalse($result->hasExactMatch());
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($existingObject->id, $result->candidates->first()->id);
+    }
+
+    // ========================================================================
+    // Keyword Array Search Tests
+    // ========================================================================
+
+    #[Test]
+    public function findCandidates_filters_name_with_keyword_array(): void
+    {
+        // Given: TeamObjects with different names
+        $matchingObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical neck pain syndrome',
+        ]);
+
+        $partialMatch = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical disc herniation',
+        ]);
+
+        TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Lower back pain',
+        ]);
+
+        // When: Searching with keyword array (ALL must be present)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['name' => ['cervical', 'neck', 'pain']]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Only finds object with ALL keywords present
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_keyword_array_order_independent(): void
+    {
+        // Given: TeamObject with words in different order
+        $object1 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Neck pain cervical',
+        ]);
+
+        $object2 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Cervical neck pain',
+        ]);
+
+        $object3 = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Pain in cervical neck region',
+        ]);
+
+        // When: Searching with keywords in any order
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['name' => ['cervical', 'neck', 'pain']]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Finds all objects regardless of word order
+        $this->assertCount(3, $result->candidates);
+        $candidateIds = $result->candidates->pluck('id')->toArray();
+        $this->assertContains($object1->id, $candidateIds);
+        $this->assertContains($object2->id, $candidateIds);
+        $this->assertContains($object3->id, $candidateIds);
+    }
+
+    #[Test]
+    public function findCandidates_keyword_array_case_insensitive(): void
+    {
+        // Given: TeamObject with mixed case
+        $object = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'CERVICAL Neck PAIN',
+        ]);
+
+        // When: Searching with different case keywords
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['name' => ['Cervical', 'NECK', 'pain']]],
+            parentObjectId: null,
+            schemaDefinitionId: null
+        );
+
+        // Then: Finds object (case-insensitive)
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($object->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_keyword_array_on_string_attribute(): void
+    {
+        // Given: Schema with string field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'description' => ['type' => 'string'],
+                ],
+            ],
+        ]);
+
+        $matchingObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Diagnosis',
+            'name'                 => 'Test Diagnosis',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingObject->id,
+            'name'           => 'description',
+            'text_value'     => 'Chronic cervical spine pain with radiculopathy',
+        ]);
+
+        $nonMatchingObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Diagnosis',
+            'name'                 => 'Other Diagnosis',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $nonMatchingObject->id,
+            'name'           => 'description',
+            'text_value'     => 'Chronic lumbar spine pain',
+        ]);
+
+        // When: Searching with keyword array on attribute
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [['description' => ['cervical', 'spine', 'pain']]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds object with ALL keywords in attribute
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    #[Test]
+    public function findCandidates_mixed_keyword_array_and_string_criteria(): void
+    {
+        // Given: Schema with multiple fields
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Diagnosis',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'category' => ['type' => 'string'],
+                ],
+            ],
+        ]);
+
+        $matchingObject = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Diagnosis',
+            'name'                 => 'Cervical neck pain',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $matchingObject->id,
+            'name'           => 'category',
+            'text_value'     => 'Spinal',
+        ]);
+
+        $partialMatch = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Diagnosis',
+            'name'                 => 'Cervical neck pain',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $partialMatch->id,
+            'name'           => 'category',
+            'text_value'     => 'Neurological',
+        ]);
+
+        // When: Searching with keyword array for name and string LIKE for category
+        $result = $this->resolver->findCandidates(
+            objectType: 'Diagnosis',
+            searchQueries: [[
+                'name'     => ['cervical', 'neck'],
+                'category' => '%Spinal%',
+            ]],
+            parentObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id
+        );
+
+        // Then: Only finds object matching both criteria
+        $this->assertCount(1, $result->candidates);
+        $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
     }
 }

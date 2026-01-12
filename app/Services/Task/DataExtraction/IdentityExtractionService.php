@@ -13,6 +13,7 @@ use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
+use App\Traits\SchemaFieldHelper;
 use App\Traits\TeamObjectRelationshipHelper;
 use Exception;
 use Illuminate\Support\Collection;
@@ -41,6 +42,7 @@ use Illuminate\Support\Collection;
 class IdentityExtractionService
 {
     use HasDebugLogging;
+    use SchemaFieldHelper;
     use TeamObjectRelationshipHelper;
 
     /**
@@ -311,7 +313,7 @@ class IdentityExtractionService
      * this method iterates through each item in the extracted array, performs duplicate resolution
      * for each, creates/updates TeamObjects, and stores all resolved IDs.
      *
-     * Returns the first created TeamObject for backwards compatibility.
+     * Returns the first created TeamObject (method signature requires single return type).
      */
     protected function executeArrayIdentityExtraction(
         TaskRun $taskRun,
@@ -492,7 +494,8 @@ class IdentityExtractionService
         $objectType       = $group['object_type']       ?? '';
 
         // Build _search_query schema from identity fields (embedded in each object)
-        $searchQuerySchema = $this->buildSearchQuerySchema($identityFields);
+        // Pass schema to enable type-aware search queries for dates, booleans, numbers
+        $searchQuerySchema = $this->buildSearchQuerySchema($identityFields, $schemaDefinition->schema);
 
         // Get the leaf key and build simplified schema
         $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
@@ -638,32 +641,164 @@ class IdentityExtractionService
     }
 
     /**
-     * Build the _search_query schema as an array of query objects from least to most restrictive.
+     * Build the _search_query schema as an array of query objects from SPECIFIC to BROAD.
      *
-     * The LLM will return multiple search queries where:
-     * - First query uses only the most identifying field (usually name)
-     * - Subsequent queries add more fields to narrow results
+     * The LLM will return MINIMUM 3 search queries ordered from most specific to least specific:
+     * - Query 1: Most specific - use exact extracted values
+     * - Query 2: Less specific - key identifying terms
+     * - Query 3: Broadest - general concept only
+     *
+     * This enables efficient duplicate detection by checking for exact matches first,
+     * then progressively broadening if needed.
+     *
+     * Field types are inferred from the schema definition:
+     * - Strings: Use LIKE pattern with % wildcards
+     * - Dates: Use operator-based comparison (=, <, >, <=, >=, between)
+     * - Booleans: Use true/false directly
+     * - Numbers/Integers: Use operator-based comparison (=, <, >, <=, >=, between)
      *
      * @param  array<string>  $identityFields
-     * @return array{type: string, description: string, items: array}
+     * @param  array|null  $schema  The schema definition to determine field types
+     * @return array{type: string, description: string, items: array, minItems: int}
      */
-    protected function buildSearchQuerySchema(array $identityFields): array
+    protected function buildSearchQuerySchema(array $identityFields, ?array $schema = null): array
     {
         $properties = [];
         foreach ($identityFields as $field) {
-            $properties[$field] = [
-                'type'        => ['string', 'null'],
-                'description' => "SQL LIKE pattern for searching {$field} (use % wildcards), or null to skip this field",
-            ];
+            $properties[$field] = $this->buildFieldSearchSchema($field, $schema);
         }
 
         return [
             'type'        => 'array',
-            'description' => 'Array of search queries from LEAST to MOST restrictive. First query should use only the most identifying field (usually name). Add more fields in subsequent queries only if needed to narrow results. Use SQL LIKE patterns with % wildcards. Set field to null to skip it in that query.',
+            'description' => 'MINIMUM 3 search queries ordered from MOST SPECIFIC to LEAST SPECIFIC (exact match first, then progressively broader). Purpose: Find existing records efficiently - we check for exact matches first, then broaden if needed. Query 1: Most specific - use exact extracted values. Query 2: Less specific - key identifying terms. Query 3: Broadest - general concept only. Example for "Dr. John Smith": [{name: "%Dr. John Smith%"}, {name: "%John Smith%"}, {name: "%Smith%"}].',
             'items'       => [
                 'type'       => 'object',
                 'properties' => $properties,
             ],
+            'minItems'    => 3,
+        ];
+    }
+
+    /**
+     * Build the search schema for a single field based on its type.
+     *
+     * Field types:
+     * - Strings: LIKE pattern with % wildcards
+     * - Dates: Operator-based comparison with ISO format values
+     * - Booleans: Direct true/false
+     * - Numbers/Integers: Operator-based comparison
+     */
+    protected function buildFieldSearchSchema(string $fieldName, ?array $schema): array
+    {
+        $fieldType = $this->determineFieldType($fieldName, $schema);
+
+        return match ($fieldType) {
+            'date', 'date-time' => $this->buildDateSearchSchema($fieldName),
+            'boolean'           => $this->buildBooleanSearchSchema($fieldName),
+            'number', 'integer' => $this->buildNumericSearchSchema($fieldName, $fieldType),
+            default             => $this->buildStringSearchSchema($fieldName),
+        };
+    }
+
+    /**
+     * Determine the type of a field from the schema definition.
+     *
+     * Delegates to SchemaFieldHelper trait with special handling for native TeamObject columns.
+     */
+    protected function determineFieldType(string $fieldName, ?array $schema): string
+    {
+        // Handle native TeamObject columns
+        if ($fieldName === 'name') {
+            return 'string';
+        }
+        if ($fieldName === 'date') {
+            return 'date';
+        }
+
+        // Delegate to trait for schema-based field type detection
+        return $this->getSchemaFieldType($fieldName, $schema);
+    }
+
+    /**
+     * Build search schema for string fields (keyword array).
+     *
+     * Returns a schema for keyword arrays where ALL keywords must be present (AND logic)
+     * but order doesn't matter. This enables flexible matching:
+     * - ['neck', 'pain', 'cervical'] matches 'Cervical neck pain', 'Neck pain - cervical', etc.
+     */
+    protected function buildStringSearchSchema(string $fieldName): array
+    {
+        return [
+            'type'        => ['array', 'null'],
+            'items'       => ['type' => 'string'],
+            'description' => "Keywords to search for in {$fieldName} (ALL must be present, order doesn't matter). Example: ['neck', 'pain', 'cervical'] matches 'Cervical neck pain', 'Neck pain - cervical', etc. Use 2-4 keywords for specific searches, 1-2 for broad searches. Set to null to skip this field.",
+        ];
+    }
+
+    /**
+     * Build search schema for date fields (operator-based).
+     */
+    protected function buildDateSearchSchema(string $fieldName): array
+    {
+        return [
+            'type'        => ['object', 'null'],
+            'properties'  => [
+                'operator' => [
+                    'type'        => 'string',
+                    'enum'        => ['=', '<', '>', '<=', '>=', 'between'],
+                    'description' => 'Comparison operator',
+                ],
+                'value'    => [
+                    'type'        => 'string',
+                    'description' => 'Date value in ISO format YYYY-MM-DD',
+                ],
+                'value2'   => [
+                    'type'        => 'string',
+                    'description' => "End date for 'between' operator in ISO format YYYY-MM-DD",
+                ],
+            ],
+            'required'    => ['operator', 'value'],
+            'description' => "Date comparison for {$fieldName}. Use operator with ISO date value (YYYY-MM-DD). Examples: {\"operator\": \"=\", \"value\": \"2017-10-23\"} for exact match, {\"operator\": \"between\", \"value\": \"2017-01-01\", \"value2\": \"2017-12-31\"} for range. Set to null to skip.",
+        ];
+    }
+
+    /**
+     * Build search schema for boolean fields.
+     */
+    protected function buildBooleanSearchSchema(string $fieldName): array
+    {
+        return [
+            'type'        => ['boolean', 'null'],
+            'description' => "Boolean value for {$fieldName}. Use true or false directly. Set to null to skip.",
+        ];
+    }
+
+    /**
+     * Build search schema for numeric fields (operator-based).
+     */
+    protected function buildNumericSearchSchema(string $fieldName, string $numericType): array
+    {
+        $valueType = $numericType === 'integer' ? 'integer' : 'number';
+
+        return [
+            'type'        => ['object', 'null'],
+            'properties'  => [
+                'operator' => [
+                    'type'        => 'string',
+                    'enum'        => ['=', '<', '>', '<=', '>=', 'between'],
+                    'description' => 'Comparison operator',
+                ],
+                'value'    => [
+                    'type'        => $valueType,
+                    'description' => 'Numeric value to compare',
+                ],
+                'value2'   => [
+                    'type'        => $valueType,
+                    'description' => "End value for 'between' operator",
+                ],
+            ],
+            'required'    => ['operator', 'value'],
+            'description' => "Numeric comparison for {$fieldName}. Use operator with {$numericType} value. Examples: {\"operator\": \"=\", \"value\": 42} for exact match, {\"operator\": \">=\", \"value\": 18} for minimum, {\"operator\": \"between\", \"value\": 10, \"value2\": 100} for range. Set to null to skip.",
         ];
     }
 
@@ -759,7 +894,8 @@ class IdentityExtractionService
     /**
      * Resolve duplicate using DuplicateRecordResolver.
      *
-     * Performs quick exact-match first (optimization), then falls back to LLM resolution.
+     * The exact match check is performed inside findCandidates(), which returns
+     * an exactMatchId when found. If no exact match, falls back to LLM resolution.
      */
     protected function resolveDuplicate(
         TaskRun $taskRun,
@@ -775,44 +911,43 @@ class IdentityExtractionService
             return null;
         }
 
-        // Convert search query to array format if needed
-        // The LLM returns an array of queries from least to most restrictive
-        // If we got a single object (backwards compat), wrap it in an array
+        // The LLM returns an array of queries from most to least restrictive.
+        // Normalize to ensure we have the expected array format.
         $searchQueries = $this->normalizeSearchQueries($searchQuery, $extractedData);
 
-        $resolver   = app(DuplicateRecordResolver::class);
-        $candidates = $resolver->findCandidates(
+        $resolver = app(DuplicateRecordResolver::class);
+        $result   = $resolver->findCandidates(
             objectType: $identityGroup['object_type'],
             searchQueries: $searchQueries,
             parentObjectId: $parentObjectId,
-            schemaDefinitionId: $taskRun->taskDefinition->schema_definition_id
+            schemaDefinitionId: $taskRun->taskDefinition->schema_definition_id,
+            extractedData: $extractedData,
+            identityFields: $identityGroup['identity_fields'] ?? []
         );
 
-        if ($candidates->isEmpty()) {
+        // If exact match was found during candidate search, return immediately
+        if ($result->hasExactMatch()) {
+            static::logDebug('Exact match found during candidate search', ['object_id' => $result->exactMatchId]);
+
+            return $result->exactMatchId;
+        }
+
+        if ($result->candidates->isEmpty()) {
             return null;
         }
 
-        // Try quick exact-match first (optimization - avoids LLM call)
-        $identityFields = $identityGroup['identity_fields'] ?? [];
-        $quickMatch     = $resolver->quickMatchCheck($extractedData, $candidates, $identityFields);
-        if ($quickMatch) {
-            static::logDebug('Quick exact match found', ['object_id' => $quickMatch->id]);
-
-            return $quickMatch->id;
-        }
-
         // LLM Call #2: Resolve which candidate (if any) matches
-        $result = $resolver->resolveDuplicate(
+        $resolution = $resolver->resolveDuplicate(
             extractedData: $extractedData,
-            candidates: $candidates,
+            candidates: $result->candidates,
             taskRun: $taskRun,
             taskProcess: $taskProcess
         );
 
-        if ($result->hasDuplicate()) {
-            static::logDebug('LLM resolution found match', ['object_id' => $result->existingObjectId]);
+        if ($resolution->hasDuplicate()) {
+            static::logDebug('LLM resolution found match', ['object_id' => $resolution->existingObjectId]);
 
-            return $result->existingObjectId;
+            return $resolution->existingObjectId;
         }
 
         return null;
@@ -821,8 +956,8 @@ class IdentityExtractionService
     /**
      * Normalize search queries to array format.
      *
-     * The LLM returns _search_query as an array of query objects from least to most restrictive.
-     * If we receive a single object (old format) or empty array, create a reasonable fallback.
+     * The LLM returns _search_query as an array of query objects from most to least restrictive.
+     * If the array is empty or malformed, creates a fallback query from extracted data.
      *
      * @param  array  $searchQuery  Raw search query data from extraction
      * @param  array  $extractedData  The extracted identity data as fallback
@@ -830,13 +965,12 @@ class IdentityExtractionService
      */
     protected function normalizeSearchQueries(array $searchQuery, array $extractedData): array
     {
-        // If already an array of query objects (new format), use as-is
+        // If already an array of query objects, use as-is
         if (!empty($searchQuery) && isset($searchQuery[0]) && is_array($searchQuery[0])) {
             return $searchQuery;
         }
 
-        // If empty or single object format, create a single query from extracted data
-        // Use LIKE patterns for loose matching
+        // Create a fallback query from extracted data using LIKE patterns for loose matching
         $singleQuery = [];
         foreach ($extractedData as $field => $value) {
             if (is_string($value) && $value !== '') {
@@ -900,6 +1034,8 @@ class IdentityExtractionService
      * Fields that match TeamObject columns (name, date, description, url) are already
      * saved directly on the model by updateTeamObject/createTeamObject. This method
      * saves all other identity fields as team_object_attributes.
+     *
+     * Date fields are normalized to ISO format (YYYY-MM-DD) based on the schema definition.
      */
     protected function saveIdentityFieldsAsAttributes(
         JSONSchemaDataToDatabaseMapper $mapper,
@@ -908,6 +1044,9 @@ class IdentityExtractionService
     ): void {
         // Fields that are columns on TeamObject model (already handled by updateTeamObject)
         $teamObjectColumns = ['name', 'date', 'description', 'url'];
+
+        // Get schema for date field detection
+        $schema = $teamObject->schemaDefinition?->schema;
 
         foreach ($identificationData as $fieldName => $fieldValue) {
             // Skip if this is a TeamObject column (already saved on model)
@@ -918,6 +1057,11 @@ class IdentityExtractionService
             // Skip null/empty values
             if ($fieldValue === null || $fieldValue === '') {
                 continue;
+            }
+
+            // Normalize date values to ISO format (YYYY-MM-DD) before saving
+            if ($this->isDateField($fieldName, $schema) && is_string($fieldValue)) {
+                $fieldValue = $this->normalizeDateValue($fieldValue);
             }
 
             static::logDebug("Saving identity field as attribute: {$fieldName}", [
@@ -935,11 +1079,22 @@ class IdentityExtractionService
      * Resolve a name for the TeamObject from identification data.
      * Returns null if no usable name can be found (indicating no data was extracted).
      *
-     * Only checks fields specified in $identityFields - no hardcoded fallbacks.
+     * Prefers the literal 'name' field if it exists and has a value, then falls back
+     * to iterating through identity_fields in order. This prevents cases where
+     * identity_fields = ["date", "name"] would incorrectly use the date as the name.
      */
     protected function resolveObjectName(array $identificationData, array $identityFields): ?string
     {
+        // Prefer the literal 'name' field if it exists and has a value
+        if (!empty($identificationData['name']) && is_string($identificationData['name'])) {
+            return $identificationData['name'];
+        }
+
+        // Fall back to first non-empty identity field
         foreach ($identityFields as $field) {
+            if ($field === 'name') {
+                continue; // Already checked above
+            }
             if (!empty($identificationData[$field]) && is_string($identificationData[$field])) {
                 return $identificationData[$field];
             }

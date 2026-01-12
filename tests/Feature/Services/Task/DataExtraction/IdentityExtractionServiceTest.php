@@ -17,6 +17,7 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\Task\DataExtraction\DuplicateRecordResolver;
 use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
+use App\Services\Task\DataExtraction\FindCandidatesResult;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
 use App\Services\Task\DataExtraction\ResolutionResult;
 use Mockery;
@@ -157,7 +158,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock DuplicateRecordResolver to return no match
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         // Mock ExtractionProcessOrchestrator
@@ -239,10 +240,11 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             ],
         ]);
 
-        // Mock DuplicateRecordResolver to return existing object via quick match
+        // Mock DuplicateRecordResolver to return existing object via exact match
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) use ($existingTeamObject) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect([$existingTeamObject]));
-            $mock->shouldReceive('quickMatchCheck')->andReturn($existingTeamObject);
+            $mock->shouldReceive('findCandidates')->andReturn(
+                new FindCandidatesResult(collect([$existingTeamObject]), $existingTeamObject->id)
+            );
         });
 
         // Mock ExtractionProcessOrchestrator
@@ -328,7 +330,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         ]);
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         // Mock ExtractionProcessOrchestrator and verify it's called correctly
@@ -407,7 +409,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         ]);
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
@@ -509,8 +511,10 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         );
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) use ($existingTeamObject, $resolutionResult) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect([$existingTeamObject]));
-            $mock->shouldReceive('quickMatchCheck')->andReturn(null);  // No exact match
+            // No exact match found during candidate search - just returns candidates for LLM
+            $mock->shouldReceive('findCandidates')->andReturn(
+                new FindCandidatesResult(collect([$existingTeamObject]))
+            );
             $mock->shouldReceive('resolveDuplicate')->andReturn($resolutionResult);
         });
 
@@ -666,8 +670,8 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Mock DuplicateRecordResolver to verify parent scope is passed
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) use ($parentObject) {
             $mock->shouldReceive('findCandidates')
-                ->with('Provider', Mockery::any(), $parentObject->id, Mockery::any())
-                ->andReturn(collect());
+                ->with('Provider', Mockery::any(), $parentObject->id, Mockery::any(), Mockery::any(), Mockery::any())
+                ->andReturn(new FindCandidatesResult(collect()));
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
@@ -695,6 +699,83 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     // =========================================================================
     // execute() - Empty name handling tests
     // =========================================================================
+
+    #[Test]
+    public function resolve_object_name_prefers_name_field_over_identity_field_order(): void
+    {
+        // Given: identity_fields = ["date", "name"] where date comes first
+        // But extracted data has both date AND name values
+        $identificationData = [
+            'date' => '2017-10-23',
+            'name' => 'RTD train collision with pedestrians',
+        ];
+        $identityFields = ['date', 'name'];
+
+        // When: Resolving the object name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveObjectName',
+            [$identificationData, $identityFields]
+        );
+
+        // Then: Should return the name field, NOT the date
+        // The name field should be preferred because it's the canonical "name" field
+        $this->assertEquals(
+            'RTD train collision with pedestrians',
+            $result,
+            'resolveObjectName should prefer literal "name" field over identity_fields order'
+        );
+    }
+
+    #[Test]
+    public function resolve_object_name_falls_back_to_identity_fields_when_no_name_field(): void
+    {
+        // Given: identity_fields with no "name" field, just other identifying fields
+        $identificationData = [
+            'client_id'   => 'CLT-123',
+            'client_code' => 'ABC',
+        ];
+        $identityFields = ['client_id', 'client_code'];
+
+        // When: Resolving the object name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveObjectName',
+            [$identificationData, $identityFields]
+        );
+
+        // Then: Should return the first identity field value
+        $this->assertEquals(
+            'CLT-123',
+            $result,
+            'resolveObjectName should fall back to first identity field when no name field'
+        );
+    }
+
+    #[Test]
+    public function resolve_object_name_falls_back_to_date_when_name_is_empty(): void
+    {
+        // Given: identity_fields with date and name, but name is empty
+        $identificationData = [
+            'date' => '2017-10-23',
+            'name' => '',  // Empty string
+        ];
+        $identityFields = ['date', 'name'];
+
+        // When: Resolving the object name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveObjectName',
+            [$identificationData, $identityFields]
+        );
+
+        // Then: Should fall back to date since name is empty
+        $this->assertEquals(
+            '2017-10-23',
+            $result,
+            'resolveObjectName should fall back to other identity fields when name is empty'
+        );
+    }
 
     #[Test]
     public function execute_returns_null_when_no_identity_data_found(): void
@@ -814,7 +895,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock DuplicateRecordResolver - no duplicates found for any
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         // Track how many times storeResolvedObjectId is called

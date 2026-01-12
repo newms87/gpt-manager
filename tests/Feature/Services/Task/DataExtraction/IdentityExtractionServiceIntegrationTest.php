@@ -15,6 +15,7 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\Task\DataExtraction\DuplicateRecordResolver;
 use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
+use App\Services\Task\DataExtraction\FindCandidatesResult;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -143,7 +144,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
 
         // Mock DuplicateRecordResolver - return no match (new record)
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         // Mock ExtractionProcessOrchestrator
@@ -328,7 +329,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         });
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
@@ -416,7 +417,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         });
 
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) {
-            $mock->shouldReceive('findCandidates')->andReturn(collect());
+            $mock->shouldReceive('findCandidates')->andReturn(new FindCandidatesResult(collect()));
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
