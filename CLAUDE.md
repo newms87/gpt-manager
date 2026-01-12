@@ -92,6 +92,29 @@ Use the correct specialized agent for each type of work:
 - ✅ Use `Explore` agent for codebase investigation before delegating implementation
 - ✅ Always use the most specific agent for the task
 
+**🔍 DEBUGGING: USE DEBUG COMMANDS, NOT TINKER**
+
+When debugging task processes, errors, or API requests:
+
+1. **ALWAYS run `--help` first** on the relevant debug command
+2. **USE the debug command options** - they cover virtually every scenario
+3. **NEVER default to tinker** - it means you didn't check the available tools
+
+```bash
+# Debug commands (ALWAYS run --help first!):
+./vendor/bin/sail artisan debug:extract-data-task-run {id} --help
+./vendor/bin/sail artisan debug:task-run {id} --help
+./vendor/bin/sail artisan audit:debug --help
+
+# Common options you'll need:
+--process={id}    # Debug specific task process
+--api-logs        # Show API request/response sent to LLM
+--messages        # Show agent thread messages
+--recent-errors=N # Find recent errors
+```
+
+**See `docs/agents/ORCHESTRATOR_GUIDE.md` for complete debugging documentation.**
+
 **🧪 TESTING BEST PRACTICES**
 
 When instructing the `laravel-backend-qa-tester` agent to run tests:

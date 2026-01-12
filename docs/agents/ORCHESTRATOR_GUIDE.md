@@ -235,47 +235,45 @@ The preamble is required because:
 - Vue 3 Composition API with quasar-ui-danx components
 - Zero tech debt policy with immediate replacement requirements
 
-## 📋 Debugging with audit:debug Command
+## 🚨 DEBUGGING: ALWAYS USE DEBUG COMMANDS, NEVER TINKER 🚨
 
-**⚠️ PREFER DEBUG COMMANDS OVER TINKER ⚠️**
+**⛔ TINKER IS FORBIDDEN FOR DEBUGGING ⛔**
 
-When a debugging command exists for what you're investigating, ALWAYS use it instead of tinker:
+**MANDATORY RULE:** When debugging ANY task, process, or error, you MUST:
 
-| Debugging Task | Command |
-|----------------|---------|
-| Task Run / Task Process | `./vendor/bin/sail artisan debug:extract-data-task-run {id}` |
-| File Organization Tasks | `./vendor/bin/sail artisan debug:file-organization-task-run {id}` |
-| General Task Runs | `./vendor/bin/sail artisan debug:task-run {id}` |
-| Audit Requests / API Logs | `./vendor/bin/sail artisan audit:debug` |
+1. **FIRST** run `--help` on the relevant debug command to see ALL available options
+2. **USE** the debug command options to get the information you need
+3. **NEVER** default to tinker for exploration - the debug commands have the options you need
 
-**Why debug commands over tinker:**
-- Debug commands are pre-approved and run autonomously
-- Tinker requires manual approval and blocks autonomous operation
-- Debug commands have optimized output formatting for investigation
-- Debug commands can re-run processes, show schemas, view messages, etc.
+**If you find yourself wanting to use tinker, STOP and ask:**
+- Did I run `--help` on the debug command?
+- Is there a flag I missed that gives me what I need?
+- The answer is almost always YES.
 
-**Only use tinker when:**
-- No debug command exists for your specific use case
-- You need to run a one-off query that isn't covered by debug commands
+### Available Debug Commands
 
----
+| Debugging Task | Command | First Step |
+|----------------|---------|------------|
+| Task Run / Task Process | `debug:extract-data-task-run {id}` | `--help` first! |
+| File Organization Tasks | `debug:file-organization-task-run {id}` | `--help` first! |
+| General Task Runs | `debug:task-run {id}` | `--help` first! |
+| Errors / API Logs | `audit:debug` | `--help` first! |
 
-**When to use audit:debug:** For ANY debugging involving logging, auditing, API requests/responses, job dispatches, error logs, or model changes.
+### Why This Rule Exists
 
-**Before using this command**, you MUST read the full command file:
-`/home/newms/web/danx/src/Console/Commands/AuditDebugCommand.php`
+1. **Debug commands are pre-approved** - they run autonomously without blocking
+2. **Tinker requires approval** - it blocks autonomous operation and slows debugging
+3. **Debug commands are comprehensive** - they have options for every common scenario
+4. **Tinker is ad-hoc exploration** - it means you didn't check the available tools first
 
-Key capabilities:
-- `--recent=N` - Find recent audit requests to investigate
-- `--recent-api-logs=N` - Find recent API logs (OpenAI, Stripe, etc.)
-- `--recent-jobs=N` - Find recent job dispatches
-- `--recent-errors=N` - Find recent errors with stack traces
-- `--logs` - View server logs for a specific request
-- `--api-id=ID` - View full API request/response details
-- `--error-id=ID` - View error with full stack trace and chain
-- `--json` - Output as JSON for programmatic analysis
+### When Tinker is Acceptable
 
-The command docblock contains comprehensive documentation of all options and debugging workflows.
+**ONLY** use tinker when:
+- You have ALREADY run `--help` on all relevant debug commands
+- You have CONFIRMED no debug command option exists for your specific need
+- You are doing a truly novel one-off query not covered by any debug command
+
+**This should be RARE.** If you're using tinker frequently, you're doing it wrong.
 
 ---
 
