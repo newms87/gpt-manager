@@ -29,7 +29,7 @@ description: |
     A new endpoint has been added which needs testing verification, making this a perfect use case for the laravel-backend-qa-tester agent.
     </commentary>
     </example>
-tools: Bash, Glob, Grep, LS, ExitPlanMode, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
+tools: Bash, Glob, Grep, LS, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch
 color: orange
 ---
 

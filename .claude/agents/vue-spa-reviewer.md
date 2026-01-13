@@ -28,7 +28,7 @@ description: |
     Proactively using the reviewer after creating new Vue/Tailwind code to ensure quality.
     </commentary>
     </example>
-tools: Bash, Edit, MultiEdit, Write, NotebookEdit, Glob, Grep, LS, ExitPlanMode, Read, NotebookRead, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
+tools: Bash, Glob, Grep, LS, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch
 color: yellow
 ---
 

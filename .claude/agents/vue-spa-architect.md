@@ -53,7 +53,7 @@ description: |
     Code investigation questions should use the architect agent rather than the orchestrator reading files directly.
     </commentary>
     </example>
-tools: Bash, Glob, Grep, LS, ExitPlanMode, Read, NotebookRead, WebFetch, TodoWrite, WebSearch, ListMcpResourcesTool, ReadMcpResourceTool
+tools: Bash, Glob, Grep, LS, Read, NotebookRead, WebFetch, TodoWrite, WebSearch
 color: purple
 ---
 

@@ -5,6 +5,8 @@ description: |
     The user needs to implement a new feature in their Laravel application.\nuser: "I need to add a feature to merge two team objects together"\nassistant: "I'll use the laravel-backend-engineer agent to design and implement this feature following best practices."\n<commentary>\nSince this involves creating new backend functionality in Laravel, the laravel-backend-engineer agent is perfect for designing the service layer, repository pattern, and ensuring proper architecture.\n</commentary>\n</example>\n<example>\nContext:
     The user has just written some Laravel code and wants it reviewed.\nuser: "I've created a new controller method to handle user permissions"\nassistant: "Let me use the laravel-backend-engineer agent to review this code and ensure it follows best practices."\n<commentary>\nThe laravel-backend-engineer agent will review the code for DRY principles, proper use of services/repositories, and identify any legacy patterns that need refactoring.\n</commentary>\n</example>\n<example>\nContext:
     The user discovers legacy code in their Laravel application.\nuser: "I found this old authentication logic that's using deprecated methods"\nassistant: "I'll use the laravel-backend-engineer agent to refactor this immediately and bring it up to modern standards."\n<commentary>\nThe agent specializes in identifying and refactoring legacy code, making it ideal for modernizing outdated Laravel implementations.\n</commentary>\n</example>
+tools: Bash, Glob, Grep, LS, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch
+model: inherit
 color: green
 ---
 

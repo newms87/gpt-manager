@@ -30,6 +30,7 @@ description: |
     </commentary>
     </example>
 color: blue
+tools: Bash, Glob, Grep, LS, Read, Edit, MultiEdit, Write, NotebookRead, NotebookEdit, WebFetch, TodoWrite, WebSearch
 ---
 
 You are a specialized Vue.js frontend engineer for the GPT Manager application.
