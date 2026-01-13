@@ -19,18 +19,18 @@
             @close="showInstructionTemplateSelector = false"
         />
 
-        <!-- Demand Template Selector Dialog -->
-        <DemandTemplateSelector
-            v-if="showDemandTemplateSelector"
+        <!-- Template Selector Dialog -->
+        <TemplateSelector
+            v-if="showTemplateSelector"
             :demand="demand"
-            @confirm="handleDemandTemplateSelected"
-            @close="showDemandTemplateSelector = false"
+            @confirm="handleTemplateSelected"
+            @close="showTemplateSelector = false"
         />
     </div>
 </template>
 
 <script setup lang="ts">
-import { DemandTemplateSelector, InstructionTemplateSelector } from "@/ui/demand-templates/components";
+import { TemplateSelector, InstructionTemplateSelector } from "@/ui/templates/components";
 import { ActionButton } from "quasar-ui-danx";
 import { ref } from "vue";
 import type { UiDemand, WorkflowConfig } from "../../shared/types";
@@ -58,14 +58,14 @@ const isLoading = ref(false);
 
 // Dialog state for template/instruction selection
 const showInstructionTemplateSelector = ref(false);
-const showDemandTemplateSelector = ref(false);
+const showTemplateSelector = ref(false);
 
 // Handle button click - check if template selection is needed
 const handleClick = () => {
     // Check if this workflow needs template selection
     if (props.config.template_categories && props.config.template_categories.length > 0) {
         // Show template selector
-        showDemandTemplateSelector.value = true;
+        showTemplateSelector.value = true;
     } else if (props.config.instruction_categories && props.config.instruction_categories.length > 0) {
         // Show instruction selector
         showInstructionTemplateSelector.value = true;
@@ -98,9 +98,9 @@ const handleInstructionTemplateSelected = (instructionTemplate: any, additionalI
     executeWorkflow(parameters);
 };
 
-// Handle demand template selection
-const handleDemandTemplateSelected = (template: any, additionalInstructions: string) => {
-    showDemandTemplateSelector.value = false;
+// Handle template selection
+const handleTemplateSelected = (template: any, additionalInstructions: string) => {
+    showTemplateSelector.value = false;
 
     const parameters: Record<string, any> = {
         output_template_id: template.id

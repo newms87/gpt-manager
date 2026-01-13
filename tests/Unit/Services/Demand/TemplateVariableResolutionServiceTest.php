@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Services\Demand;
 
-use App\Models\Demand\TemplateVariable;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
+use App\Models\Template\TemplateVariable;
 use App\Services\Demand\TemplateVariableResolutionService;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;

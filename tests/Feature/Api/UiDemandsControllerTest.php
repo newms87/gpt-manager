@@ -752,7 +752,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         ]);
 
         // Create template
-        $template = \App\Models\Demand\DemandTemplate::factory()->create([
+        $template = \App\Models\Template\TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 

@@ -1,5 +1,5 @@
 import { RouteRecordRaw } from "vue-router";
-import { DemandTemplatesView, InstructionTemplatesView } from "../ui/demand-templates/views";
+import { TemplatesView, HtmlTemplateBuilderView, InstructionTemplatesView } from "../ui/templates/views";
 import { AccountView, DemandDetailView, DemandsView, SubscriptionView } from "../ui/insurance-demands/views";
 import { UiAppLayout } from "../ui/shared/layouts";
 
@@ -56,9 +56,17 @@ export const uiRoutes: RouteRecordRaw[] = [
             {
                 path: "templates",
                 name: "ui.templates",
-                component: DemandTemplatesView,
+                component: TemplatesView,
                 meta: {
-                    title: "Demand Templates"
+                    title: "Templates"
+                }
+            },
+            {
+                path: "templates/:id/builder",
+                name: "ui.template-builder",
+                component: HtmlTemplateBuilderView,
+                meta: {
+                    title: "HTML Template Builder"
                 }
             },
             {

@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Jobs\WorkflowStartNodeJob;
-use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Template\TemplateDefinition;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowRun;
@@ -399,7 +399,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
         $this->assertStringContainsString('Focus on the most severe injuries only.', $artifact->text_content);
     }
 
-    public function test_workflowWithDemandTemplate_includesTemplateData(): void
+    public function test_workflowWithTemplateDefinition_includesTemplateData(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->withStartingNode()->create([
@@ -448,7 +448,7 @@ class UiDemandWorkflowIntegrationTest extends AuthenticatedTestCase
             'filename' => 'demand_template.docx',
         ]);
 
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $templateFile->id,
         ]);

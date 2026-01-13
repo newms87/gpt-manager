@@ -2,9 +2,9 @@
 
 namespace App\Services\Demand;
 
-use App\Models\Demand\DemandTemplate;
-use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Template\TemplateDefinition;
+use App\Models\Template\TemplateVariable;
 use App\Repositories\SchemaAssociationRepository;
 use App\Repositories\TemplateVariableRepository;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,7 +17,7 @@ class TemplateVariableService
      * Sync variables from Google Doc template
      * Creates new variables with default mapping_type='ai', preserves existing configurations, deletes orphaned variables
      */
-    public function syncVariablesFromGoogleDoc(DemandTemplate $template, array $variableNames): Collection
+    public function syncVariablesFromGoogleDoc(TemplateDefinition $template, array $variableNames): Collection
     {
         $this->validateTemplateOwnership($template);
 
@@ -37,12 +37,12 @@ class TemplateVariableService
                 } else {
                     // New variable - create with default mapping_type='ai'
                     $newVariable = new TemplateVariable([
-                        'demand_template_id'    => $template->id,
-                        'name'                  => $variableName,
-                        'description'           => '',
-                        'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
-                        'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
-                        'multi_value_separator' => ', ',
+                        'template_definition_id' => $template->id,
+                        'name'                   => $variableName,
+                        'description'            => '',
+                        'mapping_type'           => TemplateVariable::MAPPING_TYPE_AI,
+                        'multi_value_strategy'   => TemplateVariable::STRATEGY_JOIN,
+                        'multi_value_separator'  => ', ',
                     ]);
                     $newVariable->save();
                     $keptVariableNames[] = $variableName;
@@ -68,7 +68,7 @@ class TemplateVariableService
      */
     public function updateVariable(TemplateVariable $variable, array $data): TemplateVariable
     {
-        $this->validateTemplateOwnership($variable->demandTemplate);
+        $this->validateTemplateOwnership($variable->templateDefinition);
         $this->validateVariableData($data, $variable);
 
         return DB::transaction(function () use ($variable, $data) {
@@ -133,11 +133,11 @@ class TemplateVariableService
     /**
      * Validate template ownership
      */
-    protected function validateTemplateOwnership(DemandTemplate $template): void
+    protected function validateTemplateOwnership(TemplateDefinition $template): void
     {
         $currentTeam = team();
         if (!$currentTeam || $template->team_id !== $currentTeam->id) {
-            throw new ValidationError('You do not have permission to access this demand template', 403);
+            throw new ValidationError('You do not have permission to access this template definition', 403);
         }
     }
 

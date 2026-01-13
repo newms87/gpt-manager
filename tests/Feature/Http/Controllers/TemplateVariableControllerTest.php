@@ -2,10 +2,10 @@
 
 namespace Tests\Feature\Http\Controllers;
 
-use App\Models\Demand\DemandTemplate;
-use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Template\TemplateDefinition;
+use App\Models\Template\TemplateVariable;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -23,14 +23,14 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     // INDEX ENDPOINT TESTS - REMOVED
     // ==========================================
     // Note: Index endpoint has been removed. Variables are now loaded via the
-    // template_variables relationship on DemandTemplate. The frontend uses:
-    // dxDemandTemplate.routes.list({ fields: { template_variables: true } })
+    // template_variables relationship on TemplateDefinition. The frontend uses:
+    // dxTemplateDefinition.routes.list({ fields: { template_variables: true } })
 
     // ==========================================
     // STORE ENDPOINT TESTS - REMOVED
     // ==========================================
     // Note: Store endpoint has been removed. Variables are now fetched from
-    // Google Docs templates using DemandTemplateService::fetchTemplateVariables()
+    // Google Docs templates using TemplateDefinitionService::fetchTemplateVariables()
     // Users cannot create variables manually anymore.
 
     // ==========================================
@@ -40,15 +40,15 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_show_getSingleVariableWithAllDetails(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Test Variable',
-            'description'        => 'Test Description',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Test Variable',
+            'description'            => 'Test Description',
         ]);
 
         // When
@@ -58,7 +58,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'id',
-            'demand_template_id',
+            'template_definition_id',
             'name',
             'description',
             'mapping_type',
@@ -83,7 +83,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_show_includesSchemaAssociationRelationshipWhenExists(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -93,7 +93,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $variable = TemplateVariable::factory()->teamObjectMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $association = SchemaAssociation::factory()->create([
@@ -127,10 +127,10 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function skip_test_show_teamScopingPreventsViewingOtherTeamsVariableWith403Status(): void
     {
         // Given - Create variable for a different team
-        $otherTemplate = DemandTemplate::factory()->create();
+        $otherTemplate = TemplateDefinition::factory()->create();
 
         $variable = TemplateVariable::factory()->create([
-            'demand_template_id' => $otherTemplate->id,
+            'template_definition_id' => $otherTemplate->id,
         ]);
 
         // When
@@ -150,15 +150,15 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_variableDescription(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Original Name',
-            'description'        => 'Original Description',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Original Name',
+            'description'            => 'Original Description',
         ]);
 
         $data = [
@@ -192,13 +192,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_mappingTypeChangesConfiguration(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $data = [
@@ -229,13 +229,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_artifactConfigurationWithCategoriesAndFragmentSelector(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $data = [
@@ -266,13 +266,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_teamObjectConfigurationWithSchemaDefinitionId(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $schemaDefinition = SchemaDefinition::factory()->create([
@@ -303,14 +303,14 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_aiConfigurationWithAiInstructions(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'ai_instructions'    => 'Original instructions',
+            'template_definition_id' => $template->id,
+            'ai_instructions'        => 'Original instructions',
         ]);
 
         $data = [
@@ -336,15 +336,15 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_multiValueStrategyAndSeparator(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id'    => $template->id,
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'template_definition_id'    => $template->id,
+            'multi_value_strategy'      => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'     => ', ',
         ]);
 
         $data = [
@@ -371,13 +371,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_createsOrUpdatesSchemaAssociationWhenSchemaDefinitionIdProvided(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->teamObjectMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $oldAssociation = SchemaAssociation::find($variable->team_object_schema_association_id);
@@ -411,13 +411,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_validationFailsForInvalidDataWith400Status(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $data = [
@@ -448,14 +448,14 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_update_nameFieldProhibited_returns400ValidationError(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Original Name',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Original Name',
         ]);
 
         $data = [
@@ -491,10 +491,10 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function skip_test_update_teamScopingPreventsUpdatingOtherTeamsVariableWith403Status(): void
     {
         // Given - Create variable for a different team
-        $otherTemplate = DemandTemplate::factory()->create();
+        $otherTemplate = TemplateDefinition::factory()->create();
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $otherTemplate->id,
+            'template_definition_id' => $otherTemplate->id,
         ]);
 
         $data = [
@@ -531,18 +531,18 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_resource_includesAllFields(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'Complete Variable',
-            'description'           => 'Full description',
-            'ai_instructions'       => 'AI instructions here',
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_UNIQUE,
-            'multi_value_separator' => ' :: ',
+            'template_definition_id'    => $template->id,
+            'name'                      => 'Complete Variable',
+            'description'               => 'Full description',
+            'ai_instructions'           => 'AI instructions here',
+            'multi_value_strategy'      => TemplateVariable::STRATEGY_UNIQUE,
+            'multi_value_separator'     => ' :: ',
         ]);
 
         // When
@@ -553,7 +553,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         $data = $response->json();
 
         $this->assertArrayHasKey('id', $data);
-        $this->assertArrayHasKey('demand_template_id', $data);
+        $this->assertArrayHasKey('template_definition_id', $data);
         $this->assertArrayHasKey('name', $data);
         $this->assertArrayHasKey('description', $data);
         $this->assertArrayHasKey('mapping_type', $data);
@@ -571,7 +571,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_resource_schemaAssociationRelationshipProperlyNested(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -582,7 +582,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ]);
 
         $variable = TemplateVariable::factory()->teamObjectMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         $association = SchemaAssociation::factory()->create([
@@ -609,13 +609,13 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_resource_nullSchemaAssociationHandledCorrectly(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         // When
@@ -630,14 +630,14 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_resource_arrayFieldsProperlyCastForCategories(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id'  => $template->id,
-            'artifact_categories' => ['medical', 'legal', 'financial'],
+            'template_definition_id'  => $template->id,
+            'artifact_categories'     => ['medical', 'legal', 'financial'],
         ]);
 
         // When
@@ -653,7 +653,7 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
     public function test_resource_arrayFieldsProperlyCastForFragmentSelector(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -665,8 +665,8 @@ class TemplateVariableControllerTest extends AuthenticatedTestCase
         ];
 
         $variable = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id'         => $template->id,
-            'artifact_fragment_selector' => $fragmentSelector,
+            'template_definition_id'         => $template->id,
+            'artifact_fragment_selector'     => $fragmentSelector,
         ]);
 
         // When

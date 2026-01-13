@@ -12,6 +12,7 @@ use App\Models\Task\Artifact;
 use App\Repositories\ThreadRepository;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 
@@ -67,6 +68,9 @@ class AgentThreadBuilderService
     protected int $timeout          = 60; // Default 60 seconds
 
     protected ?McpServer $mcpServer        = null;
+
+    // Collaboratable model for polymorphic relationship
+    protected ?Model $collaboratable = null;
 
     // Built thread (cached)
     protected ?AgentThread $builtThread = null;
@@ -171,6 +175,17 @@ class AgentThreadBuilderService
     }
 
     /**
+     * Set the collaboratable model for polymorphic relationship
+     * Allows linking the thread to any model (e.g., TemplateDefinition for template collaboration)
+     */
+    public function forCollaboratable(Model $model): static
+    {
+        $this->collaboratable = $model;
+
+        return $this;
+    }
+
+    /**
      * Set timeout in seconds (default is 60)
      */
     public function withTimeout(int $timeout): static
@@ -193,7 +208,11 @@ class AgentThreadBuilderService
         $this->validate();
 
         // Create the thread
-        $thread = app(ThreadRepository::class)->create($this->agent, $this->threadName);
+        $thread = app(ThreadRepository::class)->create(
+            $this->agent,
+            $this->threadName,
+            $this->collaboratable
+        );
 
         // Add artifact groups
         $this->addArtifactGroupsToThread($thread);

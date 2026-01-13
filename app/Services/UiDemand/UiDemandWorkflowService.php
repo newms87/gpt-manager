@@ -2,10 +2,10 @@
 
 namespace App\Services\UiDemand;
 
-use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Template\TemplateDefinition;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
 use App\Models\Workflow\WorkflowListener;
@@ -125,7 +125,7 @@ class UiDemandWorkflowService
             }
 
             $templateId             = $params['output_template_id']        ?? null;
-            $additionalInstructions = $params['additional_instructions']  ?? null;
+            $additionalInstructions = $params['additional_instructions']   ?? null;
 
             $workflowInput = $this->createWorkflowInputFromTeamObject(
                 $uiDemand,
@@ -141,7 +141,6 @@ class UiDemandWorkflowService
             $instructionTemplate = WorkflowInput::find($params['instruction_template_id']);
             if ($instructionTemplate && $instructionTemplate->content) {
                 $workflowInput->content .= <<<TEXT
-
 
 === CRITICAL WRITING INSTRUCTIONS ===
 The following instructions are EXTREMELY IMPORTANT and must be followed carefully when writing the medical summary. These instructions define the required style, tone, structure, and format. Following these instructions precisely is a CRITICAL part of this task and directly impacts the quality and effectiveness of the final medical summary.
@@ -308,7 +307,7 @@ TEXT;
 
         // Add template stored file ID if provided
         if ($templateId) {
-            $template = DemandTemplate::find($templateId);
+            $template = TemplateDefinition::find($templateId);
             if ($template && $template->stored_file_id) {
                 $contentData['template_stored_file_id'] = $template->stored_file_id;
             }

@@ -8,6 +8,7 @@ use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
 use App\Services\AgentThread\AgentThreadService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Helpers\ModelHelper;
@@ -24,18 +25,25 @@ class ThreadRepository extends ActionRepository
         return parent::query()->where('team_id', team()->id);
     }
 
-    public function create(Agent $agent, $name = ''): AgentThread
+    public function create(Agent $agent, string $name = '', ?Model $collaboratable = null): AgentThread
     {
         if (!$name) {
             $name = $agent->name . ' ' . DateHelper::formatDateTime(now());
         }
 
-        $thread = AgentThread::make()->forceFill([
+        $data = [
             'team_id'  => team()?->id ?: $agent->team_id,
             'user_id'  => user()?->id,
             'name'     => StringHelper::logSafeString(substr($name, 0, 150)),
             'agent_id' => $agent->id,
-        ]);
+        ];
+
+        if ($collaboratable) {
+            $data['collaboratable_type'] = $collaboratable::class;
+            $data['collaboratable_id']   = $collaboratable->getKey();
+        }
+
+        $thread = AgentThread::make()->forceFill($data);
         $thread->save();
 
         return $thread;

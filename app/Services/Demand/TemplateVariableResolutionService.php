@@ -3,10 +3,10 @@
 namespace App\Services\Demand;
 
 use App\Models\Agent\Agent;
-use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
+use App\Models\Template\TemplateVariable;
 use App\Resources\TeamObject\TeamObjectForAgentsResource;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\ArtifactFilter;

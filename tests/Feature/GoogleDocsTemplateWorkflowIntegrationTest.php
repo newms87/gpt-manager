@@ -6,17 +6,17 @@ use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
-use App\Models\Demand\DemandTemplate;
 use App\Models\Demand\UiDemand;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Template\TemplateDefinition;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowListener;
 use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
-use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
+use App\Services\Task\Runners\TemplateTaskRunner;
 use App\Services\UiDemand\UiDemandWorkflowService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -61,12 +61,12 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     {
         // Given - Set up the complete workflow chain
 
-        // 1. Create GoogleDocsTemplateTaskRunner and related setup
+        // 1. Create TemplateTaskRunner and related setup
         $agent          = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $taskDefinition = TaskDefinition::factory()->create([
             'team_id'          => $this->user->currentTeam->id,
             'agent_id'         => $agent->id,
-            'task_runner_name' => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
+            'task_runner_name' => TemplateTaskRunner::RUNNER_NAME,
         ]);
 
         // 2. Create UiDemand with template
@@ -89,8 +89,8 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'size'     => 0,
         ])->save();
 
-        // 3b. Create DemandTemplate linked to the StoredFile
-        $template = DemandTemplate::factory()->create([
+        // 3b. Create TemplateDefinition linked to the StoredFile
+        $template = TemplateDefinition::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'stored_file_id' => $templateStoredFile->id,
             'name'           => 'Integration Test Template',
@@ -177,13 +177,13 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
                 ));
         });
 
-        // When - Execute the GoogleDocsTemplateTaskRunner
+        // When - Execute the TemplateTaskRunner
 
         // The runner now uses TemplateVariableResolutionService which doesn't require mocking
         $runner = $taskProcess->getRunner();
         $runner->run();
 
-        // After GoogleDocsTemplateTaskRunner completes, run WorkflowOutputTaskRunner to collect outputs
+        // After TemplateTaskRunner completes, run WorkflowOutputTaskRunner to collect outputs
         $workflowOutputTaskDef = TaskDefinition::factory()->create([
             'task_runner_name' => \App\Services\Task\Runners\WorkflowOutputTaskRunner::RUNNER_NAME,
         ]);
@@ -198,7 +198,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'workflow_node_id'   => $outputNode->id,
         ]);
 
-        // Get the artifacts created by GoogleDocsTemplateTaskRunner
+        // Get the artifacts created by TemplateTaskRunner
         $generatedArtifacts = $taskRun->outputArtifacts()->get();
 
         $outputTaskProcess = TaskProcess::factory()->create([
@@ -225,7 +225,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         // Then - Verify the complete chain worked correctly
 
-        // 1. Verify GoogleDocsTemplateTaskRunner created output artifact with StoredFile
+        // 1. Verify TemplateTaskRunner created output artifact with StoredFile
         $outputArtifacts = $taskRun->outputArtifacts;
         $this->assertCount(1, $outputArtifacts);
 
@@ -321,7 +321,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Simulate proper workflow execution for reuse test
         // 1. Document generation task produces the artifact
         $docGenTaskDef = TaskDefinition::factory()->create([
-            'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
+            'task_runner_name' => TemplateTaskRunner::class,
         ]);
 
         $docGenTaskRun = TaskRun::factory()->create([
@@ -541,7 +541,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Simulate proper workflow execution
         // 1. Document generation task produces the artifact
         $docGenTaskDef = TaskDefinition::factory()->create([
-            'task_runner_name' => GoogleDocsTemplateTaskRunner::class,
+            'task_runner_name' => TemplateTaskRunner::class,
         ]);
 
         $docGenTaskRun = TaskRun::factory()->create([
@@ -605,9 +605,9 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     }
 
     /**
-     * Mock agent variable mapping response for GoogleDocsTemplateTaskRunner
+     * Mock agent variable mapping response for TemplateTaskRunner
      */
-    protected function mockAgentVariableMapping(GoogleDocsTemplateTaskRunner $runner, TaskDefinition $taskDefinition): void
+    protected function mockAgentVariableMapping(TemplateTaskRunner $runner, TaskDefinition $taskDefinition): void
     {
         // Create a mock agent response artifact
         $agentResponseArtifact = Artifact::factory()->create([
@@ -629,7 +629,7 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         $method->setAccessible(true);
 
         // Replace the runner with a mock that returns our artifact
-        $mockRunner = $this->getMockBuilder(GoogleDocsTemplateTaskRunner::class)
+        $mockRunner = $this->getMockBuilder(TemplateTaskRunner::class)
             ->onlyMethods(['runAgentThread'])
             ->getMock();
 

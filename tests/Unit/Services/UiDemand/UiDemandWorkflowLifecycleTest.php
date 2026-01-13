@@ -495,7 +495,7 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
             'filename' => 'demand_template.docx',
         ]);
 
-        $template = \App\Models\Demand\DemandTemplate::factory()->create([
+        $template = \App\Models\Template\TemplateDefinition::factory()->create([
             'team_id'        => $this->user->currentTeam->id,
             'user_id'        => $this->user->id,
             'stored_file_id' => $templateFile->id,

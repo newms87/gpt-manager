@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Demand\DemandTemplate;
 use App\Models\Team\Team;
+use App\Models\Template\TemplateDefinition;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -34,9 +34,9 @@ class Tag extends Model implements AuditableContract
         return $this->morphedByMany(WorkflowInput::class, 'taggable', 'taggables');
     }
 
-    public function demandTemplates(): MorphToMany|DemandTemplate
+    public function templateDefinitions(): MorphToMany|TemplateDefinition
     {
-        return $this->morphedByMany(DemandTemplate::class, 'taggable', 'taggables');
+        return $this->morphedByMany(TemplateDefinition::class, 'taggable', 'taggables');
     }
 
     public function scopeForTeam(Builder $query, int $teamId): Builder

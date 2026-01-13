@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
@@ -140,6 +141,11 @@ class AgentThread extends Model implements AuditableContract
     public function agent(): BelongsTo|Agent
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function collaboratable(): MorphTo
+    {
+        return $this->morphTo();
     }
 
     public function assistantActions(): HasMany

@@ -433,30 +433,30 @@ Executes nested workflows within tasks.
 - Modular workflow design
 - Recursive processing patterns
 
-### GoogleDocsTemplateTaskRunner
-Generates documents from Google Docs templates.
+### TemplateTaskRunner
+Renders templates (Google Docs or HTML) with dynamic content.
 
 **Capabilities:**
 - Template-based document generation
-- Dynamic content replacement
-- Formatting preservation
-- Batch document creation
+- Supports Google Docs and HTML template types
+- Dynamic variable resolution from artifacts and team objects
+- AI-powered variable extraction
+- Multiple variable resolution strategies (artifact mapping, team object mapping, AI mapping)
 
 **Configuration:**
 ```json
 {
-  "template_id": "google-docs-id",
-  "placeholder_mapping": {},
-  "output_format": "docx|pdf|html",
-  "share_permissions": []
+  "template_stored_file_id": "stored-file-uuid",
+  "template_definition_id": "template-uuid"
 }
 ```
 
 **Use Cases:**
-- Report generation
+- Report generation from templates
 - Document automation
-- Template-based content creation
-- Formatted output production
+- Personalized content creation
+- Formatted output production with dynamic data
+- HTML document rendering
 
 ## Runner Selection Guidelines
 
@@ -464,7 +464,7 @@ Generates documents from Google Docs templates.
 
 **Analysis Tasks**: AgentThreadTaskRunner, ClassifierTaskRunner
 **Data Processing**: LoadFromDatabaseTaskRunner, SaveToDatabaseTaskRunner
-**Content Generation**: AgentThreadTaskRunner, GoogleDocsTemplateTaskRunner
+**Content Generation**: AgentThreadTaskRunner, TemplateTaskRunner
 **Data Transformation**: FilterArtifactsTaskRunner, SplitArtifactsTaskRunner, MergeArtifactsTaskRunner
 **File Processing**: LoadCsvTaskRunner, ImageToTextTranscoderTaskRunner
 **Classification**: CategorizeArtifactsTaskRunner, ClassifierTaskRunner
@@ -481,7 +481,7 @@ Generates documents from Google Docs templates.
 **Text Processing**: AgentThreadTaskRunner, FilterArtifactsTaskRunner
 **Structured Data**: LoadFromDatabaseTaskRunner, SaveToDatabaseTaskRunner
 **Images**: ImageToTextTranscoderTaskRunner
-**Documents**: PageOrganizerTaskRunner, GoogleDocsTemplateTaskRunner
+**Documents**: PageOrganizerTaskRunner, TemplateTaskRunner
 **Mixed Content**: MergeArtifactsTaskRunner, CategorizeArtifactsTaskRunner
 
 ## Integration Considerations

@@ -8,7 +8,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
-use App\Services\Task\Runners\GoogleDocsTemplateTaskRunner;
+use App\Services\Task\Runners\TemplateTaskRunner;
 use Illuminate\Console\Command;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
@@ -196,7 +196,7 @@ class TestGoogleDocsTemplateCommand extends Command
             'team_id'            => $teamObject->team_id ?? 1,
             'name'               => 'Google Docs Template Processing',
             'agent_id'           => $documentAgent->id,
-            'task_runner_name'   => GoogleDocsTemplateTaskRunner::RUNNER_NAME,
+            'task_runner_name'   => TemplateTaskRunner::RUNNER_NAME,
             'task_runner_config' => [],
         ]);
 

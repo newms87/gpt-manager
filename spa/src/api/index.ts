@@ -38,6 +38,7 @@ import { fileUpload } from "./endpoints/file-upload";
 import { audits } from "./endpoints/audits";
 import { contentSources } from "./endpoints/content-sources";
 import { prompts } from "./endpoints/prompts";
+import { templates } from "./endpoints/templates";
 
 /**
  * Centralized API URLs organized by domain
@@ -62,4 +63,5 @@ export const apiUrls = {
 	audits,
 	contentSources,
 	prompts,
+	templates,
 } as const;

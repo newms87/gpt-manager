@@ -27,7 +27,7 @@ import {
 	ExtractDataTaskRunnerConfig,
 	FileOrganizationTaskRunnerConfig,
 	FilterArtifactsTaskRunnerConfig,
-	GoogleDocsTemplateTaskRunnerConfig,
+	TemplateTaskRunnerConfig,
 	ImageToTextTranscoderTaskRunnerConfig,
 	LoadCsvTaskRunnerConfig,
 	MergeArtifactsTaskRunnerConfig,
@@ -178,11 +178,11 @@ export const TaskRunnerClasses = {
 		node: { is: WorkflowOutputTaskRunnerNode },
 		config: WorkflowOutputTaskRunnerConfig
 	},
-	"Google Docs Template": {
-		name: "Google Docs Template",
-		description: "Create a Google Docs document from a template with dynamic content.",
+	"Template": {
+		name: "Template",
+		description: "Render a template (Google Docs or HTML) with dynamic content from artifacts and team objects.",
 		lottie: AgentThreadRunnerLottie,
-		config: GoogleDocsTemplateTaskRunnerConfig
+		config: TemplateTaskRunnerConfig
 	},
 	"Load Csv": {
 		name: "Load Csv",

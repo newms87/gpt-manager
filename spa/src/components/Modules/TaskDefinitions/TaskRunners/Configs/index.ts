@@ -7,7 +7,7 @@ export { default as ClaudeTaskRunnerConfig } from "./ClaudeTaskRunnerConfig.vue"
 export { default as ExtractDataTaskRunnerConfig } from "./ExtractDataTaskRunnerConfig.vue";
 export { default as FileOrganizationTaskRunnerConfig } from "./FileOrganizationTaskRunnerConfig.vue";
 export { default as FilterArtifactsTaskRunnerConfig } from "./FilterArtifactsTaskRunnerConfig.vue";
-export { default as GoogleDocsTemplateTaskRunnerConfig } from "./GoogleDocsTemplateTaskRunnerConfig.vue";
+export { default as TemplateTaskRunnerConfig } from "./TemplateTaskRunnerConfig.vue";
 export { default as ImageToTextTranscoderTaskRunnerConfig } from "./ImageToTextTranscoderTaskRunnerConfig.vue";
 export { default as LoadCsvTaskRunnerConfig } from "./LoadCsvTaskRunnerConfig.vue";
 export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskRunnerConfig.vue";

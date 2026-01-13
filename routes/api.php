@@ -25,9 +25,9 @@ use App\Http\Controllers\Api\Auth\OAuthController;
 use App\Http\Controllers\Api\BillingController;
 use App\Http\Controllers\Api\SubscriptionPlansController;
 use App\Http\Controllers\ApiAuth\ApiAuthController;
-use App\Http\Controllers\DemandTemplatesController;
 use App\Http\Controllers\PusherSubscriptionController;
 use App\Http\Controllers\Team\TeamsController;
+use App\Http\Controllers\Template\TemplateDefinitionsController;
 use App\Http\Controllers\TemplateVariableController;
 use App\Http\Controllers\UiDemandsController;
 use App\Http\Controllers\Usage\UsageEventsController;
@@ -139,8 +139,8 @@ ActionRoute::routes('ui-demands', new UiDemandsController, function () {
     Route::post('{uiDemand}/workflow/{workflowKey}', [UiDemandsController::class, 'runWorkflow'])->name('ui-demands.run-workflow');
 });
 
-// Demand Templates
-ActionRoute::routes('demand-templates', new DemandTemplatesController);
+// Template Definitions
+ActionRoute::routes('template-definitions', new TemplateDefinitionsController);
 
 // Template Variables
 ActionRoute::routes('template-variables', new TemplateVariableController);

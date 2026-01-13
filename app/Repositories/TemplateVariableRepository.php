@@ -2,8 +2,8 @@
 
 namespace App\Repositories;
 
-use App\Models\Demand\DemandTemplate;
-use App\Models\Demand\TemplateVariable;
+use App\Models\Template\TemplateDefinition;
+use App\Models\Template\TemplateVariable;
 use App\Services\Demand\TemplateVariableService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,8 +19,8 @@ class TemplateVariableRepository extends ActionRepository
     public function query(): Builder
     {
         return parent::query()
-            ->whereHas('demandTemplate', fn(Builder $builder) => $builder->where('team_id', team()->id))
-            ->with(['demandTemplate', 'teamObjectSchemaAssociation.schemaDefinition', 'teamObjectSchemaAssociation.schemaFragment']);
+            ->whereHas('templateDefinition', fn(Builder $builder) => $builder->where('team_id', team()->id))
+            ->with(['templateDefinition', 'teamObjectSchemaAssociation.schemaDefinition', 'teamObjectSchemaAssociation.schemaFragment']);
     }
 
     /**
@@ -73,8 +73,8 @@ class TemplateVariableRepository extends ActionRepository
     /**
      * Find variables for a specific template
      */
-    public function findForTemplate(DemandTemplate $template): Collection
+    public function findForTemplate(TemplateDefinition $template): Collection
     {
-        return $this->query()->where('demand_template_id', $template->id)->get();
+        return $this->query()->where('template_definition_id', $template->id)->get();
     }
 }

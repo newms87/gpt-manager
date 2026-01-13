@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\Services\Demand;
 
-use App\Models\Demand\TemplateVariable;
 use App\Models\Task\Artifact;
+use App\Models\Template\TemplateVariable;
 use App\Services\Demand\TemplateVariableResolutionService;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;

@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Services\Demand;
 
-use App\Models\Demand\DemandTemplate;
-use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
+use App\Models\Template\TemplateDefinition;
+use App\Models\Template\TemplateVariable;
 use App\Services\Demand\TemplateVariableService;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -30,7 +30,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_withNewVariables_createsWithCorrectDefaults(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -46,7 +46,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Verify each variable has correct defaults
         foreach ($variableNames as $variableName) {
-            $variable = TemplateVariable::where('demand_template_id', $template->id)
+            $variable = TemplateVariable::where('template_definition_id', $template->id)
                 ->where('name', $variableName)
                 ->first();
 
@@ -61,28 +61,28 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_withExistingVariables_preservesConfigurations(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         // Create existing variables with custom configurations
         $existingVar1 = TemplateVariable::factory()->artifactMapped()->create([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'patient_name',
-            'description'           => 'The patient full name',
-            'artifact_categories'   => ['medical', 'personal'],
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_FIRST,
-            'multi_value_separator' => ' | ',
+            'template_definition_id'    => $template->id,
+            'name'                      => 'patient_name',
+            'description'               => 'The patient full name',
+            'artifact_categories'       => ['medical', 'personal'],
+            'multi_value_strategy'      => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'     => ' | ',
         ]);
 
         $existingVar2 = TemplateVariable::factory()->aiMapped()->create([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'diagnosis',
-            'description'           => 'Medical diagnosis',
-            'ai_instructions'       => 'Extract the primary diagnosis',
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_UNIQUE,
-            'multi_value_separator' => '; ',
+            'template_definition_id'    => $template->id,
+            'name'                      => 'diagnosis',
+            'description'               => 'Medical diagnosis',
+            'ai_instructions'           => 'Extract the primary diagnosis',
+            'multi_value_strategy'      => TemplateVariable::STRATEGY_UNIQUE,
+            'multi_value_separator'     => '; ',
         ]);
 
         $variableNames = ['patient_name', 'diagnosis', 'new_variable'];
@@ -111,7 +111,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Verify new variable created with defaults
         $newVar = TemplateVariable::where('name', 'new_variable')
-            ->where('demand_template_id', $template->id)
+            ->where('template_definition_id', $template->id)
             ->first();
         $this->assertNotNull($newVar);
         $this->assertEquals(TemplateVariable::MAPPING_TYPE_AI, $newVar->mapping_type);
@@ -122,30 +122,30 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_withOrphanedVariables_deletesCorrectly(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         // Create variables, some will be orphaned
         $keptVar = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'kept_variable',
+            'template_definition_id' => $template->id,
+            'name'                   => 'kept_variable',
         ]);
 
         $orphanedVar1 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'orphaned_1',
+            'template_definition_id' => $template->id,
+            'name'                   => 'orphaned_1',
         ]);
 
         $orphanedVar2 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'orphaned_2',
+            'template_definition_id' => $template->id,
+            'name'                   => 'orphaned_2',
         ]);
 
         $orphanedVar3 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'orphaned_3',
+            'template_definition_id' => $template->id,
+            'name'                   => 'orphaned_3',
         ]);
 
         $variableNames = ['kept_variable', 'new_variable'];
@@ -170,34 +170,34 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Verify new variable was created
         $this->assertDatabaseHas('template_variables', [
-            'demand_template_id' => $template->id,
-            'name'               => 'new_variable',
-            'deleted_at'         => null,
+            'template_definition_id' => $template->id,
+            'name'                   => 'new_variable',
+            'deleted_at'             => null,
         ]);
     }
 
     public function test_syncVariablesFromGoogleDoc_withEmptyVariableList_deletesAllVariables(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         // Create variables that will all be deleted
         $var1 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'variable_1',
+            'template_definition_id' => $template->id,
+            'name'                   => 'variable_1',
         ]);
 
         $var2 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'variable_2',
+            'template_definition_id' => $template->id,
+            'name'                   => 'variable_2',
         ]);
 
         $var3 = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'variable_3',
+            'template_definition_id' => $template->id,
+            'name'                   => 'variable_3',
         ]);
 
         $variableNames = [];
@@ -217,13 +217,13 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_withOtherTeamsTemplate_throwsValidationError(): void
     {
         // Given - Create template for a different team
-        $otherTeamTemplate = DemandTemplate::factory()->create();
+        $otherTeamTemplate = TemplateDefinition::factory()->create();
 
         $variableNames = ['variable_1'];
 
         // Expect
         $this->expectException(ValidationError::class);
-        $this->expectExceptionMessage('You do not have permission to access this demand template');
+        $this->expectExceptionMessage('You do not have permission to access this template definition');
         $this->expectExceptionCode(403);
 
         // When
@@ -233,14 +233,14 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_isTransactional_rollsBackOnError(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         $existingVar = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'existing_variable',
+            'template_definition_id' => $template->id,
+            'name'                   => 'existing_variable',
         ]);
 
         // When - Pass invalid data that will cause an error during processing
@@ -255,28 +255,28 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Verify both variables exist (transaction committed)
         $this->assertDatabaseHas('template_variables', [
-            'demand_template_id' => $template->id,
-            'name'               => 'existing_variable',
+            'template_definition_id' => $template->id,
+            'name'                   => 'existing_variable',
         ]);
 
         $this->assertDatabaseHas('template_variables', [
-            'demand_template_id' => $template->id,
-            'name'               => 'new_variable',
+            'template_definition_id' => $template->id,
+            'name'                   => 'new_variable',
         ]);
     }
 
     public function test_syncVariablesFromGoogleDoc_returnsUpdatedListOfVariables(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
 
         // Create some existing variables
         TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'old_var',
+            'template_definition_id' => $template->id,
+            'name'                   => 'old_var',
         ]);
 
         $variableNames = ['new_var_1', 'new_var_2', 'new_var_3'];
@@ -300,7 +300,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     }
 
     // Note: Duplicate variable names test removed.
-    // The database has a unique constraint on (demand_template_id, name),
+    // The database has a unique constraint on (template_definition_id, name),
     // and the service doesn't need to handle duplicates because Google Docs
     // templates shouldn't have duplicate variable names in the first place.
     // The unique constraint will prevent any duplicates from being created.
@@ -308,7 +308,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_setsMultiValueStrategyToJoinForNewVariables(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -328,7 +328,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_setsEmptyDescriptionForNewVariables(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -347,7 +347,7 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
     public function test_syncVariablesFromGoogleDoc_preservesSchemaAssociationsForExistingVariables(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -362,8 +362,8 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
 
         // Create existing variable with schema association
         $existingVar = TemplateVariable::factory()->teamObjectMapped()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'team_object_var',
+            'template_definition_id' => $template->id,
+            'name'                   => 'team_object_var',
         ]);
 
         $association = SchemaAssociation::factory()->create([

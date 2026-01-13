@@ -51,7 +51,7 @@
             "Sequential Category Matcher",
             "Artifact Level Projection",
             "Run Workflow",
-            "Google Docs Template"
+            "Template"
           ],
           "description": "Name of the task runner that executes this task"
         },

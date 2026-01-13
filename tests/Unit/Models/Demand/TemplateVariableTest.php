@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\Models\Demand;
 
-use App\Models\Demand\DemandTemplate;
-use App\Models\Demand\TemplateVariable;
 use App\Models\Schema\SchemaAssociation;
+use App\Models\Template\TemplateDefinition;
+use App\Models\Template\TemplateVariable;
 use Illuminate\Validation\ValidationException;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
@@ -23,21 +23,21 @@ class TemplateVariableTest extends AuthenticatedTestCase
     // RELATIONSHIP TESTS
     // =====================================================
 
-    public function test_belongsTo_demandTemplate_relationship_exists(): void
+    public function test_belongsTo_templateDefinition_relationship_exists(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
+            'template_definition_id' => $template->id,
         ]);
 
         // When
-        $relatedTemplate = $variable->demandTemplate;
+        $relatedTemplate = $variable->templateDefinition;
 
         // Then
-        $this->assertInstanceOf(DemandTemplate::class, $relatedTemplate);
+        $this->assertInstanceOf(TemplateDefinition::class, $relatedTemplate);
         $this->assertEquals($template->id, $relatedTemplate->id);
     }
 
@@ -179,21 +179,21 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_variables_automatically_ordered_by_name_alphabetically(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
         $varZ = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Zebra',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Zebra',
         ]);
         $varA = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Apple',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Apple',
         ]);
         $varM = TemplateVariable::factory()->create([
-            'demand_template_id' => $template->id,
-            'name'               => 'Mango',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Mango',
         ]);
 
         // When
@@ -263,15 +263,15 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_withoutName_throwsValidationException(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'    => $template->id,
-            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions'       => 'Test instructions',
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'template_definition_id' => $template->id,
+            'mapping_type'           => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'        => 'Test instructions',
+            'multi_value_strategy'   => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'  => ', ',
         ]);
 
         // Then
@@ -284,14 +284,14 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_withoutMappingType_throwsValidationException(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'Test Variable',
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Test Variable',
+            'multi_value_strategy'   => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'  => ', ',
         ]);
 
         // Then
@@ -304,15 +304,15 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_withInvalidMappingType_throwsValidationException(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'Test Variable',
-            'mapping_type'          => 'invalid_type',
-            'multi_value_strategy'  => TemplateVariable::STRATEGY_JOIN,
-            'multi_value_separator' => ', ',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Test Variable',
+            'mapping_type'           => 'invalid_type',
+            'multi_value_strategy'   => TemplateVariable::STRATEGY_JOIN,
+            'multi_value_separator'  => ', ',
         ]);
 
         // Then
@@ -325,11 +325,11 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_artifactMapping_withoutCategoriesOrSelector_isValid(): void
     {
         // Given - Artifact mapping without categories or selector (selects all artifacts)
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'         => $template->id,
+            'template_definition_id'     => $template->id,
             'name'                       => 'Test Variable',
             'mapping_type'               => TemplateVariable::MAPPING_TYPE_ARTIFACT,
             'artifact_categories'        => null,
@@ -348,11 +348,11 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_teamObjectMapping_withoutSchemaAssociation_isValid(): void
     {
         // Given - TeamObject mapping without schema association (incomplete configuration is allowed)
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'                => $template->id,
+            'template_definition_id'            => $template->id,
             'name'                              => 'Test Variable',
             'mapping_type'                      => TemplateVariable::MAPPING_TYPE_TEAM_OBJECT,
             'team_object_schema_association_id' => null,
@@ -370,16 +370,16 @@ class TemplateVariableTest extends AuthenticatedTestCase
     public function test_validate_withInvalidMultiValueStrategy_throwsValidationException(): void
     {
         // Given
-        $template = DemandTemplate::factory()->create([
+        $template = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
         $variable = TemplateVariable::make([
-            'demand_template_id'    => $template->id,
-            'name'                  => 'Test Variable',
-            'mapping_type'          => TemplateVariable::MAPPING_TYPE_AI,
-            'ai_instructions'       => 'Test instructions',
-            'multi_value_strategy'  => 'invalid_strategy',
-            'multi_value_separator' => ', ',
+            'template_definition_id' => $template->id,
+            'name'                   => 'Test Variable',
+            'mapping_type'           => TemplateVariable::MAPPING_TYPE_AI,
+            'ai_instructions'        => 'Test instructions',
+            'multi_value_strategy'   => 'invalid_strategy',
+            'multi_value_separator'  => ', ',
         ]);
 
         // Then

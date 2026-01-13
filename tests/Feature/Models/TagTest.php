@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\Demand\DemandTemplate;
 use App\Models\Tag;
+use App\Models\Template\TemplateDefinition;
 use App\Models\Workflow\WorkflowInput;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -317,7 +317,7 @@ class TagTest extends AuthenticatedTestCase
     #[Test]
     public function attaches_tag_to_demand_template(): void
     {
-        $demandTemplate = DemandTemplate::factory()->create([
+        $demandTemplate = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
 
@@ -341,20 +341,20 @@ class TagTest extends AuthenticatedTestCase
             'name'    => 'demand_letter',
         ]);
 
-        $template1 = DemandTemplate::factory()->create([
+        $template1 = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
             'name'    => 'Template 1',
         ]);
         $template1->attachTag($tag);
 
-        $template2 = DemandTemplate::factory()->create([
+        $template2 = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
             'name'    => 'Template 2',
         ]);
 
-        $results = DemandTemplate::withTag('demand_letter')->get();
+        $results = TemplateDefinition::withTag('demand_letter')->get();
 
         $this->assertCount(1, $results);
         $this->assertEquals($template1->id, $results->first()->id);
@@ -373,7 +373,7 @@ class TagTest extends AuthenticatedTestCase
         ]);
         $workflowInput->attachTag($tag);
 
-        $demandTemplate = DemandTemplate::factory()->create([
+        $demandTemplate = TemplateDefinition::factory()->create([
             'team_id' => $this->user->currentTeam->id,
             'user_id' => $this->user->id,
         ]);
@@ -381,9 +381,9 @@ class TagTest extends AuthenticatedTestCase
 
         // Verify tag is attached to both models
         $this->assertCount(1, $tag->workflowInputs);
-        $this->assertCount(1, $tag->demandTemplates);
+        $this->assertCount(1, $tag->templateDefinitions);
         $this->assertEquals($workflowInput->id, $tag->workflowInputs->first()->id);
-        $this->assertEquals($demandTemplate->id, $tag->demandTemplates->first()->id);
+        $this->assertEquals($demandTemplate->id, $tag->templateDefinitions->first()->id);
     }
 
     #[Test]

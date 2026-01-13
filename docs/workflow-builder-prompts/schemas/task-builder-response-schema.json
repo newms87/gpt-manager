@@ -132,7 +132,7 @@
             "Sequential Category Matcher",
             "Artifact Level Projection",
             "Run Workflow",
-            "Google Docs Template"
+            "Template"
           ],
           "description": "Selected task runner based on requirements analysis"
         },
