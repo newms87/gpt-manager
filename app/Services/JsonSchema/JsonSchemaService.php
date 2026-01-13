@@ -244,20 +244,26 @@ class JsonSchemaService
                 continue;
             }
 
-            if (!empty($schemaProperty['type']) && $schemaProperty['type'] !== $selectedProperty['type']) {
-                throw new Exception("Fragment selector type mismatch: $selectedKey: Schema Type $schemaProperty[type] is not $selectedProperty[type]");
+            // NOTE: Fragment selectors are loosely correlated with schemas - types may differ
+            // if the schema changed or the LLM guessed wrong during planning.
+            // We trust the schema's type and just use the fragment selector for field selection.
+            $schemaType = $schemaProperty['type'] ?? null;
+            if ($schemaType && $schemaType !== $selectedProperty['type']) {
+                logger()->warning("Fragment selector type mismatch: $selectedKey: Schema type '$schemaType' vs selector type '{$selectedProperty['type']}'. Using schema type.");
             }
 
-            if ($selectedProperty['type'] === 'object') {
+            // Use SCHEMA's type to determine how to recurse (not the selector's type)
+            if ($schemaType === 'object') {
                 $result = $this->applyFragmentSelector($schemaProperty, $selectedProperty);
-            } elseif ($selectedProperty['type'] === 'array') {
-                $result = $this->applyFragmentSelector($schemaProperty['items'], $selectedProperty);
+            } elseif ($schemaType === 'array') {
+                $result = $this->applyFragmentSelector($schemaProperty['items'] ?? [], $selectedProperty);
             } else {
+                // Leaf node (string, number, boolean, etc.) - use schema directly
                 $result = $schemaProperty;
             }
 
             if ($result) {
-                if ($selectedProperty['type'] === 'array') {
+                if ($schemaType === 'array') {
                     $filteredProperties[$selectedKey] = [
                         ...$schemaProperty,
                         'type'  => 'array',
