@@ -81,21 +81,29 @@ class IdentityExtractionService
         // Resolve parent object context
         [$parentObjectId, $possibleParentIds] = $this->resolveParentContext($taskProcess, $identityGroup, $level);
 
+        // Determine if this is an array-type extraction BEFORE calling LLM
+        // This allows us to skip search_query in initial extraction for arrays
+        $fragmentSelectorService = app(FragmentSelectorService::class);
+        $isLeafArrayType         = $fragmentSelectorService->isLeafArrayType($identityGroup);
+
         static::logDebug('Running identity extraction', [
             'level'                  => $level,
             'group'                  => $identityGroup['name'] ?? 'unknown',
             'artifact_count'         => $artifacts->count(),
             'possible_parents_count' => count($possibleParentIds),
+            'is_leaf_array_type'     => $isLeafArrayType,
         ]);
 
-        // LLM Call #1: Extract identity fields + search query
+        // LLM Call: Extract identity fields + search query (single objects) or identity fields only (arrays)
+        // For array extractions, search queries are generated via SearchQueryGenerationService to reduce schema complexity
         $extractionResult = $this->extractIdentityWithSearchQuery(
             $taskRun,
             $taskProcess,
             $artifacts,
             $identityGroup,
             $possibleParentIds,
-            $allArtifacts
+            $allArtifacts,
+            includeSearchQuery: !$isLeafArrayType
         );
 
         if (empty($extractionResult)) {
@@ -107,10 +115,6 @@ class IdentityExtractionService
         // Use LLM-resolved parent_id when available (from multiple parent resolution),
         // otherwise use the pre-resolved parentObjectId from resolved_objects
         $resolvedParentId = $extractionResult['parent_id'] ?? $parentObjectId;
-
-        // Check if this is an array-type extraction (e.g., multiple diagnoses per document)
-        $fragmentSelectorService = app(FragmentSelectorService::class);
-        $isLeafArrayType         = $fragmentSelectorService->isLeafArrayType($identityGroup);
 
         static::logDebug('Determining extraction path', [
             'object_type'        => $identityGroup['object_type'] ?? 'unknown',
@@ -326,6 +330,10 @@ class IdentityExtractionService
      * this method iterates through each item in the extracted array, performs duplicate resolution
      * for each, creates/updates TeamObjects, and stores all resolved IDs.
      *
+     * The initial extraction does NOT include search queries (to reduce schema complexity).
+     * After extraction, a follow-up request to SearchQueryGenerationService generates
+     * item-specific search queries for duplicate detection.
+     *
      * Returns the first created TeamObject (method signature requires single return type).
      */
     protected function executeArrayIdentityExtraction(
@@ -341,9 +349,8 @@ class IdentityExtractionService
         $identityFields   = $identityGroup['identity_fields']   ?? [];
         $objectType       = $identityGroup['object_type'];
 
-        // Get top-level page_sources and search_query (new pattern)
-        $pageSources       = $extractionResult['page_sources']  ?? [];
-        $searchQueryArray  = $extractionResult['search_query']  ?? [];
+        // Get top-level page_sources (search_query is now generated via follow-up request)
+        $pageSources = $extractionResult['page_sources'] ?? [];
 
         // Get the leaf key - the schema is now simplified to just { leaf_key: [...items...] }
         $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
@@ -361,8 +368,28 @@ class IdentityExtractionService
             'parent_id'   => $parentObjectId,
         ]);
 
-        $createdObjects    = [];
-        $artifactBuilder   = app(ExtractionArtifactBuilder::class);
+        // Filter to only valid array items for search query generation
+        $validItems = [];
+        foreach ($items as $index => $itemData) {
+            if (is_array($itemData)) {
+                $validItems[$index] = $itemData;
+            }
+        }
+
+        // Generate item-specific search queries in batch via follow-up request
+        $indexedSearchQueries = app(SearchQueryGenerationService::class)->generateForArrayItems(
+            $taskProcess,
+            $validItems,
+            $identityFields
+        );
+
+        static::logDebug('Generated search queries for array items', [
+            'item_count'              => count($validItems),
+            'search_queries_received' => count(array_filter($indexedSearchQueries)),
+        ]);
+
+        $createdObjects  = [];
+        $artifactBuilder = app(ExtractionArtifactBuilder::class);
 
         foreach ($items as $index => $itemData) {
             if (!is_array($itemData)) {
@@ -372,11 +399,8 @@ class IdentityExtractionService
             // Extract page sources for this item using dot notation keys
             $itemPageSources = $this->extractItemPageSources($pageSources, $leafKey, $index);
 
-            // Use search query from the array (each item gets the shared search query)
-            // Or if search_query is per-item, index into it
-            $searchQuery = is_array($searchQueryArray) && isset($searchQueryArray[0]) && is_array($searchQueryArray[0])
-                ? $searchQueryArray
-                : $itemData;
+            // Use item-specific search queries generated via SearchQueryGenerationService
+            $searchQuery = $indexedSearchQueries[$index] ?? [];
 
             // Resolve name for this item
             $name = $this->resolveObjectName($itemData, $identityFields);
@@ -489,8 +513,11 @@ class IdentityExtractionService
      * Extract identity fields with search query using LLM.
      *
      * Routes to skim mode or exhaustive mode based on search_mode in process meta.
+     * For array extractions, search queries are omitted from the initial extraction
+     * and generated via a follow-up request to SearchQueryGenerationService.
      *
      * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @param  bool  $includeSearchQuery  When true, includes search_query in schema (default true for single objects, false for arrays)
      */
     protected function extractIdentityWithSearchQuery(
         TaskRun $taskRun,
@@ -498,7 +525,8 @@ class IdentityExtractionService
         Collection $artifacts,
         array $group,
         array $possibleParentIds = [],
-        ?Collection $allArtifacts = null
+        ?Collection $allArtifacts = null,
+        bool $includeSearchQuery = true
     ): array {
         $taskDefinition   = $taskRun->taskDefinition;
         $schemaDefinition = $taskDefinition->schemaDefinition;
@@ -520,7 +548,8 @@ class IdentityExtractionService
                 $group,
                 $artifacts,
                 $possibleParentIds,
-                $allArtifacts
+                $allArtifacts,
+                $includeSearchQuery
             );
         }
 
@@ -528,7 +557,9 @@ class IdentityExtractionService
         $responseSchema = $this->buildExtractionResponseSchema(
             $schemaDefinition,
             $group,
-            $possibleParentIds
+            $possibleParentIds,
+            includeConfidence: false,
+            includeSearchQuery: $includeSearchQuery
         );
 
         return $this->runExtractionThread(
@@ -547,6 +578,7 @@ class IdentityExtractionService
      *
      * @param  array<int>  $possibleParentIds
      * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @param  bool  $includeSearchQuery  When true, includes search_query in schema
      * @return array{data: array, parent_id: int|null, page_sources: array, search_query: array}
      */
     protected function extractWithSkimMode(
@@ -555,7 +587,8 @@ class IdentityExtractionService
         array $group,
         Collection $artifacts,
         array $possibleParentIds,
-        ?Collection $allArtifacts = null
+        ?Collection $allArtifacts = null,
+        bool $includeSearchQuery = true
     ): array {
         $config              = $taskRun->taskDefinition->task_runner_config;
         $confidenceThreshold = $config['confidence_threshold'] ?? 3;
@@ -586,7 +619,8 @@ class IdentityExtractionService
                 $group,
                 $possibleParentIds,
                 includeConfidence: true,
-                allArtifacts: $allArtifacts
+                allArtifacts: $allArtifacts,
+                includeSearchQuery: $includeSearchQuery
             );
 
             // Merge batch data with cumulative data (later batches override earlier values)
@@ -601,8 +635,8 @@ class IdentityExtractionService
             // Merge page sources (later batches override earlier ones)
             $cumulativePageSources = array_merge($cumulativePageSources, $batchResult['page_sources'] ?? []);
 
-            // Take the most complete search query (first non-empty)
-            if (empty($cumulativeSearchQuery) && !empty($batchResult['search_query'])) {
+            // Take the most complete search query (first non-empty) - only when includeSearchQuery is true
+            if ($includeSearchQuery && empty($cumulativeSearchQuery) && !empty($batchResult['search_query'])) {
                 $cumulativeSearchQuery = $batchResult['search_query'];
             }
 
@@ -638,6 +672,7 @@ class IdentityExtractionService
      *
      * @param  array<int>  $possibleParentIds
      * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @param  bool  $includeSearchQuery  When true, includes search_query in schema
      * @return array{data: array, parent_id: int|null, confidence: array, page_sources: array, search_query: array}
      */
     protected function runExtractionOnBatch(
@@ -647,16 +682,18 @@ class IdentityExtractionService
         array $group,
         array $possibleParentIds,
         bool $includeConfidence,
-        ?Collection $allArtifacts = null
+        ?Collection $allArtifacts = null,
+        bool $includeSearchQuery = true
     ): array {
         $schemaDefinition = $taskRun->taskDefinition->schemaDefinition;
 
-        // Build the response schema with optional confidence tracking
+        // Build the response schema with optional confidence tracking and search query
         $responseSchema = $this->buildExtractionResponseSchema(
             $schemaDefinition,
             $group,
             $possibleParentIds,
-            $includeConfidence
+            $includeConfidence,
+            $includeSearchQuery
         );
 
         // Run extraction thread on this batch
@@ -718,29 +755,28 @@ class IdentityExtractionService
      * Creates a schema with all metadata at top level:
      * - data: { leaf_key: { fields... } }  -- extracted identity data
      * - page_sources: { "field": 1, ... }  -- page numbers for each field
-     * - search_query: [ {...}, ... ]       -- search queries from specific to broad
+     * - search_query: [ {...}, ... ]       -- search queries from specific to broad (when includeSearchQuery is true)
      * - parent_id: (optional) When multiple parent options exist
      * - confidence: (optional) When includeConfidence is true
      * - $defs: { pageSource, stringSearch, dateSearch, booleanSearch, numericSearch, integerSearch }
      *
      * @param  array<int>  $possibleParentIds
      * @param  bool  $includeConfidence  When true, adds confidence schema for per-field confidence scores
+     * @param  bool  $includeSearchQuery  When true, includes search_query in schema (default true for single objects, false for arrays)
      */
     protected function buildExtractionResponseSchema(
         SchemaDefinition $schemaDefinition,
         array $group,
         array $possibleParentIds,
-        bool $includeConfidence = false
+        bool $includeConfidence = false,
+        bool $includeSearchQuery = true
     ): array {
         $fragmentSelector = $group['fragment_selector'] ?? [];
         $identityFields   = $group['identity_fields']   ?? [];
         $objectType       = $group['object_type']       ?? '';
 
-        // Build $defs for the root schema (pageSource + search query types)
-        $defs = $this->buildSchemaDefinitions($schemaDefinition->schema, $identityFields);
-
-        // Build search_query schema (now at top level)
-        $searchQuerySchema = $this->buildSearchQuerySchema($identityFields, $schemaDefinition->schema);
+        // Build $defs for the root schema (pageSource + optionally search query types)
+        $defs = $this->buildSchemaDefinitions($schemaDefinition->schema, $identityFields, $includeSearchQuery);
 
         // Get the leaf key and build simplified schema
         $leafKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
@@ -748,9 +784,13 @@ class IdentityExtractionService
         // Build the leaf-level schema (no embedded search_query or __source__)
         $leafSchema = $this->buildLeafSchema($schemaDefinition, $fragmentSelector);
 
-        // Build page_sources schema
-        $pageSourceService   = app(PageSourceService::class);
-        $pageSourcesSchema   = $pageSourceService->buildPageSourcesSchema($identityFields);
+        // Extract ALL extractable field names from the leaf schema for page_sources and confidence
+        // This includes identity fields PLUS additional fields like description
+        $allExtractableFields = $this->extractFieldNamesFromLeafSchema($leafSchema);
+
+        // Build page_sources schema - uses ALL extractable fields, not just identity fields
+        $pageSourceService = app(PageSourceService::class);
+        $pageSourcesSchema = $pageSourceService->buildPageSourcesSchema($allExtractableFields);
 
         $responseSchema = [
             'type'       => 'object',
@@ -762,11 +802,17 @@ class IdentityExtractionService
                     ],
                 ],
                 'page_sources' => $pageSourcesSchema,
-                'search_query' => $searchQuerySchema,
             ],
-            'required' => ['data', 'page_sources', 'search_query'],
+            'required' => ['data', 'page_sources'],
             '$defs'    => $defs,
         ];
+
+        // Add search_query schema when requested (skip for array extractions - generated via follow-up request)
+        if ($includeSearchQuery) {
+            $searchQuerySchema                            = $this->buildSearchQuerySchema($identityFields, $schemaDefinition->schema);
+            $responseSchema['properties']['search_query'] = $searchQuerySchema;
+            $responseSchema['required'][]                 = 'search_query';
+        }
 
         // Add parent_id field when multiple parents exist
         if (count($possibleParentIds) > 1) {
@@ -778,8 +824,9 @@ class IdentityExtractionService
         }
 
         // Add confidence schema when requested (for skim mode batched extraction)
+        // Uses ALL extractable fields, not just identity fields
         if ($includeConfidence) {
-            $responseSchema['properties']['confidence'] = $this->buildConfidenceSchema($identityFields);
+            $responseSchema['properties']['confidence'] = $this->buildConfidenceSchema($allExtractableFields);
             $responseSchema['required'][]               = 'confidence';
         }
 
@@ -818,16 +865,22 @@ class IdentityExtractionService
     }
 
     /**
-     * Build the $defs section for the schema containing pageSource and search query type definitions.
+     * Build the $defs section for the schema containing pageSource and optionally search query type definitions.
      *
      * @param  array<string>  $identityFields
+     * @param  bool  $includeSearchQuery  When true, includes search query type definitions
      */
-    protected function buildSchemaDefinitions(?array $schema, array $identityFields): array
+    protected function buildSchemaDefinitions(?array $schema, array $identityFields, bool $includeSearchQuery = true): array
     {
         $defs = [];
 
         // Add pageSource definition
         $defs['pageSource'] = app(PageSourceService::class)->getPageSourceDef();
+
+        // Skip search query type definitions when not needed (array extractions use follow-up request)
+        if (!$includeSearchQuery) {
+            return $defs;
+        }
 
         // Add search query type definitions from yaml
         $searchQueryDefs = $this->getSearchQueryDefs();
@@ -948,6 +1001,40 @@ class IdentityExtractionService
 
         // Continue traversing for object types
         return $this->extractLeafSchema($childSchema, $childSelector);
+    }
+
+    /**
+     * Extract all scalar field names from a leaf schema.
+     *
+     * Iterates through the leaf schema properties and extracts field names for scalar types.
+     * For array schemas, extracts field names from the items schema.
+     *
+     * @return array<string> List of extractable field names
+     */
+    protected function extractFieldNamesFromLeafSchema(array $leafSchema): array
+    {
+        $fields = [];
+
+        // Handle array type - look at items schema
+        if (($leafSchema['type'] ?? '') === 'array') {
+            $itemSchema = $leafSchema['items'] ?? [];
+
+            return $this->extractFieldNamesFromLeafSchema($itemSchema);
+        }
+
+        // Handle object type - look at properties
+        $properties = $leafSchema['properties'] ?? [];
+
+        foreach ($properties as $fieldName => $fieldDef) {
+            $fieldType = $fieldDef['type'] ?? 'string';
+
+            // Only include scalar types (not object or array)
+            if (!in_array($fieldType, ['object', 'array'], true)) {
+                $fields[] = $fieldName;
+            }
+        }
+
+        return $fields;
     }
 
     /**
