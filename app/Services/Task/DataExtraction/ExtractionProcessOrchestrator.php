@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\DataExtraction;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Traits\HasDebugLogging;
@@ -24,6 +25,18 @@ class ExtractionProcessOrchestrator
         $meta = $taskRun->meta ?? [];
 
         return $meta['level_progress'] ?? [];
+    }
+
+    /**
+     * Get the parent output artifact for a task run.
+     * Returns the most recently created parent artifact (no parent_artifact_id).
+     */
+    public function getParentOutputArtifact(TaskRun $taskRun): ?Artifact
+    {
+        return $taskRun->outputArtifacts()
+            ->whereNull('parent_artifact_id')
+            ->latest('id')
+            ->first();
     }
 
     /**
@@ -65,7 +78,7 @@ class ExtractionProcessOrchestrator
     public function advanceToNextLevel(TaskRun $taskRun): bool
     {
         $currentLevel = $this->getCurrentLevel($taskRun);
-        $plan         = $this->getPlan($taskRun);
+        $plan         = $this->getExtractionPlan($taskRun);
         $maxLevel     = $this->getMaxLevel($plan);
 
         if ($currentLevel >= $maxLevel) {
@@ -108,7 +121,7 @@ class ExtractionProcessOrchestrator
         }
 
         // Get parent output artifact and its children (already classified)
-        $parentArtifact = $taskRun->outputArtifacts()->whereNull('parent_artifact_id')->first();
+        $parentArtifact = $this->getParentOutputArtifact($taskRun);
         if (!$parentArtifact) {
             static::logDebug('No parent output artifact found');
 
@@ -192,7 +205,7 @@ class ExtractionProcessOrchestrator
 
         // Get parent output artifact and its children (already classified)
         // If no parent artifact exists, we still create processes but without input artifacts
-        $parentArtifact        = $taskRun->outputArtifacts()->whereNull('parent_artifact_id')->first();
+        $parentArtifact        = $this->getParentOutputArtifact($taskRun);
         $allChildren           = $parentArtifact?->children()->get();
         $classificationService = app(ClassificationExecutorService::class);
 
@@ -436,27 +449,9 @@ class ExtractionProcessOrchestrator
     /**
      * Get the extraction plan from TaskDefinition only.
      */
-    protected function getPlan(TaskRun $taskRun): array
+    public function getExtractionPlan(TaskRun $taskRun): array
     {
-        // Check for cached plan in TaskDefinition.meta
-        $taskDefinition = $taskRun->taskDefinition;
-        $cachedPlan     = $taskDefinition->meta['extraction_plan'] ?? null;
-
-        return $cachedPlan ?? [];
-    }
-
-    /**
-     * Check if a group is an identification group.
-     * In new structure, identities have identity_fields instead of objects.
-     */
-    protected function isIdentificationGroup(array $group): bool
-    {
-        // New structure: identity groups have identity_fields
-        if (isset($group['identity_fields'])) {
-            return true;
-        }
-
-        return false;
+        return $taskRun->taskDefinition->meta['extraction_plan'] ?? [];
     }
 
     /**

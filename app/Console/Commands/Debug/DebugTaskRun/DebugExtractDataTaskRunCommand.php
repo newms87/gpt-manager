@@ -6,6 +6,22 @@ use App\Services\Task\Debug\DebugTaskRunService;
 use App\Services\Task\Debug\ExtractDataDebugService;
 use Override;
 
+/**
+ * Debug command for ExtractData TaskRuns with specialized extraction debugging options.
+ *
+ * This command is intentionally thin - ALL business logic lives in ExtractDataDebugService.
+ * The command is responsible only for routing options to the appropriate service methods.
+ *
+ * Usage Examples:
+ *   --state-check       Show state machine check results for advanceToNextPhase debugging
+ *   --run-orchestrator  Run ExtractionStateOrchestrator::advanceToNextPhase() to create next processes
+ *   --run-process=ID    Run a specific task process synchronously to debug exceptions
+ *   --show-schema=ID    Show the extraction response schema for a specific task process
+ *   --cached-plan       Show cached extraction plan fragment selectors
+ *   --level-progress    Show extraction level progress for each level
+ *
+ * @see ExtractDataDebugService for implementation details
+ */
 class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
 {
     protected $signature = 'debug:extract-data-task-run {task-run? : TaskRun ID, TaskProcess ID, or JobDispatch ID}
@@ -29,7 +45,9 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
         {--level-progress : Show extraction level progress for each level}
         {--cached-plan : Show cached extraction plan fragment selectors}
         {--clear-cached-plan : Clear cached extraction plan}
-        {--show-schema= : Show the extraction response schema for a specific task process ID}';
+        {--show-schema= : Show the extraction response schema for a specific task process ID}
+        {--state-check : Show state machine check results for advanceToNextPhase}
+        {--run-orchestrator : Run ExtractionStateOrchestrator::advanceToNextPhase() to create next processes}';
 
     protected $description = 'Debug an ExtractData TaskRun with specialized extraction debugging options';
 
@@ -49,7 +67,7 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
 
         $extractDataService = app(ExtractDataDebugService::class);
 
-        // Handle ExtractData-specific options first
+        // Handle ExtractData-specific options - delegate to service
         if ($this->option('run-process')) {
             return $extractDataService->runProcess($this->taskRun, (int)$this->option('run-process'), $this);
         }
@@ -100,6 +118,16 @@ class DebugExtractDataTaskRunCommand extends DebugTaskRunCommand
             $extractDataService->showExtractionSchema($this->taskRun, (int)$this->option('show-schema'), $this);
 
             return 0;
+        }
+
+        if ($this->option('state-check')) {
+            $extractDataService->showStateCheck($this->taskRun, $this);
+
+            return 0;
+        }
+
+        if ($this->option('run-orchestrator')) {
+            return $extractDataService->runOrchestrator($this->taskRun, $this);
         }
 
         // Fall back to parent::handle() for base functionality

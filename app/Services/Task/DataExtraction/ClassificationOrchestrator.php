@@ -16,6 +16,41 @@ class ClassificationOrchestrator
     use HasDebugLogging;
 
     /**
+     * Build and store classification schema in TaskRun meta if not already present.
+     * Returns the schema (either existing or newly built).
+     *
+     * @param  TaskRun  $taskRun  The task run to store the schema in
+     * @param  array  $plan  The extraction plan to build the schema from
+     * @return array|null The classification schema, or null if no plan provided
+     */
+    public function ensureClassificationSchema(TaskRun $taskRun, ?array $plan): ?array
+    {
+        $existingSchema = $taskRun->meta['classification_schema'] ?? null;
+
+        if ($existingSchema) {
+            return $existingSchema;
+        }
+
+        if (!$plan) {
+            return null;
+        }
+
+        $schemaBuilder = app(ClassificationSchemaBuilder::class);
+        $booleanSchema = $schemaBuilder->buildBooleanSchema($plan);
+
+        $meta                          = $taskRun->meta ?? [];
+        $meta['classification_schema'] = $booleanSchema;
+        $taskRun->meta                 = $meta;
+        $taskRun->save();
+
+        static::logDebug('Stored classification schema', [
+            'properties_count' => count($booleanSchema['properties'] ?? []),
+        ]);
+
+        return $booleanSchema;
+    }
+
+    /**
      * Create classification processes per page.
      * Each page gets its own TaskProcess for parallel classification.
      * Skips artifacts that already have cached classification results.
@@ -102,10 +137,10 @@ class ClassificationOrchestrator
     }
 
     /**
-     * Check if classification is complete (all classify processes finished).
+     * Check if classification is complete (all classify processes finished OR all artifacts have cached classification).
      *
      * @param  TaskRun  $taskRun  The task run to check
-     * @return bool True if all classify processes are complete, false otherwise
+     * @return bool True if all classify processes are complete or all artifacts have cached classification, false otherwise
      */
     public function isClassificationComplete(TaskRun $taskRun): bool
     {
@@ -122,20 +157,68 @@ class ClassificationOrchestrator
             'completed_processes' => $completedProcesses,
         ]);
 
-        // If no classify processes exist, classification is not complete
-        if ($totalProcesses === 0) {
-            static::logDebug('No classify processes found, classification not complete');
+        // If processes exist, check if all completed
+        if ($totalProcesses > 0) {
+            $isComplete = $completedProcesses === $totalProcesses;
 
-            return false;
+            static::logDebug('Classification completion result (via processes)', [
+                'is_complete' => $isComplete,
+            ]);
+
+            return $isComplete;
         }
 
-        $isComplete = $completedProcesses === $totalProcesses;
+        // No processes - check if all child artifacts have classification meta
+        // This handles the case where classification was cached from previous runs
+        $isComplete = $this->isClassificationCompleteViaArtifactMeta($taskRun);
 
-        static::logDebug('Classification completion result', [
+        static::logDebug('Classification completion result (via artifact meta)', [
             'is_complete' => $isComplete,
         ]);
 
         return $isComplete;
+    }
+
+    /**
+     * Check if classification is complete via artifact meta (for cached classification results).
+     * Returns true if all child artifacts have classification data in their meta.
+     */
+    protected function isClassificationCompleteViaArtifactMeta(TaskRun $taskRun): bool
+    {
+        // Use the most recently created parent artifact
+        // This ensures we check the artifacts created by createExtractionArtifacts(), not pre-existing ones
+        $parentArtifact = app(ExtractionProcessOrchestrator::class)->getParentOutputArtifact($taskRun);
+
+        if (!$parentArtifact) {
+            static::logDebug('No parent artifact found for classification meta check');
+
+            return false;
+        }
+
+        $childArtifacts = $parentArtifact->children;
+
+        if ($childArtifacts->isEmpty()) {
+            static::logDebug('No child artifacts found for classification meta check');
+
+            return false;
+        }
+
+        // Check if ALL child artifacts have classification meta
+        foreach ($childArtifacts as $child) {
+            if (empty($child->meta['classification'])) {
+                static::logDebug('Child artifact missing classification meta', [
+                    'artifact_id' => $child->id,
+                ]);
+
+                return false;
+            }
+        }
+
+        static::logDebug('All child artifacts have classification meta', [
+            'child_count' => $childArtifacts->count(),
+        ]);
+
+        return true;
     }
 
     /**

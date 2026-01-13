@@ -2,21 +2,21 @@
 
 namespace App\Services\Task\Runners;
 
-use App\Services\Task\DataExtraction\ArtifactPreparationService;
 use App\Services\Task\DataExtraction\ClassificationExecutorService;
-use App\Services\Task\DataExtraction\ClassificationOrchestrator;
-use App\Services\Task\DataExtraction\ClassificationSchemaBuilder;
-use App\Services\Task\DataExtraction\ExtractionPhaseService;
-use App\Services\Task\DataExtraction\ExtractionPlanningService;
+use App\Services\Task\DataExtraction\ExtractionStateOrchestrator;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
-use App\Services\Task\DataExtraction\ObjectTypeExtractor;
 use App\Services\Task\DataExtraction\PerObjectPlanningService;
-use App\Services\Task\DataExtraction\PlanningPhaseService;
 use App\Services\Task\DataExtraction\RemainingExtractionService;
+use App\Services\Task\Traits\HasTranscodePrerequisite;
+use App\Services\Task\TranscodePrerequisiteService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class ExtractDataTaskRunner extends AgentThreadTaskRunner
 {
+    use HasTranscodePrerequisite;
+
+    public const string VERSION = '1.0.0';
+
     public const string RUNNER_NAME = 'Extract Data';
 
     public const string OPERATION_PLAN_IDENTIFY = 'Plan: Identify',
@@ -57,7 +57,7 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
     {
         parent::prepareRun();
 
-        static::logDebug('Preparing extract data task run');
+        static::logDebug('ExtractDataTaskRunner v' . self::VERSION . ' - Preparing extract data task run');
 
         // Validate schema definition exists
         $taskDefinition = $this->taskRun->taskDefinition;
@@ -73,98 +73,31 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
      */
     public function run(): void
     {
-        static::logDebug("Running extract data operation: {$this->taskProcess->operation}");
+        static::logDebug('ExtractDataTaskRunner v' . self::VERSION . " - Running operation: {$this->taskProcess->operation}");
 
         match ($this->taskProcess->operation) {
-            self::OPERATION_PLAN_IDENTIFY     => $this->runPlanIdentifyOperation(),
-            self::OPERATION_PLAN_REMAINING    => $this->runPlanRemainingOperation(),
-            self::OPERATION_CLASSIFY          => $this->runClassificationOperation(),
-            self::OPERATION_EXTRACT_IDENTITY  => $this->runExtractIdentityOperation(),
-            self::OPERATION_EXTRACT_REMAINING => $this->runExtractRemainingOperation(),
-            default                           => $this->runInitializeOperation()
+            TranscodePrerequisiteService::OPERATION_TRANSCODE => $this->runTranscodeOperation(),
+            self::OPERATION_PLAN_IDENTIFY                     => $this->runPlanIdentifyOperation(),
+            self::OPERATION_PLAN_REMAINING                    => $this->runPlanRemainingOperation(),
+            self::OPERATION_CLASSIFY                          => $this->runClassificationOperation(),
+            self::OPERATION_EXTRACT_IDENTITY                  => $this->runExtractIdentityOperation(),
+            self::OPERATION_EXTRACT_REMAINING                 => $this->runExtractRemainingOperation(),
+            default                                           => $this->runInitializeOperation()
         };
     }
 
     /**
      * Run the initialize operation (Default Task handler).
      * This is the first process created by TaskRunnerService.
-     * Checks for cached plan and creates either per-object planning or per-page classification processes.
+     * Delegates to ExtractionStateOrchestrator to determine and create next phase processes.
      */
     protected function runInitializeOperation(): void
     {
         static::logDebug('Running initialize operation (Default Task)');
 
-        // Check for cached plan
-        $planningService = app(ExtractionPlanningService::class);
-        $cachedPlan      = $planningService->getCachedPlan($this->taskRun->taskDefinition);
+        app(ExtractionStateOrchestrator::class)->advanceToNextPhase($this->taskRun, $this->taskProcess);
 
-        if ($cachedPlan) {
-            // Plan exists - create per-page classification processes
-            static::logDebug('Cached plan found - creating per-page classification processes');
-
-            // Resolve all pages from input artifacts
-            $artifactService = app(ArtifactPreparationService::class);
-            $pages           = $artifactService->resolvePages($this->taskRun);
-
-            if (empty($pages)) {
-                static::logDebug('No pages found to classify');
-                $this->complete();
-
-                return;
-            }
-
-            // Build and store boolean classification schema
-            $schemaBuilder = app(ClassificationSchemaBuilder::class);
-            $booleanSchema = $schemaBuilder->buildBooleanSchema($cachedPlan);
-
-            // Store classification schema in TaskRun.meta
-            $meta                          = $this->taskRun->meta ?? [];
-            $meta['classification_schema'] = $booleanSchema;
-            $this->taskRun->meta           = $meta;
-            $this->taskRun->save();
-
-            static::logDebug('Stored classification schema', [
-                'properties_count' => count($booleanSchema['properties'] ?? []),
-            ]);
-
-            // Create extraction artifacts (parent + children)
-            $parentArtifact = $artifactService->createExtractionArtifacts($this->taskRun, $pages);
-
-            // Create per-page classification processes with child artifacts
-            $classificationOrchestrator = app(ClassificationOrchestrator::class);
-            $classificationOrchestrator->createClassifyProcessesPerPage(
-                $this->taskRun,
-                $parentArtifact->children,
-                $booleanSchema
-            );
-
-            static::logDebug('Created per-page classification processes', ['pages_count' => $parentArtifact->children->count()]);
-
-            // Manually attach parent artifact to TaskProcess and TaskRun
-            // (Don't use complete() which would trim children based on output_artifact_levels)
-            $this->taskProcess->outputArtifacts()->sync([$parentArtifact->id]);
-            $this->taskProcess->updateRelationCounter('outputArtifacts');
-            $this->taskRun->outputArtifacts()->syncWithoutDetaching([$parentArtifact->id]);
-            $this->taskRun->updateRelationCounter('outputArtifacts');
-            $this->taskRun->updateRelationCounter('taskProcesses');
-            $this->complete();
-        } else {
-            // No plan exists - create per-object planning processes
-            static::logDebug('No cached plan found - creating identity planning processes');
-
-            $objectExtractor = app(ObjectTypeExtractor::class);
-            $objectTypes     = $objectExtractor->extractObjectTypes(
-                $this->taskRun->taskDefinition->schemaDefinition
-            );
-
-            $planningService = app(PerObjectPlanningService::class);
-            $planningService->createIdentityPlanningProcesses($this->taskRun, $objectTypes);
-
-            static::logDebug('Created identity planning processes', ['count' => count($objectTypes)]);
-
-            $this->taskRun->updateRelationCounter('taskProcesses');
-            $this->complete();
-        }
+        $this->complete();
     }
 
     /**
@@ -310,22 +243,14 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Called after all parallel processes have completed.
-     * Creates next phase of processes based on current state.
+     * Delegates to ExtractionStateOrchestrator to determine and create next phase processes.
      */
     public function afterAllProcessesCompleted(): void
     {
         parent::afterAllProcessesCompleted();
 
-        static::logDebug('All processes completed - checking next phase');
+        static::logDebug('ExtractDataTaskRunner v' . self::VERSION . ' - All processes completed, checking next phase');
 
-        // Try planning phase first
-        $planningService = app(PlanningPhaseService::class);
-        if ($planningService->handlePlanningPhaseIfActive($this->taskRun)) {
-            return;
-        }
-
-        // Handle extraction phase
-        $extractionService = app(ExtractionPhaseService::class);
-        $extractionService->handleExtractionPhase($this->taskRun);
+        app(ExtractionStateOrchestrator::class)->advanceToNextPhase($this->taskRun);
     }
 }

@@ -7,14 +7,20 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowStatesContract;
+use App\Services\Task\DataExtraction\ClassificationOrchestrator;
+use App\Services\Task\DataExtraction\ExtractionPlanningService;
+use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
+use App\Services\Task\DataExtraction\ExtractionStateOrchestrator;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
 use App\Services\Task\Debug\Concerns\DebugOutputHelper;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
+use App\Services\Task\TranscodePrerequisiteService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Models\Job\JobDispatch;
+use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
 
@@ -792,5 +798,548 @@ class ExtractDataDebugService
         }
 
         $command->line("Total messages: {$messages->count()}");
+    }
+
+    /**
+     * Show state machine check results for advanceToNextPhase debugging.
+     * Displays what each state check returns to help debug why no processes are created.
+     */
+    public function showStateCheck(TaskRun $taskRun, Command $command): void
+    {
+        $command->info('=== State Machine Check Results ===');
+        $command->line("TaskRun ID: {$taskRun->id}");
+        $command->line("Status: {$taskRun->status}");
+        $command->newLine();
+
+        $taskDef = $taskRun->taskDefinition;
+
+        // 1. Planning Check
+        $command->info('1. Planning Phase Check');
+        $cachedPlan = app(ExtractionPlanningService::class)->getCachedPlan($taskDef);
+        $command->line('  Has cached plan (valid cache key): ' . ($cachedPlan ? 'YES' : 'NO'));
+
+        $directPlan = $taskDef->meta['extraction_plan'] ?? null;
+        $command->line('  Has direct plan in meta: ' . ($directPlan ? 'YES' : 'NO'));
+
+        $planningProcesses = $taskRun->taskProcesses()
+            ->whereIn('operation', [
+                ExtractDataTaskRunner::OPERATION_PLAN_IDENTIFY,
+                ExtractDataTaskRunner::OPERATION_PLAN_REMAINING,
+            ])
+            ->get();
+        $command->line('  Planning processes count: ' . $planningProcesses->count());
+
+        if ($planningProcesses->isNotEmpty()) {
+            $completedPlanning = $planningProcesses->whereNotNull('completed_at')->count();
+            $command->line("    Completed: $completedPlanning / {$planningProcesses->count()}");
+        }
+
+        $needsPlanning = $this->checkNeedsPlanning($taskRun, $cachedPlan, $directPlan, $planningProcesses);
+        $command->line('  needsPlanning result: ' . ($needsPlanning ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 2. Extraction Artifacts Check
+        $command->info('2. Extraction Artifacts Check');
+        $parentArtifact = $taskRun->outputArtifacts()
+            ->whereNull('parent_artifact_id')
+            ->first();
+        $command->line('  Has parent output artifact: ' . ($parentArtifact ? "YES (ID: {$parentArtifact->id})" : 'NO'));
+
+        if ($parentArtifact) {
+            $childrenCount = $parentArtifact->children()->count();
+            $command->line("  Child artifacts count: $childrenCount");
+        }
+
+        $needsExtractionArtifacts = !$parentArtifact;
+        $command->line('  needsExtractionArtifacts result: ' . ($needsExtractionArtifacts ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 3. Transcoding Check
+        $command->info('3. Transcoding Phase Check');
+        $transcodeProcesses = $taskRun->taskProcesses()
+            ->where('operation', TranscodePrerequisiteService::OPERATION_TRANSCODE)
+            ->get();
+        $command->line('  Transcode processes count: ' . $transcodeProcesses->count());
+
+        if ($transcodeProcesses->isNotEmpty()) {
+            $completedTranscode = $transcodeProcesses->whereNotNull('completed_at')->count();
+            $pendingTranscode   = $transcodeProcesses->whereNull('completed_at')->count();
+            $command->line("    Completed: $completedTranscode, Pending: $pendingTranscode");
+        }
+
+        $artifactsNeedingTranscode = 0;
+        if ($parentArtifact) {
+            $needsTranscode            = app(TranscodePrerequisiteService::class)->getArtifactsNeedingTranscode($parentArtifact->children);
+            $artifactsNeedingTranscode = $needsTranscode->count();
+            $command->line("  Artifacts needing transcode: $artifactsNeedingTranscode");
+        }
+
+        $needsTranscoding = $this->checkNeedsTranscoding($transcodeProcesses, $parentArtifact, $artifactsNeedingTranscode);
+        $command->line('  needsTranscoding result: ' . ($needsTranscoding ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 4. Classification Check
+        $command->info('4. Classification Phase Check');
+        $classifyProcesses = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_CLASSIFY)
+            ->get();
+        $command->line('  Classify processes count: ' . $classifyProcesses->count());
+
+        if ($classifyProcesses->isNotEmpty()) {
+            $completedClassify = $classifyProcesses->whereNotNull('completed_at')->count();
+            $pendingClassify   = $classifyProcesses->whereNull('completed_at')->count();
+            $command->line("    Completed: $completedClassify, Pending: $pendingClassify");
+        }
+
+        $hasIdentityProcesses = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
+            ->exists();
+        $command->line('  Has identity extraction processes: ' . ($hasIdentityProcesses ? 'YES' : 'NO'));
+
+        $needsClassification = $this->checkNeedsClassification($classifyProcesses, $hasIdentityProcesses, $transcodeProcesses);
+        $command->line('  needsClassification result: ' . ($needsClassification ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 5. Identity Extraction Check
+        $command->info('5. Identity Extraction Phase Check');
+        $extractionPlan = $directPlan ?? [];
+        $orchestrator   = app(ExtractionProcessOrchestrator::class);
+        $currentLevel   = $orchestrator->getCurrentLevel($taskRun);
+        $command->line("  Current level: $currentLevel");
+
+        $classificationOrchestrator = app(ClassificationOrchestrator::class);
+        $isClassificationComplete   = $classificationOrchestrator->isClassificationComplete($taskRun);
+        $command->line('  Classification complete: ' . ($isClassificationComplete ? 'YES' : 'NO'));
+
+        $levelProgress    = $orchestrator->getLevelProgress($taskRun);
+        $progress         = $levelProgress[$currentLevel]  ?? [];
+        $identityComplete = $progress['identity_complete'] ?? false;
+        $command->line('  Identity complete for current level (from meta): ' . ($identityComplete ? 'YES' : 'NO'));
+
+        $identityProcessesForLevel = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY)
+            ->where('meta->level', $currentLevel)
+            ->get();
+        $command->line('  Identity processes for level ' . $currentLevel . ': ' . $identityProcessesForLevel->count());
+
+        if ($identityProcessesForLevel->isNotEmpty()) {
+            $completedIdentity = $identityProcessesForLevel->whereNotNull('completed_at')->count();
+            $command->line("    Completed: $completedIdentity / {$identityProcessesForLevel->count()}");
+        }
+
+        $needsIdentityExtraction = $this->checkNeedsIdentityExtraction(
+            $extractionPlan,
+            $isClassificationComplete,
+            $identityComplete,
+            $identityProcessesForLevel
+        );
+        $command->line('  needsIdentityExtraction result: ' . ($needsIdentityExtraction ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 6. Remaining Extraction Check
+        $command->info('6. Remaining Extraction Phase Check');
+        $isIdentityCompleteForLevel = $orchestrator->isIdentityCompleteForLevel($taskRun, $currentLevel);
+        $command->line('  Identity complete for level (process check): ' . ($isIdentityCompleteForLevel ? 'YES' : 'NO'));
+
+        $extractionComplete = $progress['extraction_complete'] ?? false;
+        $command->line('  Extraction complete for current level (from meta): ' . ($extractionComplete ? 'YES' : 'NO'));
+
+        $remainingProcessesForLevel = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING)
+            ->where('meta->level', $currentLevel)
+            ->get();
+        $command->line('  Remaining processes for level ' . $currentLevel . ': ' . $remainingProcessesForLevel->count());
+
+        if ($remainingProcessesForLevel->isNotEmpty()) {
+            $completedRemaining = $remainingProcessesForLevel->whereNotNull('completed_at')->count();
+            $command->line("    Completed: $completedRemaining / {$remainingProcessesForLevel->count()}");
+        }
+
+        $needsRemainingExtraction = $this->checkNeedsRemainingExtraction(
+            $extractionPlan,
+            $identityComplete,
+            $isIdentityCompleteForLevel,
+            $extractionComplete,
+            $remainingProcessesForLevel
+        );
+        $command->line('  needsRemainingExtraction result: ' . ($needsRemainingExtraction ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // 7. Level Advancement Check
+        $command->info('7. Level Advancement Check');
+        $isLevelComplete = $orchestrator->isLevelComplete($taskRun, $currentLevel);
+        $command->line('  Is current level complete: ' . ($isLevelComplete ? 'YES' : 'NO'));
+
+        $maxLevel = !empty($extractionPlan['levels']) ? count($extractionPlan['levels']) - 1 : 0;
+        $command->line("  Max level in plan: $maxLevel");
+
+        $isAllLevelsComplete = !empty($extractionPlan) && $orchestrator->isAllLevelsComplete($taskRun, $extractionPlan);
+        $command->line('  All levels complete: ' . ($isAllLevelsComplete ? 'YES' : 'NO'));
+
+        $canAdvanceLevel = $isLevelComplete && !$isAllLevelsComplete && $currentLevel < $maxLevel;
+        $command->line('  canAdvanceLevel result: ' . ($canAdvanceLevel ? 'TRUE' : 'FALSE'));
+        $command->newLine();
+
+        // Summary
+        $command->info('=== Summary ===');
+        $nextPhase = $this->determineNextPhase(
+            $needsPlanning,
+            $needsExtractionArtifacts,
+            $needsTranscoding,
+            $needsClassification,
+            $needsIdentityExtraction,
+            $needsRemainingExtraction,
+            $canAdvanceLevel
+        );
+        $command->line("Next phase that would be executed: $nextPhase");
+    }
+
+    /**
+     * Check if planning is needed (mirrors ExtractionStateOrchestrator::needsPlanning).
+     */
+    protected function checkNeedsPlanning(
+        TaskRun $taskRun,
+        ?array $cachedPlan,
+        ?array $directPlan,
+        Collection $planningProcesses
+    ): bool {
+        if ($cachedPlan) {
+            return false;
+        }
+
+        if (!empty($directPlan)) {
+            $incompletePlanningProcesses = $planningProcesses
+                ->whereNull('completed_at')
+                ->isNotEmpty();
+
+            return $incompletePlanningProcesses;
+        }
+
+        if ($planningProcesses->isNotEmpty()) {
+            return true;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if transcoding is needed (mirrors ExtractionStateOrchestrator::needsTranscoding).
+     */
+    protected function checkNeedsTranscoding(
+        Collection $transcodeProcesses,
+        ?Artifact $parentArtifact,
+        int $artifactsNeedingTranscode
+    ): bool {
+        if ($transcodeProcesses->isNotEmpty()) {
+            return $transcodeProcesses->whereNull('completed_at')->isNotEmpty();
+        }
+
+        if (!$parentArtifact) {
+            return false;
+        }
+
+        return $artifactsNeedingTranscode > 0;
+    }
+
+    /**
+     * Check if classification is needed (mirrors ExtractionStateOrchestrator::needsClassification).
+     */
+    protected function checkNeedsClassification(
+        Collection $classifyProcesses,
+        bool $hasIdentityProcesses,
+        Collection $transcodeProcesses
+    ): bool {
+        if ($classifyProcesses->isNotEmpty()) {
+            return $classifyProcesses->whereNull('completed_at')->isNotEmpty();
+        }
+
+        if ($hasIdentityProcesses) {
+            return false;
+        }
+
+        if ($transcodeProcesses->isNotEmpty() && $transcodeProcesses->whereNull('completed_at')->isNotEmpty()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if identity extraction is needed (mirrors ExtractionStateOrchestrator::needsIdentityExtraction).
+     */
+    protected function checkNeedsIdentityExtraction(
+        array $plan,
+        bool $isClassificationComplete,
+        bool $identityComplete,
+        Collection $identityProcessesForLevel
+    ): bool {
+        if (empty($plan)) {
+            return false;
+        }
+
+        if (!$isClassificationComplete) {
+            return false;
+        }
+
+        if ($identityComplete) {
+            return false;
+        }
+
+        if ($identityProcessesForLevel->isNotEmpty()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if remaining extraction is needed (mirrors ExtractionStateOrchestrator::needsRemainingExtraction).
+     */
+    protected function checkNeedsRemainingExtraction(
+        array $plan,
+        bool $identityComplete,
+        bool $isIdentityCompleteForLevel,
+        bool $extractionComplete,
+        Collection $remainingProcessesForLevel
+    ): bool {
+        if (empty($plan)) {
+            return false;
+        }
+
+        if (!$isIdentityCompleteForLevel) {
+            return false;
+        }
+
+        if ($identityComplete) {
+            if ($extractionComplete) {
+                return false;
+            }
+
+            if ($remainingProcessesForLevel->isNotEmpty()) {
+                return $remainingProcessesForLevel->whereNull('completed_at')->isNotEmpty();
+            }
+
+            return true;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine which phase would be executed next based on check results.
+     */
+    protected function determineNextPhase(
+        bool $needsPlanning,
+        bool $needsExtractionArtifacts,
+        bool $needsTranscoding,
+        bool $needsClassification,
+        bool $needsIdentityExtraction,
+        bool $needsRemainingExtraction,
+        bool $canAdvanceLevel
+    ): string {
+        if ($needsPlanning) {
+            return 'PLANNING (create planning processes)';
+        }
+
+        if ($needsExtractionArtifacts) {
+            return 'CREATE_ARTIFACTS (create extraction artifacts)';
+        }
+
+        if ($needsTranscoding) {
+            return 'TRANSCODING (create/wait for transcode processes)';
+        }
+
+        if ($needsClassification) {
+            return 'CLASSIFICATION (create/wait for classify processes)';
+        }
+
+        if ($needsIdentityExtraction) {
+            return 'IDENTITY_EXTRACTION (create identity extraction processes)';
+        }
+
+        if ($needsRemainingExtraction) {
+            return 'REMAINING_EXTRACTION (create/wait for remaining extraction processes)';
+        }
+
+        if ($canAdvanceLevel) {
+            return 'ADVANCE_LEVEL (advance to next level)';
+        }
+
+        return 'COMPLETE (no more phases to execute)';
+    }
+
+    /**
+     * Run the ExtractionStateOrchestrator::advanceToNextPhase() and display results.
+     * Shows state check results before, runs the orchestrator, and reports new processes created.
+     */
+    public function runOrchestrator(TaskRun $taskRun, Command $command): int
+    {
+        $beforeCount = $taskRun->taskProcesses()->count();
+
+        $command->info('Running ExtractionStateOrchestrator::advanceToNextPhase()...');
+        $command->newLine();
+        $command->info("Before: $beforeCount task processes");
+        $command->newLine();
+
+        // Output state check results before calling advanceToNextPhase
+        $this->showStateCheckResultsFromOrchestrator($taskRun, $command);
+
+        $command->newLine();
+
+        try {
+            app(ExtractionStateOrchestrator::class)->advanceToNextPhase($taskRun);
+        } catch (Throwable $e) {
+            $command->newLine();
+            $command->error('Exception thrown during advanceToNextPhase:');
+            $command->error($e->getMessage());
+            $command->newLine();
+            $command->line('Stack trace:');
+            $command->line($e->getTraceAsString());
+
+            return 1;
+        }
+
+        // Debug classification process creation conditions
+        $this->showClassificationDebugInfo($taskRun, $command);
+
+        // Refresh to get updated count
+        $taskRun->refresh();
+        $afterCount = $taskRun->taskProcesses()->count();
+
+        $command->info("After: $afterCount task processes");
+        $command->newLine();
+
+        $created = $afterCount - $beforeCount;
+
+        if ($created > 0) {
+            $command->info("Created $created new process(es)");
+
+            // Show the new processes
+            $newProcesses = $taskRun->taskProcesses()
+                ->orderByDesc('id')
+                ->limit($created)
+                ->get();
+
+            $command->newLine();
+            $command->info('New processes:');
+            foreach ($newProcesses as $process) {
+                $command->line("  - ID {$process->id}: {$process->operation} ({$process->status})");
+            }
+        } else {
+            $command->warn('No new processes were created');
+        }
+
+        return 0;
+    }
+
+    /**
+     * Output the results of state machine checks using reflection on protected methods.
+     * Used by runOrchestrator to show what the orchestrator will check before running.
+     */
+    protected function showStateCheckResultsFromOrchestrator(TaskRun $taskRun, Command $command): void
+    {
+        $orchestrator = app(ExtractionStateOrchestrator::class);
+        $reflection   = new ReflectionClass($orchestrator);
+
+        $command->info('State Machine Check Results:');
+
+        // Check needsPlanning
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsPlanning', [$taskRun], $command);
+
+        // Check needsTranscoding
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsTranscoding', [$taskRun], $command);
+
+        // Check needsClassification
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsClassification', [$taskRun], $command);
+
+        // Check needsExtractionArtifacts
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsExtractionArtifacts', [$taskRun], $command);
+
+        // Get extraction plan for methods that require it
+        $getExtractionPlanMethod = $reflection->getMethod('getExtractionPlan');
+        $getExtractionPlanMethod->setAccessible(true);
+        $extractionPlan = $getExtractionPlanMethod->invoke($orchestrator, $taskRun);
+
+        // Check needsIdentityExtraction
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsIdentityExtraction', [$taskRun, $extractionPlan], $command);
+
+        // Check needsRemainingExtraction
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'needsRemainingExtraction', [$taskRun, $extractionPlan], $command);
+
+        // Check canAdvanceLevel
+        $this->outputProtectedMethodResult($reflection, $orchestrator, 'canAdvanceLevel', [$taskRun, $extractionPlan], $command);
+
+        // Also show if extraction plan exists
+        $planExists = !empty($extractionPlan);
+        $command->line('  extractionPlan exists: ' . ($planExists ? '<info>yes</info>' : '<comment>no</comment>'));
+
+        if ($planExists) {
+            $command->line('    Levels: ' . count($extractionPlan));
+        }
+    }
+
+    /**
+     * Call a protected method using reflection and output its result.
+     */
+    protected function outputProtectedMethodResult(
+        ReflectionClass $reflection,
+        ExtractionStateOrchestrator $orchestrator,
+        string $methodName,
+        array $args,
+        Command $command
+    ): void {
+        try {
+            $method = $reflection->getMethod($methodName);
+            $method->setAccessible(true);
+            $result = $method->invoke($orchestrator, ...$args);
+
+            $resultStr = $result ? '<info>true</info>' : '<comment>false</comment>';
+            $command->line("  $methodName: $resultStr");
+        } catch (Throwable $e) {
+            $command->line("  $methodName: <error>Exception: {$e->getMessage()}</error>");
+        }
+    }
+
+    /**
+     * Output debug info for classification process creation conditions.
+     * Helps identify which early-return condition in createClassificationProcesses is being hit.
+     */
+    public function showClassificationDebugInfo(TaskRun $taskRun, Command $command): void
+    {
+        $command->newLine();
+        $command->info('Classification Debug Info:');
+
+        // 1. Check parent artifact
+        $parentArtifact = $taskRun->outputArtifacts()
+            ->whereNull('parent_artifact_id')
+            ->first();
+
+        if ($parentArtifact) {
+            $childCount = $parentArtifact->children()->count();
+            $command->line("  Parent artifact ID: <info>{$parentArtifact->id}</info>");
+            $command->line("  Child artifact count: <info>{$childCount}</info>");
+        } else {
+            $command->line('  Parent artifact: <comment>NOT FOUND</comment>');
+        }
+
+        // 2. Check classification schema
+        $classificationSchema = $taskRun->meta['classification_schema'] ?? null;
+        if ($classificationSchema) {
+            $propertyCount = count($classificationSchema['properties'] ?? []);
+            $command->line('  Classification schema exists: <info>yes</info>');
+            $command->line("  Schema property count: <info>{$propertyCount}</info>");
+        } else {
+            $command->line('  Classification schema exists: <comment>no</comment>');
+        }
+
+        // 3. Check cached plan
+        $cachedPlan = app(ExtractionPlanningService::class)->getCachedPlan($taskRun->taskDefinition);
+        if ($cachedPlan) {
+            $levelCount = count($cachedPlan);
+            $command->line('  Cached plan exists: <info>yes</info>');
+            $command->line("  Cached plan level count: <info>{$levelCount}</info>");
+        } else {
+            $command->line('  Cached plan exists: <comment>no</comment>');
+        }
     }
 }

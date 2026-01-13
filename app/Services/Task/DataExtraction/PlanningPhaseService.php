@@ -135,19 +135,9 @@ class PlanningPhaseService
      */
     public function transitionToClassification(TaskRun $taskRun, array $finalPlan, array $pages): void
     {
-        // Build and store boolean classification schema
-        $schemaBuilder = app(ClassificationSchemaBuilder::class);
-        $booleanSchema = $schemaBuilder->buildBooleanSchema($finalPlan);
-
-        // Store schema in TaskRun meta
-        $meta                          = $taskRun->meta ?? [];
-        $meta['classification_schema'] = $booleanSchema;
-        $taskRun->meta                 = $meta;
-        $taskRun->save();
-
-        static::logDebug('Stored classification schema', [
-            'properties_count' => count($booleanSchema['properties'] ?? []),
-        ]);
+        // Build and store boolean classification schema using centralized method
+        $classificationOrchestrator = app(ClassificationOrchestrator::class);
+        $booleanSchema              = $classificationOrchestrator->ensureClassificationSchema($taskRun, $finalPlan);
 
         // Create extraction artifacts
         $artifactService = app(ArtifactPreparationService::class);
@@ -158,7 +148,6 @@ class PlanningPhaseService
         $taskRun->updateRelationCounter('outputArtifacts');
 
         // Create per-page classification processes
-        $classificationOrchestrator = app(ClassificationOrchestrator::class);
         $classificationOrchestrator->createClassifyProcessesPerPage(
             $taskRun,
             $parentArtifact->children,

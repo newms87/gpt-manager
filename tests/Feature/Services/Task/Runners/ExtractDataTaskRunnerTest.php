@@ -206,6 +206,16 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             'mime'        => 'image/jpeg',
         ]);
 
+        // Create LLM transcode so transcoding phase is skipped
+        \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'original_stored_file_id' => $storedFile->id,
+            'transcode_name'          => 'Image To Text LLM',
+            'filename'                => 'page-1.image-to-text-transcode.txt',
+            'filepath'                => 'test/page-1.image-to-text-transcode.txt',
+            'disk'                    => 'public',
+            'mime'                    => 'text/plain',
+        ]);
+
         $artifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
         $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
 
@@ -707,6 +717,16 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             'mime'        => 'image/jpeg',
         ]);
 
+        // Create LLM transcode so transcoding phase is skipped
+        \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+            'original_stored_file_id' => $storedFile->id,
+            'transcode_name'          => 'Image To Text LLM',
+            'filename'                => 'page-1.image-to-text-transcode.txt',
+            'filepath'                => 'test/page-1.image-to-text-transcode.txt',
+            'disk'                    => 'public',
+            'mime'                    => 'text/plain',
+        ]);
+
         $artifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
         $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
 
@@ -886,6 +906,15 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         // Attach as output artifacts to task run
         $taskRun->outputArtifacts()->attach($parentArtifact->id);
         $taskRun->outputArtifacts()->attach($childArtifact->id);
+
+        // Create completed classification process (required for isClassificationComplete() to return true)
+        TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'operation'    => ExtractDataTaskRunner::OPERATION_CLASSIFY,
+            'meta'         => ['child_artifact_id' => $childArtifact->id],
+            'started_at'   => now()->subMinutes(5),
+            'completed_at' => now(),
+        ]);
 
         // When: afterAllProcessesCompleted is called
         $this->runner->setTaskRun($taskRun->fresh(['outputArtifacts', 'outputArtifacts.children']));
@@ -1387,6 +1416,9 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         });
 
         // When: Running the extract remaining operation
+        // Fake the queue to prevent sync execution of dispatched jobs (LLM calls)
+        Queue::fake();
+
         $freshTaskRun = TaskRun::with('taskDefinition.agent')->find($taskRun->id);
         $this->runner->setTaskRun($freshTaskRun)->setTaskProcess($taskProcess);
         $this->runner->run();

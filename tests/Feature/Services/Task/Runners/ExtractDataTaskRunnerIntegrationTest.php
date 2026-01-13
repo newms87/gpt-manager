@@ -171,13 +171,17 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
             ->first();
 
         // Set classification meta on the NEW child artifacts to simulate classification completion
-        // Keys are Str::snake() of group names: "Demand Identification" -> demand_identification, "Demand Damages" -> demand_damages, "Injuries" -> injuries
+        // Keys are Str::snake("{$object_type} Identification") for identities:
+        //   - "Demand" -> demand_identification
+        //   - "Injury" -> injury_identification
+        // For remaining groups, keys are Str::snake() of group name:
+        //   - "Demand Damages" -> demand_damages
         foreach ($newParentArtifact->children as $childArtifact) {
             $childArtifact->meta = array_merge($childArtifact->meta ?? [], [
                 'classification' => [
                     'demand_identification' => true,
                     'demand_damages'        => true,
-                    'injuries'              => true,
+                    'injury_identification' => true,
                 ],
             ]);
             $childArtifact->save();
@@ -221,6 +225,9 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
         $this->orchestrator->updateLevelProgress($this->taskRun, 0, 'identity_complete', true);
 
         // STEP 6: afterAllProcessesCompleted creates Extract Remaining processes for level 0
+        // Refresh TaskRun to get latest meta from database (updateLevelProgress saves directly to DB)
+        $this->taskRun->refresh();
+        $this->runner->setTaskRun($this->taskRun);
         $this->runner->afterAllProcessesCompleted();
 
         $remainingProcesses = $this->taskRun->taskProcesses()
@@ -247,6 +254,9 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
         $this->orchestrator->updateLevelProgress($this->taskRun, 0, 'extraction_complete', true);
 
         // STEP 8: Level 0 complete - should advance to level 1
+        // Refresh TaskRun to get latest meta from database
+        $this->taskRun->refresh();
+        $this->runner->setTaskRun($this->taskRun);
         $this->runner->afterAllProcessesCompleted();
 
         $this->taskRun->refresh();
@@ -323,20 +333,15 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
 
         $this->taskRun->outputArtifacts()->attach($parentArtifact->id);
 
-        // Create child artifacts (individual pages) with proper classification
+        // Create child artifacts (individual pages) without classification
+        // Classification will be set later by the test after classification processes are created
         for ($i = 1; $i <= $count; $i++) {
             $artifact = Artifact::factory()->create([
                 'team_id'            => $this->user->currentTeam->id,
                 'task_run_id'        => $this->taskRun->id,
                 'parent_artifact_id' => $parentArtifact->id,
                 'name'               => "Page $i",
-                'meta'               => [
-                    'classification' => [
-                        'demand_identification' => true,
-                        'demand_damages'        => true,
-                        'injury_identification' => true,
-                    ],
-                ],
+                'meta'               => [],
             ]);
 
             $storedFile = StoredFile::factory()->create([
@@ -345,6 +350,16 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
                 'filepath'    => "test/page-$i.jpg",
                 'disk'        => 'public',
                 'mime'        => 'image/jpeg',
+            ]);
+
+            // Create LLM transcode so transcoding phase is skipped
+            StoredFile::factory()->create([
+                'original_stored_file_id' => $storedFile->id,
+                'transcode_name'          => 'Image To Text LLM',
+                'filename'                => "page-$i.image-to-text-transcode.txt",
+                'filepath'                => "test/page-$i.image-to-text-transcode.txt",
+                'disk'                    => 'public',
+                'mime'                    => 'text/plain',
             ]);
 
             $artifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);

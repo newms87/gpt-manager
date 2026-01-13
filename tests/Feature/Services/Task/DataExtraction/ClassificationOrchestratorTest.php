@@ -292,6 +292,101 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
     }
 
     #[Test]
+    public function isClassificationComplete_returns_true_when_all_artifacts_have_classification_meta_and_no_processes(): void
+    {
+        // Given: TaskRun with output artifacts that have classification meta but NO classify processes
+        // This tests the cached classification scenario where all classification was retrieved from StoredFile cache
+        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+
+        // Create parent artifact attached to taskRun's outputArtifacts
+        $parentArtifact = Artifact::create([
+            'name'               => 'Parent',
+            'task_definition_id' => $taskDefinition->id,
+            'task_run_id'        => $taskRun->id,
+            'team_id'            => $this->user->currentTeam->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+
+        // Create child artifacts WITH classification meta (simulating cached results)
+        Artifact::create([
+            'name'                => 'Page 1',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 1,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+            'meta'                => ['classification' => ['has_diagnosis' => true]],
+        ]);
+
+        Artifact::create([
+            'name'                => 'Page 2',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 2,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+            'meta'                => ['classification' => ['has_diagnosis' => false]],
+        ]);
+
+        // Verify NO classify processes exist
+        $classifyProcessCount = $taskRun->taskProcesses()
+            ->where('operation', ExtractDataTaskRunner::OPERATION_CLASSIFY)
+            ->count();
+        $this->assertEquals(0, $classifyProcessCount, 'Setup should have no classify processes');
+
+        // When: Checking if classification is complete
+        $isComplete = $this->orchestrator->isClassificationComplete($taskRun);
+
+        // Then: Returns true (all artifacts have classification meta even though no processes exist)
+        $this->assertTrue($isComplete, 'Classification should be complete when all child artifacts have classification meta');
+    }
+
+    #[Test]
+    public function isClassificationComplete_returns_false_when_some_artifacts_missing_classification_meta_and_no_processes(): void
+    {
+        // Given: TaskRun with output artifacts where one is missing classification meta
+        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+
+        // Create parent artifact
+        $parentArtifact = Artifact::create([
+            'name'               => 'Parent',
+            'task_definition_id' => $taskDefinition->id,
+            'task_run_id'        => $taskRun->id,
+            'team_id'            => $this->user->currentTeam->id,
+        ]);
+        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+
+        // Create child artifacts - one WITH, one WITHOUT classification meta
+        Artifact::create([
+            'name'                => 'Page 1',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 1,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+            'meta'                => ['classification' => ['has_diagnosis' => true]],
+        ]);
+
+        Artifact::create([
+            'name'                => 'Page 2',
+            'parent_artifact_id'  => $parentArtifact->id,
+            'position'            => 2,
+            'task_definition_id'  => $taskDefinition->id,
+            'task_run_id'         => $taskRun->id,
+            'team_id'             => $this->user->currentTeam->id,
+            'meta'                => [], // No classification meta
+        ]);
+
+        // When: Checking if classification is complete
+        $isComplete = $this->orchestrator->isClassificationComplete($taskRun);
+
+        // Then: Returns false (not all artifacts have classification)
+        $this->assertFalse($isComplete, 'Classification should not be complete when some artifacts are missing classification meta');
+    }
+
+    #[Test]
     public function createClassifyProcessesPerPage_skips_artifacts_with_cached_results(): void
     {
         // Given: TaskRun with child artifacts, one with cached classification
