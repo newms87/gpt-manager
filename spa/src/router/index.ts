@@ -15,6 +15,7 @@ import {
 	WorkflowDefinitionsView,
 	WorkflowInputsView
 } from "@/views";
+import { CodeViewerPlayground, MarkdownEditorPlayground } from "@/views/playground";
 import { FlashMessages } from "quasar-ui-danx";
 import { createRouter, createWebHistory } from "vue-router";
 import { uiRoutes } from "./uiRoutes";
@@ -88,7 +89,22 @@ const router = createRouter({
 					path: "/playground",
 					name: "playground",
 					component: PlaygroundView,
-					meta: { title: "Component Playground" }
+					redirect: { name: "playground.code-viewer" },
+					meta: { title: "Component Playground" },
+					children: [
+						{
+							path: "code-viewer",
+							name: "playground.code-viewer",
+							component: CodeViewerPlayground,
+							meta: { title: "Code Viewer Playground" }
+						},
+						{
+							path: "markdown-editor",
+							name: "playground.markdown-editor",
+							component: MarkdownEditorPlayground,
+							meta: { title: "Markdown Editor Playground" }
+						}
+					]
 				}
 			]
 		},
