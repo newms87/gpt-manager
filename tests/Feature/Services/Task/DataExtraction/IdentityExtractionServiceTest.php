@@ -1022,7 +1022,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function build_extraction_response_schema_embeds_search_query_in_each_object(): void
+    public function build_extraction_response_schema_has_top_level_search_query_for_array_type(): void
     {
         // Given: A schema for array-type extraction (multiple items)
         $schemaDefinition = SchemaDefinition::factory()->create([
@@ -1069,9 +1069,9 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             [$schemaDefinition, $identityGroup, []]
         );
 
-        // Then: _search_query should be embedded in each object, NOT at top level
-        $this->assertArrayNotHasKey('search_query', $responseSchema['properties'],
-            '_search_query should NOT be at top level');
+        // Then: search_query SHOULD be at top level (new pattern)
+        $this->assertArrayHasKey('search_query', $responseSchema['properties'],
+            'search_query SHOULD be at top level');
 
         // Get the items schema for the array
         $dataProperties = $responseSchema['properties']['data']['properties'] ?? [];
@@ -1080,18 +1080,14 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $itemsSchema    = $dataProperties['professional']['items'] ?? [];
         $itemProperties = $itemsSchema['properties']               ?? [];
 
-        $this->assertArrayHasKey('_search_query', $itemProperties,
-            'Each object should have embedded _search_query property');
+        // Objects should NOT have embedded _search_query (old pattern removed)
+        $this->assertArrayNotHasKey('_search_query', $itemProperties,
+            'Objects should NOT have embedded _search_query (use top-level search_query instead)');
 
-        // Verify _search_query is now an array type with items containing identity fields
-        $searchQuerySchema = $itemProperties['_search_query'];
+        // Verify the top-level search_query is properly structured
+        $searchQuerySchema = $responseSchema['properties']['search_query'];
         $this->assertEquals('array', $searchQuerySchema['type'],
-            '_search_query should be an array type for progressive query refinement');
-
-        // Verify the items schema has the identity fields
-        $searchQueryItemProperties = $searchQuerySchema['items']['properties'] ?? [];
-        $this->assertArrayHasKey('name', $searchQueryItemProperties);
-        $this->assertArrayHasKey('title', $searchQueryItemProperties);
+            'search_query should be an array type');
     }
 
     #[Test]
@@ -1148,12 +1144,16 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'Should include accident_date field');
         $this->assertArrayHasKey('description', $demandSchema['properties'],
             'Should include description field');
-        $this->assertArrayHasKey('_search_query', $demandSchema['properties'],
-            'Should include _search_query field');
+
+        // search_query should be at TOP LEVEL, not embedded in demandSchema
+        $this->assertArrayNotHasKey('_search_query', $demandSchema['properties'],
+            'Should NOT include _search_query field - it is now at top level');
+        $this->assertArrayHasKey('search_query', $result['properties'],
+            'search_query should be at top level of response schema');
     }
 
     #[Test]
-    public function build_extraction_response_schema_for_single_object_embeds_search_query(): void
+    public function build_extraction_response_schema_for_single_object_has_top_level_search_query(): void
     {
         // Given: A schema for single object extraction (not array)
         $schemaDefinition = SchemaDefinition::factory()->create([
@@ -1197,16 +1197,17 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             [$schemaDefinition, $identityGroup, []]
         );
 
-        // Then: _search_query should be embedded in the object, NOT at top level
-        $this->assertArrayNotHasKey('search_query', $responseSchema['properties'],
-            '_search_query should NOT be at top level for single object');
+        // Then: search_query SHOULD be at top level (new pattern)
+        $this->assertArrayHasKey('search_query', $responseSchema['properties'],
+            'search_query should be at top level for all extractions');
 
         $dataProperties = $responseSchema['properties']['data']['properties'] ?? [];
         $this->assertArrayHasKey('client', $dataProperties);
 
+        // Client object should NOT have embedded _search_query (old pattern removed)
         $clientProperties = $dataProperties['client']['properties'] ?? [];
-        $this->assertArrayHasKey('_search_query', $clientProperties,
-            'Single object should have embedded _search_query property');
+        $this->assertArrayNotHasKey('_search_query', $clientProperties,
+            'Single object should NOT have embedded _search_query property (use top-level search_query instead)');
     }
 
     // =========================================================================

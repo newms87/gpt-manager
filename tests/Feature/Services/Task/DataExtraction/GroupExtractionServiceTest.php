@@ -935,7 +935,9 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         }
 
         // The fragment schema should only have the 2 fields specified in fragment_selector
-        $careSummaryProps = $schemaToCheck['properties']['care_summary']['properties'] ?? [];
+        // New top-level pattern wraps data under 'data.properties', so path is:
+        // properties → data → properties → care_summary → properties
+        $careSummaryProps = $schemaToCheck['properties']['data']['properties']['care_summary']['properties'] ?? [];
         $this->assertArrayHasKey('delay_in_care_gap_in_treatment', $careSummaryProps, 'Should have delay_in_care_gap_in_treatment field');
         $this->assertArrayHasKey('impairment_rating', $careSummaryProps, 'Should have impairment_rating field');
 

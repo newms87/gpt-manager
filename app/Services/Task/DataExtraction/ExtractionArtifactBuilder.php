@@ -38,7 +38,7 @@ class ExtractionArtifactBuilder
     ): array {
         $extractedData = $extractionResult['data'] ?? [];
 
-        // If no page sources, create single artifact (backwards compatibility)
+        // If no page sources, create single artifact from all data
         if (empty($pageSources)) {
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
@@ -183,7 +183,7 @@ class ExtractionArtifactBuilder
         string $searchMode,
         ?array $pageSources = null
     ): array {
-        // If no page sources, create single artifact (backwards compatibility)
+        // If no page sources, create single artifact from all data
         if (empty($pageSources)) {
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,

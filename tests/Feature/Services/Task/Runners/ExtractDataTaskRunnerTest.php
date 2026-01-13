@@ -1216,14 +1216,16 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         // The fragment_selector specifies: children.client_name => type: string (scalar only = flat structure)
         // For flat structures, getLeafKey returns snake_case of object_type: 'Client' -> 'client'
         // So the data must be nested under the 'client' key
+        // search_query and page_sources are now at top level (not embedded in data)
         $mockMessage = $this->createMock(\App\Models\Agent\AgentThreadMessage::class);
         $mockMessage->method('getJsonContent')->willReturn([
             'data' => [
                 'client' => [  // leaf key = snake_case of object_type
-                    'client_name'   => 'John Doe Insurance',
-                    '_search_query' => [['client_name' => '%John%Doe%']],  // embedded search query
+                    'client_name' => 'John Doe Insurance',
                 ],
             ],
+            'search_query' => [['client_name' => '%John%Doe%']],  // top-level search query
+            'page_sources' => ['client_name' => 1],  // top-level page sources
         ]);
 
         $mockThreadRun              = $this->mock(\App\Models\Agent\AgentThreadRun::class)->makePartial();

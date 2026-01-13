@@ -9,13 +9,25 @@ use Symfony\Component\Yaml\Yaml;
 /**
  * Handles page-source attribution for data extraction.
  * Splits extracted data by source page and manages page number resolution.
+ *
+ * Page sources are now returned at the top level of the response:
+ * {
+ *   "data": { "name": "John", "accident_date": "2024-01-15" },
+ *   "page_sources": { "name": 1, "accident_date": 2 }
+ * }
+ *
+ * For array extractions, page_sources uses dot notation:
+ * {
+ *   "data": { "diagnoses": [{ "name": "Diagnosis A" }, { "name": "Diagnosis B" }] },
+ *   "page_sources": { "diagnoses[0].name": 1, "diagnoses[1].name": 2 }
+ * }
  */
 class PageSourceService
 {
     /**
      * Split extracted data by source page.
      *
-     * @param  array  $extractedData  The full extracted data (without __source__ fields)
+     * @param  array  $extractedData  The full extracted data
      * @param  array  $pageSources  Map of field name => page number (single integer)
      * @return array<int, array> Data keyed by page number
      */
@@ -24,11 +36,6 @@ class PageSourceService
         $dataByPage = [];
 
         foreach ($extractedData as $fieldName => $value) {
-            // Skip __source__ fields (they should already be extracted)
-            if (str_starts_with($fieldName, '__source__')) {
-                continue;
-            }
-
             // Get the page number for this field (default to 1 if not found)
             $pageNumber = $pageSources[$fieldName] ?? 1;
 
@@ -47,51 +54,17 @@ class PageSourceService
     }
 
     /**
-     * Extract __source__ values from LLM response data.
+     * Extract page_sources from top-level response data.
      *
-     * Extracts page source annotations from LLM response that uses the format:
-     * {"field_name": "value", "__source__field_name": 1}
+     * The LLM response now contains page_sources at the top level:
+     * { "data": {...}, "page_sources": { "field": 1, "other_field": 2 } }
      *
-     * @param  array  $data  LLM response data containing __source__ fields
-     * @param  string  $prefix  Current key prefix for recursive calls (internal use)
+     * @param  array  $data  LLM response data containing top-level page_sources
      * @return array Map of field name => page number
      */
-    public function extractPageSources(array $data, string $prefix = ''): array
+    public function extractPageSources(array $data): array
     {
-        $pageSources = [];
-
-        foreach ($data as $key => $value) {
-            $fullKey = $prefix ? "{$prefix}.{$key}" : $key;
-
-            // Check if this is a __source__ field
-            if (str_starts_with($key, '__source__')) {
-                $fieldName = substr($key, 10); // Remove '__source__' prefix
-                $sourceKey = $prefix ? "{$prefix}.{$fieldName}" : $fieldName;
-
-                // Value should be an integer page number
-                if (is_int($value)) {
-                    $pageSources[$sourceKey] = $value;
-                }
-            } elseif (is_array($value)) {
-                // Check if this is an associative array (object) or indexed array
-                if ($this->isAssociativeArray($value)) {
-                    // Recursively extract from nested objects
-                    $nestedSources = $this->extractPageSources($value, $fullKey);
-                    $pageSources   = array_merge($pageSources, $nestedSources);
-                } else {
-                    // Handle indexed arrays - each element may have sources
-                    foreach ($value as $index => $element) {
-                        if (is_array($element) && $this->isAssociativeArray($element)) {
-                            $arrayKey      = "{$fullKey}[{$index}]";
-                            $nestedSources = $this->extractPageSources($element, $arrayKey);
-                            $pageSources   = array_merge($pageSources, $nestedSources);
-                        }
-                    }
-                }
-            }
-        }
-
-        return $pageSources;
+        return $data['page_sources'] ?? [];
     }
 
     /**
@@ -130,47 +103,10 @@ class PageSourceService
     }
 
     /**
-     * Remove __source__ fields from extracted data.
-     *
-     * @param  array  $data  Data containing __source__ fields
-     * @return array Data with __source__ fields removed
-     */
-    public function removeSourceFields(array $data): array
-    {
-        $cleaned = [];
-
-        foreach ($data as $key => $value) {
-            // Skip __source__ fields
-            if (str_starts_with($key, '__source__')) {
-                continue;
-            }
-
-            if (is_array($value)) {
-                if ($this->isAssociativeArray($value)) {
-                    // Recursively clean nested objects
-                    $cleaned[$key] = $this->removeSourceFields($value);
-                } else {
-                    // Handle indexed arrays
-                    $cleaned[$key] = array_map(
-                        fn($element) => is_array($element) && $this->isAssociativeArray($element)
-                            ? $this->removeSourceFields($element)
-                            : $element,
-                        $value
-                    );
-                }
-            } else {
-                $cleaned[$key] = $value;
-            }
-        }
-
-        return $cleaned;
-    }
-
-    /**
-     * Build instructions for __source__ fields based on available page numbers.
+     * Build instructions for page_sources at the top level.
      *
      * Extracts page numbers from input artifacts and provides guidance for the LLM
-     * on how to populate the __source__{field} properties.
+     * on how to populate the top-level page_sources object.
      */
     public function buildPageSourceInstructions(Collection $artifacts): string
     {
@@ -213,7 +149,10 @@ class PageSourceService
 PAGE SOURCE TRACKING:
 Available pages: [{$pageList}]
 
-For each field you extract, populate the corresponding __source__{field} property with the PRIMARY page number where you found that value.
+In the page_sources object, record the PRIMARY page number where you found each extracted field value.
+Use the field name as the key and the page number (integer) as the value.
+
+For array fields, use dot notation with index: "field[0].property": 1, "field[1].property": 2
 
 Guidelines:
 - Choose the page with the MOST CONTEXT about the value
@@ -236,29 +175,31 @@ EOT;
     }
 
     /**
-     * Inject __source__ properties for each field in the schema.
+     * Build the page_sources schema for top-level page source tracking.
      *
-     * For each field in fieldNames, adds __source__{field} => {"$ref": "#/$defs/pageSource"}
-     * Properties are inserted after the original field to maintain visual grouping.
+     * Returns a schema for { field_name: integer (page number) } for each field.
+     * For array extractions, field names use dot notation: "field[0].property"
      *
-     * @param  array<string, array>  $properties  Schema properties to inject into
-     * @param  array<string>  $fieldNames  Fields that should have corresponding __source__ properties
-     * @return array<string, array> Properties with __source__ fields added
+     * @param  array<string>  $fieldNames  Fields that should have page source tracking
      */
-    public function injectPageSourceProperties(array $properties, array $fieldNames): array
+    public function buildPageSourcesSchema(array $fieldNames): array
     {
-        $result = [];
+        $properties = [];
 
-        foreach ($properties as $key => $value) {
-            $result[$key] = $value;
-
-            // If this is a field that should have a source, add it after
-            if (in_array($key, $fieldNames, true)) {
-                $result['__source__' . $key] = ['$ref' => '#/$defs/pageSource'];
-            }
+        foreach ($fieldNames as $field) {
+            $properties[$field] = [
+                '$ref' => '#/$defs/pageSource',
+            ];
         }
 
-        return $result;
+        return [
+            'type'                 => 'object',
+            'description'          => 'Page numbers where each field value was found. ' .
+                                     'Use field names as keys and page numbers (integers) as values. ' .
+                                     'For array fields, use dot notation: "field[0].property": 1',
+            'properties'           => $properties,
+            'additionalProperties' => ['$ref' => '#/$defs/pageSource'],
+        ];
     }
 
     /**

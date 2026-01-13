@@ -186,14 +186,15 @@ class GroupExtractionService
         // Get the fields from fragment selector for page source tracking
         $extractableFields = $this->getExtractableFieldsFromFragmentSelector($fragmentSelector);
 
-        // Inject __source__ properties and add $defs for page source tracking
-        $fragmentSchema = $this->injectPageSourceSchema($fragmentSchema, $extractableFields);
+        // Build response schema with top-level page_sources
+        $responseSchema = $this->buildResponseSchema($fragmentSchema, $extractableFields, $includeConfidence);
 
         // Create a temporary in-memory SchemaDefinition with the enhanced fragment schema
-        // This ensures only the fields specified in fragment_selector are requested from the LLM
+        // Use hash for uniqueness - OpenAI has 64 char limit on schema names
+        $groupHash = substr(md5($group['name'] ?? 'unknown'), 0, 8);
         $tempSchemaDefinition = new SchemaDefinition([
-            'name'   => 'group-extraction-' . ($group['name'] ?? 'unknown'),
-            'schema' => $fragmentSchema,
+            'name'   => 'group-extraction-' . $groupHash,
+            'schema' => $responseSchema,
         ]);
 
         // Build extraction prompt with page source instructions
@@ -214,7 +215,7 @@ class GroupExtractionService
         $timeout = $taskDefinition->task_runner_config['extraction_timeout'] ?? 300;
         $timeout = max(1, min((int)$timeout, 600)); // Between 1-600 seconds
 
-        // Run extraction with the filtered fragment schema (not the full schema)
+        // Run extraction with the response schema
         $threadRun = app(AgentThreadService::class)
             ->withResponseFormat($tempSchemaDefinition, null, $jsonSchemaService)
             ->withTimeout($timeout)
@@ -237,23 +238,88 @@ class GroupExtractionService
             return ['data' => [], 'confidence' => [], 'page_sources' => []];
         }
 
-        // Extract page sources BEFORE cleaning the data (while __source__ fields still exist)
+        // Extract page_sources from top-level (new pattern)
         $pageSourceService = app(PageSourceService::class);
         $pageSources       = $pageSourceService->extractPageSources($result);
 
-        // Remove __source__ fields from the result
-        $cleanedResult = $pageSourceService->removeSourceFields($result);
-
         // Separate data from confidence if present
-        if ($includeConfidence && isset($cleanedResult['confidence'])) {
+        if ($includeConfidence && isset($result['confidence'])) {
             return [
-                'data'         => $cleanedResult['data']       ?? $cleanedResult,
-                'confidence'   => $cleanedResult['confidence'] ?? [],
+                'data'         => $result['data']       ?? [],
+                'confidence'   => $result['confidence'] ?? [],
                 'page_sources' => $pageSources,
             ];
         }
 
-        return ['data' => $cleanedResult, 'confidence' => [], 'page_sources' => $pageSources];
+        return ['data' => $result['data'] ?? $result, 'confidence' => [], 'page_sources' => $pageSources];
+    }
+
+    /**
+     * Build the response schema with top-level page_sources.
+     *
+     * Structure:
+     * {
+     *   "data": { ...fragmentSchema... },
+     *   "page_sources": { "field": 1, ... },
+     *   "confidence": { "field": 4, ... }  // optional
+     * }
+     *
+     * @param  array<string>  $fieldNames  Fields that should have page source tracking
+     */
+    protected function buildResponseSchema(array $fragmentSchema, array $fieldNames, bool $includeConfidence): array
+    {
+        $pageSourceService = app(PageSourceService::class);
+
+        // Build $defs with pageSource definition
+        $defs = ['pageSource' => $pageSourceService->getPageSourceDef()];
+
+        $responseSchema = [
+            'type'       => 'object',
+            'properties' => [
+                'data'         => $fragmentSchema,
+                'page_sources' => $pageSourceService->buildPageSourcesSchema($fieldNames),
+            ],
+            'required' => ['data', 'page_sources'],
+            '$defs'    => $defs,
+        ];
+
+        // Add confidence schema when requested
+        if ($includeConfidence) {
+            $responseSchema['properties']['confidence'] = $this->buildConfidenceSchema($fieldNames);
+            $responseSchema['required'][]               = 'confidence';
+        }
+
+        return $responseSchema;
+    }
+
+    /**
+     * Build the confidence schema for per-field confidence tracking.
+     *
+     * @param  array<string>  $fieldNames
+     */
+    protected function buildConfidenceSchema(array $fieldNames): array
+    {
+        $properties = [];
+
+        foreach ($fieldNames as $field) {
+            $properties[$field] = [
+                'type'    => 'integer',
+                'minimum' => 1,
+                'maximum' => 5,
+            ];
+        }
+
+        return [
+            'type'                 => 'object',
+            'description'          => 'Rate your confidence (1-5) for each extracted field. ' .
+                                     '1=very uncertain, 5=highly confident.',
+            'properties'           => $properties,
+            'additionalProperties' => [
+                'type'    => 'integer',
+                'minimum' => 1,
+                'maximum' => 5,
+            ],
+        ];
     }
 
     /**
@@ -322,10 +388,15 @@ class GroupExtractionService
             $prompt .= "RESPOND WITH JSON:\n";
             $prompt .= "{\n";
             $prompt .= "  \"data\": { extracted fields },\n";
+            $prompt .= "  \"page_sources\": { \"field_name\": page_number, ... },\n";
             $prompt .= "  \"confidence\": { \"field_name\": score, ... }\n";
             $prompt .= "}\n";
         } else {
-            $prompt .= "\nExtract all instances of the requested data found in the documents.\n";
+            $prompt .= "\nRESPOND WITH JSON:\n";
+            $prompt .= "{\n";
+            $prompt .= "  \"data\": { extracted fields },\n";
+            $prompt .= "  \"page_sources\": { \"field_name\": page_number, ... }\n";
+            $prompt .= "}\n";
         }
 
         return $prompt;
@@ -468,58 +539,5 @@ class GroupExtractionService
         }
 
         return $fields;
-    }
-
-    /**
-     * Inject __source__ properties and $defs into the schema for page source tracking.
-     */
-    protected function injectPageSourceSchema(array $schema, array $fieldNames): array
-    {
-        if (empty($fieldNames)) {
-            return $schema;
-        }
-
-        // Add $defs with pageSource definition
-        $schema['$defs'] = array_merge(
-            $schema['$defs'] ?? [],
-            ['pageSource' => app(PageSourceService::class)->getPageSourceDef()]
-        );
-
-        // Inject __source__ properties into the schema
-        $schema = $this->injectPageSourcePropertiesRecursive($schema, $fieldNames);
-
-        return $schema;
-    }
-
-    /**
-     * Recursively inject __source__ properties into schema for each field.
-     */
-    protected function injectPageSourcePropertiesRecursive(array $schema, array $fieldNames): array
-    {
-        $type = $schema['type'] ?? 'object';
-
-        if ($type === 'array') {
-            // Handle array items
-            if (isset($schema['items'])) {
-                $schema['items'] = $this->injectPageSourcePropertiesRecursive($schema['items'], $fieldNames);
-            }
-        } elseif ($type === 'object' && isset($schema['properties'])) {
-            // Inject __source__ properties for matching fields
-            $schema['properties'] = app(PageSourceService::class)->injectPageSourceProperties($schema['properties'], $fieldNames);
-
-            // Recursively process nested objects
-            foreach ($schema['properties'] as $key => $propSchema) {
-                if (str_starts_with($key, '__source__')) {
-                    continue; // Skip already injected source properties
-                }
-
-                $propType = $propSchema['type'] ?? null;
-                if (in_array($propType, ['object', 'array'], true)) {
-                    $schema['properties'][$key] = $this->injectPageSourcePropertiesRecursive($propSchema, $fieldNames);
-                }
-            }
-        }
-
-        return $schema;
     }
 }
