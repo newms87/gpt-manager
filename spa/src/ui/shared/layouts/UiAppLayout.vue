@@ -1,14 +1,12 @@
 <template>
-    <div class="ui-app min-h-screen h-full bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col overflow-hidden">
+    <div class="ui-app min-h-screen h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col overflow-hidden">
         <UiHeader />
 
-        <div class="flex flex-grow overflow-y-auto">
+        <div class="flex flex-grow overflow-hidden">
             <UiSidebar v-if="config.showSidebar" />
 
-            <main class="flex-1 overflow-auto">
-                <div class="p-6">
-                    <router-view />
-                </div>
+            <main class="flex-1 overflow-hidden">
+                <router-view />
             </main>
         </div>
 

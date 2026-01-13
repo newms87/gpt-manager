@@ -3,7 +3,7 @@ import type { UiLayoutConfig } from '../types';
 
 const layoutConfig = ref<UiLayoutConfig>({
   showSidebar: true,
-  sidebarCollapsed: false,
+  sidebarCollapsed: true, // Default to collapsed - expanded state overlays content
   navigation: [],
   theme: {
     name: 'modern-clean',
