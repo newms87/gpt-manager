@@ -23,6 +23,7 @@ class GroupExtractionService
      * Extract data using skim mode.
      * Process artifacts in batches, stopping early when all fields have sufficient confidence.
      *
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
      * @return array{data: array, page_sources: array}
      */
     public function extractWithSkimMode(
@@ -30,7 +31,8 @@ class GroupExtractionService
         TaskProcess $taskProcess,
         array $group,
         Collection $artifacts,
-        TeamObject $teamObject
+        TeamObject $teamObject,
+        ?Collection $allArtifacts = null
     ): array {
         $config              = $taskRun->taskDefinition->task_runner_config;
         $confidenceThreshold = $config['confidence_threshold'] ?? 3;
@@ -50,7 +52,7 @@ class GroupExtractionService
         foreach ($artifacts->chunk($batchSize) as $batchIndex => $batch) {
             static::logDebug("Processing batch $batchIndex with " . $batch->count() . ' artifacts');
 
-            $batchResult = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $batch, $teamObject, true);
+            $batchResult = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $batch, $teamObject, true, $allArtifacts);
 
             // Merge batch data with cumulative data
             $extractedData = array_replace_recursive($extractedData, $batchResult['data']);
@@ -84,6 +86,7 @@ class GroupExtractionService
      * Extract data using exhaustive mode.
      * Process all artifacts and aggregate results.
      *
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
      * @return array{data: array, page_sources: array}
      */
     public function extractExhaustive(
@@ -91,19 +94,22 @@ class GroupExtractionService
         TaskProcess $taskProcess,
         array $group,
         Collection $artifacts,
-        TeamObject $teamObject
+        TeamObject $teamObject,
+        ?Collection $allArtifacts = null
     ): array {
         static::logDebug('Starting exhaustive mode extraction', [
             'artifact_count' => $artifacts->count(),
         ]);
 
-        $result = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $artifacts, $teamObject, false);
+        $result = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $artifacts, $teamObject, false, $allArtifacts);
 
         return ['data' => $result['data'], 'page_sources' => $result['page_sources'] ?? []];
     }
 
     /**
      * Run extraction on a set of artifacts using LLM.
+     *
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
      */
     public function runExtractionOnArtifacts(
         TaskRun $taskRun,
@@ -111,8 +117,40 @@ class GroupExtractionService
         array $group,
         Collection $artifacts,
         TeamObject $teamObject,
-        bool $includeConfidence
+        bool $includeConfidence,
+        ?Collection $allArtifacts = null
     ): array {
+        // Expand artifacts with context pages if configured and enabled
+        $config             = $taskRun->taskDefinition->task_runner_config ?? [];
+        $enableContextPages = $config['enable_context_pages']              ?? false;
+        $contextBefore      = $config['classification_context_before']     ?? 0;
+        $contextAfter       = $config['classification_context_after']      ?? 0;
+
+        if ($enableContextPages && ($contextBefore > 0 || $contextAfter > 0) && $allArtifacts !== null) {
+            $contextService = app(ContextWindowService::class);
+
+            // Validate that File Organization has been run (belongs_to_previous exists)
+            $contextService->validateContextPagesAvailable($artifacts);
+
+            // Use adjacency threshold from config or default
+            $adjacencyThreshold = $config['adjacency_threshold'] ?? ContextWindowService::DEFAULT_ADJACENCY_THRESHOLD;
+
+            $artifacts = $contextService->expandWithContext(
+                $artifacts,
+                $allArtifacts,
+                $contextBefore,
+                $contextAfter,
+                $adjacencyThreshold
+            );
+
+            static::logDebug('Expanded artifacts with context', [
+                'target_count'        => $contextService->getTargetCount($artifacts),
+                'context_count'       => $contextService->getContextCount($artifacts),
+                'total_count'         => $artifacts->count(),
+                'adjacency_threshold' => $adjacencyThreshold,
+            ]);
+        }
+
         static::logDebug('Running extraction on artifacts', [
             'artifact_count'     => $artifacts->count(),
             'include_confidence' => $includeConfidence,
@@ -159,7 +197,7 @@ class GroupExtractionService
         ]);
 
         // Build extraction prompt with page source instructions
-        $prompt = $this->buildExtractionPrompt($group, $teamObject, $fragmentSelector, $includeConfidence, $artifacts);
+        $prompt = $this->buildExtractionPrompt($group, $teamObject, $fragmentSelector, $includeConfidence, $artifacts, $config);
 
         // Create agent thread with artifacts
         $thread = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
@@ -220,13 +258,16 @@ class GroupExtractionService
 
     /**
      * Build extraction prompt for LLM.
+     *
+     * @param  array|null  $config  Task runner config containing extraction_instructions
      */
     public function buildExtractionPrompt(
         array $group,
         TeamObject $teamObject,
         array $fragmentSelector,
         bool $includeConfidence,
-        ?Collection $artifacts = null
+        ?Collection $artifacts = null,
+        ?array $config = null
     ): string {
         $groupName = $group['name'] ?? 'data';
 
@@ -234,6 +275,20 @@ class GroupExtractionService
         $existingData = $this->getExistingObjectData($teamObject);
 
         $prompt = "You are extracting $groupName data from documents into a structured format.\n\n";
+
+        // Add user-provided extraction instructions if configured
+        $extractionInstructions = $config['extraction_instructions'] ?? null;
+        if ($extractionInstructions) {
+            $prompt .= "## Additional Instructions\n{$extractionInstructions}\n\n";
+        }
+
+        // Add context page instructions if artifacts have context pages
+        if ($artifacts !== null) {
+            $contextInstructions = app(ContextWindowService::class)->buildContextPromptInstructions($artifacts);
+            if ($contextInstructions !== '') {
+                $prompt .= $contextInstructions;
+            }
+        }
 
         // Include existing object data if any
         if (!empty($existingData)) {

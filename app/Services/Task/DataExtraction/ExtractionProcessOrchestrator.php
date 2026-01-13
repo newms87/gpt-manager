@@ -149,6 +149,9 @@ class ExtractionProcessOrchestrator
                 continue;
             }
 
+            // Resolve search mode with global override
+            $resolvedSearchMode = $this->resolveSearchMode($taskRun, $identity);
+
             $process = $taskRun->taskProcesses()->create([
                 'name'      => $this->buildProcessName(
                     'Identity',
@@ -162,6 +165,7 @@ class ExtractionProcessOrchestrator
                     'level'             => $level,
                     'identity_group'    => $identity,
                     'parent_object_ids' => $this->getParentObjectIds($taskRun, $level),
+                    'search_mode'       => $resolvedSearchMode,
                 ],
                 'is_ready' => true,
             ]);
@@ -254,6 +258,9 @@ class ExtractionProcessOrchestrator
                 'artifact_count'  => $groupArtifacts->count(),
             ]);
 
+            // Resolve search mode with global override
+            $resolvedSearchMode = $this->resolveSearchMode($taskRun, $group);
+
             // Create process for each resolved object
             foreach ($objectIds as $objectId) {
                 $process = $taskRun->taskProcesses()->create([
@@ -270,7 +277,7 @@ class ExtractionProcessOrchestrator
                         'operation'        => 'extract_remaining',
                         'extraction_group' => $group,
                         'object_id'        => $objectId,
-                        'search_mode'      => $group['search_mode'] ?? 'exhaustive',
+                        'search_mode'      => $resolvedSearchMode,
                     ],
                     'is_ready'  => true,
                 ]);
@@ -486,6 +493,36 @@ class ExtractionProcessOrchestrator
         }
 
         return [];
+    }
+
+    /**
+     * Resolve the search mode for a group, respecting global override.
+     *
+     * | global_search_mode | Per-group setting | Resolved mode |
+     * |-------------------|-------------------|---------------|
+     * | `intelligent`     | `skim`            | `skim`        |
+     * | `intelligent`     | `exhaustive`      | `exhaustive`  |
+     * | `skim_only`       | `skim`            | `skim`        |
+     * | `skim_only`       | `exhaustive`      | `skim`        |
+     * | `exhaustive_only` | `skim`            | `exhaustive`  |
+     * | `exhaustive_only` | `exhaustive`      | `exhaustive`  |
+     */
+    public function resolveSearchMode(TaskRun $taskRun, array $group): string
+    {
+        $config     = $taskRun->taskDefinition->task_runner_config ?? [];
+        $globalMode = $config['global_search_mode']                ?? 'intelligent';
+
+        // Global overrides
+        if ($globalMode === 'skim_only') {
+            return 'skim';
+        }
+
+        if ($globalMode === 'exhaustive_only') {
+            return 'exhaustive';
+        }
+
+        // Intelligent mode: use per-group setting from planning
+        return $group['search_mode'] ?? 'skim';
     }
 
     /**

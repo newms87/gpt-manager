@@ -163,6 +163,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock ExtractionProcessOrchestrator
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -249,6 +250,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock ExtractionProcessOrchestrator
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) use ($existingTeamObject) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')
                 ->with(Mockery::any(), 'Client', $existingTeamObject->id, 0)
                 ->once();
@@ -326,6 +328,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock ExtractionProcessOrchestrator and verify it's called correctly
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')
                 ->with(
                     Mockery::type(TaskRun::class),
@@ -404,6 +407,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -501,6 +505,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -657,6 +662,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -883,6 +889,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Track how many times storeResolvedObjectId is called
         $storedObjectIds = [];
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) use (&$storedObjectIds) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')
                 ->andReturnUsing(function ($taskRun, $objectType, $objectId, $level) use (&$storedObjectIds) {
                     $storedObjectIds[] = $objectId;
@@ -1200,6 +1207,86 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $clientProperties = $dataProperties['client']['properties'] ?? [];
         $this->assertArrayHasKey('_search_query', $clientProperties,
             'Single object should have embedded _search_query property');
+    }
+
+    // =========================================================================
+    // allFieldsHaveHighConfidence() tests
+    // =========================================================================
+
+    #[Test]
+    public function allFieldsHaveHighConfidence_returns_true_when_all_fields_confident(): void
+    {
+        // Given: Identity fields with confidence scores meeting threshold
+        $identityFields   = ['name', 'email'];
+        $confidenceScores = ['name' => 4, 'email' => 5];
+        $threshold        = 4;
+
+        // When: Checking confidence
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'allFieldsHaveHighConfidence',
+            [$identityFields, $confidenceScores, $threshold]
+        );
+
+        // Then: Returns true
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function allFieldsHaveHighConfidence_returns_false_when_field_below_threshold(): void
+    {
+        // Given: One field below threshold
+        $identityFields   = ['name', 'email'];
+        $confidenceScores = ['name' => 5, 'email' => 2]; // email below threshold
+        $threshold        = 4;
+
+        // When: Checking confidence
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'allFieldsHaveHighConfidence',
+            [$identityFields, $confidenceScores, $threshold]
+        );
+
+        // Then: Returns false
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function allFieldsHaveHighConfidence_returns_false_when_field_missing_from_scores(): void
+    {
+        // Given: A field is missing from confidence scores
+        $identityFields   = ['name', 'email'];
+        $confidenceScores = ['name' => 5]; // email missing
+        $threshold        = 4;
+
+        // When: Checking confidence
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'allFieldsHaveHighConfidence',
+            [$identityFields, $confidenceScores, $threshold]
+        );
+
+        // Then: Returns false
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function allFieldsHaveHighConfidence_returns_false_when_no_identity_fields(): void
+    {
+        // Given: Empty identity fields
+        $identityFields   = [];
+        $confidenceScores = ['name' => 5];
+        $threshold        = 4;
+
+        // When: Checking confidence
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'allFieldsHaveHighConfidence',
+            [$identityFields, $confidenceScores, $threshold]
+        );
+
+        // Then: Returns false (continue processing when no fields defined)
+        $this->assertFalse($result);
     }
 
     // =========================================================================

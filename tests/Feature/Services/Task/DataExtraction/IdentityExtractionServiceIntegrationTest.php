@@ -149,6 +149,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
 
         // Mock ExtractionProcessOrchestrator
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -333,6 +334,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -421,6 +423,7 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         });
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 

@@ -116,57 +116,104 @@
 
             <div class="text-lg font-medium mb-3 mt-6">Context Configuration</div>
 
-            <!-- Classification Context Before Field -->
-            <div class="mb-2">
-                <div class="text-sm font-medium mb-2 text-slate-300">Context Pages Before: {{ classificationContextBefore }}</div>
-                <QSlider
-                    v-model="classificationContextBefore"
-                    :min="0"
-                    :max="10"
-                    :step="1"
-                    snap
-                    :marker-labels="{ 0: '0', 2: '2', 4: '4', 6: '6', 8: '8', 10: '10' }"
-                    label
+            <!-- Enable Context Pages Toggle -->
+            <div class="flex items-center gap-4 mb-2">
+                <QToggle
+                    v-model="enableContextPages"
                     color="sky"
-                    class="mb-2"
                     @update:model-value="debounceChange"
                 />
+                <div>
+                    <div class="font-bold">Enable Context Pages</div>
+                    <div class="text-sm text-slate-400">
+                        Enables including surrounding pages as context when extracting data.
+                    </div>
+                </div>
             </div>
             <div class="text-xs text-gray-500 mb-6 ml-1">
-                <p>Number of pages before current page to include for context (0-10):</p>
-                <ul class="list-disc pl-5 mt-1">
-                    <li><b>0 pages:</b> No previous context (fastest)</li>
-                    <li><b>1-3 pages:</b> Limited context for field understanding</li>
-                    <li><b>4+ pages:</b> More context but slower and more expensive</li>
-                    <li class="mt-1 text-gray-600"><b>Recommended:</b> 2 for balanced context</li>
-                </ul>
+                <p><b>Prerequisite:</b> File Organization task must be run before enabling this feature.</p>
+                <p class="mt-1 text-red-400">If enabled without File Organization, the extraction will fail with an error.</p>
             </div>
 
-            <!-- Classification Context After Field -->
-            <div class="mb-2">
-                <div class="text-sm font-medium mb-2 text-slate-300">Context Pages After: {{ classificationContextAfter }}</div>
-                <QSlider
-                    v-model="classificationContextAfter"
-                    :min="0"
-                    :max="10"
-                    :step="1"
-                    snap
-                    :marker-labels="{ 0: '0', 2: '2', 4: '4', 6: '6', 8: '8', 10: '10' }"
-                    label
-                    color="sky"
-                    class="mb-2"
-                    @update:model-value="debounceChange"
-                />
-            </div>
-            <div class="text-xs text-gray-500 mb-6 ml-1">
-                <p>Number of pages after current page to include for context (0-10):</p>
-                <ul class="list-disc pl-5 mt-1">
-                    <li><b>0 pages:</b> No future context (fastest)</li>
-                    <li><b>1-2 pages:</b> Limited lookahead for field continuation</li>
-                    <li><b>3+ pages:</b> More lookahead but slower and more expensive</li>
-                    <li class="mt-1 text-gray-600"><b>Recommended:</b> 1 for most use cases</li>
-                </ul>
-            </div>
+            <!-- Context settings only visible when enable_context_pages is true -->
+            <template v-if="enableContextPages">
+                <!-- Adjacency Threshold Field -->
+                <div class="mb-2">
+                    <div class="text-sm font-medium mb-2 text-slate-300">Adjacency Threshold: {{ adjacencyThreshold }}</div>
+                    <QSlider
+                        v-model="adjacencyThreshold"
+                        :min="1"
+                        :max="5"
+                        :step="1"
+                        snap
+                        markers
+                        label
+                        color="sky"
+                        class="mb-2"
+                        @update:model-value="debounceChange"
+                    />
+                </div>
+                <div class="text-xs text-gray-500 mb-6 ml-1">
+                    <p>Minimum adjacency score for including context pages (1-5):</p>
+                    <ul class="list-disc pl-5 mt-1">
+                        <li><b>Lower value (1-2):</b> Include more loosely related pages</li>
+                        <li><b>Higher value (4-5):</b> Only include highly related pages</li>
+                        <li class="mt-1 text-gray-600"><b>Recommended:</b> 3 for balanced context inclusion</li>
+                    </ul>
+                </div>
+
+                <!-- Classification Context Before Field -->
+                <div class="mb-2">
+                    <div class="text-sm font-medium mb-2 text-slate-300">Context Pages Before: {{ classificationContextBefore }}</div>
+                    <QSlider
+                        v-model="classificationContextBefore"
+                        :min="0"
+                        :max="10"
+                        :step="1"
+                        snap
+                        :marker-labels="{ 0: '0', 2: '2', 4: '4', 6: '6', 8: '8', 10: '10' }"
+                        label
+                        color="sky"
+                        class="mb-2"
+                        @update:model-value="debounceChange"
+                    />
+                </div>
+                <div class="text-xs text-gray-500 mb-6 ml-1">
+                    <p>Number of pages before current page to include for context (0-10):</p>
+                    <ul class="list-disc pl-5 mt-1">
+                        <li><b>0 pages:</b> No previous context (fastest)</li>
+                        <li><b>1-3 pages:</b> Limited context for field understanding</li>
+                        <li><b>4+ pages:</b> More context but slower and more expensive</li>
+                        <li class="mt-1 text-gray-600"><b>Recommended:</b> 2 for balanced context</li>
+                    </ul>
+                </div>
+
+                <!-- Classification Context After Field -->
+                <div class="mb-2">
+                    <div class="text-sm font-medium mb-2 text-slate-300">Context Pages After: {{ classificationContextAfter }}</div>
+                    <QSlider
+                        v-model="classificationContextAfter"
+                        :min="0"
+                        :max="10"
+                        :step="1"
+                        snap
+                        :marker-labels="{ 0: '0', 2: '2', 4: '4', 6: '6', 8: '8', 10: '10' }"
+                        label
+                        color="sky"
+                        class="mb-2"
+                        @update:model-value="debounceChange"
+                    />
+                </div>
+                <div class="text-xs text-gray-500 mb-6 ml-1">
+                    <p>Number of pages after current page to include for context (0-10):</p>
+                    <ul class="list-disc pl-5 mt-1">
+                        <li><b>0 pages:</b> No future context (fastest)</li>
+                        <li><b>1-2 pages:</b> Limited lookahead for field continuation</li>
+                        <li><b>3+ pages:</b> More lookahead but slower and more expensive</li>
+                        <li class="mt-1 text-gray-600"><b>Recommended:</b> 1 for most use cases</li>
+                    </ul>
+                </div>
+            </template>
 
             <div class="text-lg font-medium mb-3 mt-6">Extraction Instructions</div>
 
@@ -201,7 +248,7 @@ import { MarkdownEditor } from "quasar-ui-danx";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
-import { QSlider, QTab, QTabs } from "quasar";
+import { QSlider, QTab, QTabs, QToggle } from "quasar";
 import { computed, ref } from "vue";
 import BaseTaskRunnerConfig from "./BaseTaskRunnerConfig";
 import { SchemaAndFragmentsConfigField, TaskDefinitionAgentConfigField, TimeoutConfigField } from "./Fields";
@@ -210,6 +257,8 @@ export interface ExtractDataTaskRunnerConfig {
     group_max_points: number;
     global_search_mode: "intelligent" | "skim_only" | "exhaustive_only";
     confidence_threshold: number;
+    enable_context_pages?: boolean;
+    adjacency_threshold?: number;
     classification_context_before: number;
     classification_context_after: number;
     user_planning_hints?: string;
@@ -225,6 +274,8 @@ const config = computed(() => (props.taskDefinition.task_runner_config || {}) as
 const groupMaxPoints = ref(config.value.group_max_points ?? 10);
 const globalSearchMode = ref(config.value.global_search_mode ?? "intelligent");
 const confidenceThreshold = ref(config.value.confidence_threshold ?? 3);
+const enableContextPages = ref(config.value.enable_context_pages ?? false);
+const adjacencyThreshold = ref(config.value.adjacency_threshold ?? 3);
 const classificationContextBefore = ref(config.value.classification_context_before ?? 2);
 const classificationContextAfter = ref(config.value.classification_context_after ?? 1);
 const userPlanningHints = ref(config.value.user_planning_hints ?? "");
@@ -239,6 +290,8 @@ const debounceChange = useDebounceFn(() => {
             group_max_points: Number(groupMaxPoints.value) || 10,
             global_search_mode: globalSearchMode.value || "intelligent",
             confidence_threshold: Number(confidenceThreshold.value) || 3,
+            enable_context_pages: enableContextPages.value,
+            adjacency_threshold: Number(adjacencyThreshold.value) || 3,
             classification_context_before: Number(classificationContextBefore.value) || 2,
             classification_context_after: Number(classificationContextAfter.value) || 1,
             user_planning_hints: userPlanningHints.value || undefined,

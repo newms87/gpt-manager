@@ -624,6 +624,68 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         $this->assertStringNotContainsString('1 = Very uncertain', $prompt);
     }
 
+    #[Test]
+    public function buildExtractionPrompt_includes_extraction_instructions_when_configured(): void
+    {
+        // Given: TeamObject and config with extraction_instructions
+        $teamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $group            = ['name' => 'Client Info'];
+        $fragmentSelector = ['children' => ['name' => ['type' => 'string']]];
+        $config           = [
+            'extraction_instructions' => 'Focus on extracting billing information from the footer.',
+        ];
+
+        // When: Building prompt with extraction_instructions config
+        $prompt = $this->service->buildExtractionPrompt($group, $teamObject, $fragmentSelector, false, null, $config);
+
+        // Then: Prompt includes extraction instructions
+        $this->assertStringContainsString('## Additional Instructions', $prompt);
+        $this->assertStringContainsString('Focus on extracting billing information from the footer.', $prompt);
+    }
+
+    #[Test]
+    public function buildExtractionPrompt_omits_extraction_instructions_when_not_configured(): void
+    {
+        // Given: TeamObject and config without extraction_instructions
+        $teamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $group            = ['name' => 'Client Info'];
+        $fragmentSelector = ['children' => ['name' => ['type' => 'string']]];
+        $config           = [
+            'some_other_config' => 'value',
+            // No extraction_instructions key
+        ];
+
+        // When: Building prompt without extraction_instructions
+        $prompt = $this->service->buildExtractionPrompt($group, $teamObject, $fragmentSelector, false, null, $config);
+
+        // Then: Prompt does NOT include Additional Instructions header
+        $this->assertStringNotContainsString('## Additional Instructions', $prompt);
+    }
+
+    #[Test]
+    public function buildExtractionPrompt_omits_extraction_instructions_when_null_config(): void
+    {
+        // Given: TeamObject and null config
+        $teamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $group            = ['name' => 'Client Info'];
+        $fragmentSelector = ['children' => ['name' => ['type' => 'string']]];
+
+        // When: Building prompt with null config
+        $prompt = $this->service->buildExtractionPrompt($group, $teamObject, $fragmentSelector, false, null, null);
+
+        // Then: Prompt does NOT include Additional Instructions header
+        $this->assertStringNotContainsString('## Additional Instructions', $prompt);
+    }
+
     // =========================================================================
     // getExistingObjectData() tests
     // =========================================================================

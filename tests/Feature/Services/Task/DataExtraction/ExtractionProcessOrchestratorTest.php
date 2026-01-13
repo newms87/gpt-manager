@@ -717,4 +717,150 @@ class ExtractionProcessOrchestratorTest extends AuthenticatedTestCase
             'BUG: createExtractRemainingProcesses() does not attach inputArtifacts like createExtractIdentityProcesses() does.'
         );
     }
+
+    // =========================================================================
+    // resolveSearchMode() tests
+    // =========================================================================
+
+    #[Test]
+    public function resolveSearchMode_returns_skim_when_global_mode_is_skim_only(): void
+    {
+        // Given: TaskRun with global_search_mode = skim_only
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_runner_config' => [
+                'global_search_mode' => 'skim_only',
+            ],
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        // Group wants exhaustive mode
+        $group = [
+            'name'        => 'Test Group',
+            'search_mode' => 'exhaustive',
+        ];
+
+        // When: Resolving search mode
+        $result = $this->orchestrator->resolveSearchMode($taskRun, $group);
+
+        // Then: Returns skim (global override)
+        $this->assertEquals('skim', $result);
+    }
+
+    #[Test]
+    public function resolveSearchMode_returns_exhaustive_when_global_mode_is_exhaustive_only(): void
+    {
+        // Given: TaskRun with global_search_mode = exhaustive_only
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_runner_config' => [
+                'global_search_mode' => 'exhaustive_only',
+            ],
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        // Group wants skim mode
+        $group = [
+            'name'        => 'Test Group',
+            'search_mode' => 'skim',
+        ];
+
+        // When: Resolving search mode
+        $result = $this->orchestrator->resolveSearchMode($taskRun, $group);
+
+        // Then: Returns exhaustive (global override)
+        $this->assertEquals('exhaustive', $result);
+    }
+
+    #[Test]
+    public function resolveSearchMode_uses_group_mode_when_intelligent(): void
+    {
+        // Given: TaskRun with global_search_mode = intelligent (or not set, which defaults to intelligent)
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_runner_config' => [
+                'global_search_mode' => 'intelligent',
+            ],
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        // Test with skim group
+        $skimGroup = [
+            'name'        => 'Skim Group',
+            'search_mode' => 'skim',
+        ];
+
+        $this->assertEquals('skim', $this->orchestrator->resolveSearchMode($taskRun, $skimGroup));
+
+        // Test with exhaustive group
+        $exhaustiveGroup = [
+            'name'        => 'Exhaustive Group',
+            'search_mode' => 'exhaustive',
+        ];
+
+        $this->assertEquals('exhaustive', $this->orchestrator->resolveSearchMode($taskRun, $exhaustiveGroup));
+    }
+
+    #[Test]
+    public function resolveSearchMode_defaults_to_skim_when_no_group_mode(): void
+    {
+        // Given: TaskRun with intelligent mode (default)
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_runner_config' => [
+                'global_search_mode' => 'intelligent',
+            ],
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        // Group without search_mode specified
+        $group = [
+            'name' => 'Test Group',
+            // No search_mode key
+        ];
+
+        // When: Resolving search mode
+        $result = $this->orchestrator->resolveSearchMode($taskRun, $group);
+
+        // Then: Returns skim (default)
+        $this->assertEquals('skim', $result);
+    }
+
+    #[Test]
+    public function resolveSearchMode_defaults_to_intelligent_when_no_global_config(): void
+    {
+        // Given: TaskRun without global_search_mode in config
+        $taskDefinition = TaskDefinition::factory()->create([
+            'team_id'            => $this->user->currentTeam->id,
+            'task_runner_config' => [], // Empty config
+        ]);
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+        ]);
+
+        // Group with explicit exhaustive mode
+        $group = [
+            'name'        => 'Test Group',
+            'search_mode' => 'exhaustive',
+        ];
+
+        // When: Resolving search mode
+        $result = $this->orchestrator->resolveSearchMode($taskRun, $group);
+
+        // Then: Returns group's mode (intelligent is default, so group setting is used)
+        $this->assertEquals('exhaustive', $result);
+    }
 }

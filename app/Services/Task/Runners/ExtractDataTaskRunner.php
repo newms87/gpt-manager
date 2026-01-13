@@ -199,6 +199,9 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
             return;
         }
 
+        // Override search_mode with the resolved value from process meta (respects global override)
+        $group['search_mode'] = $this->taskProcess->meta['search_mode'] ?? $group['search_mode'] ?? 'skim';
+
         // Delegate to IdentityExtractionService
         app(IdentityExtractionService::class)->execute(
             taskRun: $this->taskRun,

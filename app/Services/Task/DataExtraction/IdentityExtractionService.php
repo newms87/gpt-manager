@@ -66,6 +66,9 @@ class IdentityExtractionService
             );
         }
 
+        // Get all artifacts from parent output artifact for context expansion
+        $allArtifacts = $this->getAllArtifactsFromParent($taskRun);
+
         // Resolve parent object context
         [$parentObjectId, $possibleParentIds] = $this->resolveParentContext($taskProcess, $identityGroup, $level);
 
@@ -82,7 +85,8 @@ class IdentityExtractionService
             $taskProcess,
             $artifacts,
             $identityGroup,
-            $possibleParentIds
+            $possibleParentIds,
+            $allArtifacts
         );
 
         if (empty($extractionResult)) {
@@ -455,13 +459,18 @@ class IdentityExtractionService
 
     /**
      * Extract identity fields with search query using LLM.
+     *
+     * Routes to skim mode or exhaustive mode based on search_mode in process meta.
+     *
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
      */
     protected function extractIdentityWithSearchQuery(
         TaskRun $taskRun,
         TaskProcess $taskProcess,
         Collection $artifacts,
         array $group,
-        array $possibleParentIds = []
+        array $possibleParentIds = [],
+        ?Collection $allArtifacts = null
     ): array {
         $taskDefinition   = $taskRun->taskDefinition;
         $schemaDefinition = $taskDefinition->schemaDefinition;
@@ -472,21 +481,198 @@ class IdentityExtractionService
             return [];
         }
 
-        // Build the response schema for identity extraction
+        // Route to appropriate extraction mode based on identity group config
+        // The $group parameter already contains the full identity group including search_mode
+        $searchMode = $group['search_mode'] ?? 'exhaustive';
+
+        if ($searchMode === 'skim') {
+            return $this->extractWithSkimMode(
+                $taskRun,
+                $taskProcess,
+                $group,
+                $artifacts,
+                $possibleParentIds,
+                $allArtifacts
+            );
+        }
+
+        // Exhaustive mode: process all artifacts in a single request
         $responseSchema = $this->buildExtractionResponseSchema(
             $schemaDefinition,
             $group,
             $possibleParentIds
         );
 
-        // Build and run the LLM thread
         return $this->runExtractionThread(
             $taskRun,
             $taskProcess,
             $artifacts,
             $responseSchema,
-            $possibleParentIds
+            $possibleParentIds,
+            $allArtifacts
         );
+    }
+
+    /**
+     * Extract identity data using skim mode.
+     * Process artifacts in batches, stopping early when all identity fields have sufficient confidence.
+     *
+     * @param  array<int>  $possibleParentIds
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @return array{data: array, parent_id: int|null}
+     */
+    protected function extractWithSkimMode(
+        TaskRun $taskRun,
+        TaskProcess $taskProcess,
+        array $group,
+        Collection $artifacts,
+        array $possibleParentIds,
+        ?Collection $allArtifacts = null
+    ): array {
+        $config              = $taskRun->taskDefinition->task_runner_config;
+        $confidenceThreshold = $config['confidence_threshold'] ?? 3;
+        $batchSize           = $config['skim_batch_size']      ?? 5;
+        $identityFields      = $group['identity_fields']       ?? [];
+
+        $cumulativeData       = [];
+        $cumulativeConfidence = [];
+        $resolvedParentId     = null;
+
+        static::logDebug('Starting skim mode identity extraction', [
+            'artifact_count'       => $artifacts->count(),
+            'confidence_threshold' => $confidenceThreshold,
+            'batch_size'           => $batchSize,
+            'identity_fields'      => $identityFields,
+        ]);
+
+        // Process artifacts in batches
+        foreach ($artifacts->chunk($batchSize) as $batchIndex => $batch) {
+            static::logDebug("Processing identity extraction batch $batchIndex with " . $batch->count() . ' artifacts');
+
+            $batchResult = $this->runExtractionOnBatch(
+                $taskRun,
+                $taskProcess,
+                $batch,
+                $group,
+                $possibleParentIds,
+                includeConfidence: true,
+                allArtifacts: $allArtifacts
+            );
+
+            // Merge batch data with cumulative data (later batches override earlier values)
+            $batchData      = $batchResult['data'] ?? [];
+            $cumulativeData = array_replace_recursive($cumulativeData, $batchData);
+
+            // Use first parent_id found (from first batch that resolves it)
+            if ($resolvedParentId === null && !empty($batchResult['parent_id'])) {
+                $resolvedParentId = $batchResult['parent_id'];
+            }
+
+            // Update confidence scores (take the highest confidence for each field)
+            foreach ($batchResult['confidence'] ?? [] as $field => $score) {
+                if (!isset($cumulativeConfidence[$field]) || $score > $cumulativeConfidence[$field]) {
+                    $cumulativeConfidence[$field] = $score;
+                }
+            }
+
+            // Check if all identity fields have high enough confidence
+            if ($this->allFieldsHaveHighConfidence($identityFields, $cumulativeConfidence, $confidenceThreshold)) {
+                $highConfidenceFields = array_filter($cumulativeConfidence, fn($score) => $score >= $confidenceThreshold);
+                static::logDebug('Skim mode: stopping early - all identity fields have sufficient confidence', [
+                    'batches_processed'      => $batchIndex + 1,
+                    'high_confidence_fields' => array_keys($highConfidenceFields),
+                    'confidence_scores'      => $cumulativeConfidence,
+                ]);
+                break;
+            }
+        }
+
+        return [
+            'data'      => $cumulativeData,
+            'parent_id' => $resolvedParentId,
+        ];
+    }
+
+    /**
+     * Run extraction on a single batch of artifacts.
+     *
+     * @param  array<int>  $possibleParentIds
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @return array{data: array, parent_id: int|null, confidence: array}
+     */
+    protected function runExtractionOnBatch(
+        TaskRun $taskRun,
+        TaskProcess $taskProcess,
+        Collection $artifacts,
+        array $group,
+        array $possibleParentIds,
+        bool $includeConfidence,
+        ?Collection $allArtifacts = null
+    ): array {
+        $schemaDefinition = $taskRun->taskDefinition->schemaDefinition;
+
+        // Build the response schema with optional confidence tracking
+        $responseSchema = $this->buildExtractionResponseSchema(
+            $schemaDefinition,
+            $group,
+            $possibleParentIds,
+            $includeConfidence
+        );
+
+        // Run extraction thread on this batch
+        $result = $this->runExtractionThread(
+            $taskRun,
+            $taskProcess,
+            $artifacts,
+            $responseSchema,
+            $possibleParentIds,
+            $allArtifacts
+        );
+
+        // Extract confidence from result if present
+        $data       = $result['data']       ?? [];
+        $parentId   = $result['parent_id']  ?? null;
+        $confidence = $result['confidence'] ?? [];
+
+        return [
+            'data'       => $data,
+            'parent_id'  => $parentId,
+            'confidence' => $confidence,
+        ];
+    }
+
+    /**
+     * Check if all identity fields have confidence at or above the threshold.
+     *
+     * @param  array<string>  $identityFields  List of field names to check
+     * @param  array<string, int>  $confidenceScores  Map of field name to confidence score (1-5)
+     */
+    protected function allFieldsHaveHighConfidence(array $identityFields, array $confidenceScores, int $threshold): bool
+    {
+        if (empty($identityFields)) {
+            // If no identity fields defined, continue processing
+            return false;
+        }
+
+        $lowConfidenceFields = [];
+
+        foreach ($identityFields as $field) {
+            // If field is missing or below threshold, track it
+            if (!isset($confidenceScores[$field]) || $confidenceScores[$field] < $threshold) {
+                $lowConfidenceFields[] = $field;
+            }
+        }
+
+        if (!empty($lowConfidenceFields)) {
+            static::logDebug('Identity fields below confidence threshold', [
+                'fields'    => $lowConfidenceFields,
+                'threshold' => $threshold,
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -495,6 +681,7 @@ class IdentityExtractionService
      * Creates a simplified schema at leaf level with embedded _search_query and __source__ fields:
      * - data: { leaf_key: { fields..., __source__field1: pageSource, _search_query: {...} } }
      * - parent_id: (optional) When multiple parent options exist
+     * - confidence: (optional) When includeConfidence is true, adds per-field confidence scores
      * - $defs: { pageSource, stringSearch, dateSearch, booleanSearch, numericSearch, integerSearch }
      *
      * The schema is simplified to only include the leaf-level objects, not the full hierarchy.
@@ -503,11 +690,13 @@ class IdentityExtractionService
      * - embedded _search_query property with $ref to search type definitions
      *
      * @param  array<int>  $possibleParentIds
+     * @param  bool  $includeConfidence  When true, adds confidence schema for per-field confidence scores
      */
     protected function buildExtractionResponseSchema(
         SchemaDefinition $schemaDefinition,
         array $group,
-        array $possibleParentIds
+        array $possibleParentIds,
+        bool $includeConfidence = false
     ): array {
         $fragmentSelector = $group['fragment_selector'] ?? [];
         $identityFields   = $group['identity_fields']   ?? [];
@@ -555,7 +744,44 @@ class IdentityExtractionService
             $responseSchema['required'][] = 'parent_id';
         }
 
+        // Add confidence schema when requested (for skim mode batched extraction)
+        if ($includeConfidence) {
+            $responseSchema['properties']['confidence'] = $this->buildConfidenceSchema($identityFields);
+            $responseSchema['required'][]               = 'confidence';
+        }
+
         return $responseSchema;
+    }
+
+    /**
+     * Build the confidence schema for per-field confidence tracking.
+     *
+     * Returns a schema for { field_name: integer (1-5) } for each identity field.
+     *
+     * @param  array<string>  $identityFields
+     */
+    protected function buildConfidenceSchema(array $identityFields): array
+    {
+        $properties = [];
+
+        foreach ($identityFields as $field) {
+            $properties[$field] = [
+                'type'        => 'integer',
+                'minimum'     => 1,
+                'maximum'     => 5,
+                'description' => "Confidence score for {$field} (1=very uncertain, 5=highly confident)",
+            ];
+        }
+
+        return [
+            'type'        => 'object',
+            'description' => 'Rate your confidence (1-5) for each extracted identity field. ' .
+                             '1=very uncertain/likely incorrect, 2=uncertain/might be wrong, ' .
+                             '3=moderately confident/probably correct, 4=confident/very likely correct, ' .
+                             '5=highly confident/definitely correct.',
+            'properties'  => $properties,
+            'required'    => $identityFields,
+        ];
     }
 
     /**
@@ -832,17 +1058,53 @@ class IdentityExtractionService
      * The response contains data with embedded _search_query in each object.
      * NOTE: search_query is no longer a top-level field - it's now embedded as _search_query in each object.
      *
+     * When confidence tracking is enabled (skim mode), the response also includes a confidence
+     * object with per-field confidence scores (1-5).
+     *
      * @param  array<int>  $possibleParentIds
-     * @return array{data: array, parent_id: int|null}
+     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @return array{data: array, parent_id: int|null, confidence: array}
      */
     protected function runExtractionThread(
         TaskRun $taskRun,
         TaskProcess $taskProcess,
         Collection $artifacts,
         array $responseSchema,
-        array $possibleParentIds
+        array $possibleParentIds,
+        ?Collection $allArtifacts = null
     ): array {
         $taskDefinition = $taskRun->taskDefinition;
+
+        // Expand artifacts with context pages if configured and enabled
+        $config             = $taskDefinition->task_runner_config      ?? [];
+        $enableContextPages = $config['enable_context_pages']          ?? false;
+        $contextBefore      = $config['classification_context_before'] ?? 0;
+        $contextAfter       = $config['classification_context_after']  ?? 0;
+
+        if ($enableContextPages && ($contextBefore > 0 || $contextAfter > 0) && $allArtifacts !== null) {
+            $contextService = app(ContextWindowService::class);
+
+            // Validate that File Organization has been run (belongs_to_previous exists)
+            $contextService->validateContextPagesAvailable($artifacts);
+
+            // Use adjacency threshold from config or default
+            $adjacencyThreshold = $config['adjacency_threshold'] ?? ContextWindowService::DEFAULT_ADJACENCY_THRESHOLD;
+
+            $artifacts = $contextService->expandWithContext(
+                $artifacts,
+                $allArtifacts,
+                $contextBefore,
+                $contextAfter,
+                $adjacencyThreshold
+            );
+
+            static::logDebug('Expanded identity artifacts with context', [
+                'target_count'        => $contextService->getTargetCount($artifacts),
+                'context_count'       => $contextService->getContextCount($artifacts),
+                'total_count'         => $artifacts->count(),
+                'adjacency_threshold' => $adjacencyThreshold,
+            ]);
+        }
 
         // Build thread with artifacts and optional parent context
         $thread = $this->buildExtractionThread($taskRun, $artifacts, $possibleParentIds);
@@ -879,8 +1141,9 @@ class IdentityExtractionService
         // Note: _search_query is now embedded in each object within data,
         // not returned as a separate top-level field
         return [
-            'data'      => $data['data']      ?? [],
-            'parent_id' => $data['parent_id'] ?? null,
+            'data'       => $data['data']       ?? [],
+            'parent_id'  => $data['parent_id']  ?? null,
+            'confidence' => $data['confidence'] ?? [],
         ];
     }
 
@@ -895,12 +1158,19 @@ class IdentityExtractionService
         array $possibleParentIds
     ): AgentThread {
         $taskDefinition = $taskRun->taskDefinition;
+        $config         = $taskDefinition->task_runner_config ?? [];
 
         // Build additional context for parent hierarchy from database
         $parentContext = $this->buildParentContextForMultipleParents($possibleParentIds);
 
+        // Build context page instructions if artifacts have context pages
+        $contextInstructions = app(ContextWindowService::class)->buildContextPromptInstructions($artifacts);
+
         // Build page source instructions if we have page numbers
         $pageSourceInstructions = app(PageSourceService::class)->buildPageSourceInstructions($artifacts);
+
+        // Get user-provided extraction instructions from config
+        $extractionInstructions = $config['extraction_instructions'] ?? null;
 
         $threadBuilder = AgentThreadBuilderService::for($taskDefinition->agent, $taskRun->team_id)
             ->named('Identity Data Extraction')
@@ -910,9 +1180,19 @@ class IdentityExtractionService
                 includeMeta: false
             ));
 
+        // Add extraction instructions as a system message when available (prominent, near the top)
+        if ($extractionInstructions) {
+            $threadBuilder->withSystemMessage("## Additional Instructions\n{$extractionInstructions}");
+        }
+
         // Add parent context as a system message when available
         if ($parentContext !== '') {
             $threadBuilder->withSystemMessage($parentContext);
+        }
+
+        // Add context page instructions when available
+        if ($contextInstructions !== '') {
+            $threadBuilder->withSystemMessage($contextInstructions);
         }
 
         // Add page source instructions when available
@@ -1198,5 +1478,24 @@ class IdentityExtractionService
         }
 
         return $prompt;
+    }
+
+    /**
+     * Get all artifacts from the parent output artifact.
+     *
+     * These are all page artifacts (children of the parent output artifact),
+     * regardless of classification. Used for context page expansion.
+     *
+     * @return Collection<\App\Models\Task\Artifact>
+     */
+    protected function getAllArtifactsFromParent(TaskRun $taskRun): Collection
+    {
+        $parentArtifact = app(ExtractionProcessOrchestrator::class)->getParentOutputArtifact($taskRun);
+
+        if (!$parentArtifact) {
+            return collect();
+        }
+
+        return $parentArtifact->children()->orderBy('position')->get();
     }
 }

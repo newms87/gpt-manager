@@ -58,6 +58,9 @@ class RemainingExtractionService
             );
         }
 
+        // Get all artifacts from parent output artifact for context expansion
+        $allArtifacts = $this->getAllArtifactsFromParent($taskRun);
+
         $groupExtractionService = app(GroupExtractionService::class);
 
         // Route to appropriate extraction mode
@@ -67,14 +70,16 @@ class RemainingExtractionService
                 $taskProcess,
                 $extractionGroup,
                 $artifacts,
-                $teamObject
+                $teamObject,
+                $allArtifacts
             ),
             default => $groupExtractionService->extractExhaustive(
                 $taskRun,
                 $taskProcess,
                 $extractionGroup,
                 $artifacts,
-                $teamObject
+                $teamObject,
+                $allArtifacts
             ),
         };
 
@@ -283,5 +288,24 @@ class RemainingExtractionService
         $name = $itemData['name'] ?? $objectType;
 
         return $mapper->createTeamObject($objectType, $name, $itemData);
+    }
+
+    /**
+     * Get all artifacts from the parent output artifact.
+     *
+     * These are all page artifacts (children of the parent output artifact),
+     * regardless of classification. Used for context page expansion.
+     *
+     * @return \Illuminate\Support\Collection<\App\Models\Task\Artifact>
+     */
+    protected function getAllArtifactsFromParent(TaskRun $taskRun): \Illuminate\Support\Collection
+    {
+        $parentArtifact = app(ExtractionProcessOrchestrator::class)->getParentOutputArtifact($taskRun);
+
+        if (!$parentArtifact) {
+            return collect();
+        }
+
+        return $parentArtifact->children()->orderBy('position')->get();
     }
 }

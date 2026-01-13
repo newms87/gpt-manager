@@ -8,6 +8,7 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\ArtifactsMergeService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
  * Handles merging window results into final groups.
@@ -52,6 +53,9 @@ class MergeProcessService
         $fileToGroup  = $mergeResult['file_to_group_mapping'];
 
         static::logDebug('Merge completed: ' . count($finalGroups) . ' final groups');
+
+        // Store adjacency data (belongs_to_previous) on StoredFiles for use by other tasks
+        $this->storeAdjacencyDataOnStoredFiles($taskRun, $fileToGroup);
 
         // Phase 4 of the new algorithm handles low-confidence resolution via adjacency
         // No need for separate LLM resolution of low-confidence files
@@ -409,5 +413,75 @@ class MergeProcessService
         $sourceArtifact->delete();
 
         static::logDebug("Successfully merged '$sourceGroup' into '$targetGroup' - total files now: $mergedFileCount");
+    }
+
+    /**
+     * Store adjacency data (belongs_to_previous) on StoredFiles for use by other tasks.
+     *
+     * This persists the file organization results on the StoredFile's meta field so that
+     * downstream tasks (like ExtractData) can use adjacency signals to determine document
+     * boundaries without re-running the file organization analysis.
+     *
+     * @param  TaskRun  $taskRun  The task run containing input artifacts
+     * @param  array  $fileToGroupMapping  Mapping from page_number to file data including adjacency scores
+     */
+    protected function storeAdjacencyDataOnStoredFiles(TaskRun $taskRun, array $fileToGroupMapping): void
+    {
+        if (empty($fileToGroupMapping)) {
+            static::logDebug('No file mapping data to store on StoredFiles');
+
+            return;
+        }
+
+        // Get all unique original_stored_file_ids from the input artifacts' stored files
+        // Use reorder() to clear the default ordering from inputArtifacts() which conflicts with DISTINCT
+        $originalFileIds = $taskRun->inputArtifacts()
+            ->reorder()
+            ->join('stored_file_storables', function ($join) {
+                $join->on('artifacts.id', '=', 'stored_file_storables.storable_id')
+                    ->where('stored_file_storables.storable_type', '=', Artifact::class);
+            })
+            ->join('stored_files', 'stored_file_storables.stored_file_id', '=', 'stored_files.id')
+            ->select('stored_files.original_stored_file_id')
+            ->distinct()
+            ->pluck('original_stored_file_id')
+            ->filter()
+            ->toArray();
+
+        if (empty($originalFileIds)) {
+            static::logDebug('No original stored file IDs found in input artifacts');
+
+            return;
+        }
+
+        static::logDebug('Storing adjacency data for ' . count($fileToGroupMapping) . ' pages across ' . count($originalFileIds) . ' original files');
+
+        $updatedCount = 0;
+
+        foreach ($fileToGroupMapping as $pageNumber => $fileData) {
+            // Find the StoredFile by page_number and original_stored_file_id
+            $storedFile = StoredFile::where('page_number', $pageNumber)
+                ->whereIn('original_stored_file_id', $originalFileIds)
+                ->first();
+
+            if (!$storedFile) {
+                static::logDebug("StoredFile not found for page $pageNumber");
+
+                continue;
+            }
+
+            // Update meta with adjacency data
+            // ALWAYS set belongs_to_previous key (even if null) so downstream tasks can check
+            // if the key EXISTS to determine whether File Organization has been run
+            $storedFile->meta = array_merge($storedFile->meta ?? [], [
+                'belongs_to_previous'        => $fileData['belongs_to_previous']        ?? null,
+                'belongs_to_previous_reason' => $fileData['belongs_to_previous_reason'] ?? null,
+                'file_organization_group'    => $fileData['group_name']                 ?? null,
+            ]);
+            $storedFile->save();
+            $updatedCount++;
+        }
+
+        static::logDebug("Updated adjacency data on $updatedCount StoredFiles");
     }
 }
