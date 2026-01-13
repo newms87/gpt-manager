@@ -676,6 +676,8 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function afterAllProcessesCompleted_creates_classification_after_planning(): void
     {
+        Queue::fake();
+
         // Given: TaskRun that just completed all planning (identity + remaining), plan stored in TaskDefinition.meta
         $plan = [
             'levels' => [
@@ -761,6 +763,8 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function afterAllProcessesCompleted_creates_extract_identity_after_classification(): void
     {
+        Queue::fake();
+
         // Given: TaskRun with classification complete (classification process completed)
         $plan = [
             'levels' => [
@@ -836,6 +840,8 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function afterAllProcessesCompleted_advances_to_next_level_when_current_complete(): void
     {
+        Queue::fake();
+
         // Given: TaskRun with level 0 complete, plan in TaskDefinition.meta with identity groups for level 1
         $plan = [
             'levels' => [

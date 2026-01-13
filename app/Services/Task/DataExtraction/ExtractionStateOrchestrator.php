@@ -5,6 +5,7 @@ namespace App\Services\Task\DataExtraction;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
+use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TranscodePrerequisiteService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
@@ -35,6 +36,7 @@ class ExtractionStateOrchestrator
         // Check phases in order of progression
         if ($this->needsPlanning($taskRun)) {
             $this->createPlanningProcesses($taskRun);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
@@ -60,12 +62,14 @@ class ExtractionStateOrchestrator
 
         if ($this->needsTranscoding($taskRun)) {
             $this->createTranscodeProcesses($taskRun);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
 
         if ($this->needsClassification($taskRun)) {
             $this->createClassificationProcesses($taskRun, $cachedPlan ?? $extractionPlan);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
@@ -73,18 +77,21 @@ class ExtractionStateOrchestrator
         // Use extractionPlan for extraction phases (doesn't require cache validation)
         if ($this->needsIdentityExtraction($taskRun, $extractionPlan)) {
             $this->createIdentityExtractionProcesses($taskRun, $extractionPlan);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
 
         if ($this->needsRemainingExtraction($taskRun, $extractionPlan)) {
             $this->createRemainingExtractionProcesses($taskRun, $extractionPlan);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
 
         if ($this->canAdvanceLevel($taskRun, $extractionPlan)) {
             $this->advanceLevelAndContinue($taskRun, $extractionPlan);
+            TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
 
             return;
         }
