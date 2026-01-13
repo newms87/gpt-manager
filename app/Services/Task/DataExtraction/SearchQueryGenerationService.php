@@ -137,10 +137,10 @@ class SearchQueryGenerationService
      * {
      *   type: 'object',
      *   properties: {
-     *     'a1b2c3d4': { type: 'object', properties: { search_query: [...] } },
-     *     'e5f6g7h8': { type: 'object', properties: { search_query: [...] } },
+     *     'ha1b2c3d4': { type: 'object', properties: { search_query: [...] } },
+     *     'he5f6g7h8': { type: 'object', properties: { search_query: [...] } },
      *   },
-     *   required: ['a1b2c3d4', 'e5f6g7h8', ...],
+     *   required: ['ha1b2c3d4', 'he5f6g7h8', ...],
      *   $defs: { stringSearch: ..., dateSearch: ..., etc. }
      * }
      *
@@ -160,7 +160,8 @@ class SearchQueryGenerationService
 
         foreach ($items as $index => $item) {
             // Generate a short hash key from the item content to ensure JSON object encoding
-            $hashKey     = substr(md5(json_encode($item) . $index), 0, 8);
+            // Prefix with 'h' to prevent all-numeric hashes being serialized as numbers by json_encode
+            $hashKey     = 'h' . substr(md5(json_encode($item) . $index), 0, 8);
             $description = $this->buildItemDescription($item, $index);
 
             $properties[$hashKey] = [

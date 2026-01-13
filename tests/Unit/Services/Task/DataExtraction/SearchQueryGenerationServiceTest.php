@@ -45,13 +45,13 @@ class SearchQueryGenerationServiceTest extends TestCase
 
         $result = $this->service->buildIndexedSchema($items, $identityFields);
 
-        // Hash keys should be 8-character strings
+        // Hash keys should be 9-character strings starting with 'h' followed by 8 hex chars
         $hashKeys = array_keys($result['schema']['properties']);
         foreach ($hashKeys as $key) {
             $this->assertIsString($key);
-            $this->assertEquals(8, strlen($key));
-            // Should be hexadecimal characters
-            $this->assertMatchesRegularExpression('/^[a-f0-9]{8}$/', $key);
+            $this->assertEquals(9, strlen($key));
+            // Should be 'h' prefix followed by 8 hexadecimal characters
+            $this->assertMatchesRegularExpression('/^h[a-f0-9]{8}$/', $key);
         }
     }
 

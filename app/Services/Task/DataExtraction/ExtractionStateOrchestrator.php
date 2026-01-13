@@ -96,6 +96,9 @@ class ExtractionStateOrchestrator
             return;
         }
 
+        // All extraction phases complete - perform rollup
+        app(ExtractionRollupService::class)->rollupTaskRunData($taskRun);
+
         static::logDebug('No more phases to advance - extraction complete');
     }
 

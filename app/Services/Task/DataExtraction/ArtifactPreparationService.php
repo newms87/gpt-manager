@@ -31,7 +31,14 @@ class ArtifactPreparationService
             'team_id'            => $taskRun->taskDefinition->team_id,
         ]);
 
-        static::logDebug('Created parent artifact', ['artifact_id' => $parentArtifact->id]);
+        // Attach all input files to the parent artifact for easy access to original documents
+        $allFileIds = collect($pages)->pluck('file_id')->unique()->toArray();
+        $parentArtifact->storedFiles()->sync($allFileIds);
+
+        static::logDebug('Created parent artifact', [
+            'artifact_id' => $parentArtifact->id,
+            'file_count'  => count($allFileIds),
+        ]);
 
         // Create child artifacts for each page
         foreach ($pages as $index => $page) {
