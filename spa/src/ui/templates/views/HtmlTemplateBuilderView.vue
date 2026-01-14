@@ -214,6 +214,14 @@ async function onRestoreVersion(historyId: number) {
 }
 
 /**
+ * Callback for when the collaboration thread is updated via Pusher
+ * Updates the collaborationThread ref directly instead of reloading the whole template
+ */
+function onThreadUpdated(updatedThread: AgentThread) {
+	collaborationThread.value = updatedThread;
+}
+
+/**
  * Load template data
  */
 async function loadTemplate() {
@@ -227,22 +235,19 @@ async function loadTemplate() {
 	error.value = null;
 
 	try {
-		const response = await dxTemplateDefinition.routes.list({
-			filter: { id: templateId.value },
-			fields: {
-				html_content: true,
-				css_content: true,
-				history: true,
-				collaboration_threads: { messages: true },
-				building_job_dispatch: true,
-				pending_build_context: true,
-				job_dispatch_count: true,
-				template_variable_count: true
-			}
+		const result = await dxTemplateDefinition.routes.details({ id: templateId.value }, {
+			html_content: true,
+			css_content: true,
+			history: true,
+			collaboration_threads: { chat_messages: true },
+			building_job_dispatch: true,
+			pending_build_context: true,
+			job_dispatch_count: true,
+			template_variable_count: true
 		});
 
-		if (response.data && response.data.length > 0) {
-			template.value = response.data[0];
+		if (result) {
+			template.value = result;
 
 			// Subscribe to template updates for building status changes
 			await subscribeToTemplate(template.value);
@@ -250,7 +255,8 @@ async function loadTemplate() {
 			// Set the collaboration thread if one exists and subscribe to updates
 			if (template.value.collaboration_threads?.length) {
 				collaborationThread.value = template.value.collaboration_threads[0] as AgentThread;
-				await subscribeToThread(collaborationThread.value);
+				// Subscribe to thread updates with a callback that updates collaborationThread directly
+				await subscribeToThread(collaborationThread.value, onThreadUpdated);
 			}
 		} else {
 			error.value = "Template not found";
@@ -292,9 +298,22 @@ function goBack() {
 
 /**
  * Start a new collaboration thread with optional files and prompt
+ * Immediately shows the user message and a thinking indicator (optimistic update)
  */
 async function startCollaboration(files: File[], prompt: string) {
 	if (!template.value) return;
+
+	// Create optimistic messages using helper
+	const userMsg = createOptimisticMessage({ role: "user", content: prompt });
+	const assistantMsg = createOptimisticMessage({ role: "assistant", content: "", isThinking: true });
+
+	// Create an optimistic thread to display immediately
+	collaborationThread.value = {
+		id: getOptimisticId(),
+		name: "Collaboration",
+		chat_messages: [userMsg, assistantMsg],
+		is_running: true
+	} as AgentThread;
 
 	// Note: files need to be uploaded first to get file_ids, but for now just support prompt-only
 	const result = await startCollaborationAction.trigger(template.value, {
@@ -307,7 +326,8 @@ async function startCollaboration(files: File[], prompt: string) {
 	// But we need to set the collaborationThread ref from the response and subscribe to updates
 	if (result?.item?.collaboration_threads?.length) {
 		collaborationThread.value = result.item.collaboration_threads[0] as AgentThread;
-		await subscribeToThread(collaborationThread.value);
+		// Subscribe to thread updates with a callback that updates collaborationThread directly
+		await subscribeToThread(collaborationThread.value, onThreadUpdated);
 	}
 }
 
@@ -320,6 +340,26 @@ function getOptimisticId(): number {
 }
 
 /**
+ * Create an optimistic message for immediate display
+ */
+interface OptimisticMessageOptions {
+	role: "user" | "assistant";
+	content: string;
+	isThinking?: boolean;
+}
+
+function createOptimisticMessage(options: OptimisticMessageOptions) {
+	return {
+		id: getOptimisticId(),
+		role: options.role,
+		title: "",
+		content: options.content,
+		timestamp: new Date().toISOString(),
+		...(options.isThinking ? { data: { is_thinking: true } } : {})
+	};
+}
+
+/**
  * Send a message to the collaboration thread with optimistic updates
  * Immediately shows the user message and a thinking indicator
  */
@@ -328,48 +368,30 @@ async function sendMessage(payload: SendMessagePayload) {
 	isSaving.value = true;
 	isSaved.value = false;
 
-	// Create optimistic user message
-	const optimisticUserMessage = {
-		id: getOptimisticId(),
-		role: "user" as const,
-		title: "",
-		content: payload.message,
-		timestamp: new Date().toISOString(),
-		data: {}
-	};
-
-	// Create optimistic assistant thinking message
-	const optimisticAssistantMessage = {
-		id: getOptimisticId(),
-		role: "assistant" as const,
-		title: "",
-		content: "",
-		timestamp: new Date().toISOString(),
-		data: { is_thinking: true }
-	};
+	// Create optimistic messages using helper
+	const userMsg = createOptimisticMessage({ role: "user", content: payload.message });
+	const assistantMsg = createOptimisticMessage({ role: "assistant", content: "", isThinking: true });
 
 	// Immediately add optimistic messages to the thread
+	const currentMessages = collaborationThread.value.chat_messages || [];
 	collaborationThread.value = {
 		...collaborationThread.value,
-		messages: [
-			...collaborationThread.value.messages,
-			optimisticUserMessage,
-			optimisticAssistantMessage
+		chat_messages: [
+			...currentMessages,
+			userMsg,
+			assistantMsg
 		],
 		is_running: true
 	};
 
-	const result = await sendMessageAction.trigger(template.value, {
+	await sendMessageAction.trigger(template.value, {
 		thread_id: collaborationThread.value.id,
 		message: payload.message,
 		file_id: null // TODO: Handle file attachments
 	});
 
-	// The result.item is the updated template with collaboration_threads
-	// This replaces the optimistic messages with real ones
-	if (result?.item?.collaboration_threads?.length) {
-		collaborationThread.value = result.item.collaboration_threads[0] as AgentThread;
-	}
+	// Note: We don't update collaborationThread here - the Pusher subscription
+	// will handle updating the thread when the job completes with real messages
 	isSaving.value = false;
 	isSaved.value = true;
 }

@@ -23,7 +23,7 @@ class AgentThreadResource extends ActionResource
             'timestamp'        => $agentThread->updated_at,
             'can'              => $agentThread->can(),
 
-            'messages'    => fn($fields) => $agentThread->canView() ? MessageResource::collection(
+            'messages'      => fn($fields) => $agentThread->canView() ? MessageResource::collection(
                 $agentThread->sortedVisibleMessages,
                 $fields
             ) : [
@@ -33,6 +33,10 @@ class AgentThreadResource extends ActionResource
                     'content' => 'The contents of this message are hidden. You are not authorized to view this thread as it contains sensitive information belonging to another team',
                 ]),
             ],
+            'chat_messages' => fn($fields) => $agentThread->canView() ? MessageResource::collection(
+                $agentThread->sortedVisibleMessages->filter(fn($msg) => !($msg->data['is_system_prompt'] ?? false)),
+                $fields
+            ) : [],
             'actions'     => fn($fields) => AssistantActionResource::collection($agentThread->assistantActions, $fields),
             'jobDispatch' => fn($fields) => JobDispatchResource::make($agentThread->lastRun?->jobDispatch, $fields),
         ];

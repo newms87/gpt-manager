@@ -2,7 +2,7 @@
 	<div class="flex h-full overflow-hidden bg-slate-100">
 		<!-- Chat sidebar -->
 		<div
-			class="flex flex-col overflow-hidden border-r border-slate-300 bg-white shadow-sm"
+			class="flex flex-col flex-shrink-0 overflow-hidden border-r border-slate-300 bg-white shadow-sm"
 			:style="{ width: sidebarWidth + 'px' }"
 		>
 			<!-- Chat fills the sidebar -->

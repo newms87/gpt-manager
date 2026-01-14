@@ -29,6 +29,7 @@ export interface AgentThread extends ActionTargetItem {
 	name: string;
 	summary: string;
 	messages: AgentThreadMessage[];
+	chat_messages?: AgentThreadMessage[];
 	is_running: boolean;
 	timestamp: string;
 	jobDispatch?: JobDispatch;

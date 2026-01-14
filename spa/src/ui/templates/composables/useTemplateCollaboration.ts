@@ -1,3 +1,4 @@
+import { dxAgentThread } from "@/components/Modules/Agents/Threads/config";
 import { usePusher } from "@/helpers/pusher";
 import { dxTemplateDefinition } from "@/ui/templates/config";
 import type { TemplateDefinition } from "@/ui/templates/types";
@@ -9,6 +10,9 @@ interface AgentThreadEvent extends ActionTargetItem {
     id: number;
     is_running?: boolean;
 }
+
+/** Callback type for thread update events */
+type ThreadUpdateCallback = (thread: AgentThread) => void;
 
 // Reload cooldown in milliseconds - prevents duplicate requests when action response and Pusher events arrive close together
 const RELOAD_COOLDOWN_MS = 500;
@@ -25,16 +29,47 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
 
     // Track last reload time to prevent duplicate requests
     let lastReloadTime = 0;
+    let lastThreadReloadTime = 0;
 
     // Store callback references for cleanup
-    let threadUpdateCallback: ((data: ActionTargetItem) => void) | null = null;
+    let threadPusherCallback: ((data: ActionTargetItem) => void) | null = null;
     let templateUpdateCallback: ((data: ActionTargetItem) => void) | null = null;
     let jobDispatchUpdateCallback: ((data: ActionTargetItem) => void) | null = null;
 
+    // External callback for thread updates
+    let onThreadUpdateCallback: ThreadUpdateCallback | null = null;
+
+    /**
+     * Reload just the thread's chat_messages from the agent-threads endpoint
+     * Much more efficient than reloading the entire template
+     */
+    async function reloadThread(threadId: number): Promise<AgentThread | null> {
+        // Skip if called within cooldown period of the last reload
+        const now = Date.now();
+        if (now - lastThreadReloadTime < RELOAD_COOLDOWN_MS) {
+            return null;
+        }
+        lastThreadReloadTime = now;
+
+        try {
+            // Fetch just the thread with chat_messages using the agent-threads endpoint
+            const result = await dxAgentThread.routes.details(
+                { id: threadId } as AgentThread,
+                { chat_messages: true }
+            );
+            return result as AgentThread;
+        } catch (error) {
+            console.error("Failed to reload thread:", error);
+            return null;
+        }
+    }
+
     /**
      * Subscribe to real-time updates for a collaboration thread
+     * @param thread - The thread to subscribe to
+     * @param onUpdate - Optional callback when thread is updated (receives the refreshed thread)
      */
-    async function subscribeToThread(thread: AgentThread): Promise<void> {
+    async function subscribeToThread(thread: AgentThread, onUpdate?: ThreadUpdateCallback): Promise<void> {
         if (!pusher || !thread?.id || activeThreadId.value === thread.id) {
             return;
         }
@@ -44,6 +79,9 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
             await unsubscribeFromThread();
         }
 
+        // Store the update callback
+        onThreadUpdateCallback = onUpdate || null;
+
         try {
             // Subscribe to thread updates (is_running changes, new messages)
             // Note: AgentThreadMessage.saved touches its parent AgentThread, so this covers message creation too
@@ -52,14 +90,17 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
             activeThreadId.value = thread.id;
 
             // Handle thread updates (is_running changes, new messages added)
-            threadUpdateCallback = async (eventData: ActionTargetItem) => {
+            threadPusherCallback = async (eventData: ActionTargetItem) => {
                 const data = eventData as AgentThreadEvent;
-                if (data.id === thread.id && template.value) {
-                    // Reload template to get fresh data including updated thread
-                    await reloadTemplate();
+                if (data.id === thread.id) {
+                    // Reload just the thread, not the entire template
+                    const updatedThread = await reloadThread(thread.id);
+                    if (updatedThread && onThreadUpdateCallback) {
+                        onThreadUpdateCallback(updatedThread);
+                    }
                 }
             };
-            pusher.onEvent("AgentThread", "updated", threadUpdateCallback);
+            pusher.onEvent("AgentThread", "updated", threadPusherCallback);
 
         } catch (error) {
             console.error("Failed to subscribe to collaboration thread:", error);
@@ -78,10 +119,13 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
             await pusher.unsubscribeFromModel("AgentThread", ["updated"], activeThreadId.value);
 
             // Remove event listener
-            if (threadUpdateCallback) {
-                pusher.offEvent("AgentThread", "updated", threadUpdateCallback);
-                threadUpdateCallback = null;
+            if (threadPusherCallback) {
+                pusher.offEvent("AgentThread", "updated", threadPusherCallback);
+                threadPusherCallback = null;
             }
+
+            // Clear the update callback
+            onThreadUpdateCallback = null;
 
             activeThreadId.value = null;
         } catch (error) {
@@ -104,23 +148,15 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
         lastReloadTime = now;
 
         try {
-            const response = await dxTemplateDefinition.routes.list({
-                filter: { id: template.value.id },
-                fields: {
-                    html_content: true,
-                    css_content: true,
-                    history: true,
-                    collaboration_threads: { messages: true },
-                    building_job_dispatch: true,
-                    pending_build_context: true,
-                    job_dispatch_count: true,
-                    template_variable_count: true
-                }
+            const result = await dxTemplateDefinition.routes.details(template.value, {
+                collaboration_threads: { chat_messages: true },
+                building_job_dispatch: true,
+                pending_build_context: true
             });
 
-            if (response.data && response.data.length > 0) {
+            if (result) {
                 // Update the template reference with fresh data
-                Object.assign(template.value, response.data[0]);
+                Object.assign(template.value, result);
             }
         } catch (error) {
             console.error("Failed to reload template:", error);
@@ -242,6 +278,7 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
         subscribeToJobDispatch,
         unsubscribeFromJobDispatch,
         reloadTemplate,
+        reloadThread,
         activeThreadId,
         activeTemplateId,
         activeJobDispatchId

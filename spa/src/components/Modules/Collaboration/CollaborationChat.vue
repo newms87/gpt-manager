@@ -140,14 +140,21 @@ function isSystemGeneratedPrompt(content: string): boolean {
 }
 
 /**
+ * Get messages from thread (chat_messages is always populated by the backend)
+ */
+const threadMessages = computed<AgentThreadMessage[]>(() => {
+	return props.thread.chat_messages || [];
+});
+
+/**
  * Sort messages by timestamp and filter out system-generated prompts
  * Hides auto-generated prompts that the user didn't write themselves
  */
 const visibleMessages = computed<AgentThreadMessage[]>(() => {
-	if (!props.thread.messages?.length) return [];
+	if (!threadMessages.value.length) return [];
 
 	// Sort messages by timestamp (oldest first)
-	const sortedMessages = [...props.thread.messages].sort((a, b) => {
+	const sortedMessages = [...threadMessages.value].sort((a, b) => {
 		const dateA = new Date(a.timestamp || a.created_at || 0).getTime();
 		const dateB = new Date(b.timestamp || b.created_at || 0).getTime();
 		return dateA - dateB;
@@ -260,7 +267,7 @@ function scrollToBottom() {
 
 // Watch for new messages and scroll to bottom
 watch(
-	() => props.thread.messages.length,
+	() => threadMessages.value.length,
 	() => {
 		scrollToBottom();
 	}

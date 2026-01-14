@@ -22,7 +22,8 @@ class TemplateCollaborationJob extends Job
     public function __construct(
         public AgentThread $thread,
         public string $message,
-        public ?int $attachmentId = null
+        public ?int $attachmentId = null,
+        public bool $skipAddMessage = false
     ) {
         static::logDebug("TemplateCollaborationJob created for thread {$thread->id}");
         parent::__construct();
@@ -45,7 +46,8 @@ class TemplateCollaborationJob extends Job
             app(TemplateCollaborationService::class)->processMessage(
                 $this->thread,
                 $this->message,
-                $attachment
+                $attachment,
+                $this->skipAddMessage
             );
         } finally {
             LockHelper::release($lockKey);

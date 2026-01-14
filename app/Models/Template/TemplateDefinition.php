@@ -21,10 +21,16 @@ use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
+use Newms87\Danx\Traits\HasRelationCountersTrait;
 
 class TemplateDefinition extends Model implements AuditableContract
 {
-    use ActionModelTrait, AuditableTrait, HasFactory, HasTags, SoftDeletes;
+    use ActionModelTrait, AuditableTrait, HasFactory, HasRelationCountersTrait, HasTags, SoftDeletes;
+
+    public array $relationCounters = [
+        TemplateVariable::class => ['templateVariables' => 'template_variables_count'],
+        JobDispatch::class      => ['jobDispatches' => 'job_dispatches_count'],
+    ];
 
     public const string TYPE_GOOGLE_DOCS = 'google_docs',
         TYPE_HTML                        = 'html';

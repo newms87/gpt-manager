@@ -34,65 +34,6 @@ class TemplateCollaborationService
     /** Key used in message data to identify system prompt messages */
     protected const string SYSTEM_PROMPT_DATA_KEY = 'is_system_prompt';
 
-    protected const string CONVERSATION_AGENT_INSTRUCTIONS = <<<'INSTRUCTIONS'
-You are a friendly template design assistant helping users create and modify HTML templates.
-
-## Your Responsibilities:
-1. ALWAYS respond with a helpful message to the user
-2. Understand what the user wants to do with their template
-3. If the user wants to modify the template, include an action in your response
-
-## Response Format:
-Always respond with a JSON object containing:
-
-```json
-{
-  "message": "Your conversational response to the user",
-  "action": {
-    "type": "update_template",
-    "context": "Detailed instructions for the HTML builder agent..."
-  }
-}
-```
-
-## Action Types:
-- `update_template`: When the user wants to modify the HTML/CSS template
-- If no action is needed (just conversation), omit the `action` field or set it to null
-
-## Guidelines for action.context:
-When the user wants template modifications, the context should include:
-- Complete description of what changes the user wants
-- Any specific styling requirements mentioned
-- Reference to the current template state if relevant
-- Any constraints or requirements the user specified
-
-## Example Responses:
-
-**User wants to change a color:**
-```json
-{
-  "message": "I'll update the header background color to blue for you. Give me just a moment!",
-  "action": {
-    "type": "update_template",
-    "context": "Change the header background color to blue (#0066cc). Keep all other styling the same."
-  }
-}
-```
-
-**User is just asking a question:**
-```json
-{
-  "message": "The data-var-* attributes are used to mark placeholders in your template that will be replaced with actual data. For example, data-var-customer_name would be replaced with the customer's actual name when the template is rendered."
-}
-```
-
-## Important:
-- Be friendly and conversational
-- If you need clarification, ask the user
-- Always confirm what you're going to do before including an action
-- The HTML builder agent is separate - you just provide context, it does the actual building
-INSTRUCTIONS;
-
     /**
      * Process a user message in a template collaboration thread.
      *
@@ -102,20 +43,24 @@ INSTRUCTIONS;
     public function processMessage(
         AgentThread $thread,
         string $message,
-        ?StoredFile $attachment = null
+        ?StoredFile $attachment = null,
+        bool $skipAddMessage = false
     ): void {
         static::logDebug('Processing collaboration message', [
-            'thread_id'      => $thread->id,
-            'message_length' => strlen($message),
-            'has_attachment' => $attachment !== null,
+            'thread_id'        => $thread->id,
+            'message_length'   => strlen($message),
+            'has_attachment'   => $attachment !== null,
+            'skip_add_message' => $skipAddMessage,
         ]);
 
         // Ensure the conversation agent instructions exist (only added once per thread)
         $this->ensureInstructionsExist($thread);
 
-        // Add the user message to the thread
-        $fileIds = $attachment ? [$attachment->id] : [];
-        app(ThreadRepository::class)->addMessageToThread($thread, $message, $fileIds);
+        // Add the user message to the thread (unless already added by caller)
+        if (!$skipAddMessage) {
+            $fileIds = $attachment ? [$attachment->id] : [];
+            app(ThreadRepository::class)->addMessageToThread($thread, $message, $fileIds);
+        }
 
         // Run the conversational agent
         $agent = $this->findOrCreateConversationAgent();
@@ -229,6 +174,20 @@ INSTRUCTIONS;
         // Check for action
         $action = $responseData['action'] ?? null;
 
+        // Extract the user-facing message and update the message content
+        // This ensures the frontend receives clean text instead of raw JSON
+        $userMessage = $responseData['message'] ?? null;
+        if ($userMessage) {
+            $responseMessage->content = $userMessage;
+
+            // Store the action in data for debugging/tracking if present
+            if ($action) {
+                $responseMessage->data = array_merge($responseMessage->data ?? [], ['action' => $action]);
+            }
+
+            $responseMessage->save();
+        }
+
         if ($action && is_array($action) && ($action['type'] ?? null) === 'update_template') {
             $context = $action['context'] ?? '';
 
@@ -278,6 +237,14 @@ INSTRUCTIONS;
     }
 
     /**
+     * Get the conversation agent instructions from the markdown file.
+     */
+    protected function getConversationAgentInstructions(): string
+    {
+        return file_get_contents(resource_path('prompts/templates/conversation-agent.md'));
+    }
+
+    /**
      * Build the conversation prompt with agent instructions.
      *
      * This is sent as a message before each user message to ensure the LLM
@@ -286,6 +253,6 @@ INSTRUCTIONS;
      */
     protected function buildConversationPrompt(): string
     {
-        return "# Conversation Agent Instructions\n\n" . self::CONVERSATION_AGENT_INSTRUCTIONS;
+        return "# Conversation Agent Instructions\n\n" . $this->getConversationAgentInstructions();
     }
 }

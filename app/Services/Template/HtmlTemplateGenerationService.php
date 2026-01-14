@@ -2,6 +2,7 @@
 
 namespace App\Services\Template;
 
+use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
@@ -33,48 +34,6 @@ class HtmlTemplateGenerationService
 
     protected const int DEFAULT_TIMEOUT = 300;
 
-    protected const string AGENT_INSTRUCTIONS = <<<'INSTRUCTIONS'
-You are an expert HTML template builder. Your role is to analyze PDF documents and images
-to create clean, semantic HTML templates with CSS styling.
-
-## Your Responsibilities:
-1. Analyze provided PDF/images to understand the document layout and structure
-2. Generate clean, semantic HTML that matches the document's visual layout
-3. Use `data-var-*` attributes for variable placeholders (e.g., `<span data-var-customer_name>Customer Name</span>`)
-4. Create scoped CSS that accurately styles the template
-5. Request screenshots when you need to see how your current template renders
-
-## Variable Placeholders:
-- Use `data-var-{variable_name}` attributes on elements that should be replaced with dynamic data
-- The element's inner content should be a descriptive placeholder (e.g., "Customer Name", "Order Total")
-- Variable names should be snake_case (e.g., customer_name, order_total, invoice_date)
-
-## Response Format:
-Always respond with a JSON object containing:
-- `html_content`: The HTML template markup
-- `css_content`: CSS styles for the template (use scoped class names)
-- `variable_names`: Array of variable names extracted from data-var-* attributes
-- `screenshot_request`: Object with screenshot request details, or false if not needed
-
-## Screenshot Requests:
-When you need to see how the current template renders in a browser, include a screenshot_request:
-```json
-{
-  "screenshot_request": {
-    "id": "unique-id",
-    "status": "pending",
-    "reason": "I need to see how the current layout renders"
-  }
-}
-```
-
-## Best Practices:
-- Keep HTML semantic and accessible
-- Use CSS classes, not inline styles
-- Ensure variable names are descriptive and consistent
-- Match the visual layout of the source document as closely as possible
-INSTRUCTIONS;
-
     /**
      * Start a new collaboration thread for template generation.
      *
@@ -102,17 +61,13 @@ INSTRUCTIONS;
 
         $agent = $this->findOrCreateTemplateBuilderAgent();
 
-        // Build initial prompt
-        $initialPrompt = $this->buildInitialPrompt($template, $sourceFiles, $userPrompt);
+        // Build simple user message (agent instructions are added via ensureInstructionsExist in TemplateCollaborationService)
+        $userMessage = $this->buildUserMessage($sourceFiles, $userPrompt);
 
-        // Get file IDs for attachment (may be empty)
-        $fileIds = $sourceFiles->pluck('id')->toArray();
-
-        // Create the thread using builder with collaboratable relationship
+        // Create the thread using builder with collaboratable relationship (no message yet)
         $thread = AgentThreadBuilderService::for($agent, $teamId)
             ->named("Template: {$template->name}")
             ->forCollaboratable($template)
-            ->withMessage($initialPrompt, $fileIds)
             ->build();
 
         static::logDebug('Collaboration thread created', [
@@ -120,6 +75,31 @@ INSTRUCTIONS;
             'thread_name' => $thread->name,
             'agent_id'    => $agent->id,
         ]);
+
+        // Add the user message IMMEDIATELY so frontend has it when thread is returned
+        // Include ALL file IDs, not just the first one
+        $fileIds = $sourceFiles->pluck('id')->toArray();
+        app(ThreadRepository::class)->addMessageToThread($thread, $userMessage, $fileIds);
+
+        // Dispatch job to process the message (skipAddMessage=true since we already added it)
+        $firstFileId = $sourceFiles->first()?->id;
+        $job         = new TemplateCollaborationJob($thread, $userMessage, $firstFileId, skipAddMessage: true);
+        $job->dispatch();
+
+        // Attach job dispatch to template for Jobs tab tracking
+        $jobDispatch = $job->getJobDispatch();
+        if ($jobDispatch) {
+            $template->jobDispatches()->attach($jobDispatch->id);
+            $template->updateRelationCounter('jobDispatches');
+        }
+
+        static::logDebug('Initial collaboration job dispatched', [
+            'thread_id'       => $thread->id,
+            'job_dispatch_id' => $jobDispatch?->id,
+        ]);
+
+        // Load messages so frontend has them immediately
+        $thread->load('messages');
 
         return $thread;
     }
@@ -308,65 +288,40 @@ INSTRUCTIONS;
     }
 
     /**
-     * Build the initial prompt for starting collaboration.
+     * Build a simple user message for the initial collaboration message.
+     *
+     * This creates the actual user message that will be displayed in the chat.
+     * Agent instructions are added separately via TemplateCollaborationService::ensureInstructionsExist().
      *
      * @param  Collection<StoredFile>  $sourceFiles
      * @param  string|null  $userPrompt  Optional user-provided prompt
      */
-    protected function buildInitialPrompt(TemplateDefinition $template, Collection $sourceFiles, ?string $userPrompt = null): string
+    protected function buildUserMessage(Collection $sourceFiles, ?string $userPrompt = null): string
     {
-        $prompt = "# Template Generation Request\n\n";
-        $prompt .= "## Template Information\n";
-        $prompt .= "- **Name:** {$template->name}\n";
+        $hasFiles  = $sourceFiles->isNotEmpty();
+        $hasPrompt = !empty($userPrompt);
 
-        if ($template->description) {
-            $prompt .= "- **Description:** {$template->description}\n";
+        if ($hasPrompt && $hasFiles) {
+            return "Please analyze the attached files and help me create a template. {$userPrompt}";
         }
 
-        $prompt .= "\n";
-
-        // Add source files section if files are provided
-        if ($sourceFiles->isNotEmpty()) {
-            $fileDescriptions = $sourceFiles->map(fn(StoredFile $file) => "- {$file->filename} ({$file->mime})")->implode("\n");
-            $prompt .= "## Source Files\n";
-            $prompt .= "The following files have been provided for analysis:\n";
-            $prompt .= "{$fileDescriptions}\n\n";
+        if ($hasPrompt) {
+            return $userPrompt;
         }
 
-        // Add user prompt if provided
-        if (!empty($userPrompt)) {
-            $prompt .= "## User Request\n";
-            $prompt .= "{$userPrompt}\n\n";
+        if ($hasFiles) {
+            return 'Please analyze the attached files and help me create an HTML template based on them.';
         }
 
-        $prompt .= "## Instructions\n";
-        $prompt .= "{$this->getAgentInstructions()}\n\n";
-
-        $prompt .= "## Your Task\n";
-
-        if ($sourceFiles->isNotEmpty()) {
-            $prompt .= "1. Analyze the provided PDF/images to understand the document structure and layout\n";
-            $prompt .= "2. Generate an initial HTML template that matches the document layout\n";
-            $prompt .= "3. Create CSS styles that accurately represent the visual design\n";
-            $prompt .= "4. Identify variable placeholders and use data-var-* attributes\n";
-        } else {
-            $prompt .= "1. Based on the user's description, design an appropriate HTML template structure\n";
-            $prompt .= "2. Generate clean, semantic HTML with appropriate layout\n";
-            $prompt .= "3. Create CSS styles that match the described requirements\n";
-            $prompt .= "4. Identify likely variable placeholders and use data-var-* attributes\n";
-        }
-
-        $prompt .= "\nPlease provide your response in the JSON format specified in the instructions.";
-
-        return $prompt;
+        return 'Please help me create an HTML template.';
     }
 
     /**
-     * Get the agent instructions for template building.
+     * Get the agent instructions for template building from the markdown file.
      */
     protected function getAgentInstructions(): string
     {
-        return self::AGENT_INSTRUCTIONS;
+        return file_get_contents(resource_path('prompts/templates/generation-agent.md'));
     }
 
     /**

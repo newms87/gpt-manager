@@ -155,6 +155,7 @@ class TemplateDefinitionService
         // Attach job dispatch to template for Jobs tab tracking
         if ($jobDispatch && $thread->collaboratable instanceof TemplateDefinition) {
             $thread->collaboratable->jobDispatches()->attach($jobDispatch->id);
+            $thread->collaboratable->updateRelationCounter('jobDispatches');
         }
 
         return [

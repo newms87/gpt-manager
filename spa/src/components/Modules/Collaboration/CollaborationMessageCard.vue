@@ -82,13 +82,14 @@
 				/>
 
 				<!-- Additional data section -->
-				<template v-if="message.data && !screenshotRequest && !isThinking">
+				<template v-if="message.data && Object.keys(message.data).length > 0 && !screenshotRequest && !isThinking">
 					<div class="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-4 mb-2">Data</div>
 					<CodeViewer
 						:model-value="message.data"
 						format="yaml"
 						:can-edit="false"
 						theme="light"
+						collapsible
 					/>
 				</template>
 
