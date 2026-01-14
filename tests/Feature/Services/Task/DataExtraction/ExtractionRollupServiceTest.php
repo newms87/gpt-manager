@@ -691,4 +691,170 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
         $this->assertCount(1, $objects);
         $this->assertEquals('Client', $objects[0]['type']);
     }
+
+    // =========================================================================
+    // Schema-Defined Cardinality Tests
+    // =========================================================================
+
+    #[Test]
+    public function rollup_nests_single_child_as_object_when_schema_defines_object_type(): void
+    {
+        // Given: Parent with single child where schema defines object type (is_array_type: false)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Demand ABC'],
+            parentId: null,
+            parentType: null
+        );
+
+        // Child with is_array_type: false - schema says this is a single object relationship
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Client', 'name' => 'Single Client'],
+            parentId: 1,
+            parentType: 'Demand',
+            relationshipKey: 'client',
+            isArrayType: false  // Schema defines this as a single object, NOT an array
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Child is nested as a single object, NOT an array
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
+
+        $this->assertArrayHasKey('client', $demandInResult);
+        // Critical: Should be an object, NOT an array
+        $this->assertIsArray($demandInResult['client']);
+        $this->assertArrayHasKey('id', $demandInResult['client'], 'Client should be a single object with id, not an array');
+        $this->assertEquals(2, $demandInResult['client']['id']);
+        $this->assertEquals('Client', $demandInResult['client']['type']);
+        $this->assertEquals('Single Client', $demandInResult['client']['name']);
+    }
+
+    #[Test]
+    public function rollup_nests_single_child_as_array_when_schema_defines_array_type(): void
+    {
+        // Given: Parent with single child where schema defines array type (is_array_type: true)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Demand XYZ'],
+            parentId: null,
+            parentType: null
+        );
+
+        // Single child but schema says it's an array type
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'name' => 'Solo Provider'],
+            parentId: 1,
+            parentType: 'Demand',
+            relationshipKey: 'providers',
+            isArrayType: true  // Schema defines this as an array, even with single child
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Child is nested as an array (even though there's only one)
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
+
+        $this->assertArrayHasKey('providers', $demandInResult);
+        // Critical: Should be an array, NOT a single object
+        $this->assertIsArray($demandInResult['providers']);
+        $this->assertCount(1, $demandInResult['providers']);
+        $this->assertEquals(2, $demandInResult['providers'][0]['id']);
+        $this->assertEquals('Solo Provider', $demandInResult['providers'][0]['name']);
+    }
+
+    // =========================================================================
+    // Object ID Deduplication Tests
+    // =========================================================================
+
+    #[Test]
+    public function rollup_deduplicates_same_object_id_from_multiple_artifacts(): void
+    {
+        // Given: Parent object
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Test Demand'],
+            parentId: null,
+            parentType: null
+        );
+
+        // Same child object ID appears in multiple artifacts (identity + remaining extraction)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'name' => 'Provider Alpha'],
+            parentId: 1,
+            parentType: 'Demand',
+            operation: 'Extract Identity',
+            relationshipKey: 'providers',
+            isArrayType: true
+        );
+
+        // Same object ID (2) from a different artifact (e.g., remaining data extraction)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'specialty' => 'Orthopedics'],
+            parentId: 1,
+            parentType: 'Demand',
+            operation: 'Extract Remaining',
+            relationshipKey: 'providers',
+            isArrayType: true
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Only one instance of the object appears in the rollup (deduplicated)
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
+
+        $this->assertArrayHasKey('providers', $demandInResult);
+        // Critical: Should have only 1 provider, not 2 (deduplicated by object ID)
+        $this->assertCount(1, $demandInResult['providers'], 'Same object ID should appear only once');
+        $this->assertEquals(2, $demandInResult['providers'][0]['id']);
+
+        // Summary should count only 2 unique objects (Demand + Provider)
+        $summary = $this->parentArtifact->json_content['summary'];
+        $this->assertEquals(2, $summary['total_objects']);
+    }
+
+    #[Test]
+    public function rollup_merges_data_from_duplicate_object_id_artifacts(): void
+    {
+        // Given: Same object extracted by identity and remaining operations
+        // Identity extraction gets name
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'John Smith'],
+            parentId: null,
+            parentType: null,
+            operation: 'Extract Identity'
+        );
+
+        // Remaining extraction gets additional fields for same object
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'email' => 'john@example.com', 'phone' => '555-1234'],
+            parentId: null,
+            parentType: null,
+            operation: 'Extract Remaining'
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Data from both artifacts is merged into single object
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
+
+        // Should have only 1 object (merged)
+        $this->assertCount(1, $objects);
+        $clientObject = $objects[0];
+
+        // Should have merged data from both artifacts
+        $this->assertEquals(1, $clientObject['id']);
+        $this->assertEquals('Client', $clientObject['type']);
+        $this->assertEquals('John Smith', $clientObject['name']);
+        $this->assertEquals('john@example.com', $clientObject['email']);
+        $this->assertEquals('555-1234', $clientObject['phone']);
+
+        // Summary should count as 1 object
+        $this->assertEquals(1, $this->parentArtifact->json_content['summary']['total_objects']);
+    }
 }

@@ -1512,6 +1512,214 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     }
 
     // =========================================================================
+    // formatValueAsName() tests
+    // =========================================================================
+
+    #[Test]
+    public function formatValueAsName_formats_boolean_true_as_yes(): void
+    {
+        // Given: A boolean true value
+        $value = true;
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns "Yes"
+        $this->assertEquals('Yes', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_boolean_false_as_no(): void
+    {
+        // Given: A boolean false value
+        $value = false;
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns "No"
+        $this->assertEquals('No', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_string_true_as_yes(): void
+    {
+        // Given: A string "true" value
+        $value = 'true';
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns "Yes"
+        $this->assertEquals('Yes', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_string_false_as_no(): void
+    {
+        // Given: A string "false" value
+        $value = 'false';
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns "No"
+        $this->assertEquals('No', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_date_as_human_readable(): void
+    {
+        // Given: An ISO date string
+        $value = '2017-10-31';
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns human-readable date "October 31st, 2017"
+        $this->assertEquals('October 31st, 2017', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_integer_with_thousands_separator(): void
+    {
+        // Given: A large integer
+        $value = 1000000;
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns formatted with thousands separator
+        $this->assertEquals('1,000,000', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_formats_float_with_decimals_and_thousands_separator(): void
+    {
+        // Given: A large float with decimals
+        $value = 1000.33;
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns formatted with thousands separator and 2 decimals
+        $this->assertEquals('1,000.33', $result);
+    }
+
+    #[Test]
+    public function formatValueAsName_preserves_regular_strings(): void
+    {
+        // Given: A regular string value
+        $value = 'John Smith';
+
+        // When: Formatting as name
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'formatValueAsName',
+            [$value]
+        );
+
+        // Then: Returns the string unchanged
+        $this->assertEquals('John Smith', $result);
+    }
+
+    #[Test]
+    public function looksLikeDate_detects_iso_date_format(): void
+    {
+        // Given: An ISO date string (YYYY-MM-DD)
+        $value = '2017-10-31';
+
+        // When: Checking if it looks like a date
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'looksLikeDate',
+            [$value]
+        );
+
+        // Then: Returns true
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function looksLikeDate_detects_us_date_format(): void
+    {
+        // Given: A US date string (MM/DD/YYYY)
+        $value = '10/31/2017';
+
+        // When: Checking if it looks like a date
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'looksLikeDate',
+            [$value]
+        );
+
+        // Then: Returns true
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function looksLikeDate_returns_false_for_regular_string(): void
+    {
+        // Given: A regular string that is not a date
+        $value = 'John Smith';
+
+        // When: Checking if it looks like a date
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'looksLikeDate',
+            [$value]
+        );
+
+        // Then: Returns false
+        $this->assertFalse($result);
+    }
+
+    #[Test]
+    public function looksLikeDate_returns_false_for_numeric_string(): void
+    {
+        // Given: A numeric string that could be confused with a date
+        $value = '12345';
+
+        // When: Checking if it looks like a date
+        $result = $this->invokeProtectedMethod(
+            $this->service,
+            'looksLikeDate',
+            [$value]
+        );
+
+        // Then: Returns false
+        $this->assertFalse($result);
+    }
+
+    // =========================================================================
     // Helper methods
     // =========================================================================
 
