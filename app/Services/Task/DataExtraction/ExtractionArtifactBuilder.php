@@ -38,24 +38,40 @@ class ExtractionArtifactBuilder
     ): array {
         $extractedData = $extractionResult['data'] ?? [];
 
+        // Get parent object info from ancestor chain (last ancestor is immediate parent)
+        $ancestors    = $this->getAncestorChain($teamObject);
+        $parentObject = !empty($ancestors) ? end($ancestors) : null;
+
+        // Get the actual relationship key from the fragment_selector (schema is source of truth)
+        $fragmentSelectorService = app(FragmentSelectorService::class);
+        $fragmentSelector        = $group['fragment_selector'] ?? [];
+        $objectType              = $group['object_type']       ?? '';
+        $relationshipKey         = $fragmentSelectorService->getLeafKey($fragmentSelector, $objectType);
+        $isArrayType             = $fragmentSelectorService->isLeafArrayType($group);
+
         // If no page sources, create single artifact from all data
         if (empty($pageSources)) {
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $extractedData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
-                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-                    'search_query'    => $extractionResult['search_query'] ?? null,
-                    'was_existing'    => $matchId !== null,
-                    'match_id'        => $matchId,
-                    'task_process_id' => $taskProcess->id,
-                    'level'           => $level,
-                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'search_query'     => $extractionResult['search_query'] ?? null,
+                    'was_existing'     => $matchId !== null,
+                    'match_id'         => $matchId,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'identity_group'   => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -94,21 +110,26 @@ class ExtractionArtifactBuilder
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Identity: {$group['object_type']} - Page {$pageNumber}",
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $pageData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
-                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-                    'page_number'     => $pageNumber,
-                    'source_fields'   => array_keys($pageData),
-                    'search_query'    => $extractionResult['search_query'] ?? null,
-                    'was_existing'    => $matchId !== null,
-                    'match_id'        => $matchId,
-                    'task_process_id' => $taskProcess->id,
-                    'level'           => $level,
-                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'page_number'      => $pageNumber,
+                    'source_fields'    => array_keys($pageData),
+                    'search_query'     => $extractionResult['search_query'] ?? null,
+                    'was_existing'     => $matchId !== null,
+                    'match_id'         => $matchId,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'identity_group'   => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -135,19 +156,24 @@ class ExtractionArtifactBuilder
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Identity: {$group['object_type']} - " . ($teamObject->name ?? 'Unknown'),
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $extractedData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
-                    'operation'       => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-                    'search_query'    => $extractionResult['search_query'] ?? null,
-                    'was_existing'    => $matchId !== null,
-                    'match_id'        => $matchId,
-                    'task_process_id' => $taskProcess->id,
-                    'level'           => $level,
-                    'identity_group'  => $group['name'] ?? $group['object_type'],
+                    'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
+                    'search_query'     => $extractionResult['search_query'] ?? null,
+                    'was_existing'     => $matchId !== null,
+                    'match_id'         => $matchId,
+                    'task_process_id'  => $taskProcess->id,
+                    'level'            => $level,
+                    'identity_group'   => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -183,15 +209,27 @@ class ExtractionArtifactBuilder
         string $searchMode,
         ?array $pageSources = null
     ): array {
+        // Get parent object info from ancestor chain (last ancestor is immediate parent)
+        $ancestors    = $this->getAncestorChain($teamObject);
+        $parentObject = !empty($ancestors) ? end($ancestors) : null;
+
+        // Get the actual relationship key from the fragment_selector (schema is source of truth)
+        $fragmentSelectorService = app(FragmentSelectorService::class);
+        $fragmentSelector        = $group['fragment_selector'] ?? [];
+        $objectType              = $group['object_type']       ?? '';
+        $relationshipKey         = $fragmentSelectorService->getLeafKey($fragmentSelector, $objectType);
+        $isArrayType             = $fragmentSelectorService->isLeafArrayType($group);
+
         // If no page sources, create single artifact from all data
         if (empty($pageSources)) {
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $extractedData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
                     'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
@@ -199,6 +237,10 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -237,10 +279,11 @@ class ExtractionArtifactBuilder
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Remaining: {$group['name']} - Page {$pageNumber}",
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $pageData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
                     'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
@@ -250,6 +293,10 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -276,10 +323,11 @@ class ExtractionArtifactBuilder
             $artifact = $this->createArtifact(
                 taskRun: $taskRun,
                 name: "Remaining: {$group['name']} - " . ($teamObject->name ?? 'Unknown'),
-                jsonContent: $this->buildHierarchicalJson(
+                jsonContent: $this->buildHierarchicalJsonFromAncestors(
                     teamObject: $teamObject,
                     extractedData: $extractedData,
-                    group: $group
+                    group: $group,
+                    ancestors: $ancestors
                 ),
                 meta: [
                     'operation'        => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
@@ -287,6 +335,10 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
+                    'parent_id'        => $parentObject?->id,
+                    'parent_type'      => $parentObject?->type,
+                    'relationship_key' => $relationshipKey,
+                    'is_array_type'    => $isArrayType,
                 ]
             );
 
@@ -309,14 +361,17 @@ class ExtractionArtifactBuilder
 
     /**
      * Build hierarchical JSON structure for artifact content.
-     * Uses DB relationships via team_object_relationships table to build ancestor chain.
+     * Uses pre-computed ancestor chain to avoid duplicate DB queries.
      * Root objects (no ancestors): flat structure
      * Child objects: nested under full ancestor hierarchy
+     *
+     * @param  array<TeamObject>  $ancestors  Pre-computed ancestor chain [root, ..., immediate parent]
      */
-    protected function buildHierarchicalJson(
+    protected function buildHierarchicalJsonFromAncestors(
         TeamObject $teamObject,
         array $extractedData,
-        array $group
+        array $group,
+        array $ancestors
     ): array {
         $objectType       = $group['object_type']       ?? '';
         $fragmentSelector = $group['fragment_selector'] ?? [];
@@ -328,9 +383,6 @@ class ExtractionArtifactBuilder
             ['id' => $teamObject->id, 'type' => $objectType],
             $extractedData
         );
-
-        // Get ancestors from actual DB relationships
-        $ancestors = $this->getAncestorChain($teamObject);
 
         // If no ancestors, this is a root object - return flat structure
         if (empty($ancestors)) {

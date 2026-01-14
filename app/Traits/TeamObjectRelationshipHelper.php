@@ -3,9 +3,10 @@
 namespace App\Traits;
 
 use App\Models\TeamObject\TeamObject;
+use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 
 /**
- * Helper trait for traversing TeamObject relationships.
+ * Helper trait for traversing and managing TeamObject relationships.
  */
 trait TeamObjectRelationshipHelper
 {
@@ -34,5 +35,36 @@ trait TeamObjectRelationshipHelper
         }
 
         return $chain;
+    }
+
+    /**
+     * Resolve the root object (level 0 ancestor) from a parent object.
+     *
+     * The root object is always the top-level object in the hierarchy (e.g., Demand).
+     * - If parent has a root_object_id, that points to the root
+     * - If parent has no root_object_id, then parent IS the root
+     */
+    protected function resolveRootObject(TeamObject $parentObject): TeamObject
+    {
+        if ($parentObject->root_object_id) {
+            $root = TeamObject::find($parentObject->root_object_id);
+            if ($root) {
+                return $root;
+            }
+        }
+
+        return $parentObject;
+    }
+
+    /**
+     * Ensure a parent-child relationship exists between two TeamObjects.
+     * Creates the relationship if it doesn't already exist.
+     *
+     * @param  string  $relationshipName  The exact relationship name from the schema (e.g., "providers", "care_summary")
+     */
+    protected function ensureParentRelationship(TeamObject $parent, TeamObject $child, string $relationshipName): void
+    {
+        app(JSONSchemaDataToDatabaseMapper::class)
+            ->saveTeamObjectRelationship($parent, $relationshipName, $child);
     }
 }

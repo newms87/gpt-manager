@@ -11,6 +11,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
+use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
 use App\Services\Task\DataExtraction\GroupExtractionService;
 use App\Services\Task\DataExtraction\RemainingExtractionService;
 use Mockery;
@@ -176,6 +177,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'city'    => 'Springfield',
         ];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify skim mode is called
@@ -250,6 +256,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'state'   => 'OR',
         ];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify exhaustive mode is called
@@ -309,6 +320,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         $extractedData = ['field' => 'value'];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
@@ -374,6 +390,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'email' => 'client@example.com',
             'phone' => '555-1234',
         ];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         // Mock GroupExtractionService and verify updateTeamObjectWithExtractedData is called
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData, $teamObject) {
@@ -442,6 +463,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $extractedData = ['phone' => '555-0000'];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
@@ -498,6 +524,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'name'        => 'Empty Group',
             'object_type' => 'Client',
         ];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         // Mock GroupExtractionService to return empty data
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) {
@@ -558,6 +589,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         $extractedData = ['claim_amount' => 50000];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
@@ -613,6 +649,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         $extractedData = ['location' => 'Highway 101'];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
@@ -691,6 +732,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
                 ['name' => 'Surgery', 'description' => 'Scheduled for next month'],
             ],
         ];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
@@ -784,6 +830,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
                 ['name' => 'Neck Pain', 'area' => 'Cervical'],
             ],
         ];
+
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
@@ -898,6 +949,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             ],
         ];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
@@ -1003,6 +1059,11 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             ],
         ];
 
+        // Mock ExtractionProcessOrchestrator
+        $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
+        });
+
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             $mock->shouldReceive('extractExhaustive')
@@ -1056,5 +1117,197 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('Complaint', $resolvedObjects);
         $this->assertCount(1, $resolvedObjects['Complaint']);
         $this->assertEquals($existingChild->id, $resolvedObjects['Complaint'][0]);
+    }
+
+    // =========================================================================
+    // createOrUpdateTeamObject() - Parent-child relationship tests
+    // =========================================================================
+
+    #[Test]
+    public function createOrUpdateTeamObject_creates_relationship_when_creating_new_child(): void
+    {
+        // Given: A parent TeamObject exists
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'CareSummary',
+            'name'    => 'Test Care Summary',
+        ]);
+
+        // When: Creating a new child object with schema-defined relationship key
+        $itemData = ['name' => 'Physical Therapy', 'description' => 'Weekly sessions'];
+        $result   = $this->invokeProtectedMethod(
+            $this->service,
+            'createOrUpdateTeamObject',
+            [
+                $this->taskRun,
+                'Treatment',  // objectType
+                $itemData,
+                null,  // existingId (null = new object)
+                $parentObject->id,  // parentObjectId
+                'treatments',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: A TeamObject is created
+        $this->assertInstanceOf(TeamObject::class, $result);
+        $this->assertEquals('Treatment', $result->type);
+        $this->assertEquals('Physical Therapy', $result->name);
+
+        // And: A TeamObjectRelationship is created using schema-defined key
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $result->id,
+            'relationship_name'      => 'treatments',  // Uses schema-defined key
+        ]);
+    }
+
+    #[Test]
+    public function createOrUpdateTeamObject_creates_relationship_when_updating_existing_child(): void
+    {
+        // Given: A parent TeamObject and an existing child TeamObject
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'CareSummary',
+            'name'    => 'Test Care Summary',
+        ]);
+
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment',
+            'name'    => 'Existing Treatment',
+        ]);
+
+        // Note: No relationship exists yet between parent and existing child
+
+        // When: Updating the existing child with a parent reference
+        $itemData = ['name' => 'Updated Treatment', 'description' => 'Revised treatment plan'];
+        $result   = $this->invokeProtectedMethod(
+            $this->service,
+            'createOrUpdateTeamObject',
+            [
+                $this->taskRun,
+                'Treatment',  // objectType
+                $itemData,
+                $existingChild->id,  // existingId (existing object to update)
+                $parentObject->id,  // parentObjectId
+                'treatments',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: The existing TeamObject is returned (not a new one)
+        $this->assertInstanceOf(TeamObject::class, $result);
+        $this->assertEquals($existingChild->id, $result->id);
+
+        // And: A TeamObjectRelationship is created (ensured) linking parent to child
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'treatments',
+        ]);
+    }
+
+    #[Test]
+    public function createOrUpdateTeamObject_uses_schema_defined_relationship_key(): void
+    {
+        // Given: A parent TeamObject exists
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Test Provider',
+        ]);
+
+        // When: Creating a child object with a schema-defined relationship key
+        // The relationshipKey parameter comes directly from the schema
+        $itemData = ['name' => 'Visit on 2024-01-15'];
+        $result   = $this->invokeProtectedMethod(
+            $this->service,
+            'createOrUpdateTeamObject',
+            [
+                $this->taskRun,
+                'DateOfService',  // PascalCase objectType
+                $itemData,
+                null,
+                $parentObject->id,
+                'dates_of_service',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: Relationship name uses schema-defined key (not derived from type)
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $result->id,
+            'relationship_name'      => 'dates_of_service',  // Uses schema-defined key
+        ]);
+    }
+
+    #[Test]
+    public function createOrUpdateTeamObject_does_not_duplicate_relationship_when_already_exists(): void
+    {
+        // Given: A parent TeamObject and child with existing relationship
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'CareSummary',
+            'name'    => 'Test Care Summary',
+        ]);
+
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Treatment',
+            'name'    => 'Existing Treatment',
+        ]);
+
+        // Create the relationship first with schema-defined key "treatments"
+        TeamObjectRelationship::create([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'treatments',
+        ]);
+
+        $initialCount = TeamObjectRelationship::where([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'treatments',
+        ])->count();
+
+        // When: Updating the existing child (relationship already exists)
+        $itemData = ['name' => 'Updated Treatment'];
+        $this->invokeProtectedMethod(
+            $this->service,
+            'createOrUpdateTeamObject',
+            [
+                $this->taskRun,
+                'Treatment',
+                $itemData,
+                $existingChild->id,
+                $parentObject->id,
+                'treatments',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: No duplicate relationship created
+        $finalCount = TeamObjectRelationship::where([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'treatments',
+        ])->count();
+
+        $this->assertEquals($initialCount, $finalCount);
+        $this->assertEquals(1, $finalCount);
+    }
+
+    // =========================================================================
+    // Helper methods
+    // =========================================================================
+
+    /**
+     * Invoke a protected method on an object for testing.
+     */
+    private function invokeProtectedMethod(object $object, string $methodName, array $parameters = []): mixed
+    {
+        $reflection = new \ReflectionClass($object);
+        $method     = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($object, $parameters);
     }
 }

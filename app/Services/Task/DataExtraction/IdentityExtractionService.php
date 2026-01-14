@@ -15,6 +15,7 @@ use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
 use App\Traits\SchemaFieldHelper;
 use App\Traits\TeamObjectRelationshipHelper;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Symfony\Component\Yaml\Yaml;
@@ -76,7 +77,7 @@ class IdentityExtractionService
         }
 
         // Get all artifacts from parent output artifact for context expansion
-        $allArtifacts = $this->getAllArtifactsFromParent($taskRun);
+        $allArtifacts = app(ExtractionProcessOrchestrator::class)->getAllPageArtifacts($taskRun);
 
         // Resolve parent object context
         [$parentObjectId, $possibleParentIds] = $this->resolveParentContext($taskProcess, $identityGroup, $level);
@@ -265,6 +266,10 @@ class IdentityExtractionService
             return null;
         }
 
+        // Add name to identification data BEFORE duplicate resolution
+        // DuplicateRecordResolver.findCandidates() uses extractedData['name'] for exact matching
+        $identificationData['name'] = $name;
+
         // Build extraction result with per-object search query
         $itemExtractionResult = [
             'data'         => $identificationData,
@@ -280,6 +285,9 @@ class IdentityExtractionService
             parentObjectId: $parentObjectId
         );
 
+        // Get relationship key from fragment_selector (schema is source of truth)
+        $relationshipKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
+
         // Create or use existing TeamObject
         $teamObject = $this->resolveOrCreateTeamObject(
             taskRun: $taskRun,
@@ -287,7 +295,8 @@ class IdentityExtractionService
             identificationData: $identificationData,
             name: $name,
             existingId: $matchId,
-            parentObjectId: $parentObjectId
+            parentObjectId: $parentObjectId,
+            relationshipKey: $relationshipKey
         );
 
         // Store resolved object ID for dependent processes
@@ -410,6 +419,10 @@ class IdentityExtractionService
                 continue;
             }
 
+            // Add name to item data BEFORE duplicate resolution
+            // DuplicateRecordResolver.findCandidates() uses extractedData['name'] for exact matching
+            $itemData['name'] = $name;
+
             // Build item-specific extraction result with per-object search query
             $itemExtractionResult = [
                 'data'         => $itemData,
@@ -426,13 +439,15 @@ class IdentityExtractionService
             );
 
             // Create or use existing TeamObject
+            // $leafKey is the relationship key from the schema (computed at start of method)
             $teamObject = $this->resolveOrCreateTeamObject(
                 taskRun: $taskRun,
                 objectType: $objectType,
                 identificationData: $itemData,
                 name: $name,
                 existingId: $matchId,
-                parentObjectId: $parentObjectId
+                parentObjectId: $parentObjectId,
+                relationshipKey: $leafKey
             );
 
             $createdObjects[] = $teamObject;
@@ -1301,11 +1316,24 @@ class IdentityExtractionService
         // Normalize to ensure we have the expected array format.
         $searchQueries = $this->normalizeSearchQueries($searchQuery, $extractedData);
 
+        // Resolve the actual root object ID for duplicate scoping.
+        // DuplicateRecordResolver filters by root_object_id, which is the level 0 root (e.g., Demand),
+        // not the immediate parent. We need to look up the parent's root_object_id.
+        $rootObjectId = null;
+        if ($parentObjectId) {
+            $parentObject = TeamObject::find($parentObjectId);
+            if ($parentObject) {
+                // If parent has a root_object_id, use that (parent is not the root)
+                // If parent has no root_object_id, then parent IS the root
+                $rootObjectId = $parentObject->root_object_id ?? $parentObject->id;
+            }
+        }
+
         $resolver = app(DuplicateRecordResolver::class);
         $result   = $resolver->findCandidates(
             objectType: $identityGroup['object_type'],
             searchQueries: $searchQueries,
-            parentObjectId: $parentObjectId,
+            rootObjectId: $rootObjectId,
             schemaDefinitionId: $taskRun->taskDefinition->schema_definition_id,
             extractedData: $extractedData,
             identityFields: $identityGroup['identity_fields'] ?? []
@@ -1369,6 +1397,11 @@ class IdentityExtractionService
 
     /**
      * Resolve existing or create new TeamObject.
+     *
+     * Sets up the mapper with rootObject (the level 0 root, e.g., Demand) stored in root_object_id column.
+     * Creates a TeamObjectRelationship linking the parent to this child object.
+     *
+     * @param  string  $relationshipKey  The exact relationship name from the schema (e.g., "providers", "care_summary")
      */
     protected function resolveOrCreateTeamObject(
         TaskRun $taskRun,
@@ -1376,9 +1409,11 @@ class IdentityExtractionService
         array $identificationData,
         string $name,
         ?int $existingId,
-        ?int $parentObjectId
+        ?int $parentObjectId,
+        string $relationshipKey
     ): TeamObject {
-        $mapper = app(JSONSchemaDataToDatabaseMapper::class);
+        $mapper       = app(JSONSchemaDataToDatabaseMapper::class);
+        $parentObject = $parentObjectId ? TeamObject::find($parentObjectId) : null;
 
         if ($taskRun->taskDefinition->schemaDefinition) {
             $mapper->setSchemaDefinition($taskRun->taskDefinition->schemaDefinition);
@@ -1391,16 +1426,18 @@ class IdentityExtractionService
                 $mapper->updateTeamObject($teamObject, $identificationData);
                 $this->saveIdentityFieldsAsAttributes($mapper, $teamObject, $identificationData);
 
+                // Ensure relationship exists even for existing objects
+                if ($parentObject) {
+                    $this->ensureParentRelationship($parentObject, $teamObject, $relationshipKey);
+                }
+
                 return $teamObject;
             }
         }
 
-        // Set up parent object context if needed
-        if ($parentObjectId) {
-            $parentObject = TeamObject::find($parentObjectId);
-            if ($parentObject) {
-                $mapper->setRootObject($parentObject);
-            }
+        // Set up root object context if we have a parent
+        if ($parentObject) {
+            $mapper->setRootObject($this->resolveRootObject($parentObject));
         }
 
         // Ensure the identificationData has the resolved name to prevent empty string from being
@@ -1410,6 +1447,11 @@ class IdentityExtractionService
         $teamObject = $mapper->createTeamObject($objectType, $name, $identificationData);
 
         $this->saveIdentityFieldsAsAttributes($mapper, $teamObject, $identificationData);
+
+        // Create relationship linking parent to this child
+        if ($parentObject) {
+            $this->ensureParentRelationship($parentObject, $teamObject, $relationshipKey);
+        }
 
         return $teamObject;
     }
@@ -1468,6 +1510,12 @@ class IdentityExtractionService
      * Prefers the literal 'name' field if it exists and has a value, then falls back
      * to iterating through identity_fields in order. This prevents cases where
      * identity_fields = ["date", "name"] would incorrectly use the date as the name.
+     *
+     * When borrowing a non-string identity field value, formats it as a human-readable name:
+     * - Dates: "2017-10-31" -> "October 31st, 2017"
+     * - Booleans: true -> "Yes", false -> "No"
+     * - Numbers: 1000.33 -> "1,000.33"
+     * - Integers: 50000 -> "50,000"
      */
     protected function resolveObjectName(array $identificationData, array $identityFields): ?string
     {
@@ -1476,17 +1524,91 @@ class IdentityExtractionService
             return $identificationData['name'];
         }
 
-        // Fall back to first non-empty identity field
+        // Fall back to first non-empty identity field, formatted for human readability
         foreach ($identityFields as $field) {
             if ($field === 'name') {
                 continue; // Already checked above
             }
-            if (!empty($identificationData[$field]) && is_string($identificationData[$field])) {
-                return $identificationData[$field];
+
+            $value = $identificationData[$field] ?? null;
+
+            if ($value === null || $value === '') {
+                continue;
             }
+
+            return $this->formatValueAsName($value);
         }
 
         return null;
+    }
+
+    /**
+     * Format a value as a human-readable name string.
+     * Used when borrowing identity field values for the name.
+     *
+     * @return string The formatted name
+     */
+    protected function formatValueAsName(mixed $value): string
+    {
+        // Handle boolean
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        // Handle string "true"/"false"
+        if (is_string($value) && in_array(strtolower($value), ['true', 'false'], true)) {
+            return strtolower($value) === 'true' ? 'Yes' : 'No';
+        }
+
+        // Handle dates - try to parse and format (check before numeric to handle date strings)
+        if (is_string($value) && $this->looksLikeDate($value)) {
+            try {
+                $date = Carbon::parse($value);
+
+                // Format as "October 31st, 2017"
+                return $date->format('F jS, Y');
+            } catch (Exception) {
+                // If parsing fails, return as-is
+                return $value;
+            }
+        }
+
+        // Handle numeric values
+        if (is_numeric($value)) {
+            $floatVal = (float)$value;
+            // Format with thousands separator, preserve decimals if present
+            if (floor($floatVal) == $floatVal) {
+                return number_format($floatVal, 0);
+            }
+
+            return number_format($floatVal, 2);
+        }
+
+        return (string)$value;
+    }
+
+    /**
+     * Check if a string value looks like a date.
+     */
+    protected function looksLikeDate(string $value): bool
+    {
+        // Common date patterns
+        $datePatterns = [
+            '/^\d{4}-\d{2}-\d{2}$/',           // 2017-10-31 (ISO)
+            '/^\d{2}-\d{2}-\d{2}$/',           // 10-31-17
+            '/^\d{2}-\d{2}-\d{4}$/',           // 10-31-2017
+            '/^\d{2}\/\d{2}\/\d{2}$/',         // 10/31/17
+            '/^\d{2}\/\d{2}\/\d{4}$/',         // 10/31/2017
+            '/^\d{4}\/\d{2}\/\d{2}$/',         // 2017/10/31
+        ];
+
+        foreach ($datePatterns as $pattern) {
+            if (preg_match($pattern, $value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1552,24 +1674,5 @@ class IdentityExtractionService
         }
 
         return $prompt;
-    }
-
-    /**
-     * Get all artifacts from the parent output artifact.
-     *
-     * These are all page artifacts (children of the parent output artifact),
-     * regardless of classification. Used for context page expansion.
-     *
-     * @return Collection<\App\Models\Task\Artifact>
-     */
-    protected function getAllArtifactsFromParent(TaskRun $taskRun): Collection
-    {
-        $parentArtifact = app(ExtractionProcessOrchestrator::class)->getParentOutputArtifact($taskRun);
-
-        if (!$parentArtifact) {
-            return collect();
-        }
-
-        return $parentArtifact->children()->orderBy('position')->get();
     }
 }

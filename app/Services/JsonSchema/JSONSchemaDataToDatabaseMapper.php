@@ -9,6 +9,7 @@ use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectAttributeSource;
 use App\Models\TeamObject\TeamObjectRelationship;
 use App\Traits\HasDebugLogging;
+use Carbon\Carbon;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\FileHelper;
@@ -25,7 +26,7 @@ class JSONSchemaDataToDatabaseMapper
 
     protected ?SchemaDefinition $schemaDefinition = null;
 
-    protected ?TeamObject $rootObject       = null;
+    protected ?TeamObject $rootObject = null;
 
     public function setSchemaDefinition(?SchemaDefinition $schemaDefinition = null): static
     {
@@ -50,6 +51,21 @@ class JSONSchemaDataToDatabaseMapper
         $teamObjectQuery = TeamObject::where('type', $type)
             ->where('name', $name)
             ->withTrashed();
+
+        // Add date to uniqueness check - same name with different dates are allowed
+        $date = $input['date'] ?? null;
+        if ($date) {
+            // Normalize date to Y-m-d format for comparison
+            try {
+                $normalizedDate = Carbon::parse($date)->format('Y-m-d');
+                $teamObjectQuery->whereDate('date', $normalizedDate);
+            } catch (Exception) {
+                // If date parsing fails, check for exact string match or null
+                $teamObjectQuery->where('date', $date);
+            }
+        } else {
+            $teamObjectQuery->whereNull('date');
+        }
 
         if ($this->schemaDefinition) {
             $teamObjectQuery->where('schema_definition_id', $this->schemaDefinition->id);
@@ -91,7 +107,12 @@ class JSONSchemaDataToDatabaseMapper
                 if ($teamObject->deleted_at) {
                     $teamObject->restore();
                 } elseif (!$orUpdate) {
-                    throw new ValidationError("Team Object of type $type already exists: $name");
+                    $dateStr = $teamObject->date?->format('Y-m-d') ?? 'null';
+                    throw new ValidationError(
+                        "Team Object of type $type already exists: name='$name', date='$dateStr', " .
+                        'root_object_id=' . ($this->rootObject?->id ?? 'null') . ', ' .
+                        'schema_definition_id=' . ($this->schemaDefinition?->id ?? 'null')
+                    );
                 }
             } else {
                 $teamObject = TeamObject::make([

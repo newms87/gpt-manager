@@ -35,7 +35,7 @@ use Newms87\Danx\Exceptions\ValidationError;
  *         ['client_name' => ['John', 'Smith']],  // Keyword array format
  *         ['client_name' => ['Smith']],           // Broader keyword search
  *     ],
- *     parentObjectId: null,
+ *     rootObjectId: null,  // Level 0 root object ID (e.g., Demand)
  *     schemaDefinitionId: 123,
  *     extractedData: ['client_name' => 'John Smith'],
  *     identityFields: ['client_name']
@@ -96,7 +96,7 @@ class DuplicateRecordResolver
      *
      * @param  string  $objectType  Type of object to search for
      * @param  array  $searchQueries  Array of search query objects (ordered specific to broad)
-     * @param  int|null  $parentObjectId  Optional parent object scope
+     * @param  int|null  $rootObjectId  Optional root object scope (level 0 ancestor, e.g., Demand)
      * @param  int|null  $schemaDefinitionId  Optional schema scope
      * @param  array  $extractedData  Extracted data for exact match comparison
      * @param  array  $identityFields  Fields to compare for exact match
@@ -105,7 +105,7 @@ class DuplicateRecordResolver
     public function findCandidates(
         string $objectType,
         array $searchQueries,
-        ?int $parentObjectId = null,
+        ?int $rootObjectId = null,
         ?int $schemaDefinitionId = null,
         array $extractedData = [],
         array $identityFields = []
@@ -120,45 +120,44 @@ class DuplicateRecordResolver
 
         static::logDebug('Finding duplicate candidates with search queries', [
             'object_type'          => $objectType,
-            'parent_object_id'     => $parentObjectId,
+            'root_object_id'       => $rootObjectId,
             'schema_definition_id' => $schemaDefinitionId,
             'search_query_count'   => count($searchQueries),
         ]);
 
+        // Load schema once for field type detection
+        $schema = null;
+        if ($schemaDefinitionId) {
+            $schema = SchemaDefinition::find($schemaDefinitionId)?->schema;
+        }
+
         // Step 1: Try exact name match first (prevents exact duplicates)
         if (!empty($extractedData['name'])) {
-            $exactNameMatch = $this->findByExactName(
+            $nameMatches = $this->findAllByExactName(
                 $objectType,
                 $extractedData['name'],
-                $parentObjectId,
+                $rootObjectId,
                 $schemaDefinitionId
             );
 
-            if ($exactNameMatch) {
-                // If identity fields provided, verify ALL identity fields match (not just name)
-                if (!empty($identityFields) && $this->isExactMatch($extractedData, $exactNameMatch, $identityFields)) {
-                    static::logDebug('Exact name match with all identity fields verified', ['object_id' => $exactNameMatch->id]);
+            // Check each name match for full identity field match
+            foreach ($nameMatches as $candidate) {
+                if ($this->isExactMatch($extractedData, $candidate, $identityFields, $schema)) {
+                    static::logDebug('Exact match found among name matches', ['object_id' => $candidate->id]);
 
                     return new FindCandidatesResult(
-                        candidates: collect([$exactNameMatch]),
-                        exactMatchId: $exactNameMatch->id
+                        candidates: collect([$candidate]),
+                        exactMatchId: $candidate->id
                     );
                 }
+            }
 
-                // If no identity fields or identity match failed, just return as candidate for further evaluation
-                if (empty($identityFields)) {
-                    static::logDebug('Exact name match found (no identity fields to verify)', ['object_id' => $exactNameMatch->id]);
-
-                    return new FindCandidatesResult(
-                        candidates: collect([$exactNameMatch]),
-                        exactMatchId: $exactNameMatch->id
-                    );
-                }
-
-                // Identity fields provided but didn't match - continue to search queries
-                static::logDebug('Exact name match found but identity fields did not match, continuing search', [
-                    'object_id'       => $exactNameMatch->id,
-                    'identity_fields' => $identityFields,
+            // No exact match found among name matches - continue to search queries
+            // (name matches without identity field match are not considered duplicates)
+            if ($nameMatches->isNotEmpty()) {
+                static::logDebug('Name matches found but no identity field match', [
+                    'name_match_count' => $nameMatches->count(),
+                    'identity_fields'  => $identityFields,
                 ]);
             }
         }
@@ -166,7 +165,7 @@ class DuplicateRecordResolver
         // Step 2: If no search queries provided, fall back to basic scope-only query
         if (empty($searchQueries)) {
             return new FindCandidatesResult(
-                $this->executeSearchQuery($objectType, [], $parentObjectId, $schemaDefinitionId)
+                $this->executeSearchQuery($objectType, [], $rootObjectId, $schemaDefinitionId)
             );
         }
 
@@ -178,7 +177,7 @@ class DuplicateRecordResolver
                 continue;
             }
 
-            $results = $this->executeSearchQuery($objectType, $query, $parentObjectId, $schemaDefinitionId);
+            $results = $this->executeSearchQuery($objectType, $query, $rootObjectId, $schemaDefinitionId);
 
             static::logDebug("Search query #{$index} results", [
                 'query'        => $query,
@@ -192,7 +191,7 @@ class DuplicateRecordResolver
             // Check for exact match in these results (if extracted data provided)
             if (!empty($extractedData)) {
                 foreach ($results as $candidate) {
-                    if ($this->isExactMatch($extractedData, $candidate, $identityFields)) {
+                    if ($this->isExactMatch($extractedData, $candidate, $identityFields, $schema)) {
                         static::logDebug('Exact match found, stopping search', [
                             'query_index' => $index,
                             'object_id'   => $candidate->id,
@@ -242,14 +241,14 @@ class DuplicateRecordResolver
      *
      * @param  string  $objectType  Type of object to search for
      * @param  array  $query  Search query with field => LIKE pattern mappings
-     * @param  int|null  $parentObjectId  Optional parent object scope
+     * @param  int|null  $rootObjectId  Optional root object scope (level 0 ancestor, e.g., Demand)
      * @param  int|null  $schemaDefinitionId  Optional schema scope
      * @return Collection<TeamObject> Collection of matching objects
      */
     protected function executeSearchQuery(
         string $objectType,
         array $query,
-        ?int $parentObjectId,
+        ?int $rootObjectId,
         ?int $schemaDefinitionId
     ): Collection {
         $currentTeam = team();
@@ -265,7 +264,7 @@ class DuplicateRecordResolver
             ->where('team_id', $currentTeam->id)
             ->where('type', $objectType)
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
-            ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId));
+            ->when($rootObjectId, fn($q) => $q->where('root_object_id', $rootObjectId));
 
         // Apply type-aware filters for non-null query fields
         foreach ($query as $field => $criteria) {
@@ -280,35 +279,39 @@ class DuplicateRecordResolver
 
         return $baseQuery->orderBy('created_at', 'desc')
             ->limit(50)
-            ->with(['attributes', 'schemaDefinition'])
+            ->with(['attributes'])
             ->get();
     }
 
     /**
-     * Find a TeamObject by exact name match (case-insensitive).
+     * Find all TeamObjects by exact name match (case-insensitive).
      *
      * This is checked before running search queries to immediately catch exact duplicates,
      * which prevents creating objects with identical names.
      *
+     * Returns a Collection because multiple records may exist with the same name
+     * but different identity field values (e.g., same name but different dates).
+     *
      * @param  string  $objectType  Type of object to search for
      * @param  string  $name  Exact name to match (case-insensitive)
-     * @param  int|null  $parentObjectId  Optional parent object scope
+     * @param  int|null  $rootObjectId  Optional root object scope (level 0 ancestor, e.g., Demand)
      * @param  int|null  $schemaDefinitionId  Optional schema scope
-     * @return TeamObject|null Matching object or null if not found
+     * @return Collection<TeamObject> Collection of matching objects
      */
-    protected function findByExactName(
+    protected function findAllByExactName(
         string $objectType,
         string $name,
-        ?int $parentObjectId,
+        ?int $rootObjectId,
         ?int $schemaDefinitionId
-    ): ?TeamObject {
+    ): Collection {
         return TeamObject::query()
             ->where('team_id', team()->id)
             ->where('type', $objectType)
             ->whereRaw('LOWER(name) = LOWER(?)', [$name])
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
-            ->when($parentObjectId, fn($q) => $q->where('root_object_id', $parentObjectId))
-            ->first();
+            ->when($rootObjectId, fn($q) => $q->where('root_object_id', $rootObjectId))
+            ->with(['attributes'])
+            ->get();
     }
 
     /**
@@ -697,11 +700,15 @@ class DuplicateRecordResolver
      * Check if extracted data exactly matches a candidate object.
      * Only compares identity fields if provided.
      *
+     * Date fields are normalized to ISO format (Y-m-d) before comparison to handle
+     * different date format representations (e.g., "12/04/2024" vs "2024-12-04").
+     *
      * @param  array  $extractedData  Extracted identifying data
      * @param  TeamObject  $candidate  Candidate object to compare against
      * @param  array  $identityFields  Fields to compare (if empty, compare all extracted fields)
+     * @param  array|null  $schema  Schema for field type detection (pre-loaded for efficiency)
      */
-    protected function isExactMatch(array $extractedData, TeamObject $candidate, array $identityFields = []): bool
+    protected function isExactMatch(array $extractedData, TeamObject $candidate, array $identityFields = [], ?array $schema = null): bool
     {
         $candidateData = $this->buildCandidateData($candidate);
 
@@ -747,9 +754,15 @@ class DuplicateRecordResolver
                 return false;
             }
 
-            // Normalize for comparison
-            $extractedNormalized = $this->normalizeValue($fieldValue);
-            $candidateNormalized = $this->normalizeValue($candidateData[$fieldName]);
+            // Check if this is a date field and normalize accordingly
+            if ($this->isDateFieldForExactMatch($fieldName, $schema)) {
+                $extractedNormalized = $this->normalizeDateForComparison($fieldValue);
+                $candidateNormalized = $this->normalizeDateForComparison($candidateData[$fieldName]);
+            } else {
+                // Standard string normalization for non-date fields
+                $extractedNormalized = $this->normalizeValue($fieldValue);
+                $candidateNormalized = $this->normalizeValue($candidateData[$fieldName]);
+            }
 
             if ($extractedNormalized !== $candidateNormalized) {
                 static::logDebug("Field '{$fieldName}' mismatch", [
@@ -770,6 +783,42 @@ class DuplicateRecordResolver
         }
 
         return true;
+    }
+
+    /**
+     * Check if a field is a date field for exact match comparison.
+     *
+     * Handles both native 'date' column and schema-defined date fields.
+     */
+    protected function isDateFieldForExactMatch(string $fieldName, ?array $schema): bool
+    {
+        // Native 'date' column on TeamObject
+        if ($fieldName === 'date') {
+            return true;
+        }
+
+        // Check schema for date/date-time format using trait method
+        return $this->isDateField($fieldName, $schema);
+    }
+
+    /**
+     * Normalize a date value to ISO format (Y-m-d) for exact match comparison.
+     *
+     * Uses Carbon to parse various date formats and outputs a normalized ISO date.
+     * Falls back to standard string normalization if parsing fails.
+     */
+    protected function normalizeDateForComparison(mixed $value): string
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d');
+        } catch (Exception) {
+            // Fall back to standard string normalization if date parsing fails
+            return $this->normalizeValue($value);
+        }
     }
 
     /**

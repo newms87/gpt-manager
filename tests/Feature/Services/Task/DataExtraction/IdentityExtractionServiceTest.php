@@ -164,6 +164,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Mock ExtractionProcessOrchestrator
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -251,6 +252,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Mock ExtractionProcessOrchestrator
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) use ($existingTeamObject) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')
                 ->with(Mockery::any(), 'Client', $existingTeamObject->id, 0)
                 ->once();
@@ -329,6 +331,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         // Mock ExtractionProcessOrchestrator and verify it's called correctly
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')
                 ->with(
                     Mockery::type(TaskRun::class),
@@ -408,6 +411,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -506,6 +510,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -663,6 +668,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')->once();
         });
 
@@ -757,11 +763,11 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             [$identificationData, $identityFields]
         );
 
-        // Then: Should fall back to date since name is empty
+        // Then: Should fall back to date, formatted as human-readable name
         $this->assertEquals(
-            '2017-10-23',
+            'October 23rd, 2017',
             $result,
-            'resolveObjectName should fall back to other identity fields when name is empty'
+            'resolveObjectName should fall back to date formatted as human-readable name'
         );
     }
 
@@ -890,6 +896,7 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         $storedObjectIds = [];
         $this->mock(ExtractionProcessOrchestrator::class, function (MockInterface $mock) use (&$storedObjectIds) {
             $mock->shouldReceive('getParentOutputArtifact')->andReturnNull();
+            $mock->shouldReceive('getAllPageArtifacts')->andReturn(collect());
             $mock->shouldReceive('storeResolvedObjectId')
                 ->andReturnUsing(function ($taskRun, $objectType, $objectId, $level) use (&$storedObjectIds) {
                     $storedObjectIds[] = $objectId;
@@ -1288,6 +1295,220 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
 
         // Then: Returns false (continue processing when no fields defined)
         $this->assertFalse($result);
+    }
+
+    // =========================================================================
+    // resolveOrCreateTeamObject() - Parent-child relationship tests
+    // =========================================================================
+
+    #[Test]
+    public function resolveOrCreateTeamObject_creates_relationship_when_creating_new_child_with_parent(): void
+    {
+        // Given: A parent TeamObject exists
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Demand',
+        ]);
+
+        // When: Creating a new child object with a parent
+        // relationshipKey is the schema-defined property name (e.g., "providers" from schema)
+        $identificationData = ['client_name' => 'New Client Corp'];
+        $result             = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveOrCreateTeamObject',
+            [
+                $this->taskRun,
+                'Provider',  // objectType
+                $identificationData,
+                'New Client Corp',  // name
+                null,  // existingId (null = new object)
+                $parentObject->id,  // parentObjectId
+                'providers',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: A TeamObject is created
+        $this->assertInstanceOf(TeamObject::class, $result);
+        $this->assertEquals('Provider', $result->type);
+        $this->assertEquals('New Client Corp', $result->name);
+
+        // And: A TeamObjectRelationship is created using the schema-defined relationship key
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $result->id,
+            'relationship_name'      => 'providers',  // Uses schema-defined key, not snake_case of type
+        ]);
+    }
+
+    #[Test]
+    public function resolveOrCreateTeamObject_creates_relationship_when_updating_existing_child_with_parent(): void
+    {
+        // Given: A parent TeamObject and an existing child TeamObject
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Demand',
+        ]);
+
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Existing Provider',
+        ]);
+
+        // Note: No relationship exists yet between parent and existing child
+
+        // When: Updating the existing child with a parent reference
+        $identificationData = ['client_name' => 'Updated Provider Name'];
+        $result             = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveOrCreateTeamObject',
+            [
+                $this->taskRun,
+                'Provider',  // objectType
+                $identificationData,
+                'Updated Provider Name',  // name
+                $existingChild->id,  // existingId (existing object to update)
+                $parentObject->id,  // parentObjectId
+                'providers',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: The existing TeamObject is returned (not a new one)
+        $this->assertInstanceOf(TeamObject::class, $result);
+        $this->assertEquals($existingChild->id, $result->id);
+
+        // And: A TeamObjectRelationship is created (ensured) linking parent to child
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'providers',
+        ]);
+    }
+
+    #[Test]
+    public function resolveOrCreateTeamObject_does_not_create_relationship_when_no_parent(): void
+    {
+        // Given: No parent (root object scenario)
+
+        // When: Creating a new object without a parent
+        // relationshipKey is still passed but won't be used since parentObjectId is null
+        $identificationData = ['name' => 'Root Demand Object'];
+        $result             = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveOrCreateTeamObject',
+            [
+                $this->taskRun,
+                'Demand',  // objectType
+                $identificationData,
+                'Root Demand Object',  // name
+                null,  // existingId (null = new object)
+                null,  // parentObjectId (null = no parent, root object)
+                'demand',  // relationshipKey - not used when no parent
+            ]
+        );
+
+        // Then: A TeamObject is created
+        $this->assertInstanceOf(TeamObject::class, $result);
+        $this->assertEquals('Demand', $result->type);
+        $this->assertEquals('Root Demand Object', $result->name);
+
+        // And: No relationship is created for this root object
+        $this->assertDatabaseMissing('team_object_relationships', [
+            'related_team_object_id' => $result->id,
+        ]);
+    }
+
+    #[Test]
+    public function resolveOrCreateTeamObject_uses_schema_defined_relationship_key(): void
+    {
+        // Given: A parent TeamObject exists
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Demand',
+        ]);
+
+        // When: Creating a child object with a schema-defined relationship key
+        // The relationshipKey parameter comes directly from the schema (e.g., "care_summary")
+        $identificationData = ['name' => 'John Smith'];
+        $result             = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveOrCreateTeamObject',
+            [
+                $this->taskRun,
+                'CareSummary',  // PascalCase objectType
+                $identificationData,
+                'John Smith',
+                null,
+                $parentObject->id,
+                'care_summary',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: Relationship name uses the schema-defined key (not derived from type)
+        $this->assertDatabaseHas('team_object_relationships', [
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $result->id,
+            'relationship_name'      => 'care_summary',  // Uses schema-defined key
+        ]);
+    }
+
+    #[Test]
+    public function resolveOrCreateTeamObject_does_not_duplicate_relationship_when_already_exists(): void
+    {
+        // Given: A parent TeamObject and child with existing relationship
+        $parentObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Demand',
+        ]);
+
+        $existingChild = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Provider',
+            'name'    => 'Existing Provider',
+        ]);
+
+        // Create the relationship first with the schema-defined key "providers"
+        \App\Models\TeamObject\TeamObjectRelationship::create([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'providers',
+        ]);
+
+        $initialCount = \App\Models\TeamObject\TeamObjectRelationship::where([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'providers',
+        ])->count();
+
+        // When: Updating the existing child (relationship already exists)
+        $identificationData = ['client_name' => 'Updated Provider'];
+        $result             = $this->invokeProtectedMethod(
+            $this->service,
+            'resolveOrCreateTeamObject',
+            [
+                $this->taskRun,
+                'Provider',
+                $identificationData,
+                'Updated Provider',
+                $existingChild->id,
+                $parentObject->id,
+                'providers',  // relationshipKey - schema property name
+            ]
+        );
+
+        // Then: No duplicate relationship created
+        $finalCount = \App\Models\TeamObject\TeamObjectRelationship::where([
+            'team_object_id'         => $parentObject->id,
+            'related_team_object_id' => $existingChild->id,
+            'relationship_name'      => 'providers',
+        ])->count();
+
+        $this->assertEquals($initialCount, $finalCount);
+        $this->assertEquals(1, $finalCount);
     }
 
     // =========================================================================

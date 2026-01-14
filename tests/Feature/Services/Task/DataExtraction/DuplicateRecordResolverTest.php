@@ -45,7 +45,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John Smith%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -75,7 +75,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -109,7 +109,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schema1->id
         );
 
@@ -145,7 +145,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test%']],
-            parentObjectId: $parentObject->id,
+            rootObjectId: $parentObject->id,
             schemaDefinitionId: null
         );
 
@@ -168,7 +168,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -205,7 +205,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Client%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -236,7 +236,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Lichtenberg%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -277,7 +277,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['title' => '%MD%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -300,7 +300,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John Smith%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -337,7 +337,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                 ['name' => '%Smith%', 'title' => null],          // Loose: all 11 Smiths
                 ['name' => '%Smith%', 'title' => '%MD%'],        // Restrictive: only MD
             ],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -363,7 +363,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                 ['name' => '%Smith%'],                           // Returns 3
                 ['name' => '%Smith%', 'title' => '%Nonexistent%'], // Returns 0
             ],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -391,7 +391,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test Client%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Test Client', 'date' => ''],
             identityFields: ['name', 'date']
@@ -418,7 +418,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test Client%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Test Client', 'date' => '2024-01-15'],
             identityFields: ['name', 'date']
@@ -451,7 +451,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['name' => '%Test Accident%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Test Accident', 'accident_date' => '2024-01-15'],
             identityFields: ['name', 'accident_date']
@@ -477,7 +477,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => '%10/23/2017%']], // US date format
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -501,7 +501,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => '%2017-10-23%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -547,7 +547,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Demand',
             searchQueries: [['accident_date' => '%10/23/2017%']], // US date format
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -593,7 +593,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['injury_date' => '%01/15/2024%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -640,7 +640,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Demand',
             searchQueries: [['accident_date' => '%10/23/2017%']], // Raw US date format in search
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -669,7 +669,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['notes' => '%10/23/2017%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -702,7 +702,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%John%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -757,7 +757,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_active' => 'true']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -812,7 +812,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Product',
             searchQueries: [['price' => '%99.99%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -867,7 +867,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Product',
             searchQueries: [['quantity' => '%42%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -922,7 +922,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['email' => '%example.com%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -964,7 +964,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Event',
             searchQueries: [['start_time' => '%01/15/2024%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1019,7 +1019,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_verified' => '1']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1074,7 +1074,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_premium' => 'false']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1129,7 +1129,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Case',
             searchQueries: [['accident_date' => '%10/23/2017%']], // US date format
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1187,7 +1187,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Invoice',
             searchQueries: [['due_date' => '%03/15/2024%']], // US date format
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1230,7 +1230,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['custom_field' => '%custom value%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -1265,7 +1265,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => ['operator' => '=', 'value' => '2017-10-23']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -1309,7 +1309,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                     'value2'   => '2017-12-31',
                 ],
             ]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -1342,7 +1342,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Accident',
             searchQueries: [['date' => ['operator' => '>', 'value' => '2020-01-01']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -1397,7 +1397,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Demand',
             searchQueries: [['accident_date' => ['operator' => '=', 'value' => '2017-10-23']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1458,7 +1458,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                     'value2'   => '2017-12-31',
                 ],
             ]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1513,7 +1513,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_active' => true]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1568,7 +1568,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['is_premium' => false]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1623,7 +1623,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Product',
             searchQueries: [['price' => ['operator' => '=', 'value' => 99.99]]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1678,7 +1678,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Person',
             searchQueries: [['age' => ['operator' => '>=', 'value' => 18]]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1752,7 +1752,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                     'value2'   => 100,
                 ],
             ]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1837,7 +1837,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                 'accident_date' => ['operator' => '=', 'value' => '2017-10-23'],         // Date operator
                 'is_active'     => true,                                                  // Boolean
             ]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -1860,7 +1860,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Client',
             searchQueries: [['name' => '%Test%', 'some_field' => []]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -1887,7 +1887,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['name' => '%Cervical%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Cervical neck pain'],
             identityFields: ['name']
@@ -1914,7 +1914,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'cervical neck pain'],
             identityFields: ['name']
@@ -1957,7 +1957,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [],
-            parentObjectId: $parent1->id,
+            rootObjectId: $parent1->id,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Back pain'],
             identityFields: ['name']
@@ -1982,7 +1982,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['name' => '%Cervical%']],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null,
             extractedData: ['name' => 'Cervical neck pain'],
             identityFields: ['name']
@@ -2024,7 +2024,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['name' => ['cervical', 'neck', 'pain']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -2059,7 +2059,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['name' => ['cervical', 'neck', 'pain']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -2085,7 +2085,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['name' => ['Cervical', 'NECK', 'pain']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: null
         );
 
@@ -2140,7 +2140,7 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         $result = $this->resolver->findCandidates(
             objectType: 'Diagnosis',
             searchQueries: [['description' => ['cervical', 'spine', 'pain']]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
@@ -2198,12 +2198,211 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
                 'name'     => ['cervical', 'neck'],
                 'category' => '%Spinal%',
             ]],
-            parentObjectId: null,
+            rootObjectId: null,
             schemaDefinitionId: $schemaDefinition->id
         );
 
         // Then: Only finds object matching both criteria
         $this->assertCount(1, $result->candidates);
         $this->assertEquals($matchingObject->id, $result->candidates->first()->id);
+    }
+
+    // ========================================================================
+    // Exact Match Date Normalization Tests
+    // ========================================================================
+
+    #[Test]
+    public function findCandidates_exact_match_normalizes_native_date_formats(): void
+    {
+        // Given: TeamObject with native date column in ISO format (how database stores it)
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Test Accident',
+            'date'    => '2024-12-04', // ISO format in database
+        ]);
+
+        // When: Finding candidates with extracted date in MM/DD/YYYY format
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [['name' => '%Test Accident%']],
+            rootObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Test Accident', 'date' => '12/04/2024'], // US date format
+            identityFields: ['name', 'date']
+        );
+
+        // Then: Returns exact match because dates are normalized before comparison
+        $this->assertTrue($result->hasExactMatch(), 'Expected exact match when dates represent the same day in different formats');
+        $this->assertEquals($candidate->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_exact_match_normalizes_schema_date_attribute_formats(): void
+    {
+        // Given: Schema definition with accident_date as a date field
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Demand',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'accident_date' => [
+                        'type'   => 'string',
+                        'format' => 'date',
+                    ],
+                ],
+            ],
+        ]);
+
+        // Given: TeamObject with accident_date attribute in ISO format
+        $candidate = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Demand',
+            'name'                 => 'Test Demand',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $candidate->id,
+            'name'           => 'accident_date',
+            'text_value'     => '2024-12-04', // ISO format stored
+        ]);
+
+        // When: Finding candidates with extracted date in MM/DD/YYYY format
+        $result = $this->resolver->findCandidates(
+            objectType: 'Demand',
+            searchQueries: [['name' => '%Test Demand%']],
+            rootObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id,
+            extractedData: ['name' => 'Test Demand', 'accident_date' => '12/04/2024'], // US date format
+            identityFields: ['name', 'accident_date']
+        );
+
+        // Then: Returns exact match because date attribute is normalized
+        $this->assertTrue($result->hasExactMatch(), 'Expected exact match when schema date attributes represent the same day in different formats');
+        $this->assertEquals($candidate->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_exact_match_handles_various_date_formats(): void
+    {
+        // Given: TeamObject with native date in ISO format
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Event',
+            'name'    => 'Test Event',
+            'date'    => '2024-01-15', // ISO format
+        ]);
+
+        // Test various date format representations that Carbon can parse unambiguously
+        // Note: Ambiguous formats like DD/MM/YYYY (e.g., '15/01/2024') may parse differently
+        // depending on locale, so we only test unambiguous formats
+        $dateFormats = [
+            '01/15/2024',        // US format MM/DD/YYYY
+            'January 15, 2024',  // Full month name
+            'Jan 15, 2024',      // Abbreviated month
+            '2024-01-15',        // ISO format (should always match)
+            '15 January 2024',   // Day Month Year (unambiguous due to month name)
+        ];
+
+        foreach ($dateFormats as $dateFormat) {
+            $result = $this->resolver->findCandidates(
+                objectType: 'Event',
+                searchQueries: [['name' => '%Test Event%']],
+                rootObjectId: null,
+                schemaDefinitionId: null,
+                extractedData: ['name' => 'Test Event', 'date' => $dateFormat],
+                identityFields: ['name', 'date']
+            );
+
+            $this->assertTrue(
+                $result->hasExactMatch(),
+                "Expected exact match for date format: {$dateFormat}"
+            );
+        }
+    }
+
+    #[Test]
+    public function findCandidates_exact_match_no_match_for_different_dates(): void
+    {
+        // Given: TeamObject with specific date
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Accident',
+            'name'    => 'Test Accident',
+            'date'    => '2024-12-04',
+        ]);
+
+        // When: Finding candidates with different date (even in same format)
+        $result = $this->resolver->findCandidates(
+            objectType: 'Accident',
+            searchQueries: [['name' => '%Test Accident%']],
+            rootObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'Test Accident', 'date' => '12/05/2024'], // Different day
+            identityFields: ['name', 'date']
+        );
+
+        // Then: No exact match because dates are different
+        $this->assertFalse($result->hasExactMatch(), 'Expected no exact match for different dates');
+        $this->assertCount(1, $result->candidates); // Still returns as candidate for LLM resolution
+    }
+
+    #[Test]
+    public function findCandidates_exact_match_does_not_normalize_non_date_fields(): void
+    {
+        // Given: TeamObject with string field that looks like a date but isn't defined as one
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Document',
+            'name'    => 'Test Schema',
+            'schema'  => [
+                'type'       => 'object',
+                'properties' => [
+                    'reference_code' => ['type' => 'string'], // NOT a date field
+                ],
+            ],
+        ]);
+
+        $candidate = TeamObject::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'type'                 => 'Document',
+            'name'                 => 'Test Doc',
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $candidate->id,
+            'name'           => 'reference_code',
+            'text_value'     => '12/04/2024', // Looks like a date but stored as-is
+        ]);
+
+        // When: Finding candidates with same value
+        $result = $this->resolver->findCandidates(
+            objectType: 'Document',
+            searchQueries: [['name' => '%Test Doc%']],
+            rootObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id,
+            extractedData: ['name' => 'Test Doc', 'reference_code' => '12/04/2024'],
+            identityFields: ['name', 'reference_code']
+        );
+
+        // Then: Exact match because strings match exactly
+        $this->assertTrue($result->hasExactMatch());
+
+        // When: Finding with ISO format (which would match if it were normalized as a date)
+        $result2 = $this->resolver->findCandidates(
+            objectType: 'Document',
+            searchQueries: [['name' => '%Test Doc%']],
+            rootObjectId: null,
+            schemaDefinitionId: $schemaDefinition->id,
+            extractedData: ['name' => 'Test Doc', 'reference_code' => '2024-12-04'],
+            identityFields: ['name', 'reference_code']
+        );
+
+        // Then: No exact match because string comparison doesn't normalize
+        $this->assertFalse($result2->hasExactMatch(), 'Non-date string fields should not be date-normalized');
     }
 }

@@ -7,6 +7,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Traits\HasDebugLogging;
+use App\Traits\TeamObjectRelationshipHelper;
 
 /**
  * Handles the remaining field extraction workflow for extraction groups.
@@ -16,6 +17,7 @@ use App\Traits\HasDebugLogging;
 class RemainingExtractionService
 {
     use HasDebugLogging;
+    use TeamObjectRelationshipHelper;
 
     /**
      * Execute remaining field extraction for a task process.
@@ -59,7 +61,7 @@ class RemainingExtractionService
         }
 
         // Get all artifacts from parent output artifact for context expansion
-        $allArtifacts = $this->getAllArtifactsFromParent($taskRun);
+        $allArtifacts = app(ExtractionProcessOrchestrator::class)->getAllPageArtifacts($taskRun);
 
         $groupExtractionService = app(GroupExtractionService::class);
 
@@ -164,6 +166,9 @@ class RemainingExtractionService
         $createdObjects = [];
         $objectType     = $extractionGroup['object_type'];
 
+        // Get relationship key from fragment_selector (schema is source of truth)
+        $relationshipKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
+
         static::logDebug('Processing array extraction', [
             'item_count'  => count($items),
             'object_type' => $objectType,
@@ -184,7 +189,8 @@ class RemainingExtractionService
                 $objectType,
                 $itemData,
                 $existingId,
-                $parentObject->id
+                $parentObject->id,
+                $relationshipKey
             );
 
             $createdObjects[] = $teamObject;
@@ -256,23 +262,29 @@ class RemainingExtractionService
 
     /**
      * Create or update a TeamObject from extracted item data.
+     *
+     * Sets up the mapper with rootObject (the level 0 root, e.g., Demand) stored in root_object_id column.
+     * Creates a TeamObjectRelationship linking the parent to this child object.
+     *
+     * @param  string  $relationshipKey  The exact relationship name from the schema (e.g., "providers", "care_summary")
      */
     protected function createOrUpdateTeamObject(
         TaskRun $taskRun,
         string $objectType,
         array $itemData,
         ?int $existingId,
-        int $parentObjectId
+        int $parentObjectId,
+        string $relationshipKey
     ): TeamObject {
-        $mapper = app(JSONSchemaDataToDatabaseMapper::class);
+        $mapper       = app(JSONSchemaDataToDatabaseMapper::class);
+        $parentObject = TeamObject::find($parentObjectId);
 
         if ($taskRun->taskDefinition->schemaDefinition) {
             $mapper->setSchemaDefinition($taskRun->taskDefinition->schemaDefinition);
         }
 
-        $parentObject = TeamObject::find($parentObjectId);
         if ($parentObject) {
-            $mapper->setRootObject($parentObject);
+            $mapper->setRootObject($this->resolveRootObject($parentObject));
         }
 
         if ($existingId) {
@@ -280,32 +292,24 @@ class RemainingExtractionService
             if ($teamObject) {
                 $mapper->updateTeamObject($teamObject, $itemData);
 
+                // Ensure relationship exists even for existing objects
+                if ($parentObject) {
+                    $this->ensureParentRelationship($parentObject, $teamObject, $relationshipKey);
+                }
+
                 return $teamObject;
             }
         }
 
         // Create new TeamObject
-        $name = $itemData['name'] ?? $objectType;
+        $name       = $itemData['name'] ?? $objectType;
+        $teamObject = $mapper->createTeamObject($objectType, $name, $itemData);
 
-        return $mapper->createTeamObject($objectType, $name, $itemData);
-    }
-
-    /**
-     * Get all artifacts from the parent output artifact.
-     *
-     * These are all page artifacts (children of the parent output artifact),
-     * regardless of classification. Used for context page expansion.
-     *
-     * @return \Illuminate\Support\Collection<\App\Models\Task\Artifact>
-     */
-    protected function getAllArtifactsFromParent(TaskRun $taskRun): \Illuminate\Support\Collection
-    {
-        $parentArtifact = app(ExtractionProcessOrchestrator::class)->getParentOutputArtifact($taskRun);
-
-        if (!$parentArtifact) {
-            return collect();
+        // Create relationship linking parent to this child
+        if ($parentObject) {
+            $this->ensureParentRelationship($parentObject, $teamObject, $relationshipKey);
         }
 
-        return $parentArtifact->children()->orderBy('position')->get();
+        return $teamObject;
     }
 }

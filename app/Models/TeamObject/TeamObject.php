@@ -87,6 +87,13 @@ class TeamObject extends Model implements AuditableContract
     {
         $query = TeamObject::where('type', $this->type)->where('name', $this->name)->where('id', '!=', $this->id);
 
+        // Add date to uniqueness check - same name with different dates are allowed
+        if ($this->date) {
+            $query->whereDate('date', $this->date);
+        } else {
+            $query->whereNull('date');
+        }
+
         // If a schema is set, only allow one object with the same name and schema,
         // Otherwise, there should be only 1 w/ a null schema (aka: belongs to global namespace)
         if ($this->schema_definition_id) {
@@ -102,7 +109,16 @@ class TeamObject extends Model implements AuditableContract
         }
 
         if ($existingObject = $query->first()) {
-            throw new ValidationError("Failed to validate $this->type ($this->id): A $this->type with the name $this->name already exists: $existingObject", 409);
+            $dateStr = $this->date ? $this->date->format('Y-m-d') : 'null';
+
+            throw new ValidationError(
+                "A {$this->type} already exists with: " .
+                "name='{$this->name}', date='{$dateStr}', " .
+                'root_object_id=' . ($this->root_object_id ?? 'null') . ', ' .
+                'schema_definition_id=' . ($this->schema_definition_id ?? 'null') . '. ' .
+                "Existing: {$existingObject}",
+                409
+            );
         }
 
         return $this;

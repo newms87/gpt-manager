@@ -221,6 +221,16 @@ When debugging task processes, workflows, task runs, or audit logs, **ALWAYS use
 - No debug command exists for your specific use case
 - You need a one-off query not covered by debug commands
 
+### 🧪 Test Process Lock
+
+If tests fail with lock errors or hang (another agent is running tests):
+1. **Skip testing** - Report files changed + manual test command
+2. **Or wait 30s and retry once**
+
+Never kill other processes or retry in a loop.
+
+---
+
 ### 🚨 quasar-ui-danx: NEVER Rebuild
 
 **Vite HMR handles all changes instantly. DO NOT rebuild after making changes to quasar-ui-danx.**

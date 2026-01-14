@@ -40,6 +40,23 @@ class ExtractionProcessOrchestrator
     }
 
     /**
+     * Get all page artifacts (children of the parent output artifact) for a task run.
+     * These are all page artifacts regardless of classification, used for context expansion.
+     *
+     * @return \Illuminate\Support\Collection<Artifact>
+     */
+    public function getAllPageArtifacts(TaskRun $taskRun): \Illuminate\Support\Collection
+    {
+        $parentArtifact = $this->getParentOutputArtifact($taskRun);
+
+        if (!$parentArtifact) {
+            return collect();
+        }
+
+        return $parentArtifact->children()->orderBy('position')->get();
+    }
+
+    /**
      * Check if all processes for a level are complete.
      */
     public function isLevelComplete(TaskRun $taskRun, int $level): bool
@@ -152,6 +169,10 @@ class ExtractionProcessOrchestrator
             // Resolve search mode with global override
             $resolvedSearchMode = $this->resolveSearchMode($taskRun, $identity);
 
+            // Get expected parent type from fragment_selector to filter parent object IDs
+            $fragmentSelector   = $identity['fragment_selector'] ?? [];
+            $expectedParentType = app(FragmentSelectorService::class)->getParentType($fragmentSelector);
+
             $process = $taskRun->taskProcesses()->create([
                 'name'      => $this->buildProcessName(
                     'Identity',
@@ -164,7 +185,7 @@ class ExtractionProcessOrchestrator
                 'meta'      => [
                     'level'             => $level,
                     'identity_group'    => $identity,
-                    'parent_object_ids' => $this->getParentObjectIds($taskRun, $level),
+                    'parent_object_ids' => $this->getParentObjectIds($taskRun, $level, $expectedParentType),
                     'search_mode'       => $resolvedSearchMode,
                 ],
                 'is_ready' => true,
@@ -177,10 +198,12 @@ class ExtractionProcessOrchestrator
             $processes[] = $process;
 
             static::logDebug('Created Extract Identity process with input artifacts', [
-                'level'           => $level,
-                'group'           => $identity['name'] ?? "Identity $index",
-                'process_id'      => $process->id,
-                'input_artifacts' => $groupArtifacts->count(),
+                'level'                => $level,
+                'group'                => $identity['name'] ?? "Identity $index",
+                'process_id'           => $process->id,
+                'input_artifacts'      => $groupArtifacts->count(),
+                'expected_parent_type' => $expectedParentType,
+                'parent_object_ids'    => $process->meta['parent_object_ids'] ?? [],
             ]);
         }
 
@@ -326,8 +349,11 @@ class ExtractionProcessOrchestrator
 
     /**
      * Get parent object IDs for a level (from level - 1).
+     * Optionally filter by expected parent type from fragment_selector.
+     *
+     * @param  ?string  $expectedParentType  Expected parent type (Title Case) from FragmentSelectorService::getParentType()
      */
-    public function getParentObjectIds(TaskRun $taskRun, int $level): array
+    public function getParentObjectIds(TaskRun $taskRun, int $level, ?string $expectedParentType = null): array
     {
         if ($level === 0) {
             return [];
@@ -340,6 +366,11 @@ class ExtractionProcessOrchestrator
         $parentObjectIds = [];
         foreach ($resolvedObjects as $objectType => $levelData) {
             if (isset($levelData[$parentLevel])) {
+                // If expected parent type is specified, only include matching types
+                if ($expectedParentType !== null && $objectType !== $expectedParentType) {
+                    continue;
+                }
+
                 $parentObjectIds = array_merge($parentObjectIds, $levelData[$parentLevel]);
             }
         }

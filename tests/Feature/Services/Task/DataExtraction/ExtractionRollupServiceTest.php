@@ -5,10 +5,9 @@ namespace Tests\Feature\Services\Task\DataExtraction;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
-use App\Models\TeamObject\TeamObject;
-use App\Models\TeamObject\TeamObjectAttribute;
 use App\Services\Task\DataExtraction\ExtractionRollupService;
-use Carbon\Carbon;
+use App\Services\Task\Runners\ExtractDataTaskRunner;
+use Illuminate\Support\Collection;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
@@ -19,11 +18,68 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
 
     private ExtractionRollupService $rollupService;
 
+    private TaskDefinition $taskDefinition;
+
+    private TaskRun $taskRun;
+
+    private Artifact $parentArtifact;
+
     public function setUp(): void
     {
         parent::setUp();
         $this->setUpTeam();
         $this->rollupService = app(ExtractionRollupService::class);
+
+        // Create common test fixtures
+        $this->taskDefinition = TaskDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $this->taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $this->parentArtifact = Artifact::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
+            'parent_artifact_id' => null,
+            'json_content'       => null,
+        ]);
+        $this->taskRun->outputArtifacts()->attach($this->parentArtifact->id);
+    }
+
+    // =========================================================================
+    // Helper Methods
+    // =========================================================================
+
+    /**
+     * Create an extraction artifact with the given data.
+     *
+     * @param  string|null  $relationshipKey  The schema property name (e.g., "providers", "care_summary")
+     * @param  bool  $isArrayType  Whether the schema defines this as an array type
+     */
+    private function createExtractionArtifact(
+        array $jsonContent,
+        ?int $parentId = null,
+        ?string $parentType = null,
+        string $operation = 'Extract Identity',
+        ?Artifact $parentArtifact = null,
+        ?string $relationshipKey = null,
+        bool $isArrayType = false
+    ): Artifact {
+        return Artifact::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
+            'parent_artifact_id' => $parentArtifact?->id ?? $this->parentArtifact->id,
+            'json_content'       => $jsonContent,
+            'meta'               => [
+                'operation'        => $operation,
+                'parent_id'        => $parentId,
+                'parent_type'      => $parentType,
+                'relationship_key' => $relationshipKey,
+                'is_array_type'    => $isArrayType,
+            ],
+        ]);
     }
 
     // =========================================================================
@@ -31,178 +87,106 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     // =========================================================================
 
     #[Test]
-    public function rollup_collects_data_from_resolved_objects_in_task_run_meta(): void
+    public function rollup_collects_data_from_extraction_artifacts(): void
     {
-        // Given: TaskRun with resolved objects and TeamObjects with attributes
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'John Smith',
-            'date'    => Carbon::parse('2024-01-15'),
-        ]);
-
-        TeamObjectAttribute::factory()->create([
-            'team_object_id' => $teamObject->id,
-            'name'           => 'email',
-            'text_value'     => 'john@example.com',
-        ]);
-
-        TeamObjectAttribute::factory()->create([
-            'team_object_id' => $teamObject->id,
-            'name'           => 'phone',
-            'text_value'     => '555-1234',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [
-                        0 => [$teamObject->id],
-                    ],
-                ],
+        // Given: Extraction artifacts with object data
+        $this->createExtractionArtifact(
+            jsonContent: [
+                'id'    => 1,
+                'type'  => 'Client',
+                'name'  => 'John Smith',
+                'email' => 'john@example.com',
+                'phone' => '555-1234',
             ],
-        ]);
-
-        // Create parent output artifact
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+            parentId: null, // Root object
+            parentType: null
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
         // Then: json_content is populated with rollup data
-        $parentArtifact->refresh();
-        $this->assertNotNull($parentArtifact->json_content);
-        $this->assertArrayHasKey('extracted_at', $parentArtifact->json_content);
-        $this->assertArrayHasKey('object_types', $parentArtifact->json_content);
-        $this->assertArrayHasKey('summary', $parentArtifact->json_content);
+        $this->parentArtifact->refresh();
+        $this->assertNotNull($this->parentArtifact->json_content);
+        $this->assertArrayHasKey('extracted_at', $this->parentArtifact->json_content);
+        $this->assertArrayHasKey('objects', $this->parentArtifact->json_content);
+        $this->assertArrayHasKey('summary', $this->parentArtifact->json_content);
 
-        // Verify Client data is present
-        $this->assertArrayHasKey('Client', $parentArtifact->json_content['object_types']);
-        $clientData = $parentArtifact->json_content['object_types']['Client'];
-        $this->assertEquals(1, $clientData['count']);
-        $this->assertCount(1, $clientData['objects']);
+        // Verify Client data is present in objects array
+        $objects = $this->parentArtifact->json_content['objects'];
+        $this->assertCount(1, $objects);
 
         // Verify object details
-        $clientObject = $clientData['objects'][0];
-        $this->assertEquals($teamObject->id, $clientObject['id']);
+        $clientObject = $objects[0];
+        $this->assertEquals(1, $clientObject['id']);
+        $this->assertEquals('Client', $clientObject['type']);
         $this->assertEquals('John Smith', $clientObject['name']);
-        $this->assertEquals('2024-01-15', $clientObject['date']);
-        $this->assertArrayHasKey('email', $clientObject['attributes']);
-        $this->assertEquals('john@example.com', $clientObject['attributes']['email']);
-        $this->assertArrayHasKey('phone', $clientObject['attributes']);
-        $this->assertEquals('555-1234', $clientObject['attributes']['phone']);
+        $this->assertEquals('john@example.com', $clientObject['email']);
+        $this->assertEquals('555-1234', $clientObject['phone']);
     }
 
     #[Test]
     public function rollup_sets_json_content_on_output_artifact(): void
     {
-        // Given: TaskRun with simple resolved objects
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Provider',
-            'name'    => 'Dr. Jane Doe',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Provider' => [
-                        0 => [$teamObject->id],
-                    ],
-                ],
+        // Given: Extraction artifact with simple data
+        $this->createExtractionArtifact(
+            jsonContent: [
+                'id'   => 1,
+                'type' => 'Provider',
+                'name' => 'Dr. Jane Doe',
             ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+            parentId: null,
+            parentType: null
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
         // Then: json_content is set with proper structure
-        $parentArtifact->refresh();
-        $this->assertIsArray($parentArtifact->json_content);
-        $this->assertArrayHasKey('extracted_at', $parentArtifact->json_content);
-        $this->assertArrayHasKey('object_types', $parentArtifact->json_content);
-        $this->assertArrayHasKey('summary', $parentArtifact->json_content);
+        $this->parentArtifact->refresh();
+        $this->assertIsArray($this->parentArtifact->json_content);
+        $this->assertArrayHasKey('extracted_at', $this->parentArtifact->json_content);
+        $this->assertArrayHasKey('objects', $this->parentArtifact->json_content);
+        $this->assertArrayHasKey('summary', $this->parentArtifact->json_content);
 
         // Verify ISO8601 timestamp format
         $this->assertMatchesRegularExpression(
             '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/',
-            $parentArtifact->json_content['extracted_at']
+            $this->parentArtifact->json_content['extracted_at']
         );
     }
 
     #[Test]
     public function rollup_structure_matches_expected_format(): void
     {
-        // Given: TaskRun with multiple object types
-        $client = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Test Client',
-        ]);
+        // Given: Multiple root objects
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'Test Client'],
+            parentId: null,
+            parentType: null
+        );
 
-        $provider = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Provider',
-            'name'    => 'Test Provider',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client'   => [0 => [$client->id]],
-                    'Provider' => [0 => [$provider->id]],
-                ],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'name' => 'Test Provider'],
+            parentId: null,
+            parentType: null
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
         // Then: Summary counts are accurate
-        $parentArtifact->refresh();
-        $summary = $parentArtifact->json_content['summary'];
+        $this->parentArtifact->refresh();
+        $summary = $this->parentArtifact->json_content['summary'];
 
         $this->assertEquals(2, $summary['total_objects']);
         $this->assertArrayHasKey('by_type', $summary);
         $this->assertEquals(1, $summary['by_type']['Client']);
         $this->assertEquals(1, $summary['by_type']['Provider']);
+
+        // Both root objects should be in the objects array
+        $objects = $this->parentArtifact->json_content['objects'];
+        $this->assertCount(2, $objects);
     }
 
     // =========================================================================
@@ -210,324 +194,201 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     // =========================================================================
 
     #[Test]
-    public function rollup_with_empty_resolved_objects_sets_empty_structure(): void
+    public function rollup_with_no_extraction_artifacts_sets_empty_structure(): void
     {
-        // Given: TaskRun with no resolved objects
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
-
+        // Given: No extraction artifacts (only parent artifact)
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
-        // Then: json_content is set with empty object_types
-        $parentArtifact->refresh();
-        $this->assertIsArray($parentArtifact->json_content);
-        $this->assertEmpty($parentArtifact->json_content['object_types']);
-        $this->assertEquals(0, $parentArtifact->json_content['summary']['total_objects']);
-        $this->assertEmpty($parentArtifact->json_content['summary']['by_type']);
+        // Then: json_content is set with empty objects
+        $this->parentArtifact->refresh();
+        $this->assertIsArray($this->parentArtifact->json_content);
+        $this->assertEmpty($this->parentArtifact->json_content['objects']);
+        $this->assertEquals(0, $this->parentArtifact->json_content['summary']['total_objects']);
+        $this->assertEmpty($this->parentArtifact->json_content['summary']['by_type']);
     }
 
     #[Test]
     public function rollup_skips_processing_when_json_content_already_exists(): void
     {
-        // Given: TaskRun with parent artifact that already has json_content
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'New Client',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
+        // Given: Parent artifact that already has json_content
         $existingJsonContent = [
             'extracted_at' => '2024-01-01T00:00:00+00:00',
-            'object_types' => ['OldData' => ['count' => 99]],
+            'objects'      => [['id' => 99, 'type' => 'OldData', 'name' => 'Old']],
             'summary'      => ['total_objects' => 99, 'by_type' => ['OldData' => 99]],
         ];
 
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [0 => [$teamObject->id]],
-                ],
-            ],
-        ]);
+        $this->parentArtifact->json_content = $existingJsonContent;
+        $this->parentArtifact->save();
 
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => $existingJsonContent,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        // Create a new extraction artifact that would be collected
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'New Client'],
+            parentId: null,
+            parentType: null
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
         // Then: json_content is NOT overwritten
-        $parentArtifact->refresh();
-        $this->assertEquals($existingJsonContent, $parentArtifact->json_content);
-        $this->assertArrayHasKey('OldData', $parentArtifact->json_content['object_types']);
-        $this->assertArrayNotHasKey('Client', $parentArtifact->json_content['object_types']);
-    }
-
-    #[Test]
-    public function rollup_handles_partial_extraction_data(): void
-    {
-        // Given: TaskRun with some object types having data, others empty
-        $client = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Test Client',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client'   => [0 => [$client->id]],
-                    'Provider' => [0 => []], // Empty array for this type
-                ],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
-
-        // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
-
-        // Then: Only Client data is in the rollup
-        $parentArtifact->refresh();
-        $this->assertArrayHasKey('Client', $parentArtifact->json_content['object_types']);
-        $this->assertArrayNotHasKey('Provider', $parentArtifact->json_content['object_types']);
-        $this->assertEquals(1, $parentArtifact->json_content['summary']['total_objects']);
+        $this->parentArtifact->refresh();
+        $this->assertEquals($existingJsonContent, $this->parentArtifact->json_content);
     }
 
     #[Test]
     public function rollup_handles_no_output_artifact_gracefully(): void
     {
         // Given: TaskRun with no output artifacts attached
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
         $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [0 => [1]],
-                ],
-            ],
+            'task_definition_id' => $this->taskDefinition->id,
         ]);
 
         // When: Rolling up data (no output artifact attached)
         // Then: Should not throw an exception
         $this->rollupService->rollupTaskRunData($taskRun);
 
-        // No assertion needed - just verify no exception is thrown
         $this->assertTrue(true);
     }
 
     // =========================================================================
-    // Hierarchical Structure Tests
+    // Hierarchical Structure Tests (Using Artifact meta.parent_id)
     // =========================================================================
 
     #[Test]
-    public function rollup_correctly_nests_child_objects_under_parent_objects(): void
+    public function rollup_correctly_nests_child_objects_under_parent_via_meta(): void
     {
-        // Given: Parent object with child objects
-        $parentObject = TeamObject::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'type'           => 'Client',
-            'name'           => 'Parent Client',
-            'root_object_id' => null,
-        ]);
+        // Given: Root object and child object linked via meta.parent_id
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Parent Demand'],
+            parentId: null,
+            parentType: null
+        );
 
-        $childObject = TeamObject::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'type'           => 'Client',
-            'name'           => 'Child Client',
-            'root_object_id' => $parentObject->id,
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [
-                        0 => [$parentObject->id, $childObject->id],
-                    ],
-                ],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Client', 'name' => 'Child Client'],
+            parentId: 1,
+            parentType: 'Demand'
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
-        // Then: Parent object is at root level, child is nested
-        $parentArtifact->refresh();
-        $clientObjects = $parentArtifact->json_content['object_types']['Client']['objects'];
+        // Then: Child is nested under parent
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
 
-        // Only root objects should be at the top level
-        $rootObjects = array_filter($clientObjects, fn($obj) => $obj['id'] === $parentObject->id);
-        $this->assertCount(1, $rootObjects, 'Only parent object should be at root level');
+        // Only root objects should be in the top-level array
+        $this->assertCount(1, $objects);
 
-        // Child should be nested under parent
-        $parentInResult = $clientObjects[0];
-        $this->assertEquals($parentObject->id, $parentInResult['id']);
-        $this->assertArrayHasKey('children', $parentInResult);
-        $this->assertArrayHasKey('Client', $parentInResult['children']);
-        $this->assertCount(1, $parentInResult['children']['Client']);
-        $this->assertEquals($childObject->id, $parentInResult['children']['Client'][0]['id']);
+        $demandInResult = $objects[0];
+        $this->assertEquals(1, $demandInResult['id']);
+        $this->assertEquals('Demand', $demandInResult['type']);
+
+        // Child should be nested under snake_case of type
+        $this->assertArrayHasKey('client', $demandInResult);
+        $clientInResult = $demandInResult['client'];
+        $this->assertEquals(2, $clientInResult['id']);
+        $this->assertEquals('Client', $clientInResult['type']);
     }
 
     #[Test]
-    public function rollup_nests_cross_type_children_under_root_parent(): void
+    public function rollup_nests_multiple_children_as_array(): void
     {
-        // Given: Parent of one type with child of different type
-        $clientObject = TeamObject::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'type'           => 'Client',
-            'name'           => 'Client ABC',
-            'root_object_id' => null,
-        ]);
+        // Given: Parent with multiple children of same type
+        // Schema defines "providers" as array type (is_array_type: true)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Demand ABC'],
+            parentId: null,
+            parentType: null
+        );
 
-        $insuranceObject = TeamObject::factory()->create([
-            'team_id'        => $this->user->currentTeam->id,
-            'type'           => 'Insurance',
-            'name'           => 'Insurance Policy XYZ',
-            'root_object_id' => $clientObject->id,
-        ]);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'name' => 'Provider 1'],
+            parentId: 1,
+            parentType: 'Demand',
+            relationshipKey: 'providers',
+            isArrayType: true
+        );
 
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client'    => [0 => [$clientObject->id]],
-                    'Insurance' => [0 => [$insuranceObject->id]],
-                ],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 3, 'type' => 'Provider', 'name' => 'Provider 2'],
+            parentId: 1,
+            parentType: 'Demand',
+            relationshipKey: 'providers',
+            isArrayType: true
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
-        // Then: Insurance is nested under Client
-        $parentArtifact->refresh();
+        // Then: Multiple children are nested as array using schema-defined key "providers"
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
 
-        $clientObjects = $parentArtifact->json_content['object_types']['Client']['objects'];
-        $this->assertCount(1, $clientObjects);
+        $this->assertArrayHasKey('providers', $demandInResult);
+        $this->assertIsArray($demandInResult['providers']);
+        $this->assertCount(2, $demandInResult['providers']);
 
-        $clientInResult = $clientObjects[0];
-        $this->assertEquals($clientObject->id, $clientInResult['id']);
-        $this->assertArrayHasKey('Insurance', $clientInResult['children']);
-        $this->assertCount(1, $clientInResult['children']['Insurance']);
-        $this->assertEquals($insuranceObject->id, $clientInResult['children']['Insurance'][0]['id']);
+        $providerIds = array_column($demandInResult['providers'], 'id');
+        $this->assertContains(2, $providerIds);
+        $this->assertContains(3, $providerIds);
+    }
+
+    #[Test]
+    public function rollup_derives_relationship_key_from_child_type(): void
+    {
+        // Given: Relationship using type for key derivation
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Test Demand'],
+            parentId: null,
+            parentType: null
+        );
+
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Care Summary', 'name' => 'Care Summary Item'],
+            parentId: 1,
+            parentType: 'Demand'
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Child is nested under snake_case of type
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
+
+        // 'Care Summary' should become 'care_summary'
+        $this->assertArrayHasKey('care_summary', $demandInResult);
+        $this->assertEquals(2, $demandInResult['care_summary']['id']);
     }
 
     #[Test]
     public function rollup_summary_counts_are_accurate(): void
     {
         // Given: Multiple objects of different types
-        $clients = [];
         for ($i = 0; $i < 3; $i++) {
-            $clients[] = TeamObject::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'type'    => 'Client',
-                'name'    => "Client $i",
-            ]);
+            $this->createExtractionArtifact(
+                jsonContent: ['id' => $i + 1, 'type' => 'Client', 'name' => "Client $i"],
+                parentId: null,
+                parentType: null
+            );
         }
 
-        $providers = [];
         for ($i = 0; $i < 2; $i++) {
-            $providers[] = TeamObject::factory()->create([
-                'team_id' => $this->user->currentTeam->id,
-                'type'    => 'Provider',
-                'name'    => "Provider $i",
-            ]);
+            $this->createExtractionArtifact(
+                jsonContent: ['id' => $i + 10, 'type' => 'Provider', 'name' => "Provider $i"],
+                parentId: null,
+                parentType: null
+            );
         }
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client'   => [0 => array_column($clients, 'id')],
-                    'Provider' => [0 => array_column($providers, 'id')],
-                ],
-            ],
-        ]);
-
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
         // Then: Summary counts are correct
-        $parentArtifact->refresh();
-        $summary = $parentArtifact->json_content['summary'];
+        $this->parentArtifact->refresh();
+        $summary = $this->parentArtifact->json_content['summary'];
 
         $this->assertEquals(5, $summary['total_objects']);
         $this->assertEquals(3, $summary['by_type']['Client']);
@@ -535,121 +396,60 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     }
 
     // =========================================================================
-    // collectExtractedData and buildRollupStructure Direct Tests
+    // buildRollupFromArtifacts Direct Tests
     // =========================================================================
 
     #[Test]
-    public function collectExtractedData_returns_empty_array_when_no_resolved_objects(): void
+    public function buildRollupFromArtifacts_handles_empty_collection(): void
     {
-        // Given: TaskRun with no resolved objects
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [],
-        ]);
-
-        // When: Collecting extracted data
-        $result = $this->rollupService->collectExtractedData($taskRun);
-
-        // Then: Returns empty array
-        $this->assertIsArray($result);
-        $this->assertEmpty($result);
-    }
-
-    #[Test]
-    public function collectExtractedData_loads_attributes_for_team_objects(): void
-    {
-        // Given: TeamObject with attributes
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-        ]);
-
-        TeamObjectAttribute::factory()->create([
-            'team_object_id' => $teamObject->id,
-            'name'           => 'address',
-            'text_value'     => '123 Main St',
-        ]);
-
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [0 => [$teamObject->id]],
-                ],
-            ],
-        ]);
-
-        // When: Collecting extracted data
-        $result = $this->rollupService->collectExtractedData($taskRun);
-
-        // Then: TeamObject with attributes is returned
-        $this->assertArrayHasKey('Client', $result);
-        $this->assertCount(1, $result['Client']);
-
-        $collectedObject = $result['Client'][0];
-        $this->assertEquals($teamObject->id, $collectedObject->id);
-        $this->assertTrue($collectedObject->relationLoaded('attributes'));
-        $this->assertCount(1, $collectedObject->attributes);
-        $this->assertEquals('address', $collectedObject->attributes->first()->name);
-    }
-
-    #[Test]
-    public function buildRollupStructure_handles_empty_extracted_data(): void
-    {
-        // Given: Empty extracted data
-        $extractedData = [];
+        // Given: Empty collection
+        $artifacts = new Collection();
 
         // When: Building rollup structure
-        $result = $this->rollupService->buildRollupStructure($extractedData);
+        $result = $this->rollupService->buildRollupFromArtifacts($artifacts);
 
         // Then: Valid structure with zeros
         $this->assertArrayHasKey('extracted_at', $result);
-        $this->assertArrayHasKey('object_types', $result);
+        $this->assertArrayHasKey('objects', $result);
         $this->assertArrayHasKey('summary', $result);
-        $this->assertEmpty($result['object_types']);
+        $this->assertEmpty($result['objects']);
         $this->assertEquals(0, $result['summary']['total_objects']);
         $this->assertEmpty($result['summary']['by_type']);
     }
 
     #[Test]
-    public function buildRollupStructure_includes_json_value_attributes(): void
+    public function buildRollupFromArtifacts_merges_data_from_multiple_artifacts_for_same_object(): void
     {
-        // Given: TeamObject with json_value attribute
-        $teamObject = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Test Client',
-        ]);
+        // Given: Multiple artifacts for the same object ID (identity + remaining)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'John Smith'],
+            parentId: null,
+            parentType: null,
+            operation: ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY
+        );
 
-        TeamObjectAttribute::factory()->create([
-            'team_object_id' => $teamObject->id,
-            'name'           => 'metadata',
-            'text_value'     => null,
-            'json_value'     => ['key1' => 'value1', 'key2' => 'value2'],
-        ]);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'email' => 'john@example.com', 'phone' => '555-1234'],
+            parentId: null,
+            parentType: null,
+            operation: ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING
+        );
 
-        // Load attributes for the TeamObject
-        $teamObject->load('attributes');
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
-        $extractedData = [
-            'Client' => [$teamObject],
-        ];
+        // Then: Data from both artifacts is merged
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
+        $this->assertCount(1, $objects);
 
-        // When: Building rollup structure
-        $result = $this->rollupService->buildRollupStructure($extractedData);
+        $clientObject = $objects[0];
+        $this->assertEquals('John Smith', $clientObject['name']);
+        $this->assertEquals('john@example.com', $clientObject['email']);
+        $this->assertEquals('555-1234', $clientObject['phone']);
 
-        // Then: JSON value attributes are included
-        $clientObject = $result['object_types']['Client']['objects'][0];
-        $this->assertArrayHasKey('metadata', $clientObject['attributes']);
-        $this->assertEquals(['key1' => 'value1', 'key2' => 'value2'], $clientObject['attributes']['metadata']);
+        // Summary should count as 1 object
+        $this->assertEquals(1, $this->parentArtifact->json_content['summary']['total_objects']);
     }
 
     // =========================================================================
@@ -660,30 +460,15 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     public function getOutputArtifact_returns_latest_parent_artifact(): void
     {
         // Given: TaskRun with multiple parent artifacts
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-        ]);
-
-        $olderArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-        ]);
-        $taskRun->outputArtifacts()->attach($olderArtifact->id);
-
         $newerArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
             'parent_artifact_id' => null,
         ]);
-        $taskRun->outputArtifacts()->attach($newerArtifact->id);
+        $this->taskRun->outputArtifacts()->attach($newerArtifact->id);
 
         // When: Getting output artifact
-        $result = $this->rollupService->getOutputArtifact($taskRun);
+        $result = $this->rollupService->getOutputArtifact($this->taskRun);
 
         // Then: Returns the latest (highest ID) parent artifact
         $this->assertNotNull($result);
@@ -693,24 +478,20 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     #[Test]
     public function getOutputArtifact_returns_null_when_no_parent_artifact(): void
     {
-        // Given: TaskRun with only child artifacts
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
+        // Given: TaskRun with only child artifacts in outputArtifacts
         $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
         ]);
 
         $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
             'task_run_id'        => $taskRun->id,
             'parent_artifact_id' => null,
         ]);
 
-        // Only attach a child artifact to outputArtifacts
+        // Only attach a child artifact to outputArtifacts (not the parent)
         $childArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
+            'task_definition_id' => $this->taskDefinition->id,
             'task_run_id'        => $taskRun->id,
             'parent_artifact_id' => $parentArtifact->id,
         ]);
@@ -724,55 +505,190 @@ class ExtractionRollupServiceTest extends AuthenticatedTestCase
     }
 
     // =========================================================================
-    // Multi-Level Resolved Objects Tests
+    // Deep Nesting Tests
     // =========================================================================
 
     #[Test]
-    public function rollup_handles_objects_from_multiple_levels(): void
+    public function rollup_handles_deeply_nested_relationships(): void
     {
-        // Given: Objects resolved at different levels
-        $level0Object = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Level 0 Client',
-        ]);
+        // Given: 3-level hierarchy: Demand -> Provider -> Care Summary
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Demand', 'name' => 'Test Demand'],
+            parentId: null,
+            parentType: null
+        );
 
-        $level1Object = TeamObject::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'type'    => 'Client',
-            'name'    => 'Level 1 Client',
-        ]);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'Provider', 'name' => 'Test Provider'],
+            parentId: 1,
+            parentType: 'Demand'
+        );
 
-        $taskDefinition = TaskDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 3, 'type' => 'Care Summary', 'name' => 'Test Care Summary'],
+            parentId: 2,
+            parentType: 'Provider'
+        );
 
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Verify deep nesting
+        $this->parentArtifact->refresh();
+        $demandInResult = $this->parentArtifact->json_content['objects'][0];
+
+        $this->assertEquals('Demand', $demandInResult['type']);
+        $this->assertArrayHasKey('provider', $demandInResult);
+
+        $providerInResult = $demandInResult['provider'];
+        $this->assertEquals('Provider', $providerInResult['type']);
+        $this->assertArrayHasKey('care_summary', $providerInResult);
+
+        $careSummaryInResult = $providerInResult['care_summary'];
+        $this->assertEquals('Care Summary', $careSummaryInResult['type']);
+        $this->assertEquals(3, $careSummaryInResult['id']);
+    }
+
+    #[Test]
+    public function rollup_handles_circular_references_without_infinite_loop(): void
+    {
+        // Given: Objects that could form a circular reference
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'ObjectA', 'name' => 'Object A'],
+            parentId: null,
+            parentType: null
+        );
+
+        // Child points back to parent (circular)
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 2, 'type' => 'ObjectB', 'name' => 'Object B'],
+            parentId: 1,
+            parentType: 'ObjectA'
+        );
+
+        // Create another artifact where ObjectA appears as child of ObjectB
+        // This would create a cycle: A -> B -> A
+        Artifact::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
+            'parent_artifact_id' => $this->parentArtifact->id,
+            'json_content'       => ['id' => 1, 'type' => 'ObjectA', 'name' => 'Object A Cycle'],
             'meta'               => [
-                'resolved_objects' => [
-                    'Client' => [
-                        0 => [$level0Object->id],
-                        1 => [$level1Object->id],
-                    ],
-                ],
+                'operation'   => 'Extract Remaining',
+                'parent_id'   => 2,
+                'parent_type' => 'ObjectB',
             ],
         ]);
 
-        $parentArtifact = Artifact::factory()->create([
-            'task_definition_id' => $taskDefinition->id,
-            'task_run_id'        => $taskRun->id,
-            'parent_artifact_id' => null,
-            'json_content'       => null,
+        // When: Rolling up data
+        // Then: Should not hang or throw exception
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        $this->parentArtifact->refresh();
+        $this->assertIsArray($this->parentArtifact->json_content);
+        // Just verify it completed without hanging
+        $this->assertArrayHasKey('objects', $this->parentArtifact->json_content);
+    }
+
+    // =========================================================================
+    // Nested Artifact Structure Tests
+    // =========================================================================
+
+    #[Test]
+    public function rollup_collects_artifacts_from_nested_page_artifacts(): void
+    {
+        // Given: Page artifacts under parent, with extraction artifacts under pages
+        $pageArtifact = Artifact::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
+            'parent_artifact_id' => $this->parentArtifact->id,
+            'json_content'       => null, // Page artifacts don't have extraction data
+            'meta'               => ['page_number' => 1],
         ]);
-        $taskRun->outputArtifacts()->attach($parentArtifact->id);
+
+        // Extraction artifact under page artifact
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'Extracted Client'],
+            parentId: null,
+            parentType: null,
+            operation: 'Extract Identity',
+            parentArtifact: $pageArtifact
+        );
 
         // When: Rolling up data
-        $this->rollupService->rollupTaskRunData($taskRun);
+        $this->rollupService->rollupTaskRunData($this->taskRun);
 
-        // Then: Both objects from both levels are included
-        $parentArtifact->refresh();
-        $this->assertEquals(2, $parentArtifact->json_content['summary']['total_objects']);
-        $this->assertEquals(2, $parentArtifact->json_content['object_types']['Client']['count']);
+        // Then: Extraction artifact from nested page is collected
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
+        $this->assertCount(1, $objects);
+        $this->assertEquals('Client', $objects[0]['type']);
+        $this->assertEquals('Extracted Client', $objects[0]['name']);
+    }
+
+    #[Test]
+    public function rollup_extracts_leaf_object_from_hierarchical_json_content(): void
+    {
+        // Given: Artifact with hierarchical json_content (nested ancestors)
+        $this->createExtractionArtifact(
+            jsonContent: [
+                'id'     => 1,
+                'type'   => 'Demand',
+                'client' => [
+                    'id'    => 2,
+                    'type'  => 'Client',
+                    'name'  => 'Nested Client',
+                    'email' => 'nested@example.com',
+                ],
+            ],
+            parentId: null,
+            parentType: null
+        );
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: The leaf object (Client) is extracted
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
+
+        // Should find the leaf object
+        $this->assertCount(1, $objects);
+        $this->assertEquals(2, $objects[0]['id']);
+        $this->assertEquals('Client', $objects[0]['type']);
+        $this->assertEquals('Nested Client', $objects[0]['name']);
+        $this->assertEquals('nested@example.com', $objects[0]['email']);
+    }
+
+    #[Test]
+    public function rollup_filters_only_extraction_operation_artifacts(): void
+    {
+        // Given: Mix of extraction and non-extraction artifacts
+        $this->createExtractionArtifact(
+            jsonContent: ['id' => 1, 'type' => 'Client', 'name' => 'Extraction Client'],
+            parentId: null,
+            parentType: null,
+            operation: 'Extract Identity'
+        );
+
+        // Non-extraction artifact (classification)
+        Artifact::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+            'task_run_id'        => $this->taskRun->id,
+            'parent_artifact_id' => $this->parentArtifact->id,
+            'json_content'       => ['id' => 99, 'type' => 'Classification', 'name' => 'Should Not Appear'],
+            'meta'               => [
+                'operation' => 'Classify',
+            ],
+        ]);
+
+        // When: Rolling up data
+        $this->rollupService->rollupTaskRunData($this->taskRun);
+
+        // Then: Only extraction artifacts are collected
+        $this->parentArtifact->refresh();
+        $objects = $this->parentArtifact->json_content['objects'];
+        $this->assertCount(1, $objects);
+        $this->assertEquals('Client', $objects[0]['type']);
     }
 }
