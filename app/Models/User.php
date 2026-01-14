@@ -85,8 +85,7 @@ class User extends Authenticatable
             fn() => $this->roles()
                 ->with('permissions')
                 ->get()
-                ->map(fn(Role $role) => $role->permissions->pluck('name')->toArray())
-                ->keyBy('name')
+                ->mapWithKeys(fn(Role $role) => [$role->name => $role->permissions->pluck('name')->toArray()])
         );
     }
 

@@ -60,10 +60,13 @@
 				:thread="collaborationThread"
 				:loading="isCollaborationLoading"
 				:preview-variables="previewVariables"
+				:is-loading-job-dispatches="isLoadingJobDispatches"
 				class="h-full"
 				@start-collaboration="startCollaboration"
 				@send-message="sendMessage"
 				@screenshot-captured="uploadScreenshot"
+				@retry-build="handleRetryBuild"
+				@load-job-dispatches="loadJobDispatches"
 			/>
 		</div>
 
@@ -115,11 +118,15 @@ const error = ref<string | null>(null);
 const collaborationThread = ref<AgentThread | null>(null);
 const showVersionHistory = ref(false);
 
+// Lazy loading states
+const isLoadingJobDispatches = ref(false);
+const isLoadingVariables = ref(false);
+
 // Get the update action for the template name
 const updateTemplateAction = dxTemplateDefinition.getAction("update");
 
 // Initialize real-time collaboration subscription
-const { subscribeToThread } = useTemplateCollaboration(template);
+const { subscribeToThread, subscribeToTemplate, subscribeToJobDispatch } = useTemplateCollaboration(template);
 
 // Get actions using the standard pattern
 const startCollaborationAction = dxTemplateDefinition.getAction("start-collaboration");
@@ -225,14 +232,20 @@ async function loadTemplate() {
 			fields: {
 				html_content: true,
 				css_content: true,
-				template_variables: true,
 				history: true,
-				collaboration_threads: { messages: true }
+				collaboration_threads: { messages: true },
+				building_job_dispatch: true,
+				pending_build_context: true,
+				job_dispatch_count: true,
+				template_variable_count: true
 			}
 		});
 
 		if (response.data && response.data.length > 0) {
 			template.value = response.data[0];
+
+			// Subscribe to template updates for building status changes
+			await subscribeToTemplate(template.value);
 
 			// Set the collaboration thread if one exists and subscribe to updates
 			if (template.value.collaboration_threads?.length) {
@@ -248,6 +261,26 @@ async function loadTemplate() {
 	} finally {
 		isLoading.value = false;
 	}
+}
+
+/**
+ * Lazy load job dispatches when the Jobs tab is first accessed
+ */
+async function loadJobDispatches() {
+	if (!template.value || template.value.job_dispatches || isLoadingJobDispatches.value) return;
+	isLoadingJobDispatches.value = true;
+	await dxTemplateDefinition.routes.details(template.value, { job_dispatches: true });
+	isLoadingJobDispatches.value = false;
+}
+
+/**
+ * Lazy load template variables when needed
+ */
+async function loadTemplateVariables() {
+	if (!template.value || template.value.template_variables || isLoadingVariables.value) return;
+	isLoadingVariables.value = true;
+	await dxTemplateDefinition.routes.details(template.value, { template_variables: true });
+	isLoadingVariables.value = false;
 }
 
 /**
@@ -352,12 +385,35 @@ async function uploadScreenshot(requestId: string, file: File) {
 	console.warn("Screenshot upload not yet implemented with new pattern");
 }
 
+/**
+ * Handle retry build request from the preview component
+ * Clears the failed build lock and triggers a new build
+ */
+async function handleRetryBuild() {
+	if (!template.value) return;
+
+	// TODO: Call backend to clear the failed build and trigger a new one
+	// For now, just log the request
+	console.log("Retry build requested for template:", template.value.id);
+}
+
 // Watch for route changes
 watch(templateId, (newId) => {
 	if (newId) {
 		loadTemplate();
 	}
 });
+
+// Watch for building job dispatch changes to subscribe/unsubscribe
+watch(
+	() => template.value?.building_job_dispatch_id,
+	async (newId, oldId) => {
+		if (newId && newId !== oldId) {
+			await subscribeToJobDispatch(newId);
+		}
+	},
+	{ immediate: true }
+);
 
 onMounted(() => {
 	loadTemplate();

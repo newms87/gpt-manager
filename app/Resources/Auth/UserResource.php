@@ -16,6 +16,7 @@ class UserResource extends ActionResource
             'can'   => [
                 'viewDeveloperTools' => $user->can('view_developer_tools'),
                 'viewAuditing'       => $user->can('view_auditing'),
+                'viewJobsInUi'       => $user->can('view_jobs_in_ui'),
             ],
         ];
     }

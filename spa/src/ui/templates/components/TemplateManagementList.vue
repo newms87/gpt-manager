@@ -1,5 +1,5 @@
 <template>
-    <div class="template-management-list">
+    <div class="template-management-list h-full">
         <!-- Loading State -->
         <div v-if="isLoadingTemplates" class="flex justify-center py-12">
             <QSpinner size="lg" color="blue" />
@@ -31,9 +31,9 @@
         </div>
 
         <!-- Templates List -->
-        <div v-else class="space-y-4">
-            <!-- Header with Filter and Create Buttons -->
-            <div v-if="showCreateButton && displayTemplates.length > 0" class="flex justify-between items-center mb-4">
+        <div v-else class="h-full flex flex-col">
+            <!-- Header with Filter and Create Buttons (fixed) -->
+            <div v-if="showCreateButton && displayTemplates.length > 0" class="flex justify-between items-center mb-4 flex-shrink-0">
                 <!-- Type Filter -->
                 <div class="flex items-center gap-3">
                     <span class="text-sm text-gray-600">Filter:</span>
@@ -85,19 +85,21 @@
                 </div>
             </div>
 
-            <!-- Template Cards -->
-            <TemplateCard
-                v-for="template in filteredTemplates"
-                :key="template.id"
-                :template="template"
-                @update="handleTemplateUpdate"
-                @delete="handleTemplateDelete"
-                @edit-builder="handleEditBuilder"
-            />
+            <!-- Template Cards (scrollable) -->
+            <div class="flex-grow overflow-auto space-y-4">
+                <TemplateCard
+                    v-for="template in filteredTemplates"
+                    :key="template.id"
+                    :template="template"
+                    @update="handleTemplateUpdate"
+                    @delete="handleTemplateDelete"
+                    @edit-builder="handleEditBuilder"
+                />
 
-            <!-- No results after filtering -->
-            <div v-if="filteredTemplates.length === 0 && displayTemplates.length > 0" class="text-center py-8 text-slate-500">
-                No {{ typeFilter === 'html' ? 'HTML' : 'Google Docs' }} templates found.
+                <!-- No results after filtering -->
+                <div v-if="filteredTemplates.length === 0 && displayTemplates.length > 0" class="text-center py-8 text-slate-500">
+                    No {{ typeFilter === 'html' ? 'HTML' : 'Google Docs' }} templates found.
+                </div>
             </div>
         </div>
 

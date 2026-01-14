@@ -3,9 +3,9 @@
 namespace App\Services\Template;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
+use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
-use App\Models\Agent\AgentThreadRun;
 use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateDefinitionHistory;
 use App\Services\Demand\TemplateVariableService;
@@ -136,14 +136,29 @@ class TemplateDefinitionService
 
     /**
      * Send a message to an existing collaboration thread.
+     *
+     * Dispatches the message processing async and returns immediately.
+     *
+     * @return array{status: string, job_dispatch_id: int|null}
      */
-    public function sendMessage(AgentThread $thread, string $message, ?int $fileId = null): AgentThreadRun
+    public function sendMessage(AgentThread $thread, string $message, ?int $fileId = null): array
     {
         $this->validateThreadOwnership($thread);
 
-        $attachment = $fileId ? StoredFile::find($fileId) : null;
+        $job = new TemplateCollaborationJob($thread, $message, $fileId);
+        $job->dispatch();
 
-        return app(HtmlTemplateGenerationService::class)->sendMessage($thread, $message, $attachment);
+        $jobDispatch = $job->getJobDispatch();
+
+        // Attach job dispatch to template for Jobs tab tracking
+        if ($jobDispatch && $thread->collaboratable instanceof TemplateDefinition) {
+            $thread->collaboratable->jobDispatches()->attach($jobDispatch->id);
+        }
+
+        return [
+            'status'          => 'queued',
+            'job_dispatch_id' => $jobDispatch?->id,
+        ];
     }
 
     /**
@@ -157,7 +172,7 @@ class TemplateDefinitionService
             throw new ValidationError('Screenshot file not found');
         }
 
-        app(HtmlTemplateGenerationService::class)->handleScreenshotResponse($message, $screenshot);
+        app(TemplateBuildingService::class)->handleScreenshotResponse($message, $screenshot);
     }
 
     /**

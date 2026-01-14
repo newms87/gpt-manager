@@ -14,8 +14,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Newms87\Danx\Contracts\AuditableContract;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -41,12 +43,15 @@ class TemplateDefinition extends Model implements AuditableContract
         'html_content',
         'css_content',
         'preview_stored_file_id',
+        'building_job_dispatch_id',
+        'pending_build_context',
         'is_active',
     ];
 
     protected $casts = [
-        'metadata'  => 'array',
-        'is_active' => 'boolean',
+        'metadata'              => 'array',
+        'pending_build_context' => 'array',
+        'is_active'             => 'boolean',
     ];
 
     protected static function booted(): void
@@ -80,6 +85,11 @@ class TemplateDefinition extends Model implements AuditableContract
         return $this->belongsTo(StoredFile::class, 'preview_stored_file_id');
     }
 
+    public function buildingJobDispatch(): BelongsTo
+    {
+        return $this->belongsTo(JobDispatch::class, 'building_job_dispatch_id');
+    }
+
     public function templateVariables(): HasMany
     {
         return $this->hasMany(TemplateVariable::class)->orderBy('name');
@@ -93,6 +103,11 @@ class TemplateDefinition extends Model implements AuditableContract
     public function collaborationThreads(): MorphMany
     {
         return $this->morphMany(AgentThread::class, 'collaboratable');
+    }
+
+    public function jobDispatches(): MorphToMany
+    {
+        return $this->morphToMany(JobDispatch::class, 'model', 'job_dispatchables')->orderByDesc('job_dispatch.id');
     }
 
     public function scopeActive(Builder $query): Builder

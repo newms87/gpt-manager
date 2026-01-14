@@ -5,6 +5,7 @@ export interface AuthUser {
 	can?: {
 		viewDeveloperTools?: boolean;
 		viewAuditing?: boolean;
+		viewJobsInUi?: boolean;
 		[key: string]: boolean | undefined;
 	};
 }

@@ -67,6 +67,20 @@ export interface TemplateDefinitionHistory extends ActionTargetItem {
 }
 
 /**
+ * Job dispatch status for building operations
+ */
+export interface BuildingJobDispatch {
+  id: number;
+  status: "Pending" | "Running" | "Complete" | "Exception" | "Failed";
+  name?: string;
+  count?: number;
+  ran_at?: string;
+  completed_at?: string;
+  timeout_at?: string;
+  data?: Record<string, any>;
+}
+
+/**
  * Main template definition interface
  * Used by both TemplateDefinitions UI and the HTML Template Builder components
  */
@@ -89,12 +103,19 @@ export interface TemplateDefinition extends ActionTargetItem {
   stored_file?: UploadedFile;
   preview_stored_file_id?: number;
   preview_stored_file?: UploadedFile;
+  // Building status fields
+  building_job_dispatch_id?: number;
+  pending_build_context?: string[];
+  building_job_dispatch?: BuildingJobDispatch;
   // Common fields
   template_variables?: TemplateVariable[];
   template_variables_count?: number;
   history?: TemplateDefinitionHistory[];
   history_count?: number;
   collaboration_threads?: AgentThread[];
+  job_dispatches?: BuildingJobDispatch[];
+  job_dispatch_count?: number | null;
+  template_variable_count?: number;
   user?: {
     id: number;
     name: string;

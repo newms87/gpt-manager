@@ -16,6 +16,14 @@
 							:html="template.html_content || ''"
 							:css="template.css_content"
 							:variables="previewVariables"
+							:building-job-dispatch="template.building_job_dispatch"
+							:pending-build-context="template.pending_build_context || []"
+							:job-dispatches="template.job_dispatches || []"
+							:job-dispatch-count="template.job_dispatch_count"
+							:can-view-jobs="canViewJobs"
+							:is-loading-job-dispatches="isLoadingJobDispatches"
+							@retry-build="handleRetryBuild"
+							@load-job-dispatches="emit('load-job-dispatches')"
 						/>
 					</div>
 				</template>
@@ -104,6 +112,7 @@ import {
 	SendMessagePayload
 } from "@/components/Modules/Collaboration";
 import HtmlTemplatePreview from "@/components/Modules/Templates/HtmlTemplatePreview.vue";
+import { authUser } from "@/helpers/auth";
 import type { TemplateDefinition, TemplateUpdatePayload } from "@/ui/templates/types";
 import { AgentThread } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
@@ -114,10 +123,12 @@ const props = withDefaults(defineProps<{
 	thread?: AgentThread | null;
 	loading?: boolean;
 	previewVariables?: Record<string, string>;
+	isLoadingJobDispatches?: boolean;
 }>(), {
 	thread: null,
 	loading: false,
-	previewVariables: () => ({})
+	previewVariables: () => ({}),
+	isLoadingJobDispatches: false
 });
 
 const emit = defineEmits<{
@@ -125,6 +136,8 @@ const emit = defineEmits<{
 	"start-collaboration": [files: File[], prompt: string];
 	"send-message": [payload: SendMessagePayload];
 	"screenshot-captured": [requestId: string, file: File];
+	"retry-build": [];
+	"load-job-dispatches": [];
 }>();
 
 const previewContainerRef = ref<HTMLElement | null>(null);
@@ -139,6 +152,13 @@ const initialPrompt = ref("");
  */
 const canStartCollaboration = computed(() => {
 	return initialPrompt.value.trim().length > 0 || pendingFiles.value.length > 0;
+});
+
+/**
+ * Check if the user has permission to view jobs in the UI
+ */
+const canViewJobs = computed(() => {
+	return authUser.value?.can?.viewJobsInUi ?? false;
 });
 
 /**
@@ -182,6 +202,13 @@ function onScreenshotCaptured(file: File) {
 function onScreenshotError(error: Error) {
 	console.error("Screenshot capture failed:", error);
 	pendingScreenshotRequestId.value = null;
+}
+
+/**
+ * Handle retry build request from the preview component
+ */
+function handleRetryBuild() {
+	emit("retry-build");
 }
 
 </script>

@@ -6,6 +6,7 @@ use App\Models\Template\TemplateDefinition;
 use App\Resources\Agent\AgentThreadResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
+use Newms87\Danx\Resources\Job\JobDispatchResource;
 use Newms87\Danx\Resources\StoredFileResource;
 
 class TemplateDefinitionResource extends ActionResource
@@ -13,26 +14,35 @@ class TemplateDefinitionResource extends ActionResource
     public static function data(TemplateDefinition $templateDefinition): array
     {
         return [
-            'id'            => $templateDefinition->id,
-            'name'          => $templateDefinition->name,
-            'description'   => $templateDefinition->description,
-            'type'          => $templateDefinition->type,
-            'category'      => $templateDefinition->category,
-            'is_active'     => $templateDefinition->is_active,
-            'metadata'      => $templateDefinition->metadata,
-            'template_url'  => $templateDefinition->getTemplateUrl(),
-            'google_doc_id' => $templateDefinition->extractGoogleDocId(),
-            'created_at'    => $templateDefinition->created_at,
-            'updated_at'    => $templateDefinition->updated_at,
+            'id'                       => $templateDefinition->id,
+            'name'                     => $templateDefinition->name,
+            'description'              => $templateDefinition->description,
+            'type'                     => $templateDefinition->type,
+            'category'                 => $templateDefinition->category,
+            'is_active'                => $templateDefinition->is_active,
+            'metadata'                 => $templateDefinition->metadata,
+            'template_url'             => $templateDefinition->getTemplateUrl(),
+            'google_doc_id'            => $templateDefinition->extractGoogleDocId(),
+            'created_at'               => $templateDefinition->created_at,
+            'updated_at'               => $templateDefinition->updated_at,
+            'building_job_dispatch_id' => $templateDefinition->building_job_dispatch_id,
+            'pending_build_context'    => $templateDefinition->pending_build_context,
+
+            // Counts for lazy-loaded relationships (always included, lightweight)
+            'job_dispatch_count'       => fn() => auth()->user()?->can('view_jobs_in_ui')
+                ? $templateDefinition->jobDispatches()->count()
+                : null,
+            'template_variable_count'  => fn() => $templateDefinition->templateVariables()->count(),
 
             // HTML template fields (lazy loaded)
             'html_content' => fn() => $templateDefinition->html_content,
             'css_content'  => fn() => $templateDefinition->css_content,
 
             // Relationships (loaded conditionally)
-            'stored_file'         => fn($fields) => $templateDefinition->storedFile ? StoredFileResource::make($templateDefinition->storedFile, $fields) : null,
-            'preview_stored_file' => fn($fields) => $templateDefinition->previewStoredFile ? StoredFileResource::make($templateDefinition->previewStoredFile, $fields) : null,
-            'user'                => fn($fields) => $templateDefinition->user ? [
+            'building_job_dispatch' => fn($fields) => $templateDefinition->buildingJobDispatch ? JobDispatchResource::make($templateDefinition->buildingJobDispatch, $fields) : null,
+            'stored_file'           => fn($fields) => $templateDefinition->storedFile ? StoredFileResource::make($templateDefinition->storedFile, $fields) : null,
+            'preview_stored_file'   => fn($fields) => $templateDefinition->previewStoredFile ? StoredFileResource::make($templateDefinition->previewStoredFile, $fields) : null,
+            'user'                  => fn($fields) => $templateDefinition->user ? [
                 'id'    => $templateDefinition->user->id,
                 'name'  => $templateDefinition->user->name,
                 'email' => $templateDefinition->user->email,
@@ -40,6 +50,9 @@ class TemplateDefinitionResource extends ActionResource
             'template_variables'    => fn($fields) => TemplateVariableResource::collection($templateDefinition->templateVariables, $fields),
             'history'               => fn($fields) => TemplateDefinitionHistoryResource::collection($templateDefinition->history, $fields),
             'collaboration_threads' => fn($fields) => AgentThreadResource::collection($templateDefinition->collaborationThreads, $fields),
+            'job_dispatches'        => fn($fields) => auth()->user()?->can('view_jobs_in_ui')
+                ? JobDispatchResource::collection($templateDefinition->jobDispatches()->with('runningAuditRequest')->get(), $fields)
+                : null,
         ];
     }
 
@@ -47,14 +60,16 @@ class TemplateDefinitionResource extends ActionResource
     public static function details(Model $model, ?array $includeFields = null): array
     {
         return static::make($model, $includeFields ?? [
-            'stored_file'           => true,
-            'preview_stored_file'   => true,
-            'user'                  => true,
-            'template_variables'    => true,
-            'history'               => true,
-            'collaboration_threads' => ['messages' => true],
-            'html_content'          => true,
-            'css_content'           => true,
+            'stored_file'            => true,
+            'preview_stored_file'    => true,
+            'building_job_dispatch'  => true,
+            'user'                   => true,
+            'template_variables'     => true,
+            'history'                => true,
+            'collaboration_threads'  => ['messages' => true],
+            'html_content'           => true,
+            'css_content'            => true,
+            'job_dispatches'         => true,
         ]);
     }
 }

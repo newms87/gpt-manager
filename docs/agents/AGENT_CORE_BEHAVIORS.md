@@ -231,6 +231,19 @@ Never kill other processes or retry in a loop.
 
 ---
 
+### 🚨 NEVER LOG OUT DURING TESTING
+
+**NEVER navigate to /logout or log the user out during browser testing.**
+
+When permissions, user data, or any cached data changes:
+1. Clear the entire cache: `cache()->clear()` (this is local testing - always safe)
+2. Refresh the page in the browser
+3. Changes will be picked up immediately
+
+Logging out disrupts the testing flow and is NEVER necessary. Just clear the cache and refresh.
+
+---
+
 ### 🚨 quasar-ui-danx: NEVER Rebuild
 
 **Vite HMR handles all changes instantly. DO NOT rebuild after making changes to quasar-ui-danx.**

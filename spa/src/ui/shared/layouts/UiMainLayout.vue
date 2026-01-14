@@ -1,15 +1,15 @@
 <template>
-  <div class="ui-main-layout">
-    <div class="bg-white rounded-xl shadow-sm border border-slate-200/60 overflow-hidden">
-      <header v-if="$slots.header" class="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/50">
+  <div class="ui-main-layout h-full p-4">
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200/60 h-full flex flex-col overflow-hidden">
+      <header v-if="$slots.header" class="border-b border-slate-200/60 bg-gradient-to-r from-slate-50 to-blue-50/50 flex-shrink-0">
         <slot name="header" />
       </header>
-      
-      <main class="p-6">
+
+      <main class="p-6 flex-grow overflow-hidden">
         <slot />
       </main>
-      
-      <footer v-if="$slots.footer" class="border-t border-slate-200/60 bg-slate-50/50">
+
+      <footer v-if="$slots.footer" class="border-t border-slate-200/60 bg-slate-50/50 flex-shrink-0">
         <slot name="footer" />
       </footer>
     </div>

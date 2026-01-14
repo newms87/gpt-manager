@@ -18,3 +18,4 @@ Broadcast::channel('UsageSummary.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('TeamObject.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('UiDemand.{teamId}', $broadcastAuthTeam);
 Broadcast::channel('ApiLog.{teamId}', $broadcastAuthTeam);
+Broadcast::channel('TemplateDefinition.{teamId}', $broadcastAuthTeam);

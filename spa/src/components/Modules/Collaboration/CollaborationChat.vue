@@ -11,15 +11,6 @@
 					@screenshot-needed="$emit('screenshot-needed', $event)"
 				/>
 			</ListTransition>
-
-			<!-- Thinking indicator when thread is running -->
-			<div
-				v-if="thread.is_running"
-				class="flex items-center text-slate-600 bg-white rounded-lg p-3 border border-slate-200 shadow-sm animate-pulse"
-			>
-				<QSpinner color="sky" size="sm" class="mr-3" />
-				<span class="text-sm">Thinking...</span>
-			</div>
 		</div>
 
 		<!-- Input area - sticky at bottom -->
@@ -56,6 +47,7 @@
 						v-model="messageText"
 						placeholder="Type a message... (Ctrl+Enter to send)"
 						:disable="loading || thread.is_running"
+						theme="light"
 						min-height="60px"
 						max-height="200px"
 						class="text-sm"
@@ -97,7 +89,6 @@ import {
 	FaSolidPaperclip as AttachIcon,
 	FaSolidPaperPlane as SendIcon
 } from "danx-icon";
-import { QSpinner } from "quasar";
 import { ActionButton, ListTransition, MarkdownEditor } from "quasar-ui-danx";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { AgentThreadMessage } from "@/types";
@@ -162,9 +153,14 @@ const visibleMessages = computed<AgentThreadMessage[]>(() => {
 		return dateA - dateB;
 	});
 
-	// Filter out system-generated prompts from user messages
+	// Filter out system prompts and system-generated prompts
 	return sortedMessages.filter((msg) => {
-		// Only filter user messages - assistant messages are always shown
+		// Filter out messages marked as system prompts (from backend)
+		if (msg.data?.is_system_prompt === true) {
+			return false;
+		}
+
+		// Only filter user messages further - assistant messages pass through
 		if (msg.role !== "user") return true;
 
 		// Hide messages that look like system-generated prompts

@@ -54,7 +54,16 @@
 					</div>
 					<span class="text-green-800 font-medium">{{ displayContent }}</span>
 				</div>
-				<!-- JSON data display (non-code responses) -->
+				<!-- Conversation agent response (message field only) -->
+				<MarkdownEditor
+					v-else-if="isConversationResponse"
+					:model-value="displayContent || ''"
+					readonly
+					hide-footer
+					theme="light"
+					editor-class="text-slate-800 bg-slate-50 rounded"
+				/>
+				<!-- JSON data display (other non-code responses) -->
 				<CodeViewer
 					v-else-if="isJSON(message.content)"
 					:model-value="message.content"
@@ -67,6 +76,7 @@
 					v-else-if="!isThinking"
 					:model-value="displayContent || ''"
 					readonly
+					hide-footer
 					theme="light"
 					editor-class="text-slate-800 bg-slate-50 rounded"
 				/>
@@ -189,21 +199,37 @@ const isCodeGeneration = computed(() => {
 });
 
 /**
+ * Check if this is a conversation agent response (has 'message' field, no html_content)
+ */
+const isConversationResponse = computed(() => {
+	if (props.message.role !== "assistant") return false;
+	if (!isJSON(props.message.content)) return false;
+	try {
+		const json = JSON.parse(props.message.content);
+		// Has message field but is NOT a code generation response
+		return json.message && !json.html_content && !json.css_content;
+	} catch {
+		return false;
+	}
+});
+
+/**
  * Get the display content for the message
  * For assistant messages with generated code, show commentary only
+ * For conversation agent responses, show just the message field
  */
 const displayContent = computed(() => {
 	if (props.message.role === "user") {
 		return props.message.content;
 	}
 
-	// Try to parse as JSON (assistant code response)
+	// Try to parse as JSON (assistant response)
 	if (isJSON(props.message.content)) {
 		try {
 			const json = JSON.parse(props.message.content);
-			// If it has html_content, this is a code generation response
+
+			// Code generation response (html_content/css_content present)
 			if (json.html_content || json.css_content) {
-				// Return commentary if available, or a summary
 				if (json.commentary) return json.commentary;
 				if (json.explanation) return json.explanation;
 				if (json.message) return json.message;
@@ -214,7 +240,13 @@ const displayContent = computed(() => {
 				if (json.variable_names?.length) updates.push(`${json.variable_names.length} variables`);
 				return `Updated: ${updates.join(", ")}`;
 			}
-			// Not a code response, return original content
+
+			// Conversation agent response (has 'message' field but no html_content)
+			if (json.message) {
+				return json.message;
+			}
+
+			// Other JSON responses, return original content
 			return props.message.content;
 		} catch {
 			return props.message.content;
