@@ -1,30 +1,31 @@
 <template>
-	<QCard class="bg-slate-700 p-3">
+	<QCard :class="themeClass('bg-slate-700', 'bg-white shadow border border-slate-200')" class="p-3">
 		<div class="flex items-center">
 			<div class="flex items-center space-x-3 flex-grow">
 				<div class="bg-red-900 rounded-2xl px-3 py-1">{{ levelName }}</div>
-				<div class="font-semibold">{{ error.error_class }}</div>
-				<div class="px-1 bg-slate-500 rounded-lg">{{ error.code }}</div>
+				<div :class="themeClass('', 'text-slate-800')" class="font-semibold">{{ error.error_class }}</div>
+				<div :class="themeClass('bg-slate-500', 'bg-slate-200 text-slate-700')" class="px-1 rounded-lg">{{ error.code }}</div>
 			</div>
 			<div class="flex items-center">
-				<ShowHideButton v-model="showVendor" label="Vendor Files" class="bg-slate-800 mr-2" />
-				<div class="bg-slate-900 px-4 py-1 rounded-2xl">
+				<ShowHideButton v-model="showVendor" label="Vendor Files" :class="themeClass('bg-slate-800', 'bg-slate-200 text-slate-700')" class="mr-2" />
+				<div :class="themeClass('bg-slate-900', 'bg-slate-100 text-slate-700')" class="px-4 py-1 rounded-2xl">
 					{{ fDateTime(error.created_at) }}
 				</div>
 			</div>
 		</div>
-		<div class="whitespace-pre-wrap my-4">
+		<div :class="themeClass('', 'text-slate-700')" class="whitespace-pre-wrap my-4">
 			{{ error.message }}
 		</div>
-		<div class="flex items-center space-x-2 text-base bg-slate-900 px-3 py-1">
-			<div class="text-slate-400">{{ error.file }}</div>
-			<div>@ {{ error.line }}</div>
+		<div :class="themeClass('bg-slate-900', 'bg-slate-100')" class="flex items-center space-x-2 text-base px-3 py-1">
+			<div :class="themeClass('text-slate-400', 'text-slate-500')">{{ error.file }}</div>
+			<div :class="themeClass('', 'text-slate-700')">@ {{ error.line }}</div>
 		</div>
 		<div>
 			<div
 				v-for="(trace, index) in stackTrace"
 				:key="index"
-				class="flex-x space-x-2 text-sm bg-slate-800 my-1 px-3 py-1 rounded"
+				:class="themeClass('bg-slate-800', 'bg-slate-50 border border-slate-200')"
+				class="flex-x space-x-2 text-sm my-1 px-3 py-1 rounded"
 			>
 				<div class="flex-grow flex-nowrap flex items-center space-x-1">
 					<div class="text-sky-600">
@@ -33,7 +34,7 @@
 					</div>
 					<div class="text-sky-500 text-no-wrap">@ {{ trace.line }}</div>
 				</div>
-				<div class="flex items-center space-x-2 text-slate-400">
+				<div :class="themeClass('text-slate-400', 'text-slate-500')" class="flex items-center space-x-2">
 					<div>
 						{{ trace.type?.replace(/^.*\//, "") }}
 						<QTooltip>{{ trace.type }}</QTooltip>
@@ -47,8 +48,11 @@
 </template>
 <script setup lang="ts">
 import { ErrorLogEntry } from "@/components/Modules/Audits/audit-requests";
+import { useAuditCardTheme } from "@/composables/useAuditCardTheme";
 import { fDateTime, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
+
+const { themeClass } = useAuditCardTheme();
 
 const props = defineProps<{
 	error: ErrorLogEntry

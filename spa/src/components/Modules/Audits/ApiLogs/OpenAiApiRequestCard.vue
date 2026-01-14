@@ -1,23 +1,23 @@
 <template>
-    <div class="bg-slate-800 rounded p-3 space-y-3">
+    <div :class="themeClass('bg-slate-800', 'bg-slate-100 border border-slate-200')" class="rounded p-3 space-y-3">
         <!-- Header Pills -->
         <div class="flex items-center gap-2 flex-wrap">
             <LabelPillWidget
                 v-if="requestData?.model"
                 :label="requestData.model"
-                color="purple"
+                :color="isDark ? 'purple' : 'purple-soft'"
                 size="xs"
             />
             <LabelPillWidget
                 v-if="requestData?.reasoning?.effort"
                 :label="`Reasoning: ${requestData.reasoning.effort}`"
-                color="amber"
+                :color="isDark ? 'amber' : 'amber-soft'"
                 size="xs"
             />
             <LabelPillWidget
                 v-if="requestData?.service_tier"
                 :label="`Service: ${requestData.service_tier}`"
-                color="slate"
+                :color="isDark ? 'slate' : 'slate-soft'"
                 size="xs"
             />
         </div>
@@ -25,10 +25,10 @@
         <!-- Instructions -->
         <div v-if="requestData?.instructions">
             <div class="flex items-center gap-2 mb-2">
-                <div class="text-sm font-bold">Instructions</div>
+                <div :class="themeClass('text-slate-200', 'text-slate-700')" class="text-sm font-bold">Instructions</div>
                 <ShowHideButton v-model="showInstructions" label="" size="xs" color="sky-invert" />
             </div>
-            <div v-if="showInstructions" class="text-sm">
+            <div v-if="showInstructions" :class="themeClass('text-slate-300', 'text-slate-600')" class="text-sm">
                 <div v-if="!showFullInstructions && instructionsPreview" class="mb-2">
                     {{ instructionsPreview }}
                     <ActionButton
@@ -48,7 +48,7 @@
         <!-- Input Messages -->
         <div v-if="normalizedInput.length">
             <div class="flex items-center justify-between mb-2">
-                <div class="text-sm font-bold">Input Messages ({{ normalizedInput.length }})</div>
+                <div :class="themeClass('text-slate-200', 'text-slate-700')" class="text-sm font-bold">Input Messages ({{ normalizedInput.length }})</div>
                 <ActionButton
                     :label="allMessagesExpanded ? 'Hide All' : 'Show All'"
                     color="sky"
@@ -60,13 +60,14 @@
                 <div
                     v-for="(inputItem, index) in normalizedInput"
                     :key="index"
-                    class="bg-slate-900 rounded p-2 mb-2"
+                    :class="themeClass('bg-slate-900', 'bg-white border border-slate-200')"
+                    class="rounded p-2 mb-2"
                 >
                     <!-- Header row: Icon, Text toggle, Image toggle -->
                     <div class="flex items-center gap-2">
                         <!-- Role Icon -->
                         <div class="rounded-full p-1 w-6 h-6 flex items-center justify-center flex-shrink-0" :class="getRoleClass(inputItem.role)">
-                            <component :is="getRoleIcon(inputItem.role)" class="w-3 text-slate-300" />
+                            <component :is="getRoleIcon(inputItem.role)" :class="themeClass('text-slate-300', 'text-white')" class="w-3" />
                         </div>
 
                         <!-- Text toggle -->
@@ -100,11 +101,11 @@
                             <template v-for="(imgUrl, imgIndex) in getMessageImages(inputItem).slice(0, 5)" :key="imgIndex">
                                 <FilePreview :src="imgUrl" class="w-6 h-6 flex-shrink-0 rounded" />
                             </template>
-                            <span v-if="getMessageImages(inputItem).length > 5" class="text-xs text-slate-500 flex-shrink-0">
+                            <span :class="themeClass('text-slate-500', 'text-slate-400')" class="text-xs flex-shrink-0">
                                 +{{ getMessageImages(inputItem).length - 5 }}
                             </span>
                             <!-- Text preview -->
-                            <div class="text-sm text-slate-400 truncate">
+                            <div :class="themeClass('text-slate-400', 'text-slate-500')" class="text-sm truncate">
                                 {{ getMessagePreview(inputItem) }}
                             </div>
                         </div>
@@ -126,6 +127,7 @@
                             <CodeViewer
                                 :model-value="text"
                                 :format="isJSON(text) ? 'yaml' : 'markdown'"
+                                :theme="isDark ? 'dark' : 'light'"
                                 default-code-format="yaml"
                             />
                         </template>
@@ -137,19 +139,20 @@
         <!-- Response Format -->
         <div v-if="requestData?.text?.format">
             <div class="flex items-center gap-2 mb-2">
-                <div class="text-sm font-bold">Response Format</div>
+                <div :class="themeClass('text-slate-200', 'text-slate-700')" class="text-sm font-bold">Response Format</div>
                 <ShowHideButton v-model="showResponseFormat" label="" size="xs" color="sky-invert" />
             </div>
-            <div v-if="showResponseFormat" class="bg-slate-900 rounded p-2">
-                <div class="text-xs mb-1">
-                    Type: <span class="text-sky-300">{{ requestData.text.format.type }}</span>
+            <div v-if="showResponseFormat" :class="themeClass('bg-slate-900', 'bg-white border border-slate-200')" class="rounded p-2">
+                <div :class="themeClass('text-slate-300', 'text-slate-600')" class="text-xs mb-1">
+                    Type: <span :class="themeClass('text-sky-300', 'text-sky-600')">{{ requestData.text.format.type }}</span>
                 </div>
-                <div v-if="requestData.text.format.name" class="text-xs mb-2">
-                    Schema: <span class="text-sky-300">{{ requestData.text.format.name }}</span>
+                <div v-if="requestData.text.format.name" :class="themeClass('text-slate-300', 'text-slate-600')" class="text-xs mb-2">
+                    Schema: <span :class="themeClass('text-sky-300', 'text-sky-600')">{{ requestData.text.format.name }}</span>
                 </div>
                 <CodeViewer
                     v-if="requestData.text.format.schema"
                     :model-value="requestData.text.format.schema"
+                    :theme="isDark ? 'dark' : 'light'"
                     format="yaml"
                 />
             </div>
@@ -158,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import { useAuditCardTheme } from "@/composables/useAuditCardTheme";
 import {
     FaRegularUser as UserIcon,
     FaSolidRobot as AssistantIcon,
@@ -175,6 +179,8 @@ import {
     ShowHideButton
 } from "quasar-ui-danx";
 import { computed, ref } from "vue";
+
+const { isDark, themeClass } = useAuditCardTheme();
 
 const props = defineProps<{
     requestData: any

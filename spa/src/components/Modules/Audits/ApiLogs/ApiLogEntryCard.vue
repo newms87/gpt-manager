@@ -1,8 +1,8 @@
 <template>
-    <QCard class="bg-slate-700 p-3 overflow-hidden min-w-0">
+    <QCard :class="themeClass('bg-slate-700', 'bg-white shadow border border-slate-200')" class="p-3 overflow-hidden min-w-0">
         <div class="flex-x overflow-hidden">
             <div class="flex-x space-x-3 flex-grow">
-                <LabelPillWidget :label="'api-log: ' + apiLog.id" color="sky" size="xs" />
+                <LabelPillWidget :label="'api-log: ' + apiLog.id" :color="isDark ? 'sky' : 'sky-soft'" size="xs" />
                 <div class="rounded-2xl px-3 py-1" :class="methodClass">{{ apiLog.method }}</div>
                 <ApiStatusCodeBadge :status-code="apiLog.status_code" />
             </div>
@@ -11,57 +11,53 @@
                     :start-time="apiLog.started_at"
                     :end-time="apiLog.finished_at"
                 />
-                <LabelPillWidget color="slate" size="sm">
+                <LabelPillWidget :color="isDark ? 'slate' : 'slate-soft'" size="sm">
                     {{ fDateTime(apiLog.created_at) }}
                     <QTooltip class="text-base">{{ fDateTimeMs(apiLog.created_at) }}</QTooltip>
                 </LabelPillWidget>
             </div>
         </div>
-        <div class="mt-5 font-semibold text-base text-no-wrap overflow-hidden overflow-ellipsis max-w-full">
+        <div :class="themeClass('text-slate-200', 'text-slate-800')" class="mt-5 font-semibold text-base text-no-wrap overflow-hidden overflow-ellipsis max-w-full">
             {{ decodedUrl }}
             <QTooltip>{{ decodedUrl }}</QTooltip>
         </div>
 
         <!-- Headers Section -->
-        <div class="mt-4 border-t border-slate-600 py-2">
+        <div :class="themeClass('border-slate-600', 'border-slate-200')" class="mt-4 border-t py-2">
             <div class="flex items-center gap-2">
-                <div class="font-semibold text-slate-300">
+                <div :class="themeClass('text-slate-300', 'text-slate-600')" class="font-semibold">
                     Headers ({{ headerCount }} {{ headerCount === 1 ? "entry" : "entries" }})
                 </div>
                 <ShowHideButton v-model="showHeaders" size="xs" color="sky-invert" />
             </div>
             <div v-if="showHeaders" class="mt-3">
                 <div v-for="header in requestHeaders" :key="header.name" class="flex-x space-x-2 py-1">
-                    <div class="text-slate-400 min-w-32">{{ header.name }}:</div>
+                    <div :class="themeClass('text-slate-400', 'text-slate-500')" class="min-w-32">{{ header.name }}:</div>
                     <div>{{ header.value }}</div>
                 </div>
             </div>
         </div>
 
         <!-- Request Section -->
-        <div class="border-t border-slate-600 py-2">
+        <div :class="themeClass('border-slate-600', 'border-slate-200')" class="border-t py-2">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="font-semibold text-slate-300">
+                    <div :class="themeClass('text-slate-300', 'text-slate-600')" class="font-semibold">
                         Request ({{ fNumber(requestBytes) }} bytes)
                     </div>
                     <ShowHideButton v-model="showRequest" size="xs" color="sky-invert" />
                 </div>
                 <div v-if="isOpenAiResponsesApi" class="flex-x gap-1">
-                    <QBtn
-                        flat
-                        dense
-                        size="xs"
-                        :class="showRawRequest ? 'text-slate-400' : 'text-sky-400 bg-slate-600'"
+                    <ActionButton
                         label="Formatted"
+                        size="xxs"
+                        :color="showRawRequest ? (isDark ? 'slate' : 'slate-soft') : 'sky'"
                         @click="showRawRequest = false"
                     />
-                    <QBtn
-                        flat
-                        dense
-                        size="xs"
-                        :class="showRawRequest ? 'text-sky-400 bg-slate-600' : 'text-slate-400'"
+                    <ActionButton
                         label="Raw"
+                        size="xxs"
+                        :color="showRawRequest ? 'sky' : (isDark ? 'slate' : 'slate-soft')"
                         @click="showRawRequest = true"
                     />
                 </div>
@@ -78,29 +74,25 @@
         </div>
 
         <!-- Response Section -->
-        <div class="border-t border-slate-600 py-2">
+        <div :class="themeClass('border-slate-600', 'border-slate-200')" class="border-t py-2">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <div class="font-semibold text-slate-300">
+                    <div :class="themeClass('text-slate-300', 'text-slate-600')" class="font-semibold">
                         Response ({{ fNumber(responseBytes) }} bytes)
                     </div>
                     <ShowHideButton v-model="showResponse" size="xs" color="sky-invert" />
                 </div>
                 <div v-if="isOpenAiResponsesApi" class="flex-x gap-1">
-                    <QBtn
-                        flat
-                        dense
-                        size="xs"
-                        :class="showRawResponse ? 'text-slate-400' : 'text-sky-400 bg-slate-600'"
+                    <ActionButton
                         label="Formatted"
+                        size="xxs"
+                        :color="showRawResponse ? (isDark ? 'slate' : 'slate-soft') : 'sky'"
                         @click="showRawResponse = false"
                     />
-                    <QBtn
-                        flat
-                        dense
-                        size="xs"
-                        :class="showRawResponse ? 'text-sky-400 bg-slate-600' : 'text-slate-400'"
+                    <ActionButton
                         label="Raw"
+                        size="xxs"
+                        :color="showRawResponse ? 'sky' : (isDark ? 'slate' : 'slate-soft')"
                         @click="showRawResponse = true"
                     />
                 </div>
@@ -122,9 +114,11 @@ import { useApiLogUpdates } from "@/components/Modules/Audits/ApiLogs/useApiLogU
 import OpenAiApiRequestCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiRequestCard.vue";
 import OpenAiApiResponseCard from "@/components/Modules/Audits/ApiLogs/OpenAiApiResponseCard.vue";
 import { ApiLog } from "@/components/Modules/Audits/audit-requests";
+import { useAuditCardTheme } from "@/composables/useAuditCardTheme";
 import ApiStatusCodeBadge from "@/components/Shared/ApiStatusCodeBadge.vue";
 import ElapsedTimer from "@/components/Shared/ElapsedTimer.vue";
 import {
+    ActionButton,
     CodeViewer,
     fDateTime,
     fDateTimeMs,
@@ -137,6 +131,8 @@ import { computed, ref } from "vue";
 const props = defineProps<{
     apiLog: ApiLog
 }>();
+
+const { isDark, themeClass } = useAuditCardTheme();
 
 // Subscribe to real-time updates for API logs in progress
 useApiLogUpdates(() => props.apiLog);

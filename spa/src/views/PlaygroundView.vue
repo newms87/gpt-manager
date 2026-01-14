@@ -19,6 +19,11 @@
         label="Markdown Editor"
         @click="router.push({ name: 'playground.markdown-editor' })"
       />
+      <QTab
+        name="playground.audit-cards"
+        label="Audit Cards"
+        @click="router.push({ name: 'playground.audit-cards' })"
+      />
     </QTabs>
 
     <RouterView />
