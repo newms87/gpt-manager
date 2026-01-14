@@ -68,7 +68,7 @@
                     :request-data="requestData"
                 />
                 <div v-else class="overflow-x-auto max-w-full">
-                    <CodeViewer :model-value="apiLog.request" format="json" />
+                    <CodeViewer :model-value="apiLog.request" format="json" :theme="isDark ? 'dark' : 'light'" />
                 </div>
             </div>
         </div>
@@ -103,7 +103,7 @@
                     :response-data="responseData"
                 />
                 <div v-else class="overflow-x-auto max-w-full">
-                    <CodeViewer :model-value="apiLog.response" format="json" />
+                    <CodeViewer :model-value="apiLog.response" format="json" :theme="isDark ? 'dark' : 'light'" />
                 </div>
             </div>
         </div>
