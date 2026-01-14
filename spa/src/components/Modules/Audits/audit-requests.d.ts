@@ -91,3 +91,55 @@ export interface AuditRequest extends ActionTargetItem {
     created_at: string;
     updated_at: string;
 }
+
+// OpenAI API Types
+export interface OpenAiInputContent {
+    type: "input_text" | "input_image";
+    text?: string;
+    image_url?: string | { url: string };
+}
+
+export interface OpenAiInputMessage {
+    role: "user" | "assistant" | "system";
+    content: OpenAiInputContent[];
+}
+
+export interface OpenAiRequestData {
+    model?: string;
+    instructions?: string;
+    input?: string | OpenAiInputMessage[];
+    reasoning?: { effort?: string };
+    service_tier?: string;
+    text?: {
+        format?: {
+            type: string;
+            name?: string;
+            schema?: AnyObject;
+        };
+    };
+}
+
+export interface OpenAiOutputContent {
+    type: "output_text";
+    text: string;
+}
+
+export interface OpenAiOutputItem {
+    type: "reasoning" | "message";
+    summary?: string[];
+    content?: OpenAiOutputContent[];
+}
+
+export interface OpenAiResponseData {
+    status?: "completed" | "failed" | string;
+    error_type?: string;
+    error_message?: string;
+    usage?: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+        input_tokens_details?: { cached_tokens?: number };
+        output_tokens_details?: { reasoning_tokens?: number };
+    };
+    output?: OpenAiOutputItem[];
+}

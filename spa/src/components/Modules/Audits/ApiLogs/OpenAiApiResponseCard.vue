@@ -106,11 +106,12 @@ import {
     ListTransition
 } from "quasar-ui-danx";
 import { computed } from "vue";
+import type { OpenAiResponseData } from "../audit-requests";
 
 const { isDark, themeClass } = useAuditCardTheme();
 
 const props = defineProps<{
-    responseData: any
+    responseData: OpenAiResponseData
 }>();
 
 // Computed values

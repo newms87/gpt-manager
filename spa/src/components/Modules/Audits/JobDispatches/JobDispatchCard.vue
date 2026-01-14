@@ -166,7 +166,7 @@
                             ? themeClass('bg-slate-700 text-slate-200', 'bg-slate-200 text-slate-700')
                             : themeClass('hover:bg-slate-700/50 text-slate-400', 'hover:bg-slate-100 text-slate-600')
                     ]"
-                    @click="isShowingLogs = !isShowingLogs"
+                    @click="toggleLogs"
                 >
                     <LogIcon class="w-4 h-4" />
                     <span class="font-medium">Logs</span>
@@ -182,7 +182,7 @@
                             ? themeClass('bg-sky-900 text-sky-200', 'bg-sky-100 text-sky-700')
                             : themeClass('hover:bg-sky-900/30 text-sky-400', 'hover:bg-sky-50 text-sky-600')
                     ]"
-                    @click="isShowingApiLogs = !isShowingApiLogs"
+                    @click="toggleApiLogs"
                 >
                     <ApiIcon class="w-4 h-4" />
                     <span class="font-medium">API Calls</span>
@@ -200,7 +200,7 @@
                                 ? themeClass('bg-red-950/50 text-red-400', 'bg-red-50 text-red-600')
                                 : themeClass('hover:bg-slate-700/50 text-slate-400', 'hover:bg-slate-100 text-slate-600')
                     ]"
-                    @click="isShowingErrors = !isShowingErrors"
+                    @click="toggleErrors"
                 >
                     <ErrorIcon class="w-4 h-4" />
                     <span class="font-medium">Errors</span>
@@ -304,7 +304,7 @@ import {
 } from "danx-icon";
 import { ActionButton, fDateTime, fDateTimeMs, fMillisecondsToDuration, ListTransition } from "quasar-ui-danx";
 import { QSkeleton, QSlideTransition, QTooltip } from "quasar";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
     job: JobDispatch
@@ -329,21 +329,26 @@ function fTime(dateTime: string | null) {
 // Subscribe to real-time updates for in-progress job dispatches
 useJobDispatchUpdates(() => props.job);
 
-// Lazy load API logs when the user toggles them on
-watch(isShowingApiLogs, async (isShowing) => {
-    if (isShowing && !props.job.apiLogs) {
+// Toggle handlers with lazy loading
+function toggleLogs() {
+    isShowingLogs.value = !isShowingLogs.value;
+}
+
+async function toggleApiLogs() {
+    if (!isShowingApiLogs.value && !props.job.apiLogs) {
         isLoadingApiLogs.value = true;
         await jobDispatchRoutes.details(props.job, { apiLogs: true });
         isLoadingApiLogs.value = false;
     }
-});
+    isShowingApiLogs.value = !isShowingApiLogs.value;
+}
 
-// Lazy load errors when the user toggles them on
-watch(isShowingErrors, async (isShowing) => {
-    if (isShowing && !props.job.errors) {
+async function toggleErrors() {
+    if (!isShowingErrors.value && !props.job.errors) {
         isLoadingErrors.value = true;
         await jobDispatchRoutes.details(props.job, { errors: true });
         isLoadingErrors.value = false;
     }
-});
+    isShowingErrors.value = !isShowingErrors.value;
+}
 </script>

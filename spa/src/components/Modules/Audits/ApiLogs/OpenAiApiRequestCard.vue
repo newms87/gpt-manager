@@ -179,11 +179,12 @@ import {
     ShowHideButton
 } from "quasar-ui-danx";
 import { computed, ref } from "vue";
+import type { OpenAiInputContent, OpenAiInputMessage, OpenAiRequestData } from "../audit-requests";
 
 const { isDark, themeClass } = useAuditCardTheme();
 
 const props = defineProps<{
-    requestData: any
+    requestData: OpenAiRequestData
 }>();
 
 // Toggle states
@@ -221,23 +222,23 @@ function getRoleClass(role: string) {
     return role === 'assistant' ? 'bg-sky-600' : 'bg-lime-700';
 }
 
-function getMessagePreview(inputItem: any): string {
-    const textContent = inputItem.content?.find((c: any) => c.type === 'input_text');
+function getMessagePreview(inputItem: OpenAiInputMessage): string {
+    const textContent = inputItem.content?.find((c: OpenAiInputContent) => c.type === 'input_text');
     if (!textContent?.text) return '';
     return textContent.text.length > 100 ? textContent.text.substring(0, 100) + '...' : textContent.text;
 }
 
-function getMessageImages(inputItem: any): string[] {
+function getMessageImages(inputItem: OpenAiInputMessage): string[] {
     return inputItem.content
-        ?.filter((c: any) => c.type === 'input_image')
-        ?.map((c: any) => typeof c.image_url === 'string' ? c.image_url : c.image_url?.url)
+        ?.filter((c: OpenAiInputContent) => c.type === 'input_image')
+        ?.map((c: OpenAiInputContent) => typeof c.image_url === 'string' ? c.image_url : c.image_url?.url)
         ?.filter(Boolean) || [];
 }
 
-function getMessageTexts(inputItem: any): string[] {
+function getMessageTexts(inputItem: OpenAiInputMessage): string[] {
     return inputItem.content
-        ?.filter((c: any) => c.type === 'input_text')
-        ?.map((c: any) => c.text)
+        ?.filter((c: OpenAiInputContent) => c.type === 'input_text')
+        ?.map((c: OpenAiInputContent) => c.text)
         ?.filter(Boolean) || [];
 }
 
