@@ -94,6 +94,7 @@ export interface TaskProcess extends TaskRunner {
 	operation?: string;
 	percent_complete: number;
 	created_at: string;
+	restart_count?: number;
 	input_artifact_count: number;
 	output_artifact_count: number;
 	job_dispatch_count: number;

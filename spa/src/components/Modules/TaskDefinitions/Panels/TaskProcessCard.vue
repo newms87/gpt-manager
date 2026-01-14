@@ -3,6 +3,7 @@
 		<div class="p-2">
 			<div class="flex items-center space-x-2">
 				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
+				<LabelPillWidget v-if="taskProcess.restart_count" :label="`${taskProcess.restart_count} restart${taskProcess.restart_count > 1 ? 's' : ''}`" color="orange" size="xs" class="whitespace-nowrap" />
 				<div class="flex-grow w-96">
 					{{ taskProcess.name || "(No Name)" }}
 				</div>

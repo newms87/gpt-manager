@@ -40,6 +40,7 @@
 			</div>
 			<div class="flex-x space-x-2 mt-2">
 				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
+				<LabelPillWidget v-if="taskProcess.restart_count" :label="`${taskProcess.restart_count} restart${taskProcess.restart_count > 1 ? 's' : ''}`" color="orange" size="xs" class="whitespace-nowrap" />
 				<LabelPillWidget v-if="taskProcess.operation" :label="taskProcess.operation" :color="operationColor" size="xs" class="whitespace-nowrap" />
 				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" class="text-center max-w-64" />
 				<UsageSummaryCard v-if="taskProcess.usage" :usage="taskProcess.usage" variant="compact" class="max-w-32" />

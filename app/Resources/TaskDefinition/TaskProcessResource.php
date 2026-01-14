@@ -32,6 +32,7 @@ class TaskProcessResource extends ActionResource
             'job_dispatch_count'    => $taskProcess->job_dispatch_count,
             'input_artifact_count'  => $taskProcess->input_artifact_count,
             'output_artifact_count' => $taskProcess->output_artifact_count,
+            'restart_count'         => $taskProcess->restart_count,
             'created_at'            => $taskProcess->created_at,
             'updated_at'            => $taskProcess->updated_at,
 
