@@ -12,6 +12,7 @@ use App\Services\Demand\TemplateVariableService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
@@ -41,7 +42,8 @@ class TemplateDefinitionService
 
         unset($data['template_url']);
 
-        $template = new TemplateDefinition($data);
+        $template       = new TemplateDefinition($data);
+        $template->name = ModelHelper::getNextModelName($template, 'name', ['team_id' => team()->id]);
         $template->validate();
         $template->save();
 

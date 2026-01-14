@@ -160,7 +160,7 @@ const filteredTemplates = computed(() => {
 });
 
 const newGoogleDocsTemplateData = computed(() => ({
-    name: generateTemplateName("Google Docs"),
+    name: "Google Docs Template",
     description: "",
     type: "google_docs" as TemplateType,
     template_url: "",
@@ -168,7 +168,7 @@ const newGoogleDocsTemplateData = computed(() => ({
 }));
 
 const newHtmlTemplateData = computed(() => ({
-    name: generateTemplateName("HTML"),
+    name: "HTML Template",
     description: "",
     type: "html" as TemplateType,
     html_content: "<div>\n  <h1>{{title}}</h1>\n  <p>{{content}}</p>\n</div>",
@@ -197,13 +197,6 @@ const deleteAction = dxTemplateDefinition.getAction("delete", {
 });
 
 // Methods
-const generateTemplateName = (type: string) => {
-    const count = displayTemplates.value.filter((t: TemplateDefinition) =>
-        type === "HTML" ? t.type === "html" : t.type === "google_docs"
-    ).length + 1;
-    return `${type} Template ${count}`;
-};
-
 const handleTemplateUpdate = (template: TemplateDefinition, data: Partial<TemplateDefinition>) => {
     updateAction.trigger(template, data);
 };
