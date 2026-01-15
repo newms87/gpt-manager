@@ -256,27 +256,54 @@ class TaskRunnerService
                 $taskRun->stopped_at = now();
                 $taskRun->save();
             }
+
+            // Handle edge case: all processes are complete but TaskRun wasn't marked complete
+            // This can happen due to race conditions or data migration issues
+            if ($taskRun->isStatusRunning() && $taskRun->active_task_processes_count === 0) {
+                static::logDebug('All processes complete but TaskRun not marked complete - triggering completion');
+                static::afterAllProcessesComplete($taskRun->fresh());
+            }
         } finally {
             LockHelper::release($taskRun);
         }
     }
 
     /**
-     * When a task run has completed, check to see if there are connections for the given node and execute them
+     * Called when all processes have finished (active count reaches 0).
+     * Calls the runner hook FIRST, then marks complete only if no new processes were created.
+     */
+    public static function afterAllProcessesComplete(TaskRun $taskRun): void
+    {
+        static::logDebug("Running afterAllProcessesCompleted hook for $taskRun");
+
+        // 1. Call the runner's hook first (may create new processes)
+        $taskRun->getRunner()->afterAllProcessesCompleted();
+
+        static::logDebug('Finished afterAllProcessesCompleted hook');
+
+        // 2. Refresh and check if still no active processes
+        $taskRun->refresh();
+
+        if ($taskRun->active_task_processes_count === 0) {
+            // No new processes created - now safe to mark complete DIRECTLY
+            static::logDebug("No new processes created, marking task run as complete: $taskRun");
+            $taskRun->completed_at = now();
+            $taskRun->save();
+            // This save triggers onComplete() which handles workflow node completion
+        } else {
+            static::logDebug("New processes created (count: {$taskRun->active_task_processes_count}), not marking complete yet");
+        }
+        // If count > 0, new processes were created - don't mark complete
+    }
+
+    /**
+     * When a task run has completed, handle workflow node completion.
+     * Called when the task run status changes to completed.
+     * Note: The runner's afterAllProcessesCompleted() hook is called BEFORE this
+     * by afterAllProcessesComplete() to allow runners to create additional processes.
      */
     public static function onComplete(TaskRun $taskRun): void
     {
-        static::logDebug("Running afterAllProcessesCompleted for $taskRun");
-
-        $taskRun->getRunner()->afterAllProcessesCompleted();
-
-        static::logDebug('Finished afterAllProcessesCompleted');
-
-        // If additional task processes were created by the task runner, skip completing the task run and starting the next nodes in the workflow
-        if (!$taskRun->refresh()->isCompleted()) {
-            return;
-        }
-
         static::logDebug("Completed $taskRun");
 
         $workflowRun = $taskRun->workflowRun;

@@ -151,6 +151,22 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     }
 
     /**
+     * Update the active task processes count.
+     * Active processes are those that are pending or running.
+     */
+    public function updateActiveProcessCount(): static
+    {
+        $this->active_task_processes_count = $this->taskProcesses()
+            ->whereIn('status', [
+                WorkflowStatesContract::STATUS_PENDING,
+                WorkflowStatesContract::STATUS_RUNNING,
+            ])
+            ->count();
+
+        return $this;
+    }
+
+    /**
      * Whenever a process state has changed, call this method to check if the task run has completed or has changed
      * state as well
      */
@@ -207,12 +223,12 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
                     $this->skipped_at = now();
                 }
             } else {
+                // All processes finished successfully - clear error states
+                // Completion is NOT set here - it's handled by TaskRunnerService::afterAllProcessesComplete()
+                // after the runner's hook has been called and confirmed no new processes were created
                 $this->failed_at  = null;
                 $this->stopped_at = null;
                 $this->skipped_at = null;
-                if (!$this->completed_at) {
-                    $this->completed_at = now();
-                }
             }
 
             return $this;
@@ -264,8 +280,19 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         });
 
         static::saved(function (TaskRun $taskRun) {
+            // Detect when all active processes have completed (count changed to 0)
+            // This triggers the runner's hook BEFORE marking the task run as complete
+            if ($taskRun->wasChanged('active_task_processes_count') && $taskRun->active_task_processes_count === 0) {
+                // First check if there are failed/stopped processes
+                // If not, call the runner's hook which may create new processes
+                if (!$taskRun->isFailed() && !$taskRun->isStopped() && !$taskRun->isSkipped()) {
+                    // Use a fresh instance to avoid infinite loops
+                    TaskRunnerService::afterAllProcessesComplete($taskRun->fresh());
+                }
+            }
+
             if ($taskRun->wasChanged('status')) {
-                // If the task run was recently completed, let the service know so we can trigger any events
+                // If the task run was recently completed, let the service know so we can trigger workflow events
                 if ($taskRun->isCompleted()) {
                     // Complete the taskRun but use a different instance of the model
                     // so we avoid an infinite loop in case the onComplete call triggers a save on the taskRun instance

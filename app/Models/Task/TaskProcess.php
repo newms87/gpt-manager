@@ -250,6 +250,11 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
                 $taskProcess->taskRun?->checkProcesses()->save();
             }
 
+            // Update active process count on TaskRun when status changes OR when newly created
+            if ($taskProcess->wasChanged('status') || $taskProcess->wasRecentlyCreated) {
+                $taskProcess->taskRun?->updateActiveProcessCount()->save();
+            }
+
             if ($taskProcess->wasChanged([
                 'status',
                 'last_job_dispatch_id',
