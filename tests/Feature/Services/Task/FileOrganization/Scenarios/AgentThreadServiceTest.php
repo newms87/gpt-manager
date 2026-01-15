@@ -38,7 +38,7 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
         // Create agent with valid model
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-mini',
+            'model'   => self::TEST_MODEL,
         ]);
 
         // Create task definition with agent

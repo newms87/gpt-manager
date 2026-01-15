@@ -9,7 +9,6 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
 use Exception;
-use Illuminate\Support\Facades\Config;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -24,13 +23,6 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->listener = new WorkflowBuilderCompletedListener();
-
-        // Configure test AI model
-        Config::set('ai.models.test-model', [
-            'api'     => \Tests\Feature\Api\TestAi\TestAiApi::class,
-            'name'    => 'Test Model',
-            'context' => 4096,
-        ]);
     }
 
     public function test_handle_withNonFinishedWorkflowRun_returnsEarly(): void

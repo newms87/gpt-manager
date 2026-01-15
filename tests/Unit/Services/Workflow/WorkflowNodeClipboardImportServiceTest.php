@@ -267,7 +267,7 @@ class WorkflowNodeClipboardImportServiceTest extends AuthenticatedTestCase
         $existingAgent = Agent::factory()->create([
             'team_id'     => $this->user->currentTeam->id,
             'name'        => 'Test Agent',
-            'model'       => 'gpt-4',
+            'model'       => self::TEST_MODEL,
             'description' => 'Same description',
             'api_options' => ['temperature' => 0.7],
         ]);
@@ -291,7 +291,7 @@ class WorkflowNodeClipboardImportServiceTest extends AuthenticatedTestCase
                 Agent::class => [
                     888 => [
                         'name'        => 'Test Agent',
-                        'model'       => 'gpt-4',
+                        'model'       => self::TEST_MODEL,
                         'description' => 'Same description',
                         'api_options' => ['temperature' => 0.7],
                     ],
@@ -364,7 +364,7 @@ class WorkflowNodeClipboardImportServiceTest extends AuthenticatedTestCase
                 Agent::class => [
                     888 => [
                         'name'        => 'Test Agent',
-                        'model'       => 'gpt-4', // Different model
+                        'model'       => self::TEST_MODEL, // Different model
                         'description' => 'Description',
                         'api_options' => ['temperature' => 0.7],
                     ],

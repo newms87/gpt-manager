@@ -52,7 +52,7 @@ trait FileOrganizationTestHelpers
         // Create an agent for testing with a valid model
         $this->testAgent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-mini', // Use valid model from config
+            'model'   => \Tests\TestCase::TEST_MODEL,
         ]);
 
         // Merge provided config with defaults

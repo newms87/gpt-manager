@@ -31,7 +31,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         // Create an agent for testing with a valid model
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-mini', // Use valid model from config
+            'model'   => self::TEST_MODEL,
         ]);
 
         // Create task definition with FileOrganizationTaskRunner

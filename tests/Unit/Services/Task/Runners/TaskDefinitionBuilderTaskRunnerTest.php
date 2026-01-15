@@ -37,7 +37,7 @@ class TaskDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Create required models with proper relationships
         $agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-4o-mini', // Use a real model that has API configuration
+            'model'   => self::TEST_MODEL, // Use a real model that has API configuration
         ]);
         $this->taskDefinition = TaskDefinition::factory()->create([
             'team_id'  => $this->user->currentTeam->id,
@@ -321,7 +321,7 @@ class TaskDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-4o-mini',
+            'model'   => self::TEST_MODEL,
         ]);
         $data = [
             'name'             => 'New Task',
@@ -413,7 +413,7 @@ class TaskDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Given
         $agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-4o-mini',
+            'model'   => self::TEST_MODEL,
         ]);
         $data = [
             'name'        => 'Nonexistent Task',

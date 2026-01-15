@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Tests\AuthenticatedTestCase;
-use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\Traits\SetUpTeamTrait;
 
 class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
@@ -41,13 +40,6 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
 
         $this->uiDemandWorkflowService = app(UiDemandWorkflowService::class);
         $this->workflowListener        = app(WorkflowListenerCompletedListener::class);
-
-        // Configure test-model for testing
-        Config::set('ai.models.test-model', [
-            'api'     => TestAiApi::class,
-            'name'    => 'Test Model',
-            'context' => 4096,
-        ]);
 
         // Set up workflow configuration
         Config::set('ui-demands.workflows.write_demand_letter', 'Write Demand Summary');

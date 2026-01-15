@@ -3,14 +3,17 @@
 namespace App\Services\Template;
 
 use App\Events\AgentThreadUpdatedEvent;
+use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Template\TemplateDefinition;
 use App\Repositories\ThreadRepository;
+use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
@@ -27,12 +30,29 @@ class TemplateCollaborationService
 
     protected const string CONVERSATION_AGENT_NAME = 'Template Conversation Agent';
 
-    protected const string CONVERSATION_AGENT_MODEL = 'gpt-4o-mini';
+    protected const string GENERATION_AGENT_NAME = 'Template Builder';
 
     protected const int DEFAULT_TIMEOUT = 120;
 
     /** Key used in message data to identify system prompt messages */
     protected const string SYSTEM_PROMPT_DATA_KEY = 'is_system_prompt';
+
+    /**
+     * Get the model to use for conversation agent.
+     */
+    protected function getConversationModel(): string
+    {
+        return config('ai.template_collaboration.model');
+    }
+
+    /**
+     * Get the model to use for generation agent (initial collaboration).
+     * Uses template_building model since that's what the builder agent uses.
+     */
+    protected function getGenerationModel(): string
+    {
+        return config('ai.template_building.model');
+    }
 
     /**
      * Process a user message in a template collaboration thread.
@@ -215,10 +235,11 @@ class TemplateCollaborationService
             ->first();
 
         if (!$agent) {
+            $model = $this->getConversationModel();
             $agent = Agent::create([
                 'name'        => self::CONVERSATION_AGENT_NAME,
                 'team_id'     => null,
-                'model'       => self::CONVERSATION_AGENT_MODEL,
+                'model'       => $model,
                 'description' => 'Fast conversational agent for template collaboration. Provides quick responses and determines when to trigger template builds.',
                 'api_options' => [
                     'response_format' => [
@@ -229,7 +250,7 @@ class TemplateCollaborationService
 
             static::logDebug('Created Conversation Agent', [
                 'agent_id' => $agent->id,
-                'model'    => self::CONVERSATION_AGENT_MODEL,
+                'model'    => $model,
             ]);
         }
 
@@ -254,5 +275,135 @@ class TemplateCollaborationService
     protected function buildConversationPrompt(): string
     {
         return "# Conversation Agent Instructions\n\n" . $this->getConversationAgentInstructions();
+    }
+
+    /**
+     * Start a new collaboration thread for template generation.
+     *
+     * Creates an AgentThread linked to the template, uploads source files,
+     * and sends the initial prompt to begin the collaboration.
+     *
+     * @param  TemplateDefinition  $template  The template to generate HTML for
+     * @param  Collection<StoredFile>  $sourceFiles  PDF/images to analyze (optional)
+     * @param  int  $teamId  The team ID for context
+     * @param  string|null  $userPrompt  Optional user-provided prompt to start collaboration
+     */
+    public function startCollaboration(
+        TemplateDefinition $template,
+        Collection $sourceFiles,
+        int $teamId,
+        ?string $userPrompt = null
+    ): AgentThread {
+        static::logDebug('Starting template collaboration', [
+            'template_id'   => $template->id,
+            'template_name' => $template->name,
+            'file_count'    => $sourceFiles->count(),
+            'has_prompt'    => !empty($userPrompt),
+            'team_id'       => $teamId,
+        ]);
+
+        $agent = $this->findOrCreateGenerationAgent();
+
+        // Build simple user message (agent instructions are added via ensureInstructionsExist)
+        $userMessage = $this->buildUserMessage($sourceFiles, $userPrompt);
+
+        // Create the thread using builder with collaboratable relationship (no message yet)
+        $thread = AgentThreadBuilderService::for($agent, $teamId)
+            ->named("Template: {$template->name}")
+            ->forCollaboratable($template)
+            ->build();
+
+        static::logDebug('Collaboration thread created', [
+            'thread_id'   => $thread->id,
+            'thread_name' => $thread->name,
+            'agent_id'    => $agent->id,
+        ]);
+
+        // Add the user message IMMEDIATELY so frontend has it when thread is returned
+        // Include ALL file IDs, not just the first one
+        $fileIds = $sourceFiles->pluck('id')->toArray();
+        app(ThreadRepository::class)->addMessageToThread($thread, $userMessage, $fileIds);
+
+        // Dispatch job to process the message (skipAddMessage=true since we already added it)
+        $firstFileId = $sourceFiles->first()?->id;
+        $job         = new TemplateCollaborationJob($thread, $userMessage, $firstFileId, skipAddMessage: true);
+        $job->dispatch();
+
+        // Attach job dispatch to template for Jobs tab tracking
+        $jobDispatch = $job->getJobDispatch();
+        if ($jobDispatch) {
+            $template->jobDispatches()->attach($jobDispatch->id);
+            $template->updateRelationCounter('jobDispatches');
+        }
+
+        static::logDebug('Initial collaboration job dispatched', [
+            'thread_id'       => $thread->id,
+            'job_dispatch_id' => $jobDispatch?->id,
+        ]);
+
+        // Load messages so frontend has them immediately
+        $thread->load('messages');
+
+        return $thread;
+    }
+
+    /**
+     * Build a simple user message for the initial collaboration message.
+     *
+     * This creates the actual user message that will be displayed in the chat.
+     * Agent instructions are added separately via ensureInstructionsExist().
+     *
+     * @param  Collection<StoredFile>  $sourceFiles
+     * @param  string|null  $userPrompt  Optional user-provided prompt
+     */
+    protected function buildUserMessage(Collection $sourceFiles, ?string $userPrompt = null): string
+    {
+        $hasFiles  = $sourceFiles->isNotEmpty();
+        $hasPrompt = !empty($userPrompt);
+
+        if ($hasPrompt && $hasFiles) {
+            return "Please analyze the attached files and help me create a template. {$userPrompt}";
+        }
+
+        if ($hasPrompt) {
+            return $userPrompt;
+        }
+
+        if ($hasFiles) {
+            return 'Please analyze the attached files and help me create an HTML template based on them.';
+        }
+
+        return 'Please help me create an HTML template.';
+    }
+
+    /**
+     * Find or create the generation agent for initial template collaboration.
+     *
+     * This agent is used when starting a new collaboration thread. It uses the
+     * 'Template Builder' name to distinguish it from the conversation agent.
+     */
+    protected function findOrCreateGenerationAgent(): Agent
+    {
+        $agent = Agent::where('name', self::GENERATION_AGENT_NAME)
+            ->whereNull('team_id')
+            ->first();
+
+        if (!$agent) {
+            $model = $this->getGenerationModel();
+            $agent = Agent::create([
+                'name'        => self::GENERATION_AGENT_NAME,
+                'team_id'     => null,
+                'model'       => $model,
+                'description' => 'Generates HTML templates from PDF/image sources through collaborative refinement.',
+                'api_options' => [],
+            ]);
+
+            static::logDebug('Created Template Builder agent', [
+                'agent_id' => $agent->id,
+                'model'    => $model,
+            ]);
+        }
+
+        return $agent;
     }
 }

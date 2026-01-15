@@ -128,7 +128,7 @@ class TemplateDefinitionService
             }
         }
 
-        return app(HtmlTemplateGenerationService::class)->startCollaboration(
+        return app(TemplateCollaborationService::class)->startCollaboration(
             $template,
             $sourceFiles,
             team()->id,

@@ -76,7 +76,7 @@ class TestUsageSubscriptionSystem extends Command
                 'run_time_ms'   => 2500,
                 'request_count' => 1,
                 'metadata'      => [
-                    'model'       => 'gpt-4o',
+                    'model'       => 'gpt-5',
                     'temperature' => 0.7,
                     'test_run'    => true,
                 ],

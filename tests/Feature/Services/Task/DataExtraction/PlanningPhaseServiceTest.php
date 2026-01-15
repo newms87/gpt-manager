@@ -30,7 +30,7 @@ class PlanningPhaseServiceTest extends AuthenticatedTestCase
 
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-mini',
+            'model'   => self::TEST_MODEL,
         ]);
 
         $this->schemaDefinition = SchemaDefinition::factory()->create([

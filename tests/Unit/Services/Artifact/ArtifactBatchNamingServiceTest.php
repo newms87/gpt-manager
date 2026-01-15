@@ -405,7 +405,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
     public function test_nameArtifacts_usesConfiguredModel(): void
     {
         // Given
-        config(['ai.artifact_naming.model' => 'gpt-5-nano']);
+        config(['ai.artifact_naming.model' => self::TEST_MODEL]);
 
         $artifacts = collect([
             Artifact::factory()->create([
@@ -417,7 +417,7 @@ class ArtifactBatchNamingServiceTest extends AuthenticatedTestCase
         // Create agent with the configured model
         $agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-nano',
+            'model'   => self::TEST_MODEL,
         ]);
 
         $agentThread = AgentThread::factory()->create([

@@ -5,11 +5,16 @@ namespace Tests;
 use App\Services\Testing\TestLockService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Config;
 use Newms87\Danx\Jobs\Job;
+use Tests\Feature\Api\TestAi\TestAiApi;
 
 abstract class TestCase extends BaseTestCase
 {
     use RefreshDatabase;
+
+    /** Standard test model name - all tests should use this */
+    public const string TEST_MODEL = 'test-model';
 
     private static ?TestLockService $lockService = null;
 
@@ -49,8 +54,40 @@ abstract class TestCase extends BaseTestCase
             );
         }
 
+        // Configure test model for all tests
+        $this->configureTestModel();
+
         // Always reset all jobs to enabled in case a previous test disabled something
         Job::enableAll();
+    }
+
+    /**
+     * Configure the test model with TestAiApi for all tests.
+     * This provides a consistent, mock AI API for testing.
+     */
+    protected function configureTestModel(): void
+    {
+        Config::set('ai.models.' . self::TEST_MODEL, [
+            'api'          => TestAiApi::class,
+            'name'         => 'Test Model',
+            'context'      => 128_000,
+            'input'        => 1.00 / 1_000_000,
+            'cached_input' => 0.10 / 1_000_000,
+            'output'       => 2.00 / 1_000_000,
+            'features'     => [
+                'streaming'          => true,
+                'function_calling'   => true,
+                'structured_outputs' => true,
+                'reasoning'          => true,
+            ],
+            'rate_limits' => [
+                'tokens_per_minute'   => 100_000,
+                'requests_per_minute' => 100,
+            ],
+        ]);
+
+        // Set test-model as default
+        Config::set('ai.default_model', self::TEST_MODEL);
     }
 
     /**

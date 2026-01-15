@@ -6,26 +6,14 @@ use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
 use App\Resources\Agent\MessageResource;
 use App\Services\AgentThread\AgentThreadService;
-use Illuminate\Support\Facades\Config;
 use Newms87\Danx\Models\Audit\ApiLog;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 use Tests\AuthenticatedTestCase;
-use Tests\Feature\Api\TestAi\TestAiApi;
 
 class AgentThreadMessageApiLogTest extends AuthenticatedTestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        // Configure test-model for testing
-        Config::set('ai.models.test-model', [
-            'api'     => TestAiApi::class,
-            'name'    => 'Test Model',
-            'context' => 4096,
-        ]);
-    }
+    // Test model configuration is handled by TestCase::configureTestModel()
 
     #[Test]
     public function agent_thread_message_has_api_log_relationship(): void
@@ -111,7 +99,7 @@ class AgentThreadMessageApiLogTest extends AuthenticatedTestCase
             'method'           => 'POST',
             'url'              => 'https://api.openai.com/v1/chat/completions',
             'status_code'      => 200,
-            'request'          => ['model' => 'gpt-4', 'messages' => []],
+            'request'          => ['model' => self::TEST_MODEL, 'messages' => []],
             'response'         => ['choices' => []],
             'request_headers'  => ['Authorization' => 'Bearer ***'],
             'response_headers' => ['Content-Type' => 'application/json'],

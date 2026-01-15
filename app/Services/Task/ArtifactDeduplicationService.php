@@ -17,8 +17,9 @@ class ArtifactDeduplicationService
 
     public function __construct()
     {
-        // Use a default agent for deduplication, or could be configured
-        $this->agent = Agent::where('model', 'gpt-4o')->first() ?? Agent::first();
+        // Use a configured model for deduplication
+        $model       = config('ai.artifact_deduplication.model');
+        $this->agent = Agent::where('model', $model)->first() ?? Agent::first();
     }
 
     /**

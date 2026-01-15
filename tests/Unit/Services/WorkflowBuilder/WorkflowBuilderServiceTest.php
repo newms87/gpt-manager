@@ -13,7 +13,6 @@ use App\Models\Workflow\WorkflowNode;
 use App\Models\Workflow\WorkflowRun;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
-use Illuminate\Support\Facades\Config;
 use Newms87\Danx\Exceptions\ValidationError;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
@@ -29,13 +28,6 @@ class WorkflowBuilderServiceTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->service = new WorkflowBuilderService();
-
-        // Configure test AI model
-        Config::set('ai.models.test-model', [
-            'api'     => \Tests\Feature\Api\TestAi\TestAiApi::class,
-            'name'    => 'Test Model',
-            'context' => 4096,
-        ]);
     }
 
     public function test_startRequirementsGathering_withValidData_createsNewChat(): void

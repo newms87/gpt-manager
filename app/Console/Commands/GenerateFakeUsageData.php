@@ -46,7 +46,7 @@ class GenerateFakeUsageData extends Command
 
         $this->info("Generating {$count} usage events...");
 
-        $models     = ['gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'claude-3-haiku'];
+        $models     = ['gpt-5', 'gpt-5-mini', 'claude-3-5-sonnet', 'claude-3-haiku'];
         $eventTypes = ['ai_completion', 'text_processing', 'document_analysis', 'data_extraction'];
         $providers  = ['openai', 'anthropic', 'custom_api'];
 
@@ -60,8 +60,8 @@ class GenerateFakeUsageData extends Command
 
             // Different token/cost patterns based on model
             $inputTokens = match (true) {
-                str_contains($model, 'gpt-4o-mini')       => fake()->numberBetween(100, 2000),
-                str_contains($model, 'gpt-4o')            => fake()->numberBetween(200, 4000),
+                str_contains($model, 'gpt-5-mini')        => fake()->numberBetween(100, 2000),
+                str_contains($model, 'gpt-5')             => fake()->numberBetween(200, 4000),
                 str_contains($model, 'claude-3-5-sonnet') => fake()->numberBetween(300, 5000),
                 str_contains($model, 'claude-3-haiku')    => fake()->numberBetween(150, 3000),
                 default                                   => fake()->numberBetween(100, 1000)
@@ -74,16 +74,16 @@ class GenerateFakeUsageData extends Command
 
             // Realistic cost calculation based on token usage
             $inputCost = match (true) {
-                str_contains($model, 'gpt-4o-mini')       => $inputTokens * 0.00000015, // $0.15 per 1M tokens
-                str_contains($model, 'gpt-4o')            => $inputTokens * 0.0000025, // $2.50 per 1M tokens
+                str_contains($model, 'gpt-5-mini')        => $inputTokens * 0.00000015, // $0.15 per 1M tokens
+                str_contains($model, 'gpt-5')             => $inputTokens * 0.0000025, // $2.50 per 1M tokens
                 str_contains($model, 'claude-3-5-sonnet') => $inputTokens * 0.000003, // $3.00 per 1M tokens
                 str_contains($model, 'claude-3-haiku')    => $inputTokens * 0.00000025, // $0.25 per 1M tokens
                 default                                   => $inputTokens * 0.000001
             };
 
             $outputCost = match (true) {
-                str_contains($model, 'gpt-4o-mini')       => $outputTokens * 0.0000006, // $0.60 per 1M tokens
-                str_contains($model, 'gpt-4o')            => $outputTokens * 0.00001, // $10.00 per 1M tokens
+                str_contains($model, 'gpt-5-mini')        => $outputTokens * 0.0000006, // $0.60 per 1M tokens
+                str_contains($model, 'gpt-5')             => $outputTokens * 0.00001, // $10.00 per 1M tokens
                 str_contains($model, 'claude-3-5-sonnet') => $outputTokens * 0.000015, // $15.00 per 1M tokens
                 str_contains($model, 'claude-3-haiku')    => $outputTokens * 0.00000125, // $1.25 per 1M tokens
                 default                                   => $outputTokens * 0.000002

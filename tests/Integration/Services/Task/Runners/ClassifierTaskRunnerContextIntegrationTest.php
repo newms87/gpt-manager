@@ -11,10 +11,8 @@ use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Services\Task\Runners\ClassifierTaskRunner;
-use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
-use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\TestCase;
 
 class ClassifierTaskRunnerContextIntegrationTest extends TestCase
@@ -40,18 +38,6 @@ class ClassifierTaskRunnerContextIntegrationTest extends TestCase
         $this->team->users()->attach($this->user);
         $this->user->currentTeam = $this->team;
         $this->actingAs($this->user);
-
-        // Configure TestAI
-        Config::set('ai.models.test-model', [
-            'api'      => TestAiApi::class,
-            'name'     => 'Test Model',
-            'context'  => 4096,
-            'input'    => 0,
-            'output'   => 0,
-            'features' => [
-                'temperature' => true,
-            ],
-        ]);
 
         // Create schema definition
         $this->schemaDefinition = SchemaDefinition::factory()->create([

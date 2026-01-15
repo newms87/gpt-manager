@@ -30,7 +30,7 @@ class UsageEventFactory extends Factory
             'data_volume'   => $this->faker->numberBetween(0, 10240),
             'metadata'      => [
                 'test'  => true,
-                'model' => $this->faker->randomElement(['gpt-4o', 'gpt-4o-mini']),
+                'model' => $this->faker->randomElement(['gpt-5', 'gpt-5-mini']),
             ],
         ];
     }
@@ -51,7 +51,7 @@ class UsageEventFactory extends Factory
             'input_tokens'  => $this->faker->numberBetween(50, 1000),
             'output_tokens' => $this->faker->numberBetween(25, 500),
             'metadata'      => [
-                'model'               => 'gpt-4o',
+                'model'               => 'gpt-5',
                 'cached_input_tokens' => $this->faker->numberBetween(0, 100),
             ],
         ]);

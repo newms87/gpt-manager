@@ -3,7 +3,6 @@
 namespace Tests\Unit\Services\Usage;
 
 use App\Api\ImageToText\ImageToTextOcrApi;
-use App\Api\OpenAi\OpenAiApi;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Usage\UsageEvent;
@@ -13,6 +12,7 @@ use App\Models\Workflow\WorkflowRun;
 use App\Services\Usage\UsageTrackingService;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
+use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\Traits\SetUpTeamTrait;
 
 class UsageTrackingServiceTest extends AuthenticatedTestCase
@@ -62,19 +62,14 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
     #[Test]
     public function it_records_ai_usage_event()
     {
-        config([
-            'ai.models.gpt-4o' => [
-                'api' => OpenAiApi::class,
-            ],
-        ]);
-
+        // Uses test model from TestCase::configureTestModel()
         $taskProcess = TaskProcess::factory()->create();
         $user        = User::factory()->create();
         $this->actingAs($user);
 
         $usageEvent = $this->service->recordAiUsage(
             $taskProcess,
-            'gpt-4o',
+            self::TEST_MODEL,
             [
                 'input_tokens'        => 100,
                 'output_tokens'       => 50,
@@ -85,35 +80,33 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         );
 
         $this->assertInstanceOf(UsageEvent::class, $usageEvent);
-        $this->assertEquals(OpenAiApi::class, $usageEvent->api_name);
+        $this->assertEquals(TestAiApi::class, $usageEvent->api_name);
         $this->assertEquals('ai_completion', $usageEvent->event_type);
         $this->assertEquals(100, $usageEvent->input_tokens);
         $this->assertEquals(50, $usageEvent->output_tokens);
         $this->assertEquals(2000, $usageEvent->run_time_ms);
-        $this->assertEquals('gpt-4o', $usageEvent->metadata['model']);
+        $this->assertEquals(self::TEST_MODEL, $usageEvent->metadata['model']);
         $this->assertEquals(20, $usageEvent->metadata['cached_input_tokens']);
     }
 
     #[Test]
     public function it_calculates_ai_costs_correctly()
     {
-        // Mock config values for testing
-        config([
-            'ai.models.gpt-4o' => [
-                'input'        => 0.0025,
-                'output'       => 0.01,
-                'cached_input' => 0.00125,
-            ],
-        ]);
+        // Uses test model pricing from TestCase::configureTestModel()
+        // input: 1.00 / 1_000_000 per token
+        // output: 2.00 / 1_000_000 per token
+        // cached_input: 0.10 / 1_000_000 per token
 
-        $costs = $this->service->calculateCosts('gpt-4o', [
+        $costs = $this->service->calculateCosts(self::TEST_MODEL, [
             'input_tokens'        => 1000,
             'output_tokens'       => 500,
             'cached_input_tokens' => 200,
         ]);
 
-        $this->assertEquals(2.75, $costs['input_cost']); // 1000 * 0.0025 + 200 * 0.00125 = 2.5 + 0.25 = 2.75
-        $this->assertEquals(5.0, $costs['output_cost']); // 500 * 0.01 = 5.0
+        // Input cost = 1000 * (1.00 / 1_000_000) + 200 * (0.10 / 1_000_000) = 0.001 + 0.00002 = 0.00102
+        // Output cost = 500 * (2.00 / 1_000_000) = 0.001
+        $this->assertEquals(0.00102, $costs['input_cost']);
+        $this->assertEquals(0.001, $costs['output_cost']);
     }
 
     #[Test]
@@ -167,7 +160,7 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         // First event
         $this->service->recordAiUsage(
             $taskProcess,
-            'gpt-4o',
+            self::TEST_MODEL,
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
         );
@@ -175,7 +168,7 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         // Second event
         $this->service->recordAiUsage(
             $taskProcess,
-            'gpt-4o',
+            self::TEST_MODEL,
             ['input_tokens' => 200, 'output_tokens' => 100],
             2000
         );
@@ -192,9 +185,9 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
     #[Test]
     public function it_handles_missing_pricing_configuration_gracefully()
     {
-        config(['ai.models.gpt-4o' => null]);
+        $nonExistentModel = 'nonexistent-model-for-testing';
 
-        $costs = $this->service->calculateCosts('gpt-4o', [
+        $costs = $this->service->calculateCosts($nonExistentModel, [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
@@ -206,21 +199,16 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
     #[Test]
     public function it_normalizes_api_names_for_pricing_lookup()
     {
-        config([
-            'ai.models.gpt-4o' => [
-                'input'  => 0.0025,
-                'output' => 0.01,
-            ],
-        ]);
+        // Uses test model pricing from TestCase::configureTestModel()
 
         // Test with model name
-        $costs1 = $this->service->calculateCosts('gpt-4o', [
+        $costs1 = $this->service->calculateCosts(self::TEST_MODEL, [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
 
         // Test with same model name
-        $costs2 = $this->service->calculateCosts('gpt-4o', [
+        $costs2 = $this->service->calculateCosts(self::TEST_MODEL, [
             'input_tokens'  => 1000,
             'output_tokens' => 500,
         ]);
@@ -277,7 +265,7 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         // Record some usage
         $this->service->recordAiUsage(
             $taskProcess,
-            'gpt-4o',
+            self::TEST_MODEL,
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
         );
@@ -302,14 +290,14 @@ class UsageTrackingServiceTest extends AuthenticatedTestCase
         // Add usage to processes
         $this->service->recordAiUsage(
             $taskProcess1,
-            'gpt-4o',
+            self::TEST_MODEL,
             ['input_tokens' => 100, 'output_tokens' => 50],
             1000
         );
 
         $this->service->recordAiUsage(
             $taskProcess2,
-            'gpt-4o',
+            self::TEST_MODEL,
             ['input_tokens' => 200, 'output_tokens' => 100],
             2000
         );

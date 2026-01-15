@@ -32,7 +32,7 @@ class ArtifactBatchNamingService
         static::logDebug('Starting batch naming for ' . $artifacts->count() . " artifacts with context: {$contextDescription}");
 
         // Get configuration
-        $maxBatchSize = config('ai.artifact_naming.max_batch_size', 20);
+        $maxBatchSize = config('ai.artifact_naming.max_batch_size');
 
         // Process in batches if collection is larger than max batch size
         if ($artifacts->count() > $maxBatchSize) {
@@ -100,7 +100,7 @@ class ArtifactBatchNamingService
      */
     protected function buildArtifactContextData(Collection $artifacts): array
     {
-        $previewLength = config('ai.artifact_naming.content_preview_length', 500);
+        $previewLength = config('ai.artifact_naming.content_preview_length');
         $artifactData  = [];
 
         foreach ($artifacts as $artifact) {
@@ -171,7 +171,7 @@ class ArtifactBatchNamingService
 
         // Build and run the thread
         try {
-            $timeout   = config('ai.artifact_naming.timeout', 120);
+            $timeout   = config('ai.artifact_naming.timeout');
             $threadRun = AgentThreadBuilderService::for($agent)
                 ->named('Artifact Batch Naming')
                 ->withSystemMessage($systemMessage)
@@ -232,7 +232,7 @@ class ArtifactBatchNamingService
                 'name'    => 'Artifact Batch Naming',
             ],
             [
-                'model'       => config('ai.artifact_naming.model', 'gpt-5-nano'),
+                'model'       => config('ai.artifact_naming.model'),
                 'description' => 'System agent for intelligently naming workflow output artifacts',
             ]
         );

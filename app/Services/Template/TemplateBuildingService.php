@@ -29,9 +29,15 @@ class TemplateBuildingService
 
     protected const string BUILDER_AGENT_NAME = 'Template Builder';
 
-    protected const string BUILDER_AGENT_MODEL = 'gpt-5';
-
     protected const int DEFAULT_TIMEOUT = 300;
+
+    /**
+     * Get the model to use for template building.
+     */
+    protected function getBuilderModel(): string
+    {
+        return config('ai.template_building.model');
+    }
 
     /**
      * Dispatch a template build job.
@@ -370,10 +376,11 @@ class TemplateBuildingService
             ->first();
 
         if (!$agent) {
+            $model = $this->getBuilderModel();
             $agent = Agent::create([
                 'name'        => self::BUILDER_AGENT_NAME,
                 'team_id'     => null,
-                'model'       => self::BUILDER_AGENT_MODEL,
+                'model'       => $model,
                 'description' => 'Generates HTML templates from PDF/image sources through collaborative refinement.',
                 'api_options' => [
                     'response_format' => [
@@ -384,7 +391,7 @@ class TemplateBuildingService
 
             static::logDebug('Created Template Builder agent', [
                 'agent_id' => $agent->id,
-                'model'    => self::BUILDER_AGENT_MODEL,
+                'model'    => $model,
             ]);
         }
 

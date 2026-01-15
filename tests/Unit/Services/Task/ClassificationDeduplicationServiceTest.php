@@ -11,7 +11,6 @@ use App\Services\Task\ClassificationDeduplicationService;
 use Illuminate\Support\Facades\Config;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
-use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\TestCase;
 
 class ClassificationDeduplicationServiceTest extends TestCase
@@ -57,18 +56,6 @@ class ClassificationDeduplicationServiceTest extends TestCase
         $this->team->users()->attach($this->user);
         $this->user->currentTeam = $this->team;
         $this->actingAs($this->user);
-
-        // Configure TestAI
-        Config::set('ai.models.test-model', [
-            'api'      => TestAiApi::class,
-            'name'     => 'Test Model',
-            'context'  => 4096,
-            'input'    => 0,
-            'output'   => 0,
-            'features' => [
-                'temperature' => true,
-            ],
-        ]);
 
         // Configure the deduplication agent to use TestAI
         Config::set('ai.classification_deduplication', [

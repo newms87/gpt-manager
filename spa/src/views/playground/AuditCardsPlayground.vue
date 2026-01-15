@@ -84,11 +84,11 @@ const job = ref<JobDispatch | null>(null);
 const mockApiLog: ApiLog = {
   id: "1",
   api_class: "OpenAI",
-  service_name: "gpt-4",
+  service_name: "gpt-5",
   status_code: 200,
   method: "POST",
   url: "https://api.openai.com/v1/responses",
-  request: '{"model": "gpt-4o", "messages": [{"role": "user", "content": "Hello"}]}',
+  request: '{"model": "gpt-5", "messages": [{"role": "user", "content": "Hello"}]}',
   response: '{"id": "resp_123", "choices": [{"message": {"content": "Hi there!"}}]}',
   request_headers: { "Authorization": "Bearer sk-***", "Content-Type": "application/json" },
   response_headers: {},

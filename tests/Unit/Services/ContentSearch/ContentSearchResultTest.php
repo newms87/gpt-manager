@@ -417,7 +417,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
         // Given
         $artifact   = Artifact::factory()->create(['team_id' => $this->user->currentTeam->id]);
         $value      = 'llm-extracted-value';
-        $model      = 'gpt-4o-mini';
+        $model      = self::TEST_MODEL;
         $confidence = 0.85;
 
         // When
@@ -441,7 +441,7 @@ class ContentSearchResultTest extends AuthenticatedTestCase
         $directive->id             = 1;
         $directive->directive_text = 'Test directive text';
         $value                     = 'llm-extracted-value';
-        $model                     = 'gpt-4o-mini';
+        $model                     = self::TEST_MODEL;
 
         // When
         $result = ContentSearchResult::llmFound($value, $directive, $model);

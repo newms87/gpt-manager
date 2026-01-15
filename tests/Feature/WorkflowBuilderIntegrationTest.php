@@ -9,7 +9,6 @@ use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowInput;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
@@ -27,13 +26,6 @@ class WorkflowBuilderIntegrationTest extends AuthenticatedTestCase
         parent::setUp();
         $this->setUpTeam();
         $this->workflowBuilderService = app(WorkflowBuilderService::class);
-
-        // Configure test environment
-        Config::set('ai.models.test-model', [
-            'api'     => \Tests\Feature\Api\TestAi\TestAiApi::class,
-            'name'    => 'Test Model',
-            'context' => 4096,
-        ]);
 
         // Mock queue to prevent actual job dispatching
         Queue::fake();

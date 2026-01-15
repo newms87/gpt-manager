@@ -16,12 +16,10 @@ use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateVariable;
 use App\Models\User;
 use App\Services\Task\Runners\TemplateTaskRunner;
-use Illuminate\Support\Facades\Config;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Feature\Api\TestAi\Classes\TestAiCompletionResponse;
-use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\TestCase;
 
 class TemplateTaskRunnerTest extends TestCase
@@ -47,30 +45,6 @@ class TemplateTaskRunnerTest extends TestCase
         $this->team->users()->attach($this->user);
         $this->user->currentTeam = $this->team;
         $this->actingAs($this->user);
-
-        // Configure TestAI
-        Config::set('ai.models.test-model', [
-            'api'      => TestAiApi::class,
-            'name'     => 'Test Model',
-            'context'  => 4096,
-            'input'    => 0,
-            'output'   => 0,
-            'features' => [
-                'temperature' => true,
-            ],
-        ]);
-
-        // Configure gpt-4o to use TestAI for testing
-        Config::set('ai.models.gpt-4o', [
-            'api'      => TestAiApi::class,
-            'name'     => 'GPT-4o Test',
-            'context'  => 4096,
-            'input'    => 0,
-            'output'   => 0,
-            'features' => [
-                'temperature' => true,
-            ],
-        ]);
 
         // Create Google Docs template stored file
         $this->templateStoredFile = StoredFile::factory()->create([

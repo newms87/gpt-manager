@@ -34,9 +34,8 @@ The templates system allows users to create reusable document templates (invoice
 │    TemplateDefinitionHistory- Auto-versioning snapshots             │
 │                                                                     │
 │  Services (Two-Agent Architecture):                                 │
-│    TemplateCollaborationService - Fast conversation (gpt-4o-mini)   │
-│    TemplateBuildingService      - Powerful builder (gpt-5)          │
-│    HtmlTemplateGenerationService- Initial collaboration setup       │
+│    TemplateCollaborationService - Fast conversation (gpt-5-nano)    │
+│    TemplateBuildingService      - Powerful builder (gpt-5.2-codex)  │
 │    TemplateRenderingService     - Orchestrates rendering            │
 │    HtmlRenderingService         - HTML template renderer            │
 │    GoogleDocsRenderingService   - Google Docs template renderer     │
@@ -52,12 +51,12 @@ The templates system allows users to create reusable document templates (invoice
 
 The template system uses a sophisticated two-agent pattern:
 
-1. **Conversation Agent** (`TemplateCollaborationService`, model: `gpt-4o-mini`)
+1. **Conversation Agent** (`TemplateCollaborationService`, model: `gpt-5-nano`)
    - Fast responses to user messages
    - Understands user intent and provides feedback
    - Optionally dispatches build jobs when template changes are needed
 
-2. **Builder Agent** (`TemplateBuildingService`, model: `gpt-5`)
+2. **Builder Agent** (`TemplateBuildingService`, model: `gpt-5.2-codex`)
    - Powerful model for complex template generation
    - Actually modifies HTML/CSS content
    - Runs asynchronously via job dispatch
@@ -169,11 +168,12 @@ Stores version history with tiered retention policy.
 
 **Location:** `app/Services/Template/TemplateCollaborationService.php`
 
-Fast conversation agent for user interactions.
+Fast conversation agent for user interactions and initial collaboration setup.
 
-**Model:** `gpt-4o-mini`
+**Model:** `gpt-5-nano` (configurable via `AI_TEMPLATE_COLLABORATION_MODEL` env var)
 
 **Key Responsibilities:**
+- Start new collaboration threads via `startCollaboration()`
 - Handle user messages in real-time
 - Provide conversational feedback
 - Determine when template modifications are needed
@@ -185,7 +185,7 @@ Fast conversation agent for user interactions.
 
 Powerful builder agent for actual template modifications.
 
-**Model:** `gpt-5`
+**Model:** `gpt-5.2-codex` (configurable via `AI_TEMPLATE_BUILDING_MODEL` env var)
 
 **Key Responsibilities:**
 - Generate/modify HTML and CSS content
@@ -206,21 +206,6 @@ Handles CRUD operations and collaboration management.
 - `startCollaboration(template, fileIds[], prompt)` - Start LLM collaboration thread
 - `sendMessage(thread, message, fileId?)` - Send message to collaboration
 - `restoreVersion(history)` - Restore previous version
-
-### HtmlTemplateGenerationService
-
-**Location:** `app/Services/Template/HtmlTemplateGenerationService.php`
-
-Initial setup for LLM-based template building.
-
-**Model:** `gpt-5-mini`
-
-**How It Works:**
-1. Creates/uses "Template Builder" agent
-2. Accepts PDFs/images as source files + user prompt
-3. LLM generates JSON response: `{html_content, css_content, variable_names, screenshot_request}`
-4. Service updates template and syncs variables
-5. If screenshot requested, message data stores the request
 
 **Variable Convention:** HTML templates use `data-var-*` attributes to mark variable locations:
 ```html
@@ -284,7 +269,7 @@ Queues collaboration messages for async processing.
 
 **Location:** `app/Jobs/TemplateBuildingJob.php`
 
-Queues template builds for async processing with the powerful gpt-5 model.
+Queues template builds for async processing with the powerful gpt-5.2-codex model.
 
 ## Frontend Components
 
@@ -534,7 +519,7 @@ interface ScreenshotRequest {
 3. Clicks "Begin Collaboration"
 4. Frontend calls `startCollaborationAction.trigger(template, { prompt, file_ids })`
 5. Backend creates AgentThread linked to template via morphMany
-6. HtmlTemplateGenerationService initiates LLM conversation
+6. TemplateCollaborationService initiates LLM conversation
 7. Frontend subscribes to Pusher events for real-time updates
 
 ### Message Flow (Two-Agent Pattern)
@@ -544,9 +529,9 @@ interface ScreenshotRequest {
    - User message (displayed immediately)
    - Assistant "thinking" message (shows spinner)
 3. `sendMessageAction.trigger()` sends to backend
-4. Backend queues `TemplateCollaborationJob` (fast gpt-4o-mini)
+4. Backend queues `TemplateCollaborationJob` (fast gpt-5-nano)
 5. Collaboration agent responds conversationally
-6. If template changes needed, collaboration agent dispatches `TemplateBuildingJob` (gpt-5)
+6. If template changes needed, collaboration agent dispatches `TemplateBuildingJob` (gpt-5.2-codex)
 7. Build job updates template HTML/CSS and syncs variables
 8. Pusher events notify frontend of:
    - Thread updates (conversation messages)
@@ -582,7 +567,6 @@ app/
 │   ├── TemplateDefinitionService.php
 │   ├── TemplateCollaborationService.php
 │   ├── TemplateBuildingService.php
-│   ├── HtmlTemplateGenerationService.php
 │   ├── TemplateRenderingService.php
 │   ├── HtmlRenderingService.php
 │   └── GoogleDocsRenderingService.php

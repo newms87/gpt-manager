@@ -125,7 +125,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
     public function test_withLlmModel_setsModel(): void
     {
         // Given
-        $model   = 'gpt-4o-mini';
+        $model   = self::TEST_MODEL;
         $request = ContentSearchRequest::create();
 
         // When
@@ -372,7 +372,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
             ->withFieldPath('template_stored_file_id')
             ->withRegexPattern('/[a-zA-Z0-9_-]{25,60}/')
             ->withValidation($validationCallback, true)
-            ->withLlmModel('gpt-4o-mini')
+            ->withLlmModel(self::TEST_MODEL)
             ->withTaskDefinition($this->taskDefinition)
             ->searchArtifacts($artifacts)
             ->withMaxAttempts(3)
@@ -385,7 +385,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertEquals('/[a-zA-Z0-9_-]{25,60}/', $request->getRegexPattern());
         $this->assertEquals($validationCallback, $request->getValidationCallback());
         $this->assertTrue($request->isValidationRequired());
-        $this->assertEquals('gpt-4o-mini', $request->getLlmModel());
+        $this->assertEquals(self::TEST_MODEL, $request->getLlmModel());
         $this->assertEquals($this->taskDefinition, $request->getTaskDefinition());
         $this->assertEquals($artifacts, $request->getArtifacts());
         $this->assertEquals(3, $request->getMaxAttempts());
@@ -439,7 +439,10 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
 
     public function test_defaultValues_areSetCorrectly(): void
     {
-        // Given & When
+        // Given - Set google-docs config to use test model for consistent testing
+        config(['google-docs.file_id_detection_model' => self::TEST_MODEL]);
+
+        // When
         $request = ContentSearchRequest::create();
 
         // Then
@@ -447,7 +450,7 @@ class ContentSearchRequestTest extends AuthenticatedTestCase
         $this->assertNull($request->getFieldPath());
         $this->assertNull($request->getRegexPattern());
         $this->assertNull($request->getValidationCallback());
-        $this->assertEquals('gpt-5-nano', $request->getLlmModel()); // Default from config
+        $this->assertEquals(self::TEST_MODEL, $request->getLlmModel()); // Default from config
         $this->assertNull($request->getTaskDefinition());
         $this->assertNull($request->getArtifacts());
         $this->assertNull($request->getDirectives());

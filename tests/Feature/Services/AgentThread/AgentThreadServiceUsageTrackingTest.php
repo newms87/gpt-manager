@@ -3,13 +3,13 @@
 namespace Tests\Feature\Services\AgentThread;
 
 use App\Api\AgentApiContracts\AgentCompletionResponseContract;
-use App\Api\OpenAi\OpenAiApi;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Usage\UsageEvent;
 use App\Services\AgentThread\AgentThreadService;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Feature\Api\TestAi\TestAiApi;
 use Tests\TestCase;
 
 class AgentThreadServiceUsageTrackingTest extends TestCase
@@ -25,7 +25,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     #[Test]
     public function it_tracks_usage_when_handling_ai_response()
     {
-        $agent = Agent::factory()->create(['model' => 'gpt-4o']);
+        $agent = Agent::factory()->create(['model' => self::TEST_MODEL]);
 
         $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
         $threadRun = AgentThreadRun::factory()->create([
@@ -51,11 +51,11 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
             ->first();
 
         $this->assertNotNull($usageEvent);
-        $this->assertEquals(OpenAiApi::class, $usageEvent->api_name);
+        $this->assertEquals(TestAiApi::class, $usageEvent->api_name);
         $this->assertEquals('ai_completion', $usageEvent->event_type);
         $this->assertEquals(200, $usageEvent->input_tokens);
         $this->assertEquals(100, $usageEvent->output_tokens);
-        $this->assertEquals('gpt-4o', $usageEvent->metadata['model']);
+        $this->assertEquals(self::TEST_MODEL, $usageEvent->metadata['model']);
 
         // Check that thread run usage is accessible via trait
         $threadRun->refresh();
@@ -69,7 +69,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     public function it_does_not_track_usage_when_no_tokens_consumed()
     {
         $agent = Agent::factory()->create([
-            'model' => 'gpt-4o',
+            'model' => self::TEST_MODEL,
         ]);
 
         $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
@@ -98,17 +98,11 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
     #[Test]
     public function it_calculates_costs_correctly_when_tracking_usage()
     {
-        // Set up pricing config (per token, not per 1000 tokens)
-        config([
-            'ai.models.gpt-4o' => [
-                'api'    => OpenAiApi::class,
-                'input'  => 0.0025 / 1000,  // 0.0025 per 1000 tokens = 0.0000025 per token
-                'output' => 0.01   / 1000,   // 0.01 per 1000 tokens = 0.00001 per token
-            ],
-        ]);
+        // Uses test model pricing from TestCase::configureTestModel()
+        // input: 1.00 / 1_000_000 per token, output: 2.00 / 1_000_000 per token
 
         $agent = Agent::factory()->create([
-            'model' => 'gpt-4o',
+            'model' => self::TEST_MODEL,
         ]);
 
         $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
@@ -131,15 +125,18 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
             ->first();
 
         $this->assertNotNull($usageEvent);
-        $this->assertEquals(0.0025, $usageEvent->input_cost); // 1000 * 0.0025
-        $this->assertEquals(0.005, $usageEvent->output_cost); // 500 * 0.01
+        // Cost = tokens * (rate / 1_000_000)
+        // Input: 1000 * (1.00 / 1_000_000) = 0.001
+        // Output: 500 * (2.00 / 1_000_000) = 0.001
+        $this->assertEquals(0.001, $usageEvent->input_cost);
+        $this->assertEquals(0.001, $usageEvent->output_cost);
     }
 
     #[Test]
     public function it_includes_api_response_in_metadata()
     {
         $agent = Agent::factory()->create([
-            'model' => 'gpt-4o',
+            'model' => self::TEST_MODEL,
         ]);
 
         $thread    = AgentThread::factory()->create(['agent_id' => $agent->id]);
@@ -147,7 +144,7 @@ class AgentThreadServiceUsageTrackingTest extends TestCase
 
         $apiResponseData = [
             'id'    => 'test-123',
-            'model' => 'gpt-4o',
+            'model' => self::TEST_MODEL,
             'usage' => ['total_tokens' => 300],
         ];
 

@@ -53,7 +53,7 @@ class ExtractDataTaskRunnerIntegrationTest extends AuthenticatedTestCase
         // Create agent
         $this->agent = Agent::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'model'   => 'gpt-5-mini',
+            'model'   => self::TEST_MODEL,
         ]);
 
         // Create schema definition for Demand Letter extraction
