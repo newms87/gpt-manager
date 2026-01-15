@@ -446,28 +446,47 @@ class WorkflowDefinitionBuilderTaskRunnerTest extends AuthenticatedTestCase
         // Associate as input artifact
         $this->taskProcess->inputArtifacts()->attach([$inputArtifact->id]);
 
-        // Set up the task process as ready
-        $this->taskProcess->update(['is_ready' => true]);
+        // Set up the task process as ready and started (simulate TaskProcessRunnerService behavior)
+        $this->taskProcess->update([
+            'is_ready'   => true,
+            'started_at' => now(),
+        ]);
 
-        // When & Then - Since we can't mock the agent thread services (per the requirements),
-        // we expect this to fail when attempting to create/run the agent thread.
-        // This verifies the input processing works correctly up to the agent execution stage.
-
-        $this->expectException(\Exception::class);
-
+        // When - With TestAI configured, the agent thread should complete successfully
         $this->runner->run();
+
+        // Then - Verify the task process marked as completed (via completed_at)
+        $this->taskProcess->refresh();
+        $this->assertNotNull($this->taskProcess->completed_at, 'Task process should have completed_at set');
+
+        // Verify an organization schema was created for this team
+        $this->assertDatabaseHas('schema_definitions', [
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Workflow Organization Schema',
+        ]);
     }
 
     public function test_run_withNoInputArtifacts_completesWithEmptyResult(): void
     {
         // Given - no input artifacts (but task definition has agent)
+        // Set up the task process as ready and started (simulate TaskProcessRunnerService behavior)
+        $this->taskProcess->update([
+            'is_ready'   => true,
+            'started_at' => now(),
+        ]);
 
-        // When & Then - Without input artifacts, this will still fail at the agent setup stage
-        // since the AgentThreadTaskRunner expects specific agent thread configurations
-
-        $this->expectException(\Exception::class);
-
+        // When - With TestAI configured, the agent thread should complete even without input artifacts
         $this->runner->run();
+
+        // Then - Verify the task process marked as completed (via completed_at)
+        $this->taskProcess->refresh();
+        $this->assertNotNull($this->taskProcess->completed_at, 'Task process should have completed_at set');
+
+        // Verify an organization schema was created for this team
+        $this->assertDatabaseHas('schema_definitions', [
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Workflow Organization Schema',
+        ]);
     }
 
     public function test_teamBasedAccessControl_restrictsSchemaToCurrentTeam(): void

@@ -151,7 +151,12 @@ class JSONSchemaDataToDatabaseMapper
 
         // Cleanup date inputs in case they are in an unexpected format
         if (!empty($input['date'])) {
-            $input['date'] = carbon($input['date']);
+            try {
+                $input['date'] = carbon($input['date']);
+            } catch (Exception) {
+                // If the date cannot be parsed (e.g., LLM returned "unknown"), remove it
+                unset($input['date']);
+            }
         }
 
         try {
@@ -466,9 +471,22 @@ class JSONSchemaDataToDatabaseMapper
             'number'    => (float)$value,
             'integer'   => (int)$value,
             'boolean'   => (bool)$value,
-            'date'      => carbon($value)->toDateString(),
-            'date-time' => carbon($value)->toDateTimeString(),
+            'date'      => $this->tryParseDate($value)?->toDateString()     ?? (string)$value,
+            'date-time' => $this->tryParseDate($value)?->toDateTimeString() ?? (string)$value,
             default     => $value,
         };
+    }
+
+    /**
+     * Attempt to parse a date value using Carbon.
+     * Returns null if parsing fails (e.g., LLM returned "unknown" or invalid date).
+     */
+    private function tryParseDate(mixed $value): ?Carbon
+    {
+        try {
+            return carbon($value);
+        } catch (Exception) {
+            return null;
+        }
     }
 }

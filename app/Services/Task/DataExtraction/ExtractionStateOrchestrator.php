@@ -509,6 +509,7 @@ class ExtractionStateOrchestrator
 
     /**
      * Create identity extraction processes for current level.
+     * Handles the case where 0 processes are created (e.g., classification filtered out all pages for this level).
      */
     protected function createIdentityExtractionProcesses(TaskRun $taskRun, array $plan): void
     {
@@ -517,7 +518,32 @@ class ExtractionStateOrchestrator
 
         static::logDebug('Creating identity extraction processes', ['level' => $currentLevel]);
 
-        $orchestrator->createExtractIdentityProcesses($taskRun, $plan, $currentLevel);
+        $processes = $orchestrator->createExtractIdentityProcesses($taskRun, $plan, $currentLevel);
+
+        // Handle case where 0 processes were created (classification filtered out all pages)
+        if (empty($processes)) {
+            static::logDebug('No identity processes created - marking identity complete and checking remaining', [
+                'level' => $currentLevel,
+            ]);
+
+            // Mark identity complete for this level
+            $orchestrator->updateLevelProgress($taskRun, $currentLevel, 'identity_complete', true);
+
+            // Check if there are remaining groups for this level
+            $levelData       = $plan['levels'][$currentLevel] ?? [];
+            $remainingGroups = $levelData['remaining']        ?? [];
+
+            if (empty($remainingGroups)) {
+                // No remaining groups either - mark extraction complete for this level
+                static::logDebug('No remaining groups for level - marking extraction complete', [
+                    'level' => $currentLevel,
+                ]);
+                $orchestrator->updateLevelProgress($taskRun, $currentLevel, 'extraction_complete', true);
+            }
+
+            // Recursively advance to check for next phase (remaining extraction or level progression)
+            $this->advanceToNextPhase($taskRun);
+        }
     }
 
     /**
