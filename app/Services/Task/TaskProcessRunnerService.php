@@ -218,9 +218,13 @@ class TaskProcessRunnerService
     }
 
     /**
-     * Restart the task process. This will reset the task process to its initial state and dispatch it for execution
+     * Restart the task process by cloning it.
+     * The old process is soft-deleted and linked to the new active process via parent_task_process_id.
+     * All previous historical processes are updated to point to the new active process (flat chain structure).
+     *
+     * @return TaskProcess The new active process
      */
-    public static function restart(TaskProcess $taskProcess): void
+    public static function restart(TaskProcess $taskProcess): TaskProcess
     {
         static::logDebug("Restart $taskProcess");
 
@@ -230,32 +234,67 @@ class TaskProcessRunnerService
             if ($taskProcess->isStatusRunning()) {
                 throw new ValidationError('TaskProcess is currently running, cannot restart');
             }
-            $taskProcess->clearOutputArtifacts();
 
-            // Clear previously associated job dispatches
-            $taskProcess->jobDispatches()->detach();
-            $taskProcess->updateRelationCounter('jobDispatches');
-            $taskProcess->last_job_dispatch_id = null;
-
+            // Halt any running agent threads
             static::halt($taskProcess);
 
-            $taskProcess->stopped_at    = null;
-            $taskProcess->failed_at     = null;
-            $taskProcess->incomplete_at = null;
-            $taskProcess->timeout_at    = null;
-            // NOTE: we must reset the started_at and completed_at flag so the task process can be re-run
-            $taskProcess->started_at       = null;
-            $taskProcess->completed_at     = null;
-            $taskProcess->percent_complete = 0;
-            $taskProcess->restart_count    += 1;
-            $taskProcess->is_ready         = true;
+            // Clone the process for restart
+            $newProcess = static::cloneForRestart($taskProcess);
+
+            // Link the old process to the new one and soft delete
+            $taskProcess->parent_task_process_id = $newProcess->id;
             $taskProcess->save();
+            $taskProcess->delete();
+
+            // Update all previously soft-deleted historical processes to point to the new active process
+            // This maintains a flat chain structure where all history points to the current active process
+            TaskProcess::onlyTrashed()
+                ->where('parent_task_process_id', $taskProcess->id)
+                ->update(['parent_task_process_id' => $newProcess->id]);
         } finally {
             LockHelper::release($taskProcess);
         }
 
-        // Trigger dispatcher to pick up this restarted process
-        TaskProcessDispatcherService::dispatchForTaskRun($taskProcess->taskRun);
+        // Trigger dispatcher to pick up the new process
+        TaskProcessDispatcherService::dispatchForTaskRun($newProcess->taskRun);
+
+        return $newProcess;
+    }
+
+    /**
+     * Clone a task process for restart.
+     * Creates a new process with reset state, syncs input artifacts, and copies schema association.
+     */
+    protected static function cloneForRestart(TaskProcess $taskProcess): TaskProcess
+    {
+        // Create new process with reset state
+        $newProcess = $taskProcess->taskRun->taskProcesses()->create([
+            'name'             => $taskProcess->name,
+            'operation'        => $taskProcess->operation,
+            'activity'         => "Restarting {$taskProcess->name}...",
+            'is_ready'         => true,
+            'restart_count'    => $taskProcess->restart_count + 1,
+            'percent_complete' => 0,
+        ]);
+
+        // Sync input artifacts (reference same artifacts, not copy)
+        $inputArtifactIds = $taskProcess->inputArtifacts()->pluck('artifacts.id')->toArray();
+        if (!empty($inputArtifactIds)) {
+            $newProcess->inputArtifacts()->sync($inputArtifactIds);
+            $newProcess->updateRelationCounter('inputArtifacts');
+        }
+
+        // Copy schema association if exists
+        $schemaAssociation = $taskProcess->outputSchemaAssociation;
+        if ($schemaAssociation) {
+            $schemaAssociation->replicate()->forceFill([
+                'object_id'   => $newProcess->id,
+                'object_type' => TaskProcess::class,
+                'category'    => 'output',
+            ])->save();
+        }
+
+        return $newProcess;
     }
 
     /**
@@ -349,6 +388,8 @@ class TaskProcessRunnerService
      */
     public static function handleTimeout(TaskProcess $taskProcess): bool
     {
+        $canRetry = false;
+
         LockHelper::acquire($taskProcess);
 
         try {
@@ -363,16 +404,19 @@ class TaskProcessRunnerService
 
             static::halt($taskProcess);
 
-            if ($taskProcess->canBeRetried()) {
-                static::restart($taskProcess);
-
-                return true; // Process was restarted and dispatched
-            }
-
-            return false; // Process was not restarted
+            $canRetry = $taskProcess->canBeRetried();
         } finally {
             LockHelper::release($taskProcess);
         }
+
+        // Restart outside the lock since restart() acquires its own lock
+        if ($canRetry) {
+            static::restart($taskProcess);
+
+            return true; // Process was restarted and dispatched
+        }
+
+        return false; // Process was not restarted
     }
 
     /**

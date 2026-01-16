@@ -4,11 +4,14 @@ namespace App\Repositories;
 
 use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowStatesContract;
+use App\Resources\TaskDefinition\TaskProcessResource;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
+use Override;
 
 class TaskProcessRepository extends ActionRepository
 {
@@ -17,6 +20,22 @@ class TaskProcessRepository extends ActionRepository
     const int PENDING_PROCESS_TIMEOUT = 120; // 2 minutes
 
     public static string $model = TaskProcess::class;
+
+    /**
+     * Returns an instantiated model matching the ID.
+     * Supports withTrashed query parameter to include soft-deleted records.
+     */
+    #[Override]
+    public function instance($id): ?Model
+    {
+        $query = $this->model()->query();
+
+        if (request()->boolean('withTrashed')) {
+            $query->withTrashed();
+        }
+
+        return $query->find($id);
+    }
 
     public function listQuery(): Builder
     {
@@ -69,11 +88,11 @@ class TaskProcessRepository extends ActionRepository
         return false;
     }
 
-    public function restartTaskProcess(TaskProcess $taskProcess): TaskProcess
+    public function restartTaskProcess(TaskProcess $taskProcess): array
     {
-        TaskProcessRunnerService::restart($taskProcess);
+        $newTaskProcess = TaskProcessRunnerService::restart($taskProcess);
 
-        return $taskProcess;
+        return TaskProcessResource::make($newTaskProcess);
     }
 
     /**

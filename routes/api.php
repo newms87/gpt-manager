@@ -78,7 +78,9 @@ ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController, function () {
     Route::get('{taskRun}/errors', [TaskRunsController::class, 'errors']);
 });
-ActionRoute::routes('task-processes', new TaskProcessesController);
+ActionRoute::routes('task-processes', new TaskProcessesController, function () {
+    Route::get('{taskProcess}/history', [TaskProcessesController::class, 'history']);
+});
 
 // Workflows
 ActionRoute::routes('workflow-definitions', new WorkflowDefinitionsController, function () {

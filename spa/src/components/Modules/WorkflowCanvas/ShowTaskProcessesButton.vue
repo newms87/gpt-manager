@@ -97,7 +97,7 @@ import { TaskProcess, TaskRun } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
 import { ActionButton, AnyObject, InfoDialog, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref, shallowRef, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
@@ -107,10 +107,20 @@ const props = defineProps<{
 // Handle auto refreshing task processes while they're being shown
 const isShowingTaskProcesses = ref(false);
 const isLoading = ref(false);
-const taskProcesses = shallowRef<TaskProcess[]>([]);
+const taskProcesses = ref<TaskProcess[]>([]);
 const selectedProcesses = ref<number[]>([]);
 
-function onRestart() {
+function onRestart(oldProcessId?: number, newProcess?: TaskProcess) {
+    if (oldProcessId && newProcess) {
+        const index = taskProcesses.value.findIndex(p => p.id === oldProcessId);
+        if (index !== -1) {
+            const updated = [...taskProcesses.value];
+            updated[index] = newProcess;
+            taskProcesses.value = updated;
+        } else {
+            loadTaskProcesses();
+        }
+    }
     emit("restart");
 }
 

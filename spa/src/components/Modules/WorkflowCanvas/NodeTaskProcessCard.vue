@@ -40,7 +40,14 @@
 			</div>
 			<div class="flex-x space-x-2 mt-2">
 				<LabelPillWidget :label="`pid: ${taskProcess.id}`" color="sky" size="xs" class="whitespace-nowrap" />
-				<LabelPillWidget v-if="taskProcess.restart_count" :label="`${taskProcess.restart_count} restart${taskProcess.restart_count > 1 ? 's' : ''}`" color="orange" size="xs" class="whitespace-nowrap" />
+				<LabelPillWidget
+					v-if="taskProcess.restart_count"
+					:label="`${taskProcess.restart_count} restart${taskProcess.restart_count > 1 ? 's' : ''}`"
+					color="orange"
+					size="xs"
+					class="whitespace-nowrap cursor-pointer hover:opacity-80"
+					@click="isShowingHistory = true"
+				/>
 				<LabelPillWidget v-if="taskProcess.operation" :label="taskProcess.operation" :color="operationColor" size="xs" class="whitespace-nowrap" />
 				<LabelPillWidget :label="taskProcess.name" color="blue" size="xs" class="text-center max-w-64" />
 				<UsageSummaryCard v-if="taskProcess.usage" :usage="taskProcess.usage" variant="compact" class="max-w-32" />
@@ -114,6 +121,13 @@
 				</div>
 			</ListTransition>
 		</div>
+
+		<TaskProcessHistoryDialog
+			v-if="isShowingHistory"
+			:task-process="taskProcess"
+			:is-showing="isShowingHistory"
+			@close="isShowingHistory = false"
+		/>
 	</div>
 </template>
 
@@ -125,6 +139,7 @@ import UsageSummaryCard from "@/components/Shared/Usage/UsageSummaryCard";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeArtifactsButton from "@/components/Modules/WorkflowCanvas/NodeArtifactsButton";
 import TaskProcessAgentThreadCard from "@/components/Modules/WorkflowCanvas/TaskProcessAgentThreadCard";
+import TaskProcessHistoryDialog from "@/components/Modules/WorkflowCanvas/TaskProcessHistoryDialog.vue";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import { useHashedColor } from "@/composables/useHashedColor";
 import { TaskProcess } from "@/types";
@@ -132,12 +147,16 @@ import { FaSolidBusinessTime as JobDispatchIcon, FaSolidMessage as AgentThreadIc
 import { ActionButton, fPercent, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-const emit = defineEmits<{ restart: void }>();
+const emit = defineEmits<{ restart: [oldProcessId: number, newProcess?: TaskProcess] }>();
 const props = defineProps<{
 	taskProcess: TaskProcess;
 }>();
 
-const restartAction = dxTaskProcess.getAction("restart", { onFinish: async () => emit("restart") });
+const restartAction = dxTaskProcess.getAction("restart", {
+	onFinish: async (result) => {
+		emit("restart", result?.item?.id, result?.result as TaskProcess | undefined);
+	}
+});
 const resumeAction = dxTaskProcess.getAction("resume");
 const stopAction = dxTaskProcess.getAction("stop");
 const isStopped = computed(() => props.taskProcess.status === "Stopped" || props.taskProcess.status === "Pending");
@@ -146,6 +165,7 @@ const isShowingAgentThread = ref(false);
 const isShowingJobDispatches = ref(false);
 const isShowingInputArtifacts = ref(false);
 const isShowingOutputArtifacts = ref(false);
+const isShowingHistory = ref(false);
 
 const operationColor = useHashedColor(computed(() => props.taskProcess.operation));
 

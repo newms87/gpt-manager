@@ -95,6 +95,7 @@ export interface TaskProcess extends TaskRunner {
 	percent_complete: number;
 	created_at: string;
 	restart_count?: number;
+	parent_task_process_id?: number | null;
 	input_artifact_count: number;
 	output_artifact_count: number;
 	job_dispatch_count: number;
@@ -104,6 +105,7 @@ export interface TaskProcess extends TaskRunner {
 	inputArtifacts?: Artifact[];
 	outputArtifacts?: Artifact[];
 	taskRun?: TaskRun;
+	historicalProcesses?: TaskProcess[];
 }
 
 export interface TaskRunnerClass {

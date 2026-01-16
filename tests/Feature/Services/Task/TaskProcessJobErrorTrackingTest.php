@@ -363,7 +363,7 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         $taskRun        = TaskRun::factory()->create([
             'task_definition_id' => $taskDefinition->id,
         ]);
-        $taskProcess = TaskProcess::factory()->create([
+        $oldProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'is_ready'    => true,
             'status'      => WorkflowStatesContract::STATUS_FAILED,
@@ -371,40 +371,48 @@ class TaskProcessJobErrorTrackingTest extends AuthenticatedTestCase
         ]);
 
         $jobDispatch = $this->createJobDispatchWithErrors(5);
-        $taskProcess->jobDispatches()->attach($jobDispatch->id);
-        $taskProcess->updateRelationCounter('jobDispatches');
+        $oldProcess->jobDispatches()->attach($jobDispatch->id);
+        $oldProcess->updateRelationCounter('jobDispatches');
 
         // Update error count
-        $taskProcess->refresh();
+        $oldProcess->refresh();
         app(\App\Services\Task\TaskProcessErrorTrackingService::class)
-            ->updateTaskProcessErrorCount($taskProcess);
+            ->updateTaskProcessErrorCount($oldProcess);
 
-        $taskProcess->refresh();
-        $this->assertEquals(5, $taskProcess->error_count, 'Non-retryable errors should be counted');
-        $this->assertEquals(1, $taskProcess->job_dispatch_count, 'Job dispatches should be counted');
+        $oldProcess->refresh();
+        $this->assertEquals(5, $oldProcess->error_count, 'Non-retryable errors should be counted');
+        $this->assertEquals(1, $oldProcess->job_dispatch_count, 'Job dispatches should be counted');
 
         // Verify the old job dispatch is still associated
         $oldJobDispatchId = $jobDispatch->id;
         $this->assertTrue(
-            $taskProcess->jobDispatches->contains('id', $oldJobDispatchId),
+            $oldProcess->jobDispatches->contains('id', $oldJobDispatchId),
             'Old job dispatch should be associated before restart'
         );
 
-        // When - Restart the task process (clears failed_at and job dispatches)
-        TaskProcessRunnerService::restart($taskProcess);
+        // When - Restart creates a NEW process (old process is soft-deleted with its history preserved)
+        $newProcess = TaskProcessRunnerService::restart($oldProcess);
 
-        // Then - Old job dispatches are cleared (error count resets)
-        // Note: In sync queue mode, a new job is dispatched and runs immediately after restart,
-        // which associates a new job dispatch. We verify the OLD dispatch is detached.
-        $taskProcess->refresh();
-        $this->assertEquals(0, $taskProcess->error_count,
-            'Error count resets on restart because old job dispatches are cleared');
+        // Then - New process starts fresh (may have a new job dispatch from sync queue execution)
+        // The key point is it does NOT have the OLD job dispatch with errors
+        $newProcess->refresh();
+        $this->assertEquals(0, $newProcess->error_count,
+            'New process has no errors from the old process');
         $this->assertFalse(
-            $taskProcess->jobDispatches->contains('id', $oldJobDispatchId),
-            'Old job dispatch should be detached after restart'
+            $newProcess->jobDispatches->contains('id', $oldJobDispatchId),
+            'New process should not have the old job dispatch'
         );
-        $this->assertTrue($taskProcess->is_ready, 'Task process should be ready after restart');
-        $this->assertNull($taskProcess->failed_at, 'Failed timestamp should be cleared');
+        $this->assertTrue($newProcess->is_ready, 'New process should be ready after restart');
+        $this->assertNull($newProcess->failed_at, 'New process should have null failed_at');
+
+        // And - Old process preserves its history (soft-deleted with its job dispatches intact)
+        $oldProcess->refresh();
+        $this->assertTrue($oldProcess->trashed(), 'Old process should be soft-deleted');
+        $this->assertEquals(5, $oldProcess->error_count, 'Old process preserves its error count');
+        $this->assertTrue(
+            $oldProcess->jobDispatches->contains('id', $oldJobDispatchId),
+            'Old process preserves its job dispatch history'
+        );
     }
 
     /**

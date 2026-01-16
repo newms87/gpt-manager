@@ -141,20 +141,23 @@ class TaskProcessIsReadyTest extends AuthenticatedTestCase
         // Given
         $taskDefinition = TaskDefinition::factory()->create();
         $taskRun        = TaskRunnerService::prepareTaskRun($taskDefinition);
-        $taskProcess    = TaskProcess::factory()->for($taskRun)->create([
+        $oldProcess     = TaskProcess::factory()->for($taskRun)->create([
             'is_ready'  => false,
             'status'    => WorkflowStatesContract::STATUS_FAILED,
             'failed_at' => now(),
         ]);
 
-        // When
-        TaskProcessRunnerService::restart($taskProcess);
+        // When - restart() returns the NEW process (old process is soft-deleted)
+        $newProcess = TaskProcessRunnerService::restart($oldProcess);
 
-        // Then
-        $taskProcess->refresh();
-        $this->assertTrue($taskProcess->is_ready, 'is_ready should be set to true after restart');
-        $this->assertNull($taskProcess->failed_at, 'failed_at should be cleared');
-        $this->assertEquals(1, $taskProcess->restart_count, 'restart_count should be incremented');
+        // Then - New process should have is_ready = true
+        $this->assertTrue($newProcess->is_ready, 'is_ready should be set to true after restart');
+        $this->assertNull($newProcess->failed_at, 'failed_at should be cleared');
+        $this->assertEquals(1, $newProcess->restart_count, 'restart_count should be incremented');
+
+        // And - Old process should be soft-deleted
+        $oldProcess->refresh();
+        $this->assertTrue($oldProcess->trashed(), 'Old process should be soft-deleted');
     }
 
     public function test_canBeRun_checksIsReady(): void

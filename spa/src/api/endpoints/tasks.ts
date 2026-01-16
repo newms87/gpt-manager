@@ -27,6 +27,14 @@ export const tasks = {
 	processes: buildApiUrl("/task-processes"),
 
 	/**
+	 * Task process history endpoint
+	 * @endpoint GET /task-processes/:id/history
+	 */
+	processHistory: createUrlBuilder<{ id: number }>(
+		(params) => `/task-processes/${params.id}/history`
+	),
+
+	/**
 	 * Task inputs endpoint
 	 * @endpoint /task-inputs
 	 */

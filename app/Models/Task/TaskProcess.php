@@ -33,6 +33,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     protected $fillable = [
         'name',
         'operation',
+        'parent_task_process_id',
         'is_ready',
         'started_at',
         'stopped_at',
@@ -44,6 +45,7 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
         'activity',
         'meta',
         'error_count',
+        'restart_count',
     ];
 
     protected array $keywordFields = [
@@ -90,6 +92,26 @@ class TaskProcess extends Model implements AuditableContract, WorkflowStatesCont
     public function taskRun(): BelongsTo|TaskRun
     {
         return $this->belongsTo(TaskRun::class);
+    }
+
+    /**
+     * The active process that this historical (soft-deleted) process was replaced by.
+     * Only soft-deleted processes have a parent - active processes have NULL.
+     */
+    public function parentProcess(): BelongsTo
+    {
+        return $this->belongsTo(TaskProcess::class, 'parent_task_process_id');
+    }
+
+    /**
+     * Historical processes that were replaced by this active process.
+     * Returns soft-deleted processes ordered by most recent first.
+     */
+    public function historicalProcesses(): HasMany
+    {
+        return $this->hasMany(TaskProcess::class, 'parent_task_process_id')
+            ->onlyTrashed()
+            ->orderByDesc('created_at');
     }
 
     public function taskProcessListeners(): HasMany|TaskProcessListener

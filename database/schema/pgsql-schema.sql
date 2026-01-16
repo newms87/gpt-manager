@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict RhqIz5XjA00x8XDqQxdETMAdwts2JkSziMJjNVO2TZ9tF34oXPJU7EjV1GyPbVK
+\restrict W5nOVVDieW3Y47uP4v7eeyt5oh4nNcuJHUTIyVBYwR5FGq9GF4dFwmqhlv9LlIz
 
 -- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
 -- Dumped by pg_dump version 15.14 (Ubuntu 15.14-1.pgdg22.04+1)
@@ -37,6 +37,20 @@ CREATE SCHEMA gpt_manager;
 --
 
 COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: citext; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION citext; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
 
 
 SET default_tablespace = '';
@@ -209,7 +223,7 @@ ALTER SEQUENCE gpt_manager.agent_thread_runs_id_seq OWNED BY gpt_manager.agent_t
 
 CREATE TABLE gpt_manager.agent_threads (
     id bigint NOT NULL,
-    team_id bigint NULL,
+    team_id bigint,
     user_id bigint,
     agent_id bigint,
     name text,
@@ -2572,7 +2586,8 @@ CREATE TABLE public.agent_thread_messages (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    api_response_id text
+    api_response_id text,
+    api_log_id bigint
 );
 
 
@@ -2604,7 +2619,7 @@ CREATE TABLE public.agent_thread_runs (
     agent_thread_id bigint,
     last_message_id bigint,
     job_dispatch_id bigint,
-    status text,
+    status public.citext,
     response_format text DEFAULT 'text'::character varying,
     response_schema_id bigint,
     response_fragment_id bigint,
@@ -2654,11 +2669,13 @@ CREATE TABLE public.agent_threads (
     team_id bigint,
     user_id bigint,
     agent_id bigint,
-    name text,
-    summary text DEFAULT ''::character varying,
+    name public.citext,
+    summary public.citext DEFAULT ''::character varying,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    collaboratable_type character varying(255),
+    collaboratable_id bigint
 );
 
 
@@ -2690,9 +2707,9 @@ CREATE TABLE public.agents (
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     team_id bigint,
     knowledge_id bigint,
-    name text,
-    description text DEFAULT ''::character varying,
-    model text,
+    name public.citext,
+    description public.citext DEFAULT ''::character varying,
+    model public.citext,
     retry_count bigint DEFAULT '0'::bigint,
     threads_count bigint DEFAULT '0'::bigint,
     created_at timestamp with time zone,
@@ -2776,7 +2793,7 @@ CREATE TABLE public.artifactables (
     artifact_id bigint,
     artifactable_id bigint,
     artifactable_type text,
-    category text DEFAULT ''::character varying,
+    category public.citext DEFAULT ''::character varying,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -2815,10 +2832,10 @@ CREATE TABLE public.artifacts (
     task_definition_id bigint,
     task_run_id bigint,
     task_process_id bigint,
-    name text,
+    name public.citext,
     "position" integer DEFAULT 0,
-    model text,
-    text_content text,
+    model public.citext,
+    text_content public.citext,
     json_content json,
     meta json,
     created_at timestamp with time zone,
@@ -2909,7 +2926,11 @@ CREATE TABLE public.audit_request (
     profile text,
     "time" double precision,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    team_id bigint,
+    api_log_count integer DEFAULT 0 NOT NULL,
+    error_log_count integer DEFAULT 0 NOT NULL,
+    log_line_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -2978,8 +2999,8 @@ CREATE TABLE public.auth_tokens (
     id bigint NOT NULL,
     team_id bigint,
     service text,
-    type text,
-    name text,
+    type public.citext,
+    name public.citext,
     access_token text,
     refresh_token text,
     id_token text,
@@ -3091,8 +3112,8 @@ CREATE TABLE public.cache_locks (
 CREATE TABLE public.content_sources (
     id bigint NOT NULL,
     team_id bigint,
-    name text,
-    type text,
+    name public.citext,
+    type public.citext,
     url text DEFAULT ''::character varying,
     config json,
     polling_interval bigint DEFAULT '60'::bigint,
@@ -3125,23 +3146,30 @@ ALTER SEQUENCE public.content_sources_id_seq OWNED BY public.content_sources.id;
 
 
 --
--- Name: demand_templates; Type: TABLE; Schema: public; Owner: -
+-- Name: template_definitions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.demand_templates (
+CREATE TABLE public.template_definitions (
     id bigint NOT NULL,
     team_id bigint,
     user_id bigint,
     stored_file_id character(36) DEFAULT NULL::bpchar,
-    name text,
-    description text,
-    category text,
+    name public.citext,
+    description public.citext,
+    category public.citext,
     metadata json,
     is_active boolean DEFAULT true,
     created_at timestamp without time zone,
     updated_at timestamp without time zone,
     deleted_at timestamp without time zone,
-    template_variables json
+    type character varying(255) DEFAULT 'google_docs'::character varying NOT NULL,
+    html_content text,
+    css_content text,
+    preview_stored_file_id character(36),
+    building_job_dispatch_id integer,
+    pending_build_context json,
+    template_variables_count integer DEFAULT 0 NOT NULL,
+    job_dispatches_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -3161,7 +3189,7 @@ CREATE SEQUENCE public.demand_templates_id_seq
 -- Name: demand_templates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.demand_templates_id_seq OWNED BY public.demand_templates.id;
+ALTER SEQUENCE public.demand_templates_id_seq OWNED BY public.template_definitions.id;
 
 
 --
@@ -3177,7 +3205,8 @@ CREATE TABLE public.error_log_entry (
     full_message text,
     data json,
     created_at timestamp with time zone,
-    updated_at timestamp with time zone
+    updated_at timestamp with time zone,
+    is_retryable boolean DEFAULT false NOT NULL
 );
 
 
@@ -3302,7 +3331,8 @@ CREATE TABLE public.job_dispatch (
     data json,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
-    run_time_ms integer
+    run_time_ms integer,
+    team_id bigint
 );
 
 
@@ -3366,8 +3396,8 @@ ALTER SEQUENCE public.job_dispatchables_id_seq OWNED BY public.job_dispatchables
 CREATE TABLE public.knowledge (
     id bigint NOT NULL,
     team_id bigint,
-    name text,
-    description text,
+    name public.citext,
+    description public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone
@@ -3400,8 +3430,8 @@ ALTER SEQUENCE public.knowledge_id_seq OWNED BY public.knowledge.id;
 CREATE TABLE public.mcp_servers (
     id bigint NOT NULL,
     team_id bigint,
-    name text,
-    description text,
+    name public.citext,
+    description public.citext,
     server_url text,
     headers json,
     allowed_tools json,
@@ -3531,8 +3561,8 @@ ALTER SEQUENCE public.object_tag_taggables_id_seq OWNED BY public.object_tag_tag
 
 CREATE TABLE public.object_tags (
     id bigint NOT NULL,
-    category text,
-    name text,
+    category public.citext,
+    name public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone
@@ -3563,7 +3593,7 @@ ALTER SEQUENCE public.object_tags_id_seq OWNED BY public.object_tags.id;
 --
 
 CREATE TABLE public.password_reset_tokens (
-    email text NOT NULL,
+    email public.citext NOT NULL,
     token text,
     created_at timestamp with time zone
 );
@@ -3614,9 +3644,9 @@ ALTER SEQUENCE public.payment_methods_id_seq OWNED BY public.payment_methods.id;
 
 CREATE TABLE public.permissions (
     id bigint NOT NULL,
-    name text,
-    display_name text,
-    description text,
+    name public.citext,
+    display_name public.citext,
+    description public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -3649,9 +3679,9 @@ CREATE TABLE public.personal_access_tokens (
     id bigint NOT NULL,
     tokenable_type text,
     tokenable_id bigint,
-    name text,
+    name public.citext,
     token text,
-    abilities text,
+    abilities public.citext,
     last_used_at timestamp with time zone,
     expires_at timestamp with time zone,
     created_at timestamp with time zone,
@@ -3686,8 +3716,8 @@ CREATE TABLE public.prompt_directives (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     team_id bigint,
-    name text,
-    directive_text text,
+    name public.citext,
+    directive_text public.citext,
     agents_count bigint DEFAULT '0'::bigint,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
@@ -3720,17 +3750,18 @@ ALTER SEQUENCE public.prompt_directives_id_seq OWNED BY public.prompt_directives
 
 CREATE TABLE public.resource_package_imports (
     id character(36) DEFAULT NULL::bpchar NOT NULL,
-    team_uuid character(36) DEFAULT NULL::bpchar,
+    creator_team_uuid character(36) DEFAULT NULL::bpchar,
     resource_package_id character(36) DEFAULT NULL::bpchar,
     resource_package_version_id character(36) DEFAULT NULL::bpchar,
     source_object_id character(36) DEFAULT NULL::bpchar,
     local_object_id character(36) DEFAULT NULL::bpchar,
-    object_type text,
+    object_type public.citext,
     can_view boolean DEFAULT false,
     can_edit boolean DEFAULT false,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
-    deleted_at timestamp with time zone
+    deleted_at timestamp with time zone,
+    team_id bigint
 );
 
 
@@ -3741,7 +3772,7 @@ CREATE TABLE public.resource_package_imports (
 CREATE TABLE public.resource_package_versions (
     id character(36) DEFAULT NULL::bpchar NOT NULL,
     resource_package_id character(36) DEFAULT NULL::bpchar,
-    version text,
+    version public.citext,
     version_hash text,
     definitions json,
     created_at timestamp with time zone,
@@ -3756,10 +3787,10 @@ CREATE TABLE public.resource_package_versions (
 
 CREATE TABLE public.resource_packages (
     id character(36) DEFAULT NULL::bpchar NOT NULL,
-    team_uuid character(36) DEFAULT NULL::bpchar,
-    resource_type text,
+    creator_team_uuid character(36) DEFAULT NULL::bpchar,
+    resource_type public.citext,
     resource_id text,
-    name text,
+    name public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone
@@ -3836,9 +3867,9 @@ ALTER SEQUENCE public.role_user_id_seq OWNED BY public.role_user.id;
 
 CREATE TABLE public.roles (
     id bigint NOT NULL,
-    name text,
-    display_name text,
-    description text,
+    name public.citext,
+    display_name public.citext,
+    description public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -3872,9 +3903,9 @@ CREATE TABLE public.schema_associations (
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     schema_definition_id bigint,
     schema_fragment_id bigint,
-    object_type text,
+    object_type public.citext,
     object_id bigint,
-    category text DEFAULT ''::character varying,
+    category public.citext DEFAULT ''::character varying,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -3907,10 +3938,10 @@ CREATE TABLE public.schema_definitions (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     team_id bigint,
-    type text,
-    name text,
-    description text,
-    schema_format text,
+    type public.citext,
+    name public.citext,
+    description public.citext,
+    schema_format public.citext,
     schema json,
     response_example json,
     fragments_count bigint DEFAULT '0'::bigint,
@@ -3949,7 +3980,7 @@ CREATE TABLE public.schema_fragments (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     schema_definition_id bigint,
-    name text,
+    name public.citext,
     fragment_selector json,
     associations_count bigint DEFAULT '0'::bigint,
     created_at timestamp with time zone,
@@ -4033,7 +4064,7 @@ CREATE TABLE public.stored_file_storables (
     stored_file_id character(36) DEFAULT NULL::bpchar,
     storable_type text,
     storable_id bigint,
-    category text,
+    category public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -4068,13 +4099,13 @@ CREATE TABLE public.stored_files (
     filepath text,
     filename text,
     url text,
-    mime text,
+    mime public.citext,
     size bigint DEFAULT '0'::bigint,
     exif json,
     meta json,
     location json,
     page_number bigint,
-    transcode_name text,
+    transcode_name public.citext,
     is_transcoding boolean DEFAULT false,
     original_stored_file_id character(36) DEFAULT NULL::bpchar,
     created_at timestamp with time zone,
@@ -4173,6 +4204,50 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: taggables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.taggables (
+    tag_id bigint NOT NULL,
+    taggable_type character varying(255) NOT NULL,
+    taggable_id bigint NOT NULL
+);
+
+
+--
+-- Name: tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tags (
+    id bigint NOT NULL,
+    team_id bigint NOT NULL,
+    name public.citext NOT NULL,
+    type public.citext,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.tags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.tags_id_seq OWNED BY public.tags.id;
+
+
+--
 -- Name: task_artifact_filters; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4254,16 +4329,16 @@ CREATE TABLE public.task_definitions (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     team_id bigint,
-    name text,
-    description text,
-    task_runner_name text,
+    name public.citext,
+    description public.citext,
+    task_runner_name public.citext,
     task_runner_config json,
     schema_definition_id bigint,
     agent_id bigint,
-    response_format text DEFAULT 'text'::character varying,
-    input_artifact_mode text DEFAULT ''::character varying,
+    response_format public.citext DEFAULT 'text'::character varying,
+    input_artifact_mode public.citext DEFAULT ''::character varying,
     input_artifact_levels json,
-    output_artifact_mode text DEFAULT ''::character varying,
+    output_artifact_mode public.citext DEFAULT ''::character varying,
     output_artifact_levels json,
     timeout_after_seconds bigint DEFAULT '300'::bigint,
     max_process_retries bigint DEFAULT '3'::bigint,
@@ -4271,7 +4346,9 @@ CREATE TABLE public.task_definitions (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    task_queue_type_id bigint
+    task_queue_type_id bigint,
+    prompt text,
+    meta json
 );
 
 
@@ -4371,9 +4448,9 @@ CREATE TABLE public.task_processes (
     task_run_id bigint,
     agent_thread_id bigint,
     last_job_dispatch_id bigint,
-    status text DEFAULT 'Pending'::character varying,
-    name text,
-    activity text,
+    status public.citext DEFAULT 'Pending'::character varying,
+    name public.citext,
+    activity public.citext,
     percent_complete numeric(5,2) DEFAULT 0.00,
     started_at timestamp with time zone,
     stopped_at timestamp with time zone,
@@ -4389,7 +4466,9 @@ CREATE TABLE public.task_processes (
     deleted_at timestamp with time zone,
     incomplete_at timestamp without time zone,
     meta json,
-    is_ready boolean DEFAULT false
+    is_ready boolean DEFAULT false,
+    error_count integer DEFAULT 0 NOT NULL,
+    operation character varying(255)
 );
 
 
@@ -4456,8 +4535,8 @@ CREATE TABLE public.task_runs (
     task_definition_id bigint,
     workflow_run_id bigint,
     workflow_node_id bigint,
-    status text DEFAULT 'Pending'::character varying,
-    name text,
+    status public.citext DEFAULT 'Pending'::character varying,
+    name public.citext,
     step text DEFAULT 'Initial'::character varying,
     percent_complete numeric(5,2) DEFAULT 0.00,
     started_at timestamp with time zone,
@@ -4471,7 +4550,10 @@ CREATE TABLE public.task_runs (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    task_input_id bigint
+    task_input_id bigint,
+    task_process_error_count integer DEFAULT 0 NOT NULL,
+    meta json DEFAULT '{}'::json,
+    active_task_processes_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -4501,9 +4583,9 @@ ALTER SEQUENCE public.task_runs_id_seq OWNED BY public.task_runs.id;
 CREATE TABLE public.team_object_attribute_sources (
     id bigint NOT NULL,
     team_object_attribute_id bigint,
-    source_type text,
-    source_id text,
-    explanation text,
+    source_type public.citext,
+    source_id public.citext,
+    explanation public.citext,
     stored_file_id character(36) DEFAULT NULL::bpchar,
     agent_thread_message_id bigint,
     created_at timestamp with time zone,
@@ -4538,11 +4620,11 @@ ALTER SEQUENCE public.team_object_attribute_sources_id_seq OWNED BY public.team_
 CREATE TABLE public.team_object_attributes (
     id bigint NOT NULL,
     team_object_id bigint,
-    name text,
-    text_value text,
+    name public.citext,
+    text_value public.citext,
     json_value json,
-    reason text,
-    confidence text,
+    reason public.citext,
+    confidence public.citext,
     agent_thread_run_id bigint,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
@@ -4577,7 +4659,7 @@ CREATE TABLE public.team_object_relationships (
     id bigint NOT NULL,
     team_object_id bigint,
     related_team_object_id bigint,
-    relationship_name text,
+    relationship_name public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone
@@ -4612,10 +4694,10 @@ CREATE TABLE public.team_objects (
     team_id bigint,
     schema_definition_id bigint,
     root_object_id bigint,
-    type text,
-    name text,
+    type public.citext,
+    name public.citext,
     date timestamp with time zone,
-    description text,
+    description public.citext,
     url text,
     meta json,
     created_at timestamp with time zone,
@@ -4682,8 +4764,8 @@ ALTER SEQUENCE public.team_user_id_seq OWNED BY public.team_user.id;
 CREATE TABLE public.teams (
     id bigint NOT NULL,
     uuid character(36) DEFAULT NULL::bpchar,
-    name text,
-    namespace text,
+    name public.citext,
+    namespace public.citext,
     logo text,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
@@ -4709,6 +4791,85 @@ CREATE SEQUENCE public.teams_id_seq
 --
 
 ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
+
+
+--
+-- Name: template_definition_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_definition_history (
+    id bigint NOT NULL,
+    template_definition_id bigint NOT NULL,
+    user_id bigint,
+    html_content text NOT NULL,
+    css_content text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: template_definition_history_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.template_definition_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: template_definition_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.template_definition_history_id_seq OWNED BY public.template_definition_history.id;
+
+
+--
+-- Name: template_variables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_variables (
+    id bigint NOT NULL,
+    template_definition_id bigint NOT NULL,
+    name public.citext NOT NULL,
+    description public.citext,
+    mapping_type public.citext NOT NULL,
+    artifact_categories json,
+    artifact_fragment_selector json,
+    team_object_schema_association_id bigint,
+    ai_instructions public.citext,
+    multi_value_separator public.citext DEFAULT ', '::character varying NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    deleted_at timestamp(0) without time zone,
+    multi_value_strategy public.citext DEFAULT 'join'::character varying,
+    value_format_type character varying(255) DEFAULT 'text'::character varying,
+    decimal_places smallint DEFAULT '2'::smallint,
+    currency_code character varying(3) DEFAULT 'USD'::character varying,
+    CONSTRAINT template_variables_mapping_type_check CHECK (((mapping_type)::text = ANY (ARRAY[('ai'::character varying)::text, ('artifact'::character varying)::text, ('team_object'::character varying)::text])))
+);
+
+
+--
+-- Name: template_variables_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.template_variables_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: template_variables_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.template_variables_id_seq OWNED BY public.template_variables.id;
 
 
 --
@@ -4913,8 +5074,8 @@ ALTER SEQUENCE public.usage_summaries_id_seq OWNED BY public.usage_summaries.id;
 
 CREATE TABLE public.users (
     id bigint NOT NULL,
-    name text,
-    email text,
+    name public.citext,
+    email public.citext,
     email_verified_at timestamp with time zone,
     password text,
     remember_token text,
@@ -4949,7 +5110,7 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 CREATE TABLE public.workflow_api_invocations (
     id bigint NOT NULL,
     workflow_run_id bigint,
-    name text,
+    name public.citext,
     webhook_url text,
     payload json,
     created_at timestamp with time zone,
@@ -4978,6 +5139,44 @@ ALTER SEQUENCE public.workflow_api_invocations_id_seq OWNED BY public.workflow_a
 
 
 --
+-- Name: workflow_builder_chats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.workflow_builder_chats (
+    id bigint NOT NULL,
+    team_id bigint,
+    workflow_input_id bigint NOT NULL,
+    workflow_definition_id bigint,
+    agent_thread_id bigint NOT NULL,
+    status character varying(255) DEFAULT 'requirements_gathering'::character varying NOT NULL,
+    meta json,
+    current_workflow_run_id bigint,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    deleted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: workflow_builder_chats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.workflow_builder_chats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: workflow_builder_chats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.workflow_builder_chats_id_seq OWNED BY public.workflow_builder_chats.id;
+
+
+--
 -- Name: workflow_connections; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -4987,9 +5186,9 @@ CREATE TABLE public.workflow_connections (
     workflow_definition_id bigint,
     source_node_id bigint,
     target_node_id bigint,
-    source_output_port text,
-    target_input_port text,
-    name text DEFAULT ''::character varying,
+    source_output_port public.citext,
+    target_input_port public.citext,
+    name public.citext DEFAULT ''::character varying,
     created_at timestamp with time zone,
     updated_at timestamp with time zone
 );
@@ -5022,8 +5221,8 @@ CREATE TABLE public.workflow_definitions (
     id bigint NOT NULL,
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     team_id bigint,
-    name text,
-    description text DEFAULT ''::character varying,
+    name public.citext,
+    description public.citext DEFAULT ''::character varying,
     workflow_runs_count bigint DEFAULT '0'::bigint,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
@@ -5094,14 +5293,14 @@ CREATE TABLE public.workflow_inputs (
     content_source_id bigint,
     team_id bigint,
     user_id bigint,
-    name text,
-    description text,
-    content text,
+    name public.citext,
+    description public.citext,
+    content public.citext,
     data json,
     tokens bigint DEFAULT '0'::bigint,
     is_url boolean DEFAULT false,
     team_object_id bigint,
-    team_object_type text,
+    team_object_type public.citext,
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone
@@ -5176,7 +5375,7 @@ CREATE TABLE public.workflow_nodes (
     resource_package_import_id character(36) DEFAULT NULL::bpchar,
     workflow_definition_id bigint,
     task_definition_id bigint,
-    name text,
+    name public.citext,
     settings json,
     params json,
     created_at timestamp with time zone,
@@ -5210,8 +5409,8 @@ ALTER SEQUENCE public.workflow_nodes_id_seq OWNED BY public.workflow_nodes.id;
 CREATE TABLE public.workflow_runs (
     id bigint NOT NULL,
     workflow_definition_id bigint,
-    name text DEFAULT ''::character varying,
-    status text DEFAULT 'Pending'::character varying,
+    name public.citext DEFAULT ''::character varying,
+    status public.citext DEFAULT 'Pending'::character varying,
     started_at timestamp with time zone,
     stopped_at timestamp with time zone,
     completed_at timestamp with time zone,
@@ -5220,7 +5419,8 @@ CREATE TABLE public.workflow_runs (
     created_at timestamp with time zone,
     updated_at timestamp with time zone,
     deleted_at timestamp with time zone,
-    active_workers_count integer DEFAULT 0
+    active_workers_count integer DEFAULT 0,
+    error_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -5783,13 +5983,6 @@ ALTER TABLE ONLY public.content_sources ALTER COLUMN id SET DEFAULT nextval('pub
 
 
 --
--- Name: demand_templates id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.demand_templates ALTER COLUMN id SET DEFAULT nextval('public.demand_templates_id_seq'::regclass);
-
-
---
 -- Name: error_log_entry id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5965,6 +6158,13 @@ ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: tags id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags ALTER COLUMN id SET DEFAULT nextval('public.tags_id_seq'::regclass);
+
+
+--
 -- Name: task_artifact_filters id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6063,6 +6263,27 @@ ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_
 
 
 --
+-- Name: template_definition_history id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history ALTER COLUMN id SET DEFAULT nextval('public.template_definition_history_id_seq'::regclass);
+
+
+--
+-- Name: template_definitions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions ALTER COLUMN id SET DEFAULT nextval('public.demand_templates_id_seq'::regclass);
+
+
+--
+-- Name: template_variables id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables ALTER COLUMN id SET DEFAULT nextval('public.template_variables_id_seq'::regclass);
+
+
+--
 -- Name: ui_demand_workflow_runs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6109,6 +6330,13 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 --
 
 ALTER TABLE ONLY public.workflow_api_invocations ALTER COLUMN id SET DEFAULT nextval('public.workflow_api_invocations_id_seq'::regclass);
+
+
+--
+-- Name: workflow_builder_chats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats ALTER COLUMN id SET DEFAULT nextval('public.workflow_builder_chats_id_seq'::regclass);
 
 
 --
@@ -6193,10 +6421,10 @@ ALTER TABLE ONLY public.billing_history
 
 
 --
--- Name: demand_templates demand_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_pkey PRIMARY KEY (id);
 
 
@@ -6737,6 +6965,22 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tags tags_team_id_name_type_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_team_id_name_type_unique UNIQUE (team_id, name, type);
+
+
+--
 -- Name: task_queue_types task_queue_types_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6750,6 +6994,30 @@ ALTER TABLE ONLY public.task_queue_types
 
 ALTER TABLE ONLY public.task_queue_types
     ADD CONSTRAINT task_queue_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_definition_history template_definition_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_variables template_variables_demand_template_id_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_demand_template_id_name_unique UNIQUE (template_definition_id, name);
+
+
+--
+-- Name: template_variables template_variables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_pkey PRIMARY KEY (id);
 
 
 --
@@ -6790,6 +7058,14 @@ ALTER TABLE ONLY public.usage_event_subscribers
 
 ALTER TABLE ONLY public.usage_event_subscribers
     ADD CONSTRAINT usage_event_subscribers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_pkey PRIMARY KEY (id);
 
 
 --
@@ -6880,6 +7156,13 @@ CREATE INDEX assistant_actions_team_id_context_index ON public.assistant_actions
 
 
 --
+-- Name: audit_request_team_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_request_team_id_index ON public.audit_request USING btree (team_id);
+
+
+--
 -- Name: auth_tokens_deleted_at_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6946,21 +7229,28 @@ CREATE INDEX billing_history_team_id_type_index ON public.billing_history USING 
 -- Name: demand_templates_category_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_category_index ON public.demand_templates USING btree (category);
+CREATE INDEX demand_templates_category_index ON public.template_definitions USING btree (category);
 
 
 --
 -- Name: demand_templates_team_id_is_active_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_team_id_is_active_index ON public.demand_templates USING btree (team_id, is_active);
+CREATE INDEX demand_templates_team_id_is_active_index ON public.template_definitions USING btree (team_id, is_active);
 
 
 --
 -- Name: demand_templates_team_id_user_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_team_id_user_id_index ON public.demand_templates USING btree (team_id, user_id);
+CREATE INDEX demand_templates_team_id_user_id_index ON public.template_definitions USING btree (team_id, user_id);
+
+
+--
+-- Name: error_log_entry_audit_request_id_is_retryable_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX error_log_entry_audit_request_id_is_retryable_index ON public.error_log_entry USING btree (audit_request_id, is_retryable);
 
 
 --
@@ -7401,7 +7691,7 @@ CREATE INDEX idx_27879_resource_package_imports_resource_package_version_id_ ON 
 -- Name: idx_27879_resource_package_imports_team_uuid_foreign; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_27879_resource_package_imports_team_uuid_foreign ON public.resource_package_imports USING btree (team_uuid);
+CREATE INDEX idx_27879_resource_package_imports_team_uuid_foreign ON public.resource_package_imports USING btree (creator_team_uuid);
 
 
 --
@@ -7958,6 +8248,20 @@ CREATE INDEX idx_28149_task_workflow_runs_task_workflow_id_foreign ON public.wor
 
 
 --
+-- Name: idx_agent_threads_collaboratable; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_agent_threads_collaboratable ON public.agent_threads USING btree (collaboratable_type, collaboratable_id);
+
+
+--
+-- Name: job_dispatch_team_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX job_dispatch_team_id_index ON public.job_dispatch USING btree (team_id);
+
+
+--
 -- Name: payment_methods_stripe_payment_method_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8000,6 +8304,34 @@ CREATE INDEX subscriptions_team_id_status_index ON public.subscriptions USING bt
 
 
 --
+-- Name: taggables_tag_id_taggable_type_taggable_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX taggables_tag_id_taggable_type_taggable_id_index ON public.taggables USING btree (tag_id, taggable_type, taggable_id);
+
+
+--
+-- Name: taggables_taggable_type_taggable_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING btree (taggable_type, taggable_id);
+
+
+--
+-- Name: tags_team_id_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tags_team_id_name_index ON public.tags USING btree (team_id, name);
+
+
+--
+-- Name: tags_team_id_type_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tags_team_id_type_index ON public.tags USING btree (team_id, type);
+
+
+--
 -- Name: task_processes_is_ready_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8007,10 +8339,45 @@ CREATE INDEX task_processes_is_ready_index ON public.task_processes USING btree 
 
 
 --
+-- Name: task_processes_operation_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX task_processes_operation_index ON public.task_processes USING btree (operation);
+
+
+--
 -- Name: teams_stripe_customer_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX teams_stripe_customer_id_index ON public.teams USING btree (stripe_customer_id);
+
+
+--
+-- Name: template_definition_history_template_definition_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_definition_history_template_definition_id_index ON public.template_definition_history USING btree (template_definition_id);
+
+
+--
+-- Name: template_variables_deleted_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_deleted_at_index ON public.template_variables USING btree (deleted_at);
+
+
+--
+-- Name: template_variables_demand_template_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_demand_template_id_index ON public.template_variables USING btree (template_definition_id);
+
+
+--
+-- Name: template_variables_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_name_index ON public.template_variables USING btree (name);
 
 
 --
@@ -8063,6 +8430,48 @@ CREATE INDEX usage_summaries_object_type_object_id_int_index ON public.usage_sum
 
 
 --
+-- Name: workflow_builder_chats_agent_thread_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_agent_thread_id_index ON public.workflow_builder_chats USING btree (agent_thread_id);
+
+
+--
+-- Name: workflow_builder_chats_created_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_created_at_index ON public.workflow_builder_chats USING btree (created_at);
+
+
+--
+-- Name: workflow_builder_chats_current_workflow_run_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_current_workflow_run_id_index ON public.workflow_builder_chats USING btree (current_workflow_run_id);
+
+
+--
+-- Name: workflow_builder_chats_team_id_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_team_id_status_index ON public.workflow_builder_chats USING btree (team_id, status);
+
+
+--
+-- Name: workflow_builder_chats_workflow_definition_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_workflow_definition_id_index ON public.workflow_builder_chats USING btree (workflow_definition_id);
+
+
+--
+-- Name: workflow_builder_chats_workflow_input_id_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_workflow_input_id_status_index ON public.workflow_builder_chats USING btree (workflow_input_id, status);
+
+
+--
 -- Name: workflow_input_associations_associable_type_associable_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8095,6 +8504,14 @@ CREATE INDEX workflow_listeners_morph_index ON public.workflow_listeners USING b
 --
 
 CREATE INDEX workflow_listeners_type_status_index ON public.workflow_listeners USING btree (workflow_type, status);
+
+
+--
+-- Name: agent_thread_messages agent_thread_messages_api_log_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.agent_thread_messages
+    ADD CONSTRAINT agent_thread_messages_api_log_id_foreign FOREIGN KEY (api_log_id) REFERENCES public.api_logs(id) ON DELETE SET NULL;
 
 
 --
@@ -8154,26 +8571,26 @@ ALTER TABLE ONLY public.billing_history
 
 
 --
--- Name: demand_templates demand_templates_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_stored_file_id_foreign FOREIGN KEY (stored_file_id) REFERENCES public.stored_files(id) ON DELETE CASCADE;
 
 
 --
--- Name: demand_templates demand_templates_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
 
 
 --
--- Name: demand_templates demand_templates_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
@@ -8194,6 +8611,14 @@ ALTER TABLE ONLY public.payment_methods
 
 
 --
+-- Name: resource_package_imports resource_package_imports_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resource_package_imports
+    ADD CONSTRAINT resource_package_imports_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
 -- Name: subscriptions subscriptions_subscription_plan_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8210,11 +8635,75 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: taggables taggables_tag_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.taggables
+    ADD CONSTRAINT taggables_tag_id_foreign FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
+-- Name: tags tags_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
 -- Name: task_definitions task_definitions_task_queue_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.task_definitions
     ADD CONSTRAINT task_definitions_task_queue_type_id_foreign FOREIGN KEY (task_queue_type_id) REFERENCES public.task_queue_types(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definition_history template_definition_history_template_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_template_definition_id_foreign FOREIGN KEY (template_definition_id) REFERENCES public.template_definitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: template_definition_history template_definition_history_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definitions template_definitions_building_job_dispatch_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions
+    ADD CONSTRAINT template_definitions_building_job_dispatch_id_foreign FOREIGN KEY (building_job_dispatch_id) REFERENCES public.job_dispatch(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definitions template_definitions_preview_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions
+    ADD CONSTRAINT template_definitions_preview_stored_file_id_foreign FOREIGN KEY (preview_stored_file_id) REFERENCES public.stored_files(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_variables template_variables_team_object_schema_association_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_team_object_schema_association_id_foreign FOREIGN KEY (team_object_schema_association_id) REFERENCES public.schema_associations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_variables template_variables_template_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_template_definition_id_foreign FOREIGN KEY (template_definition_id) REFERENCES public.template_definitions(id) ON DELETE CASCADE;
 
 
 --
@@ -8274,6 +8763,46 @@ ALTER TABLE ONLY public.usage_event_subscribers
 
 
 --
+-- Name: workflow_builder_chats workflow_builder_chats_agent_thread_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_agent_thread_id_foreign FOREIGN KEY (agent_thread_id) REFERENCES public.agent_threads(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_current_workflow_run_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_current_workflow_run_id_foreign FOREIGN KEY (current_workflow_run_id) REFERENCES public.workflow_runs(id) ON DELETE SET NULL;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_workflow_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_workflow_definition_id_foreign FOREIGN KEY (workflow_definition_id) REFERENCES public.workflow_definitions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_workflow_input_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_workflow_input_id_foreign FOREIGN KEY (workflow_input_id) REFERENCES public.workflow_inputs(id) ON DELETE CASCADE;
+
+
+--
 -- Name: workflow_input_associations workflow_input_associations_workflow_input_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8301,13 +8830,13 @@ ALTER TABLE ONLY public.workflow_listeners
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RhqIz5XjA00x8XDqQxdETMAdwts2JkSziMJjNVO2TZ9tF34oXPJU7EjV1GyPbVK
+\unrestrict W5nOVVDieW3Y47uP4v7eeyt5oh4nNcuJHUTIyVBYwR5FGq9GF4dFwmqhlv9LlIz
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict U1ngHLdj8H7JvqwvQqRekuPb3fkfTIfL89r5iUJkmr9FdDlavuKENEwwEbQGmhL
+\restrict mteX0npHYg3HmLa7BvaRSrQrBOT4i325KsbEQn0MogFXnrIcZreAiVrw9A9ntR0
 
 -- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
 -- Dumped by pg_dump version 15.14 (Ubuntu 15.14-1.pgdg22.04+1)
@@ -8526,6 +9055,41 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 276	2025_08_30_221836_create_usage_event_subscribers_table	61
 283	2025_09_03_004959_add_meta_to_schema_definitions_table	62
 316	2025_09_05_051812_create_workflow_input_associations_table	63
+317	2025_09_07_232503_add_prompt_to_task_definitions	64
+318	2025_09_08_033853_create_workflow_builder_chats_table	64
+319	2025_09_16_043454_make_team_id_nullable_in_workflow_builder_chats	65
+320	2025_09_29_150526_add_error_counts_to_task_processes_and_runs	66
+321	2025_10_09_195657_create_template_variables_table	67
+322	2025_10_13_161712_remove_template_variables_json_from_demand_templates	68
+324	2025_10_15_205454_add_error_count_to_workflow_runs_table	69
+336	2025_10_21_032838_add_aggregate_strategies_and_formatting_to_template_variables	70
+365	2026_01_14_000000_add_active_task_processes_count_to_task_runs	91
+340	2025_10_21_070308_add_team_id_to_resource_packages	71
+341	2025_11_22_210147_add_operation_to_task_processes_table	72
+342	2025_12_01_201927_create_tags_table	73
+343	2025_12_01_201952_create_taggables_table	73
+344	2025_12_06_090817_add_meta_to_task_definitions_table	74
+345	2025_12_06_094356_add_meta_to_task_runs_table	75
+346	2025_12_06_094512_add_mime_type_to_artifacts_table	76
+347	2025_12_07_204410_add_is_surfaced_to_error_log_entry_table	77
+348	2025_12_07_231614_rename_is_surfaced_to_is_retryable_in_error_log_entry_table	78
+349	2025_12_07_235133_drop_mime_type_from_artifacts_table	79
+350	2025_12_13_230741_add_api_log_id_to_agent_thread_messages_table	80
+351	2026_01_06_174114_update_transcode_names_to_match_constants	81
+352	2026_01_08_232618_add_team_id_to_api_logs_table	82
+353	0006_danx_job_dispatch_add_team_id	83
+354	0007_danx_audit_request_add_team_id	83
+355	0008_danx_create_teams_table	84
+356	0009_danx_create_team_user_table	84
+357	0010_danx_audit_request_add_counters	85
+358	2026_01_12_194748_rename_demand_templates_to_template_definitions_table	86
+359	2026_01_12_194801_rename_demand_template_id_to_template_definition_id_in_template_variables	86
+360	2026_01_12_200251_add_html_fields_to_template_definitions_table	87
+361	2026_01_12_200353_create_template_definition_history_table	87
+362	2026_01_12_201816_add_collaboratable_to_agent_threads_table	88
+363	2026_01_13_000000_add_building_fields_to_template_definitions	89
+364	2026_01_14_172435_add_relation_counters_to_template_definitions_table	90
+366	2026_01_15_000000_add_citext_extension_and_convert_columns	92
 \.
 
 
@@ -8533,12 +9097,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 316, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 366, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict U1ngHLdj8H7JvqwvQqRekuPb3fkfTIfL89r5iUJkmr9FdDlavuKENEwwEbQGmhL
+\unrestrict mteX0npHYg3HmLa7BvaRSrQrBOT4i325KsbEQn0MogFXnrIcZreAiVrw9A9ntR0
 
