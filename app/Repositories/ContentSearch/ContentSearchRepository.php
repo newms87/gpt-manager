@@ -155,7 +155,7 @@ class ContentSearchRepository extends ActionRepository
         if (!empty($patterns)) {
             $query->where(function ($q) use ($patterns) {
                 foreach ($patterns as $pattern) {
-                    $q->orWhere('text_content', 'LIKE', "%{$pattern}%");
+                    $q->orWhere('text_content', 'ILIKE', "%{$pattern}%");
                 }
             });
         }
