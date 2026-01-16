@@ -74,13 +74,37 @@ class Agent extends Model implements AuditableContract, ResourcePackageableContr
 
     public function getModelApi(): AgentApiContract
     {
-        $modelConfig = config('ai.models.' . $this->model);
+        $model = $this->resolveValidModel();
+
+        $modelConfig = config('ai.models.' . $model);
         $apiClass    = $modelConfig['api'] ?? null;
         if (!$apiClass) {
-            throw new Exception('API class not found for ' . $this->model);
+            throw new Exception('API class not found for ' . $model);
         }
 
         return app($apiClass);
+    }
+
+    /**
+     * Resolve the agent's model to a valid model, updating the record if needed.
+     * This automatically fixes legacy model names that are no longer supported.
+     */
+    protected function resolveValidModel(): string
+    {
+        // Check if current model is valid
+        if (config('ai.models.' . $this->model)) {
+            return $this->model;
+        }
+
+        // Check for alias mapping
+        $aliases    = config('ai.model_aliases', []);
+        $validModel = $aliases[$this->model] ?? config('ai.default_model');
+
+        // Update the agent record to prevent future lookups
+        $this->model = $validModel;
+        $this->saveQuietly();
+
+        return $validModel;
     }
 
     public function validate(): static

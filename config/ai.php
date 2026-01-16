@@ -11,6 +11,17 @@ return [
     'seed'                         => env('AI_SEED', 11181987),
     'default_model'                => 'gpt-5-mini',
 
+    // Map legacy model names to their valid replacements
+    'model_aliases'                => [
+        'gpt-4o-mini'  => 'gpt-5-nano',
+        'gpt-4o'       => 'gpt-5-mini',
+        'gpt-4-turbo'  => 'gpt-5',
+        'gpt-4'        => 'gpt-5',
+        'o1-preview'   => 'gpt-5-pro',
+        'o1-mini'      => 'gpt-5-mini',
+        'o3-mini'      => 'gpt-5-mini',
+    ],
+
     // Data deduplication agent configuration
     'classification_deduplication' => [
         'agent_name' => 'Data Normalization Agent',

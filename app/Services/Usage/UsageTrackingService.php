@@ -64,8 +64,10 @@ class UsageTrackingService
         ?int $runTimeMs = null,
         ?User $user = null
     ): UsageEvent {
-        $costs       = $this->calculateCosts($modelName, $usage);
-        $modelConfig = config("ai.models.$modelName");
+        // Resolve alias if the model name doesn't exist in config
+        $resolvedModel = $this->resolveModelName($modelName);
+        $costs         = $this->calculateCosts($resolvedModel, $usage);
+        $modelConfig   = config("ai.models.$resolvedModel");
 
         return $this->recordUsage($object, 'ai_completion', $modelConfig['api'], [
             'run_time_ms'   => $runTimeMs,
@@ -75,7 +77,7 @@ class UsageTrackingService
             'output_cost'   => $costs['output_cost'],
             'request_count' => 1,
             'metadata'      => [
-                'model'               => $modelName,
+                'model'               => $resolvedModel,
                 'cached_input_tokens' => $usage['cached_input_tokens'] ?? null,
                 'api_response'        => $usage['api_response']        ?? null,
             ],
@@ -117,5 +119,20 @@ class UsageTrackingService
         }
 
         $summary->updateFromEvents();
+    }
+
+    /**
+     * Resolve a model name to a valid config key, handling legacy aliases.
+     * Falls back to the default model if neither the model nor alias exists.
+     */
+    protected function resolveModelName(string $modelName): string
+    {
+        // Check if model exists directly in config
+        if (config("ai.models.$modelName")) {
+            return $modelName;
+        }
+
+        // Check for alias mapping, fall back to default model
+        return config("ai.model_aliases.$modelName") ?? config('ai.default_model');
     }
 }
