@@ -24,6 +24,11 @@ class ExtractionArtifactBuilder
      * Build and attach identity extraction artifact(s).
      * When page sources are provided, creates per-page artifacts linked to their source pages.
      *
+     * @param  TeamObject|null  $parentObject  The immediate parent object (from extraction context).
+     *                                         When provided, this is used directly instead of querying
+     *                                         relationships from the database. This ensures correct
+     *                                         parent linkage when a TeamObject has multiple parent
+     *                                         relationships from different extraction runs.
      * @return array<Artifact> Array of created artifacts
      */
     public function buildIdentityArtifact(
@@ -34,13 +39,20 @@ class ExtractionArtifactBuilder
         array $extractionResult,
         int $level,
         ?int $matchId,
-        ?array $pageSources = null
+        ?array $pageSources = null,
+        ?TeamObject $parentObject = null
     ): array {
         $extractedData = $extractionResult['data'] ?? [];
 
-        // Get parent object info from ancestor chain (last ancestor is immediate parent)
-        $ancestors    = $this->getAncestorChain($teamObject);
-        $parentObject = !empty($ancestors) ? end($ancestors) : null;
+        // Build ancestor chain from the explicitly provided parent object, or fall back to DB lookup
+        // Using the explicit parent ensures correct linkage when TeamObjects have multiple parent
+        // relationships from different extraction runs
+        $ancestors = $parentObject
+            ? $this->buildAncestorChainFromParent($parentObject)
+            : $this->getAncestorChain($teamObject);
+
+        // Get immediate parent for artifact metadata (last ancestor in chain)
+        $immediateParent = !empty($ancestors) ? end($ancestors) : null;
 
         // Get the actual relationship key from the fragment_selector (schema is source of truth)
         $fragmentSelectorService = app(FragmentSelectorService::class);
@@ -68,8 +80,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'identity_group'   => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -126,8 +138,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'identity_group'   => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -170,8 +182,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'identity_group'   => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -197,6 +209,11 @@ class ExtractionArtifactBuilder
      * Build and attach remaining extraction artifact(s).
      * When page sources are provided, creates per-page artifacts linked to their source pages.
      *
+     * @param  TeamObject|null  $parentObject  The immediate parent object (from extraction context).
+     *                                         When provided, this is used directly instead of querying
+     *                                         relationships from the database. This ensures correct
+     *                                         parent linkage when a TeamObject has multiple parent
+     *                                         relationships from different extraction runs.
      * @return array<Artifact> Array of created artifacts
      */
     public function buildRemainingArtifact(
@@ -207,11 +224,18 @@ class ExtractionArtifactBuilder
         array $extractedData,
         int $level,
         string $searchMode,
-        ?array $pageSources = null
+        ?array $pageSources = null,
+        ?TeamObject $parentObject = null
     ): array {
-        // Get parent object info from ancestor chain (last ancestor is immediate parent)
-        $ancestors    = $this->getAncestorChain($teamObject);
-        $parentObject = !empty($ancestors) ? end($ancestors) : null;
+        // Build ancestor chain from the explicitly provided parent object, or fall back to DB lookup
+        // Using the explicit parent ensures correct linkage when TeamObjects have multiple parent
+        // relationships from different extraction runs
+        $ancestors = $parentObject
+            ? $this->buildAncestorChainFromParent($parentObject)
+            : $this->getAncestorChain($teamObject);
+
+        // Get immediate parent for artifact metadata (last ancestor in chain)
+        $immediateParent = !empty($ancestors) ? end($ancestors) : null;
 
         // Get the actual relationship key from the fragment_selector (schema is source of truth)
         $fragmentSelectorService = app(FragmentSelectorService::class);
@@ -237,8 +261,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -293,8 +317,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -335,8 +359,8 @@ class ExtractionArtifactBuilder
                     'task_process_id'  => $taskProcess->id,
                     'level'            => $level,
                     'extraction_group' => $group['name'] ?? $group['object_type'],
-                    'parent_id'        => $parentObject?->id,
-                    'parent_type'      => $parentObject?->type,
+                    'parent_id'        => $immediateParent?->id,
+                    'parent_type'      => $immediateParent?->type,
                     'relationship_key' => $relationshipKey,
                     'is_array_type'    => $isArrayType,
                 ]
@@ -461,6 +485,25 @@ class ExtractionArtifactBuilder
             'json_content'       => $jsonContent,
             'meta'               => $meta,
         ]);
+    }
+
+    /**
+     * Build ancestor chain starting from an explicitly provided parent object.
+     *
+     * When the parent is known from the extraction context (passed as parentObjectId),
+     * we build the ancestor chain by getting the parent's ancestors and appending the parent itself.
+     * This ensures correct parent linkage regardless of what relationships exist in the database.
+     *
+     * @param  TeamObject  $parentObject  The immediate parent object
+     * @return array<TeamObject> Ancestor chain [root, ..., immediate parent]
+     */
+    protected function buildAncestorChainFromParent(TeamObject $parentObject): array
+    {
+        // Get the parent's ancestor chain from the database
+        $parentAncestors = $this->getAncestorChain($parentObject);
+
+        // Append the parent itself to form the complete chain for the current object
+        return [...$parentAncestors, $parentObject];
     }
 
     /**

@@ -119,6 +119,11 @@ class RemainingExtractionService
         );
 
         // Build and attach output artifact(s)
+        // Get the parent object from the teamObject's relationships for explicit parent linkage
+        // This ensures correct parent in artifacts when TeamObjects have multiple parent relationships
+        $parentRelation = $teamObject->relatedToMe()->latest('id')->first();
+        $parentObject   = $parentRelation ? TeamObject::find($parentRelation->team_object_id) : null;
+
         $artifactBuilder->buildRemainingArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -127,7 +132,8 @@ class RemainingExtractionService
             extractedData: $extractedData,
             level: $level,
             searchMode: $searchMode,
-            pageSources: !empty($pageSources) ? $pageSources : null
+            pageSources: !empty($pageSources) ? $pageSources : null,
+            parentObject: $parentObject
         );
 
         static::logDebug('Remaining extraction completed', [
@@ -207,6 +213,11 @@ class RemainingExtractionService
         app(ResolvedObjectsService::class)->storeMultipleInProcessArtifacts($taskProcess, $objectType, $objectIds);
 
         // Build single artifact(s) containing all extracted data
+        // Get the parent of $parentObject for explicit parent linkage in artifacts
+        // This ensures correct parent when TeamObjects have multiple parent relationships
+        $grandparentRelation = $parentObject->relatedToMe()->latest('id')->first();
+        $grandparentObject   = $grandparentRelation ? TeamObject::find($grandparentRelation->team_object_id) : null;
+
         $artifactBuilder->buildRemainingArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -215,7 +226,8 @@ class RemainingExtractionService
             extractedData: $extractedData,
             level: $level,
             searchMode: $searchMode,
-            pageSources: $pageSources
+            pageSources: $pageSources,
+            parentObject: $grandparentObject
         );
 
         static::logDebug('Array extraction completed', [

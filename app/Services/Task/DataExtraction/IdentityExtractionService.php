@@ -318,6 +318,8 @@ class IdentityExtractionService
         ]);
 
         // Build and attach output artifact(s)
+        // Pass the explicit parent object to ensure correct parent linkage in artifacts
+        $parentObject = $parentObjectId ? TeamObject::find($parentObjectId) : null;
         app(ExtractionArtifactBuilder::class)->buildIdentityArtifact(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
@@ -326,7 +328,8 @@ class IdentityExtractionService
             extractionResult: $itemExtractionResult,
             level: $level,
             matchId: $matchId,
-            pageSources: !empty($pageSources) ? $pageSources : null
+            pageSources: !empty($pageSources) ? $pageSources : null,
+            parentObject: $parentObject
         );
 
         return $teamObject;
@@ -400,6 +403,9 @@ class IdentityExtractionService
         $createdObjects  = [];
         $artifactBuilder = app(ExtractionArtifactBuilder::class);
 
+        // Load parent object once for all items to ensure correct parent linkage in artifacts
+        $parentObject = $parentObjectId ? TeamObject::find($parentObjectId) : null;
+
         foreach ($items as $index => $itemData) {
             if (!is_array($itemData)) {
                 continue;
@@ -469,7 +475,8 @@ class IdentityExtractionService
                 extractionResult: $itemExtractionResult,
                 level: $level,
                 matchId: $matchId,
-                pageSources: !empty($itemPageSources) ? $itemPageSources : null
+                pageSources: !empty($itemPageSources) ? $itemPageSources : null,
+                parentObject: $parentObject
             );
 
             static::logDebug('Processed array identity item', [
@@ -1336,7 +1343,8 @@ class IdentityExtractionService
             rootObjectId: $rootObjectId,
             schemaDefinitionId: $taskRun->taskDefinition->schema_definition_id,
             extractedData: $extractedData,
-            identityFields: $identityGroup['identity_fields'] ?? []
+            identityFields: $identityGroup['identity_fields'] ?? [],
+            parentObjectId: $parentObjectId
         );
 
         // If exact match was found during candidate search, return immediately

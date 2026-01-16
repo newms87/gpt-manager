@@ -660,9 +660,18 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         ]);
 
         // Mock DuplicateRecordResolver to verify parent scope is passed
+        // Parameters: objectType, searchQueries, rootObjectId, schemaDefinitionId, extractedData, identityFields, parentObjectId
         $this->mock(DuplicateRecordResolver::class, function (MockInterface $mock) use ($parentObject) {
             $mock->shouldReceive('findCandidates')
-                ->with('Provider', Mockery::any(), $parentObject->id, Mockery::any(), Mockery::any(), Mockery::any())
+                ->with(
+                    'Provider',
+                    Mockery::any(),
+                    $parentObject->id,          // rootObjectId (Demand is root for Provider)
+                    Mockery::any(),
+                    Mockery::any(),
+                    Mockery::any(),
+                    $parentObject->id           // parentObjectId (immediate parent)
+                )
                 ->andReturn(new FindCandidatesResult(collect()));
         });
 

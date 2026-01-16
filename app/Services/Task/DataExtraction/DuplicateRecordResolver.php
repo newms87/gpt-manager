@@ -100,6 +100,7 @@ class DuplicateRecordResolver
      * @param  int|null  $schemaDefinitionId  Optional schema scope
      * @param  array  $extractedData  Extracted data for exact match comparison
      * @param  array  $identityFields  Fields to compare for exact match
+     * @param  int|null  $parentObjectId  Optional immediate parent object ID for level 2+ filtering
      * @return FindCandidatesResult Result containing candidates and optional exactMatchId
      */
     public function findCandidates(
@@ -108,7 +109,8 @@ class DuplicateRecordResolver
         ?int $rootObjectId = null,
         ?int $schemaDefinitionId = null,
         array $extractedData = [],
-        array $identityFields = []
+        array $identityFields = [],
+        ?int $parentObjectId = null
     ): FindCandidatesResult {
         $currentTeam = team();
 
@@ -121,6 +123,7 @@ class DuplicateRecordResolver
         static::logDebug('Finding duplicate candidates with search queries', [
             'object_type'          => $objectType,
             'root_object_id'       => $rootObjectId,
+            'parent_object_id'     => $parentObjectId,
             'schema_definition_id' => $schemaDefinitionId,
             'search_query_count'   => count($searchQueries),
         ]);
@@ -137,7 +140,8 @@ class DuplicateRecordResolver
                 $objectType,
                 $extractedData['name'],
                 $rootObjectId,
-                $schemaDefinitionId
+                $schemaDefinitionId,
+                $parentObjectId
             );
 
             // Check each name match for full identity field match
@@ -165,7 +169,7 @@ class DuplicateRecordResolver
         // Step 2: If no search queries provided, fall back to basic scope-only query
         if (empty($searchQueries)) {
             return new FindCandidatesResult(
-                $this->executeSearchQuery($objectType, [], $rootObjectId, $schemaDefinitionId)
+                $this->executeSearchQuery($objectType, [], $rootObjectId, $schemaDefinitionId, $parentObjectId)
             );
         }
 
@@ -177,7 +181,7 @@ class DuplicateRecordResolver
                 continue;
             }
 
-            $results = $this->executeSearchQuery($objectType, $query, $rootObjectId, $schemaDefinitionId);
+            $results = $this->executeSearchQuery($objectType, $query, $rootObjectId, $schemaDefinitionId, $parentObjectId);
 
             static::logDebug("Search query #{$index} results", [
                 'query'        => $query,
@@ -243,13 +247,15 @@ class DuplicateRecordResolver
      * @param  array  $query  Search query with field => LIKE pattern mappings
      * @param  int|null  $rootObjectId  Optional root object scope (level 0 ancestor, e.g., Demand)
      * @param  int|null  $schemaDefinitionId  Optional schema scope
+     * @param  int|null  $parentObjectId  Optional immediate parent object ID for level 2+ filtering
      * @return Collection<TeamObject> Collection of matching objects
      */
     protected function executeSearchQuery(
         string $objectType,
         array $query,
         ?int $rootObjectId,
-        ?int $schemaDefinitionId
+        ?int $schemaDefinitionId,
+        ?int $parentObjectId = null
     ): Collection {
         $currentTeam = team();
 
@@ -264,7 +270,14 @@ class DuplicateRecordResolver
             ->where('team_id', $currentTeam->id)
             ->where('type', $objectType)
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
-            ->when($rootObjectId, fn($q) => $q->where('root_object_id', $rootObjectId));
+            ->when($rootObjectId, fn($q) => $q->where('root_object_id', $rootObjectId))
+            ->when($parentObjectId, function ($q) use ($parentObjectId) {
+                // Filter to objects that have a relationship TO this parent
+                // This ensures level 2+ objects are scoped to their immediate parent
+                $q->whereHas('relatedToMe', function ($relQuery) use ($parentObjectId) {
+                    $relQuery->where('team_object_id', $parentObjectId);
+                });
+            });
 
         // Apply type-aware filters for non-null query fields
         foreach ($query as $field => $criteria) {
@@ -296,13 +309,15 @@ class DuplicateRecordResolver
      * @param  string  $name  Exact name to match (case-insensitive)
      * @param  int|null  $rootObjectId  Optional root object scope (level 0 ancestor, e.g., Demand)
      * @param  int|null  $schemaDefinitionId  Optional schema scope
+     * @param  int|null  $parentObjectId  Optional immediate parent object ID for level 2+ filtering
      * @return Collection<TeamObject> Collection of matching objects
      */
     protected function findAllByExactName(
         string $objectType,
         string $name,
         ?int $rootObjectId,
-        ?int $schemaDefinitionId
+        ?int $schemaDefinitionId,
+        ?int $parentObjectId = null
     ): Collection {
         return TeamObject::query()
             ->where('team_id', team()->id)
@@ -310,6 +325,12 @@ class DuplicateRecordResolver
             ->whereRaw('LOWER(name) = LOWER(?)', [$name])
             ->when($schemaDefinitionId, fn($q) => $q->where('schema_definition_id', $schemaDefinitionId))
             ->when($rootObjectId, fn($q) => $q->where('root_object_id', $rootObjectId))
+            ->when($parentObjectId, function ($q) use ($parentObjectId) {
+                // Filter to objects that have a relationship TO this parent
+                $q->whereHas('relatedToMe', function ($relQuery) use ($parentObjectId) {
+                    $relQuery->where('team_object_id', $parentObjectId);
+                });
+            })
             ->with(['attributes'])
             ->get();
     }
