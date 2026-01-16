@@ -28,6 +28,8 @@ class JSONSchemaDataToDatabaseMapper
 
     protected ?TeamObject $rootObject = null;
 
+    protected ?TeamObject $parentObject = null;
+
     public function setSchemaDefinition(?SchemaDefinition $schemaDefinition = null): static
     {
         $this->schemaDefinition = $schemaDefinition;
@@ -38,6 +40,13 @@ class JSONSchemaDataToDatabaseMapper
     public function setRootObject(?TeamObject $rootObject = null): static
     {
         $this->rootObject = $rootObject;
+
+        return $this;
+    }
+
+    public function setParentObject(?TeamObject $parentObject = null): static
+    {
+        $this->parentObject = $parentObject;
 
         return $this;
     }
@@ -79,6 +88,14 @@ class JSONSchemaDataToDatabaseMapper
             $teamObjectQuery->whereNull('root_object_id');
         }
 
+        // Filter by parent relationship for level 2+ objects
+        // This ensures objects under different parents (but same root) are not incorrectly flagged as duplicates
+        if ($this->parentObject) {
+            $teamObjectQuery->whereHas('relatedToMe', function ($relQuery) {
+                $relQuery->where('team_object_id', $this->parentObject->id);
+            });
+        }
+
         return $teamObjectQuery->first();
     }
 
@@ -111,6 +128,7 @@ class JSONSchemaDataToDatabaseMapper
                     throw new ValidationError(
                         "Team Object of type $type already exists: name='$name', date='$dateStr', " .
                         'root_object_id=' . ($this->rootObject?->id ?? 'null') . ', ' .
+                        'parent_object_id=' . ($this->parentObject?->id ?? 'null') . ', ' .
                         'schema_definition_id=' . ($this->schemaDefinition?->id ?? 'null')
                     );
                 }

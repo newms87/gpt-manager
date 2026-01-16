@@ -1443,9 +1443,10 @@ class IdentityExtractionService
             }
         }
 
-        // Set up root object context if we have a parent
+        // Set up root object and parent object context if we have a parent
         if ($parentObject) {
             $mapper->setRootObject($this->resolveRootObject($parentObject));
+            $mapper->setParentObject($parentObject);
         }
 
         // Ensure the identificationData has the resolved name to prevent empty string from being

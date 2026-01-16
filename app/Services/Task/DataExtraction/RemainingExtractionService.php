@@ -297,6 +297,7 @@ class RemainingExtractionService
 
         if ($parentObject) {
             $mapper->setRootObject($this->resolveRootObject($parentObject));
+            $mapper->setParentObject($parentObject);
         }
 
         if ($existingId) {
