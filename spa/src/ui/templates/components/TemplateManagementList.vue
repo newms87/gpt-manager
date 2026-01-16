@@ -182,8 +182,7 @@ const createAction = dxTemplateDefinition.getAction("create", {
 });
 
 const createHtmlAction = dxTemplateDefinition.getAction("create", {
-    onFinish: async (result: { item: TemplateDefinition }) => {
-        await loadActiveTemplates();
+    onFinish: (result: { item: TemplateDefinition }) => {
         // Navigate to builder for HTML templates
         if (result?.item?.id) {
             router.push({ name: "ui.template-builder", params: { id: result.item.id } });
