@@ -6,6 +6,7 @@ use App\Services\Task\DataExtraction\ClassificationExecutorService;
 use App\Services\Task\DataExtraction\ExtractionStateOrchestrator;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
 use App\Services\Task\DataExtraction\PerObjectPlanningService;
+use App\Services\Task\DataExtraction\ProcessConfigArtifactService;
 use App\Services\Task\DataExtraction\RemainingExtractionService;
 use App\Services\Task\Traits\HasTranscodePrerequisite;
 use App\Services\Task\TranscodePrerequisiteService;
@@ -189,18 +190,21 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
      */
     protected function runExtractIdentityOperation(): void
     {
-        $level = $this->taskProcess->meta['level']          ?? 0;
-        $group = $this->taskProcess->meta['identity_group'] ?? [];
+        $configService = app(ProcessConfigArtifactService::class);
+        $config        = $configService->getConfigFromProcess($this->taskProcess);
+
+        $level = $config['level']          ?? 0;
+        $group = $config['identity_group'] ?? [];
 
         if (empty($group)) {
-            static::logDebug('No identity group found in task process meta');
+            static::logDebug('No identity group found in process config artifact');
             $this->complete();
 
             return;
         }
 
-        // Override search_mode with the resolved value from process meta (respects global override)
-        $group['search_mode'] = $this->taskProcess->meta['search_mode'] ?? $group['search_mode'] ?? 'skim';
+        // Override search_mode with the resolved value from config artifact (respects global override)
+        $group['search_mode'] = $config['search_mode'] ?? $group['search_mode'] ?? 'skim';
 
         // Delegate to IdentityExtractionService
         app(IdentityExtractionService::class)->execute(
@@ -219,13 +223,16 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
      */
     protected function runExtractRemainingOperation(): void
     {
-        $level        = $this->taskProcess->meta['level']            ?? 0;
-        $group        = $this->taskProcess->meta['extraction_group'] ?? [];
-        $teamObjectId = $this->taskProcess->meta['object_id']        ?? null;
-        $searchMode   = $this->taskProcess->meta['search_mode']      ?? 'exhaustive';
+        $configService = app(ProcessConfigArtifactService::class);
+        $config        = $configService->getConfigFromProcess($this->taskProcess);
+
+        $level        = $config['level']            ?? 0;
+        $group        = $config['extraction_group'] ?? [];
+        $teamObjectId = $config['object_id']        ?? null;
+        $searchMode   = $config['search_mode']      ?? 'exhaustive';
 
         if (empty($group) || !$teamObjectId) {
-            static::logDebug('Missing extraction group or object_id in task process meta');
+            static::logDebug('Missing extraction group or object_id in process config artifact');
             $this->complete();
 
             return;

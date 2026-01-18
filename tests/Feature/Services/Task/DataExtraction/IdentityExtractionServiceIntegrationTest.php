@@ -17,6 +17,7 @@ use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
 use App\Services\Task\DataExtraction\FindCandidatesResult;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
+use App\Services\Task\DataExtraction\ProcessConfigArtifactService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Mockery\MockInterface;
@@ -86,6 +87,18 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         ]);
     }
 
+    /**
+     * Create a config artifact and attach it to the process.
+     * Required for Extract Identity and Extract Remaining operations.
+     */
+    protected function createAndAttachConfigArtifact(TaskRun $taskRun, TaskProcess $taskProcess, array $config): Artifact
+    {
+        $configArtifact = app(ProcessConfigArtifactService::class)->createConfigArtifact($taskRun, $config);
+        $taskProcess->inputArtifacts()->attach($configArtifact->id);
+
+        return $configArtifact;
+    }
+
     // =========================================================================
     // Integration test - verify transcode content reaches the agent
     // =========================================================================
@@ -93,14 +106,6 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
     #[Test]
     public function execute_includes_text_transcode_content_in_agent_thread_messages(): void
     {
-        // Given: Artifact with NO text_content but HAS stored file with text transcode
-        // This mimics artifact 33910 from production
-        $transcodeContent = 'Provider: ABC Insurance\nPolicy Number: 12345\nClient: John Smith';
-        $artifact         = $this->createArtifactWithTextTranscode($transcodeContent);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($artifact->id);
-
         // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
@@ -118,6 +123,22 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: Artifact with NO text_content but HAS stored file with text transcode
+        // This mimics artifact 33910 from production
+        $transcodeContent = 'Provider: ABC Insurance\nPolicy Number: 12345\nClient: John Smith';
+        $artifact         = $this->createArtifactWithTextTranscode($transcodeContent);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
         // Capture the thread that gets passed to AgentThreadService
         $capturedThread = null;
@@ -200,6 +221,15 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
     #[Test]
     public function execute_with_artifact_having_no_text_content_and_no_transcodes_has_empty_messages(): void
     {
+        $identityGroup = [
+            'name'              => 'Client',
+            'object_type'       => 'Client',
+            'identity_fields'   => ['client_name'],
+            'fragment_selector' => [
+                'children' => ['client_name' => ['type' => 'string']],
+            ],
+        ];
+
         // Given: Artifact with NO text_content and NO transcodes (just an image file)
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
@@ -220,16 +250,15 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
         $artifact = $artifact->fresh(['storedFiles']);
 
         $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($artifact->id);
 
-        $identityGroup = [
-            'name'              => 'Client',
-            'object_type'       => 'Client',
-            'identity_fields'   => ['client_name'],
-            'fragment_selector' => [
-                'children' => ['client_name' => ['type' => 'string']],
-            ],
-        ];
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
         // Capture the thread
         $capturedThread = null;
@@ -279,18 +308,6 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
     #[Test]
     public function execute_with_text_content_includes_text_in_thread(): void
     {
-        // Given: Artifact with text_content (simpler case)
-        $artifact = Artifact::factory()->create([
-            'team_id'      => $this->user->currentTeam->id,
-            'task_run_id'  => $this->taskRun->id,
-            'text_content' => 'Direct text content: Provider XYZ, Client: Jane Doe',
-            'json_content' => null,
-            'meta'         => null,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($artifact->id);
-
         // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
@@ -308,6 +325,26 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: Artifact with text_content (simpler case)
+        $artifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'task_run_id'  => $this->taskRun->id,
+            'text_content' => 'Direct text content: Provider XYZ, Client: Jane Doe',
+            'json_content' => null,
+            'meta'         => null,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
         $capturedThread = null;
 
@@ -374,13 +411,6 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
     #[Test]
     public function diagnostic_print_message_content_for_transcode_artifact(): void
     {
-        // Given: Artifact with text transcode
-        $transcodeContent = "Provider: ABC Insurance\nPolicy Number: 12345\nClient: John Smith";
-        $artifact         = $this->createArtifactWithTextTranscode($transcodeContent);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($artifact->id);
-
         // Fragment selector with proper nested object structure (required for leaf key detection)
         $identityGroup = [
             'name'              => 'Client',
@@ -398,6 +428,21 @@ class IdentityExtractionServiceIntegrationTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: Artifact with text transcode
+        $transcodeContent = "Provider: ABC Insurance\nPolicy Number: 12345\nClient: John Smith";
+        $artifact         = $this->createArtifactWithTextTranscode($transcodeContent);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($artifact->id);
 
         $capturedThread = null;
 

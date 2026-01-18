@@ -8,6 +8,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Services\Task\DataExtraction\ProcessConfigArtifactService;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
@@ -63,6 +64,18 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         ]);
 
         $this->runner = new ExtractDataTaskRunner();
+    }
+
+    /**
+     * Create a config artifact and attach it to the process.
+     * Required for Extract Identity and Extract Remaining operations.
+     */
+    protected function createAndAttachConfigArtifact(TaskRun $taskRun, TaskProcess $taskProcess, array $config): Artifact
+    {
+        $configArtifact = app(ProcessConfigArtifactService::class)->createConfigArtifact($taskRun, $config);
+        $taskProcess->inputArtifacts()->attach($configArtifact->id);
+
+        return $configArtifact;
     }
 
     #[Test]
@@ -603,23 +616,26 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-            'meta'        => [
-                'level'          => 0,
-                'identity_group' => [
-                    'name'              => 'Client',
-                    'object_type'       => 'Client',
-                    'identity_fields'   => ['client_name'],
-                    'skim_fields'       => ['client_name'],
-                    'search_mode'       => 'skim',
-                    'fragment_selector' => [
-                        'type'     => 'object',
-                        'children' => [
-                            'client_name' => ['type' => 'string'],
-                        ],
+            'meta'        => ['level' => 0], // Level in meta for querying
+            'started_at'  => now(),
+        ]);
+
+        // Create config artifact with full configuration (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($taskRun, $taskProcess, [
+            'level'          => 0,
+            'identity_group' => [
+                'name'              => 'Client',
+                'object_type'       => 'Client',
+                'identity_fields'   => ['client_name'],
+                'skim_fields'       => ['client_name'],
+                'search_mode'       => 'skim',
+                'fragment_selector' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'client_name' => ['type' => 'string'],
                     ],
                 ],
             ],
-            'started_at'  => now(),
         ]);
 
         // Attach artifact as input to process
@@ -1035,23 +1051,26 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-            'meta'        => [
-                'level'          => 0,
-                'identity_group' => [
-                    'name'              => 'Client',
-                    'object_type'       => 'Client',
-                    'identity_fields'   => ['client_name'],
-                    'skim_fields'       => ['client_name'],
-                    'search_mode'       => 'skim',
-                    'fragment_selector' => [
-                        'type'     => 'object',
-                        'children' => [
-                            'client_name' => ['type' => 'string'],
-                        ],
+            'meta'        => ['level' => 0], // Level in meta for querying
+            'started_at'  => now(),
+        ]);
+
+        // Create config artifact with full configuration (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($taskRun, $taskProcess, [
+            'level'          => 0,
+            'identity_group' => [
+                'name'              => 'Client',
+                'object_type'       => 'Client',
+                'identity_fields'   => ['client_name'],
+                'skim_fields'       => ['client_name'],
+                'search_mode'       => 'skim',
+                'fragment_selector' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'client_name' => ['type' => 'string'],
                     ],
                 ],
             ],
-            'started_at'  => now(),
         ]);
 
         // Attach artifact as input to process
@@ -1175,23 +1194,26 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY,
-            'meta'        => [
-                'level'          => 0,
-                'identity_group' => [
-                    'name'              => 'Client',
-                    'object_type'       => 'Client',
-                    'identity_fields'   => ['client_name'],
-                    'skim_fields'       => ['client_name'],
-                    'search_mode'       => 'skim',
-                    'fragment_selector' => [
-                        'type'     => 'object',
-                        'children' => [
-                            'client_name' => ['type' => 'string'],
-                        ],
+            'meta'        => ['level' => 0], // Level in meta for querying
+            'started_at'  => now(),
+        ]);
+
+        // Create config artifact with full configuration (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($taskRun, $taskProcess, [
+            'level'          => 0,
+            'identity_group' => [
+                'name'              => 'Client',
+                'object_type'       => 'Client',
+                'identity_fields'   => ['client_name'],
+                'skim_fields'       => ['client_name'],
+                'search_mode'       => 'skim',
+                'fragment_selector' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'client_name' => ['type' => 'string'],
                     ],
                 ],
             ],
-            'started_at'  => now(),
         ]);
 
         // Attach artifact as input to process
@@ -1380,27 +1402,30 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
-            'meta'        => [
-                'level'            => 0,
-                'object_id'        => $teamObject->id,
-                'search_mode'      => 'exhaustive',
-                'extraction_group' => [
-                    'name'              => 'Client Address',
-                    'key'               => 'client_address',
-                    'object_type'       => 'Client',
-                    'fields'            => ['address', 'city', 'state'],
-                    'search_mode'       => 'exhaustive',
-                    'fragment_selector' => [
-                        'type'     => 'object',
-                        'children' => [
-                            'address' => ['type' => 'string'],
-                            'city'    => ['type' => 'string'],
-                            'state'   => ['type' => 'string'],
-                        ],
+            'meta'        => ['level' => 0], // Level in meta for querying
+            'started_at'  => now(),
+        ]);
+
+        // Create config artifact with full configuration (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($taskRun, $taskProcess, [
+            'level'            => 0,
+            'object_id'        => $teamObject->id,
+            'search_mode'      => 'exhaustive',
+            'extraction_group' => [
+                'name'              => 'Client Address',
+                'key'               => 'client_address',
+                'object_type'       => 'Client',
+                'fields'            => ['address', 'city', 'state'],
+                'search_mode'       => 'exhaustive',
+                'fragment_selector' => [
+                    'type'     => 'object',
+                    'children' => [
+                        'address' => ['type' => 'string'],
+                        'city'    => ['type' => 'string'],
+                        'state'   => ['type' => 'string'],
                     ],
                 ],
             ],
-            'started_at'  => now(),
         ]);
 
         // Attach artifact as input to process

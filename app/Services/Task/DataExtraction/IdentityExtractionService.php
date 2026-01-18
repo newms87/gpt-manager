@@ -167,7 +167,9 @@ class IdentityExtractionService
         $isRootObject = $parentType === null;
 
         // Parent object IDs are set during process creation by ExtractionProcessOrchestrator
-        $possibleParentIds = $taskProcess->meta['parent_object_ids'] ?? [];
+        // and stored in the config artifact's meta field
+        $config            = app(ProcessConfigArtifactService::class)->getConfigFromProcess($taskProcess);
+        $possibleParentIds = $config['parent_object_ids'] ?? [];
 
         $parentObjectId = $this->determineParentObjectId(
             $possibleParentIds,

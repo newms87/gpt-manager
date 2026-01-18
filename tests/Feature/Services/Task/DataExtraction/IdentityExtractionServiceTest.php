@@ -19,6 +19,7 @@ use App\Services\Task\DataExtraction\ExtractionArtifactBuilder;
 use App\Services\Task\DataExtraction\ExtractionProcessOrchestrator;
 use App\Services\Task\DataExtraction\FindCandidatesResult;
 use App\Services\Task\DataExtraction\IdentityExtractionService;
+use App\Services\Task\DataExtraction\ProcessConfigArtifactService;
 use App\Services\Task\DataExtraction\ResolutionResult;
 use Mockery;
 use Mockery\MockInterface;
@@ -74,6 +75,18 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
         ]);
     }
 
+    /**
+     * Create a config artifact and attach it to the process.
+     * Required for Extract Identity and Extract Remaining operations.
+     */
+    protected function createAndAttachConfigArtifact(TaskRun $taskRun, TaskProcess $taskProcess, array $config): Artifact
+    {
+        $configArtifact = app(ProcessConfigArtifactService::class)->createConfigArtifact($taskRun, $config);
+        $taskProcess->inputArtifacts()->attach($configArtifact->id);
+
+        return $configArtifact;
+    }
+
     // =========================================================================
     // execute() - Input validation tests
     // =========================================================================
@@ -111,15 +124,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_creates_team_object_when_no_duplicate_found(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
@@ -137,6 +141,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact and config artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Mock AgentThreadBuilderService
         $thread = AgentThread::factory()->create([
@@ -198,14 +219,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'name'    => 'Existing Client',
         ]);
 
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
@@ -223,6 +236,22 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Mock AgentThreadBuilderService
         $thread = AgentThread::factory()->create([
@@ -281,15 +310,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_stores_resolved_object_id_in_orchestrator(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Demand',
@@ -307,6 +327,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 1,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         // Mock dependencies
         $thread = AgentThread::factory()->create([
@@ -363,15 +400,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_builds_identity_artifact(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
@@ -389,6 +417,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -450,14 +495,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'name'    => 'John W. Smith',  // Different from extracted "John Smith"
         ]);
 
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
@@ -475,6 +512,22 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -536,15 +589,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_returns_null_when_extraction_fails(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Client',
@@ -562,6 +606,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -602,21 +663,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
             'type'    => 'Demand',
         ]);
 
-        // Input artifact for the process
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        // Task process with parent_object_ids in meta (set by ExtractionProcessOrchestrator)
-        $taskProcess = TaskProcess::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'meta'        => [
-                'parent_object_ids' => [$parentObject->id],
-            ],
-        ]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector: getNestingKeys returns ['demand', 'provider']
         // getParentType returns second-to-last = 'demand' => 'Demand' (title case)
         // This represents: demand > provider > {scalar fields} (2-level hierarchy)
@@ -640,6 +686,26 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Input artifact for the process
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        // Task process with parent_object_ids (now stored in config artifact)
+        $taskProcess = TaskProcess::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+        ]);
+
+        // Create config artifact with parent_object_ids (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 1,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [$parentObject->id],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -783,15 +849,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_returns_null_when_no_identity_data_found(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Fragment selector with proper object structure
         $identityGroup = [
             'name'              => 'Demand',
@@ -810,6 +867,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,
@@ -848,15 +922,6 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
     #[Test]
     public function execute_creates_multiple_team_objects_for_array_type_identity(): void
     {
-        // Given: TaskProcess with input artifact
-        $inputArtifact = Artifact::factory()->create([
-            'task_run_id' => $this->taskRun->id,
-            'team_id'     => $this->user->currentTeam->id,
-        ]);
-
-        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
-        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
-
         // Identity group with array-type at root level (simplest case)
         // The key is that 'diagnosis' has type: 'array' - multiple diagnoses per document
         $identityGroup = [
@@ -877,6 +942,23 @@ class IdentityExtractionServiceTest extends AuthenticatedTestCase
                 ],
             ],
         ];
+
+        // Given: TaskProcess with input artifact
+        $inputArtifact = Artifact::factory()->create([
+            'task_run_id' => $this->taskRun->id,
+            'team_id'     => $this->user->currentTeam->id,
+        ]);
+
+        $taskProcess = TaskProcess::factory()->create(['task_run_id' => $this->taskRun->id]);
+
+        // Create config artifact (required by ProcessConfigArtifactService)
+        $this->createAndAttachConfigArtifact($this->taskRun, $taskProcess, [
+            'level'             => 0,
+            'identity_group'    => $identityGroup,
+            'parent_object_ids' => [],
+        ]);
+
+        $taskProcess->inputArtifacts()->attach($inputArtifact->id);
 
         $thread = AgentThread::factory()->create([
             'agent_id' => $this->agent->id,

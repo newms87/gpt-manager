@@ -516,7 +516,10 @@ class ExtractionArtifactBuilder
         $taskProcess->updateRelationCounter('outputArtifacts');
 
         // Link as child of input artifact (page artifact)
-        $inputArtifact = $taskProcess->inputArtifacts()->first();
+        // Exclude "Process Config" artifacts - we want the actual page/content artifact as parent
+        $inputArtifact = $taskProcess->inputArtifacts()
+            ->where('name', '!=', ProcessConfigArtifactService::CONFIG_ARTIFACT_NAME)
+            ->first();
 
         if (!$inputArtifact) {
             return;

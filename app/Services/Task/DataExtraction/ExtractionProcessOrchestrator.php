@@ -172,6 +172,15 @@ class ExtractionProcessOrchestrator
             // Get expected parent type from fragment_selector to filter parent object IDs
             $fragmentSelector   = $identity['fragment_selector'] ?? [];
             $expectedParentType = app(FragmentSelectorService::class)->getParentType($fragmentSelector);
+            $parentObjectIds    = $this->getParentObjectIds($taskRun, $level, $expectedParentType);
+
+            // Create config artifact with pre-execution configuration
+            $configArtifact = app(ProcessConfigArtifactService::class)->createConfigArtifact($taskRun, [
+                'level'             => $level,
+                'identity_group'    => $identity,
+                'parent_object_ids' => $parentObjectIds,
+                'search_mode'       => $resolvedSearchMode,
+            ]);
 
             $process = $taskRun->taskProcesses()->create([
                 'name'      => $this->buildProcessName(
@@ -184,14 +193,14 @@ class ExtractionProcessOrchestrator
                 'activity'  => sprintf('Extracting identity fields for %s', $identity['name'] ?? 'object'),
                 'meta'      => [
                     'level'             => $level,
-                    'identity_group'    => $identity,
-                    'parent_object_ids' => $this->getParentObjectIds($taskRun, $level, $expectedParentType),
-                    'search_mode'       => $resolvedSearchMode,
+                    'object_type'       => $identity['object_type'] ?? null,
+                    'parent_object_ids' => $parentObjectIds, // For querying/debugging
                 ],
-                'is_ready' => true,
+                'is_ready'  => true,
             ]);
 
-            // Attach filtered children as input artifacts
+            // Attach config artifact and filtered children as input artifacts
+            $process->inputArtifacts()->attach($configArtifact->id);
             $process->inputArtifacts()->attach($groupArtifacts->pluck('id')->toArray());
             $process->updateRelationCounter('inputArtifacts');
 
@@ -203,7 +212,7 @@ class ExtractionProcessOrchestrator
                 'process_id'           => $process->id,
                 'input_artifacts'      => $groupArtifacts->count(),
                 'expected_parent_type' => $expectedParentType,
-                'parent_object_ids'    => $process->meta['parent_object_ids'] ?? [],
+                'parent_object_ids'    => $configArtifact->meta['parent_object_ids'] ?? [],
             ]);
         }
 
@@ -286,6 +295,14 @@ class ExtractionProcessOrchestrator
 
             // Create process for each resolved object
             foreach ($objectIds as $objectId) {
+                // Create config artifact with pre-execution configuration
+                $configArtifact = app(ProcessConfigArtifactService::class)->createConfigArtifact($taskRun, [
+                    'level'            => $level,
+                    'extraction_group' => $group,
+                    'object_id'        => $objectId,
+                    'search_mode'      => $resolvedSearchMode,
+                ]);
+
                 $process = $taskRun->taskProcesses()->create([
                     'name'      => $this->buildProcessName(
                         'Remaining',
@@ -296,16 +313,15 @@ class ExtractionProcessOrchestrator
                     'operation' => ExtractDataTaskRunner::OPERATION_EXTRACT_REMAINING,
                     'activity'  => sprintf('Extracting %s data', $group['name'] ?? 'group'),
                     'meta'      => [
-                        'level'            => $level,
-                        'operation'        => 'extract_remaining',
-                        'extraction_group' => $group,
-                        'object_id'        => $objectId,
-                        'search_mode'      => $resolvedSearchMode,
+                        'level'       => $level,
+                        'object_type' => $group['object_type'] ?? null,
+                        'object_id'   => $objectId, // For querying/debugging
                     ],
                     'is_ready'  => true,
                 ]);
 
-                // Attach filtered children as input artifacts
+                // Attach config artifact and filtered children as input artifacts
+                $process->inputArtifacts()->attach($configArtifact->id);
                 $process->inputArtifacts()->attach($groupArtifacts->pluck('id')->toArray());
                 $process->updateRelationCounter('inputArtifacts');
 
