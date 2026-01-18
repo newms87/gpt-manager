@@ -135,7 +135,7 @@ import {
     LabelPillWidget,
     ShowHideButton
 } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps<{
     apiLog: ApiLog
@@ -220,11 +220,56 @@ const responseData = computed(() => parseJsonSafely(props.apiLog.response));
 // Timeout indicator computed properties
 const isInProgress = computed(() => props.apiLog.status_code === null || props.apiLog.status_code === undefined);
 
+// Reactive timestamp that updates every second to drive the timeout countdown
+const currentTime = ref(Date.now());
+let timeoutIntervalId: ReturnType<typeof setInterval> | null = null;
+
+// Calculate seconds until timeout based on reactive currentTime
 const secondsUntilTimeout = computed(() => {
     if (!props.apiLog.will_timeout_at) return null;
     const timeoutTime = new Date(props.apiLog.will_timeout_at).getTime();
-    const now = Date.now();
-    return Math.max(0, Math.floor((timeoutTime - now) / 1000));
+    return Math.max(0, Math.floor((timeoutTime - currentTime.value) / 1000));
+});
+
+// Determine if timer should be running
+const shouldRunTimer = computed(() => {
+    // Don't run if no timeout time
+    if (!props.apiLog.will_timeout_at) return false;
+    // Don't run if request has completed (status_code is set, including 0)
+    if (props.apiLog.status_code !== null && props.apiLog.status_code !== undefined) return false;
+    // Don't run if timeout has already passed
+    if (secondsUntilTimeout.value === 0) return false;
+    return true;
+});
+
+// Start/stop timer based on conditions
+function startTimer() {
+    if (timeoutIntervalId === null && shouldRunTimer.value) {
+        timeoutIntervalId = setInterval(() => {
+            currentTime.value = Date.now();
+        }, 1000);
+    }
+}
+
+function stopTimer() {
+    if (timeoutIntervalId !== null) {
+        clearInterval(timeoutIntervalId);
+        timeoutIntervalId = null;
+    }
+}
+
+// Watch for changes that should start/stop the timer
+watch(shouldRunTimer, (shouldRun) => {
+    if (shouldRun) {
+        startTimer();
+    } else {
+        stopTimer();
+    }
+}, { immediate: true });
+
+// Clean up on unmount
+onUnmounted(() => {
+    stopTimer();
 });
 
 const isNearTimeout = computed(() => {
