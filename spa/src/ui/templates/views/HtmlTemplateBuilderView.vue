@@ -216,8 +216,28 @@ async function onRestoreVersion(historyId: number) {
 /**
  * Callback for when the collaboration thread is updated via Pusher
  * Updates the collaborationThread ref directly instead of reloading the whole template
+ * Preserves optimistic "thinking" messages while the thread is still running
  */
 function onThreadUpdated(updatedThread: AgentThread) {
+	// If the thread is still running, preserve any optimistic "thinking" message
+	if (updatedThread.is_running && collaborationThread.value?.chat_messages) {
+		// Find optimistic thinking messages (negative IDs with is_thinking flag)
+		const optimisticThinkingMessages = collaborationThread.value.chat_messages.filter(
+			msg => msg.id < 0 && msg.data?.is_thinking === true
+		);
+
+		if (optimisticThinkingMessages.length > 0) {
+			// Append optimistic thinking messages to the server's messages
+			updatedThread = {
+				...updatedThread,
+				chat_messages: [
+					...(updatedThread.chat_messages || []),
+					...optimisticThinkingMessages
+				]
+			};
+		}
+	}
+
 	collaborationThread.value = updatedThread;
 }
 
@@ -270,10 +290,10 @@ async function loadTemplate() {
 }
 
 /**
- * Lazy load job dispatches when the Jobs tab is first accessed
+ * Load job dispatches when the Jobs tab is accessed or when job count changes
  */
 async function loadJobDispatches() {
-	if (!template.value || template.value.job_dispatches || isLoadingJobDispatches.value) return;
+	if (!template.value || isLoadingJobDispatches.value) return;
 	isLoadingJobDispatches.value = true;
 	await dxTemplateDefinition.routes.details(template.value, { job_dispatches: true });
 	isLoadingJobDispatches.value = false;
@@ -325,7 +345,13 @@ async function startCollaboration(files: File[], prompt: string) {
 	// storeObject already updated template.value reactively
 	// But we need to set the collaborationThread ref from the response and subscribe to updates
 	if (result?.item?.collaboration_threads?.length) {
-		collaborationThread.value = result.item.collaboration_threads[0] as AgentThread;
+		const realThread = result.item.collaboration_threads[0] as AgentThread;
+		// Preserve optimistic messages - let Pusher's onThreadUpdated replace them with real data
+		collaborationThread.value = {
+			...realThread,
+			chat_messages: collaborationThread.value?.chat_messages || realThread.chat_messages,
+			is_running: true // Keep thinking state until Pusher updates
+		};
 		// Subscribe to thread updates with a callback that updates collaborationThread directly
 		await subscribeToThread(collaborationThread.value, onThreadUpdated);
 	}

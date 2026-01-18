@@ -153,11 +153,17 @@ const threadMessages = computed<AgentThreadMessage[]>(() => {
 const visibleMessages = computed<AgentThreadMessage[]>(() => {
 	if (!threadMessages.value.length) return [];
 
-	// Sort messages by timestamp (oldest first)
+	// Sort messages by timestamp (oldest first), with ID as secondary sort key for stable ordering
 	const sortedMessages = [...threadMessages.value].sort((a, b) => {
 		const dateA = new Date(a.timestamp || a.created_at || 0).getTime();
 		const dateB = new Date(b.timestamp || b.created_at || 0).getTime();
-		return dateA - dateB;
+		if (dateA !== dateB) {
+			return dateA - dateB;
+		}
+		// When timestamps are equal, sort by ID for stable ordering
+		// For positive IDs: ascending (1, 2, 3)
+		// For negative IDs (optimistic): -1 before -2 before -3 (higher value first)
+		return a.id - b.id;
 	});
 
 	// Filter out system prompts and system-generated prompts

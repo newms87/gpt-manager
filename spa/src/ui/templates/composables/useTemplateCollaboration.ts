@@ -151,7 +151,8 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
             const result = await dxTemplateDefinition.routes.details(template.value, {
                 collaboration_threads: { chat_messages: true },
                 building_job_dispatch: true,
-                pending_build_context: true
+                pending_build_context: true,
+                job_dispatch_count: true
             });
 
             if (result) {

@@ -21,23 +21,21 @@ class TemplateDefinitionUpdatedEvent extends ModelSavedEvent
     protected function createdData(): array
     {
         return TemplateDefinitionResource::make($this->templateDefinition, [
-            '*'         => false,
-            'name'      => true,
-            'type'      => true,
-            'timestamp' => true,
+            '*'    => false,
+            'name' => true,
+            'type' => true,
         ]);
     }
 
     protected function updatedData(): array
     {
         return TemplateDefinitionResource::make($this->templateDefinition, [
-            '*'                       => false,
-            'name'                    => true,
-            'html_content'            => true,
-            'css_content'             => true,
-            'building_job_dispatch'   => true,
-            'pending_build_context'   => true,
-            'timestamp'               => true,
+            '*'                     => false,
+            'name'                  => true,
+            'html_content'          => true,
+            'css_content'           => true,
+            'building_job_dispatch' => true,
+            'pending_build_context' => true,
         ]);
     }
 }

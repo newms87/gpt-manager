@@ -34,9 +34,6 @@ class TemplateCollaborationService
 
     protected const int DEFAULT_TIMEOUT = 120;
 
-    /** Key used in message data to identify system prompt messages */
-    protected const string SYSTEM_PROMPT_DATA_KEY = 'is_system_prompt';
-
     /**
      * Get the model to use for conversation agent.
      */
@@ -72,9 +69,6 @@ class TemplateCollaborationService
             'has_attachment'   => $attachment !== null,
             'skip_add_message' => $skipAddMessage,
         ]);
-
-        // Ensure the conversation agent instructions exist (only added once per thread)
-        $this->ensureInstructionsExist($thread);
 
         // Add the user message to the thread (unless already added by caller)
         if (!$skipAddMessage) {
@@ -142,35 +136,6 @@ class TemplateCollaborationService
     }
 
     /**
-     * Ensure the conversation agent instructions exist in the thread.
-     *
-     * Instructions are only added once per thread and marked with is_system_prompt
-     * in the data field so the frontend can filter them from display.
-     */
-    protected function ensureInstructionsExist(AgentThread $thread): void
-    {
-        // Check if a system prompt message already exists
-        $existingSystemPrompt = $thread->messages()
-            ->whereJsonContains('data->' . self::SYSTEM_PROMPT_DATA_KEY, true)
-            ->exists();
-
-        if ($existingSystemPrompt) {
-            static::logDebug('System prompt already exists, skipping', ['thread_id' => $thread->id]);
-
-            return;
-        }
-
-        // Create the system prompt message with the is_system_prompt flag
-        $thread->messages()->create([
-            'role'    => AgentThreadMessage::ROLE_USER,
-            'content' => $this->buildConversationPrompt(),
-            'data'    => [self::SYSTEM_PROMPT_DATA_KEY => true],
-        ]);
-
-        static::logDebug('Created system prompt message', ['thread_id' => $thread->id]);
-    }
-
-    /**
      * Process the conversation agent's response.
      *
      * If the response includes an action, dispatch the appropriate job.
@@ -227,12 +192,17 @@ class TemplateCollaborationService
 
     /**
      * Find or create the conversation agent.
+     *
+     * Instructions are stored in api_options so they're included with every API call,
+     * even when using previousResponseId optimization that skips old messages.
      */
     protected function findOrCreateConversationAgent(): Agent
     {
         $agent = Agent::where('name', self::CONVERSATION_AGENT_NAME)
             ->whereNull('team_id')
             ->first();
+
+        $instructions = $this->getConversationAgentInstructions();
 
         if (!$agent) {
             $model = $this->getConversationModel();
@@ -242,6 +212,7 @@ class TemplateCollaborationService
                 'model'       => $model,
                 'description' => 'Fast conversational agent for template collaboration. Provides quick responses and determines when to trigger template builds.',
                 'api_options' => [
+                    'instructions'    => $instructions,
                     'response_format' => [
                         'type' => 'json_object',
                     ],
@@ -252,6 +223,20 @@ class TemplateCollaborationService
                 'agent_id' => $agent->id,
                 'model'    => $model,
             ]);
+        } else {
+            // Update existing agent if instructions are missing or outdated
+            $currentInstructions = $agent->api_options['instructions'] ?? null;
+            if ($currentInstructions !== $instructions) {
+                $agent->update([
+                    'api_options' => array_merge($agent->api_options ?? [], [
+                        'instructions' => $instructions,
+                    ]),
+                ]);
+
+                static::logDebug('Updated Conversation Agent instructions', [
+                    'agent_id' => $agent->id,
+                ]);
+            }
         }
 
         return $agent;
@@ -263,18 +248,6 @@ class TemplateCollaborationService
     protected function getConversationAgentInstructions(): string
     {
         return file_get_contents(resource_path('prompts/templates/conversation-agent.md'));
-    }
-
-    /**
-     * Build the conversation prompt with agent instructions.
-     *
-     * This is sent as a message before each user message to ensure the LLM
-     * knows its role as the conversation agent, even when using previousResponseId
-     * optimization that carries context from the HTML builder agent.
-     */
-    protected function buildConversationPrompt(): string
-    {
-        return "# Conversation Agent Instructions\n\n" . $this->getConversationAgentInstructions();
     }
 
     /**
@@ -304,7 +277,7 @@ class TemplateCollaborationService
 
         $agent = $this->findOrCreateGenerationAgent();
 
-        // Build simple user message (agent instructions are added via ensureInstructionsExist)
+        // Build simple user message for display in the chat
         $userMessage = $this->buildUserMessage($sourceFiles, $userPrompt);
 
         // Create the thread using builder with collaboratable relationship (no message yet)
@@ -351,7 +324,7 @@ class TemplateCollaborationService
      * Build a simple user message for the initial collaboration message.
      *
      * This creates the actual user message that will be displayed in the chat.
-     * Agent instructions are added separately via ensureInstructionsExist().
+     * Agent instructions are passed via api_options['instructions'] on the Agent.
      *
      * @param  Collection<StoredFile>  $sourceFiles
      * @param  string|null  $userPrompt  Optional user-provided prompt
