@@ -11,7 +11,7 @@
                 <LabelPillWidget
                     v-if="isInProgress && apiLog.will_timeout_at"
                     :color="isNearTimeout ? 'red' : 'amber'"
-                    size="sm"
+                    size="xs"
                 >
                     Timeout {{ timeoutDisplay }}
                     <QTooltip class="text-base">Will timeout at {{ fDateTimeMs(apiLog.will_timeout_at) }}</QTooltip>
