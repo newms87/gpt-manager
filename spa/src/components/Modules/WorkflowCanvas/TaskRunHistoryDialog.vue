@@ -61,21 +61,6 @@
 
 						<!-- Run Details -->
 						<div class="flex items-center flex-wrap gap-2 text-xs">
-							<LabelPillWidget
-								:label="`${run.process_count || 0} process${run.process_count !== 1 ? 'es' : ''}`"
-								color="purple"
-								size="xs"
-							/>
-							<LabelPillWidget
-								:label="`${run.input_artifacts_count || 0} input artifact${run.input_artifacts_count !== 1 ? 's' : ''}`"
-								color="sky"
-								size="xs"
-							/>
-							<LabelPillWidget
-								:label="`${run.output_artifacts_count || 0} output artifact${run.output_artifacts_count !== 1 ? 's' : ''}`"
-								color="green"
-								size="xs"
-							/>
 							<span class="text-slate-500">
 								Created: {{ fDateTime(run.created_at) }}
 							</span>
@@ -86,6 +71,74 @@
 								| Ended: {{ fDateTime(run.completed_at || run.failed_at) }}
 							</span>
 						</div>
+
+						<!-- Expandable Sections -->
+						<div class="mt-3 space-y-2">
+							<!-- Processes -->
+							<div v-if="run.process_count > 0">
+								<ShowHideButton
+									v-model="expandedSections[`processes-${run.id}`]"
+									:label="`Processes (${run.process_count})`"
+									class="text-xs"
+									color="purple"
+									size="xs"
+									@show="loadRunProcesses(run)"
+								/>
+								<div v-if="expandedSections[`processes-${run.id}`]" class="mt-2 bg-slate-800 rounded p-2 space-y-2">
+									<QSkeleton v-if="loadingProcesses[run.id]" class="h-16" />
+									<template v-else-if="run.processes">
+										<div v-for="process in run.processes" :key="process.id" class="text-sm text-slate-300">
+											<div class="flex items-center gap-2">
+												<LabelPillWidget :label="`pid: ${process.id}`" color="sky" size="xs" />
+												<LabelPillWidget v-if="process.operation" :label="process.operation" :color="getOperationColor(process.operation)" size="xs" />
+												<span class="truncate">{{ process.activity }}</span>
+												<WorkflowStatusTimerPill :runner="process" />
+											</div>
+										</div>
+									</template>
+								</div>
+							</div>
+
+							<!-- Input Artifacts -->
+							<div v-if="run.input_artifacts_count > 0">
+								<ShowHideButton
+									v-model="expandedSections[`input-artifacts-${run.id}`]"
+									:label="`Input Artifacts (${run.input_artifacts_count})`"
+									class="text-xs"
+									color="sky"
+									size="xs"
+									@show="loadRunInputArtifacts(run)"
+								/>
+								<div v-if="expandedSections[`input-artifacts-${run.id}`]" class="mt-2 bg-slate-800 rounded p-2">
+									<QSkeleton v-if="loadingInputArtifacts[run.id]" class="h-16" />
+									<ArtifactList
+										v-else-if="run.inputArtifacts"
+										dense
+										:filter="{taskRun: {category: 'input', artifactable_id: run.id}}"
+									/>
+								</div>
+							</div>
+
+							<!-- Output Artifacts -->
+							<div v-if="run.output_artifacts_count > 0">
+								<ShowHideButton
+									v-model="expandedSections[`output-artifacts-${run.id}`]"
+									:label="`Output Artifacts (${run.output_artifacts_count})`"
+									class="text-xs"
+									color="green"
+									size="xs"
+									@show="loadRunOutputArtifacts(run)"
+								/>
+								<div v-if="expandedSections[`output-artifacts-${run.id}`]" class="mt-2 bg-slate-800 rounded p-2">
+									<QSkeleton v-if="loadingOutputArtifacts[run.id]" class="h-16" />
+									<ArtifactList
+										v-else-if="run.outputArtifacts"
+										dense
+										:filter="{taskRun: {category: 'output', artifactable_id: run.id}}"
+									/>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -95,12 +148,15 @@
 
 <script setup lang="ts">
 import { apiUrls } from "@/api";
+import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
+import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
+import { useHashedColor } from "@/composables/useHashedColor";
 import { TaskRun } from "@/types";
 import { FaSolidClockRotateLeft } from "danx-icon";
-import { QSpinnerGears } from "quasar";
-import { fDateTime, InfoDialog, LabelPillWidget, request } from "quasar-ui-danx";
-import { onMounted, ref } from "vue";
+import { QSkeleton, QSpinnerGears } from "quasar";
+import { fDateTime, InfoDialog, LabelPillWidget, request, ShowHideButton } from "quasar-ui-danx";
+import { onMounted, reactive, ref } from "vue";
 
 const props = defineProps<{
 	taskRun: TaskRun;
@@ -113,6 +169,14 @@ defineEmits<{
 
 const isLoading = ref(false);
 const historicalRuns = ref<TaskRun[]>([]);
+const expandedSections = reactive<Record<string, boolean>>({});
+const loadingProcesses = reactive<Record<number, boolean>>({});
+const loadingInputArtifacts = reactive<Record<number, boolean>>({});
+const loadingOutputArtifacts = reactive<Record<number, boolean>>({});
+
+function getOperationColor(operation: string | undefined) {
+	return useHashedColor(ref(operation)).value;
+}
 
 async function loadHistory() {
 	isLoading.value = true;
@@ -124,6 +188,51 @@ async function loadHistory() {
 		historicalRuns.value = [];
 	} finally {
 		isLoading.value = false;
+	}
+}
+
+async function loadRunProcesses(run: TaskRun) {
+	if (run.processes || loadingProcesses[run.id]) return;
+
+	loadingProcesses[run.id] = true;
+	try {
+		const result = await dxTaskRun.routes.details(run, { processes: true }, { params: { withTrashed: true } });
+		// Update the local run object since historicalRuns is not managed by the danx store
+		if (result?.processes) {
+			run.processes = result.processes;
+		}
+	} finally {
+		loadingProcesses[run.id] = false;
+	}
+}
+
+async function loadRunInputArtifacts(run: TaskRun) {
+	if (run.inputArtifacts || loadingInputArtifacts[run.id]) return;
+
+	loadingInputArtifacts[run.id] = true;
+	try {
+		const result = await dxTaskRun.routes.details(run, { inputArtifacts: true }, { params: { withTrashed: true } });
+		// Update the local run object since historicalRuns is not managed by the danx store
+		if (result?.inputArtifacts) {
+			run.inputArtifacts = result.inputArtifacts;
+		}
+	} finally {
+		loadingInputArtifacts[run.id] = false;
+	}
+}
+
+async function loadRunOutputArtifacts(run: TaskRun) {
+	if (run.outputArtifacts || loadingOutputArtifacts[run.id]) return;
+
+	loadingOutputArtifacts[run.id] = true;
+	try {
+		const result = await dxTaskRun.routes.details(run, { outputArtifacts: true }, { params: { withTrashed: true } });
+		// Update the local run object since historicalRuns is not managed by the danx store
+		if (result?.outputArtifacts) {
+			run.outputArtifacts = result.outputArtifacts;
+		}
+	} finally {
+		loadingOutputArtifacts[run.id] = false;
 	}
 }
 
