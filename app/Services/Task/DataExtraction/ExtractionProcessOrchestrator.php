@@ -568,6 +568,11 @@ class ExtractionProcessOrchestrator
             return 'exhaustive';
         }
 
+        // Array relationships MUST use exhaustive to find all records
+        if (app(FragmentSelectorService::class)->isLeafArrayType($group)) {
+            return 'exhaustive';
+        }
+
         // Intelligent mode: use per-group setting from planning
         return $group['search_mode'] ?? 'skim';
     }

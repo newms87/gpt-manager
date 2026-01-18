@@ -97,8 +97,13 @@ class IdentityPlanningPromptBuilder
         $prompt .= "   - Data type or purpose\n\n";
 
         $prompt .= "2. **Assign Search Modes:** For each group, choose an appropriate search_mode:\n";
-        $prompt .= "   - **skim:** Quick extraction for simple, obvious fields that are easy to find\n";
-        $prompt .= "   - **exhaustive:** Thorough search for complex fields, fields with detailed descriptions, or hard-to-find data\n\n";
+        $prompt .= "   - **skim:** For singular values that can be resolved the first time they're encountered.\n";
+        $prompt .= "     Examples: names, dates, locations, IDs - things with ONE particular value that just needs to be found.\n";
+        $prompt .= "     Use when the field's value won't change or accumulate as you read more pages.\n";
+        $prompt .= "   - **exhaustive:** For values that could be added to by information across multiple pages.\n";
+        $prompt .= "     Examples: assessments of a patient, all findings in a report, items in a list.\n";
+        $prompt .= "     Use when the field's value might be augmented by additional information on different pages.\n";
+        $prompt .= "   - **Key distinction:** If it's a singular value resolved once, use skim. If it accumulates over multiple pages, use exhaustive.\n\n";
 
         $prompt .= '3. **Respect Size Limits:** Each group should not exceed ' . $config['group_max_points'] . " fields.\n\n";
 
@@ -146,7 +151,7 @@ class IdentityPlanningPromptBuilder
         $prompt .= "**IMPORTANT:** You MUST include ALL of the missing fields listed above in your response.\n\n";
         $prompt .= "Create logical extraction groups for these missing fields:\n\n";
         $prompt .= "1. **Group Related Fields:** Organize fields into logical groups\n";
-        $prompt .= "2. **Assign Search Modes:** Choose 'skim' or 'exhaustive' for each group\n";
+        $prompt .= "2. **Assign Search Modes:** Choose 'skim' (singular values resolved once) or 'exhaustive' (values that accumulate across pages) for each group\n";
         $prompt .= '3. **Respect Size Limits:** Each group should not exceed ' . $config['group_max_points'] . " fields\n";
         $prompt .= "4. **Describe Each Group:** Provide a clear description explaining what document content or sections contain these fields\n\n";
 
@@ -225,7 +230,7 @@ class IdentityPlanningPromptBuilder
                             'search_mode' => [
                                 'type'        => 'string',
                                 'enum'        => ['skim', 'exhaustive'],
-                                'description' => 'How thoroughly to search for these fields (skim for simple/obvious, exhaustive for complex/hard-to-find)',
+                                'description' => 'skim: for singular values resolved once (names, dates, IDs). exhaustive: for values that accumulate across pages (lists, findings, assessments)',
                             ],
                         ],
                         'required' => ['name', 'description', 'fields', 'search_mode'],
