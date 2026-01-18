@@ -92,6 +92,7 @@ import TaskProcessFilterButton
     from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/TaskProcessFilterButton";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
 import { PaginationNavigator, SearchBox } from "@/components/Shared";
+import { activeWorkflowRun, refreshWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { usePusher } from "@/helpers/pusher";
 import { TaskProcess, TaskRun } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
@@ -99,7 +100,6 @@ import { FaSolidFileInvoice as ProcessListIcon } from "danx-icon";
 import { ActionButton, AnyObject, InfoDialog, ListControlsPagination, ShowHideButton } from "quasar-ui-danx";
 import { computed, ref, watch } from "vue";
 
-const emit = defineEmits<{ restart: void }>();
 const props = defineProps<{
     taskRun: TaskRun;
 }>();
@@ -121,7 +121,10 @@ function onRestart(oldProcessId?: number, newProcess?: TaskProcess) {
             loadTaskProcesses();
         }
     }
-    emit("restart");
+    // Refresh the workflow run to pick up any state changes from the restarted process
+    if (activeWorkflowRun.value) {
+        refreshWorkflowRun(activeWorkflowRun.value);
+    }
 }
 
 // Pagination state
@@ -198,8 +201,11 @@ async function batchRestart() {
     }
 
     selectedProcesses.value = [];
-    emit("restart");
     loadTaskProcesses();
+    // Refresh the workflow run to pick up any state changes from the restarted processes
+    if (activeWorkflowRun.value) {
+        refreshWorkflowRun(activeWorkflowRun.value);
+    }
 }
 
 // Toggle web socket subscription to task processes

@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Task\TaskRun;
+use App\Resources\TaskDefinition\TaskRunResource;
 use App\Services\Task\TaskRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Repositories\ActionRepository;
@@ -54,11 +55,17 @@ class TaskRunRepository extends ActionRepository
         return $taskRun;
     }
 
-    public function restartTaskRun(TaskRun $taskRun): TaskRun
+    /**
+     * Restart a task run by creating a new clone.
+     * Returns an array with 'result' containing the new TaskRunResource for frontend to navigate to.
+     */
+    public function restartTaskRun(TaskRun $taskRun): array
     {
-        TaskRunnerService::restart($taskRun);
+        $newTaskRun = TaskRunnerService::restart($taskRun);
 
-        return $taskRun;
+        return [
+            'result' => TaskRunResource::make($newTaskRun),
+        ];
     }
 
     public function stopTaskRun(TaskRun $taskRun): TaskRun

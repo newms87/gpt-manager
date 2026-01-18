@@ -127,46 +127,75 @@ class TaskRunnerService
     }
 
     /**
-     * Restart the task run.
-     * This will restart the task run and remove all current task processes and create new task
-     * processes. This will also clear all current output artifacts and recreate the input artifacts.
+     * Restart the task run by cloning it.
+     * The old run is soft-deleted and linked to the new active run via parent_task_run_id.
+     * All previous historical runs are updated to point to the new active run (flat chain structure).
+     * Child TaskProcesses remain attached to the soft-deleted old run for history.
+     *
+     * @return TaskRun The new active task run
      */
-    public static function restart(TaskRun $taskRun): void
+    public static function restart(TaskRun $taskRun): TaskRun
     {
         static::logDebug("Restart $taskRun");
 
-        // Always start by acquiring the lock for the task run before checking if it can continue
-        // NOTE: This prevents allowing the TaskRun to continue if there was a race condition on failing/stopping the TaskRun
         LockHelper::acquire($taskRun);
 
         try {
-            // Remove the old task processes to make way for the new ones
-            $taskRun->taskProcesses()->each(fn(TaskProcess $taskProcess) => $taskProcess->delete());
-
-            // Clear out old input / output artifacts
-            $taskRun->clearOutputArtifacts();
-            $taskRun->clearInputArtifacts();
-
-            // Reset task run statuses and error counts
-            $taskRun->stopped_at               = null;
-            $taskRun->completed_at             = null;
-            $taskRun->failed_at                = null;
-            $taskRun->started_at               = null;
-            $taskRun->skipped_at               = null;
-            $taskRun->task_process_error_count = 0;
-            $taskRun->meta                     = null;
-
-            $taskRun->save();
-
-            // If this task run is part of a workflow run, collect the output artifacts from the source nodes and replace the current input artifacts
-            if ($taskRun->workflow_run_id) {
-                static::syncInputArtifactsFromWorkflowSourceNodes($taskRun);
+            if ($taskRun->isStatusRunning()) {
+                throw new ValidationError('TaskRun is currently running, cannot restart');
             }
 
-            (new PrepareTaskProcessJob($taskRun))->dispatch();
+            // Clone the task run for restart
+            $newTaskRun = static::cloneForRestart($taskRun);
+
+            // Sync input artifacts to the new run
+            if ($taskRun->workflow_run_id) {
+                // For workflow tasks: sync from workflow source nodes
+                static::syncInputArtifactsFromWorkflowSourceNodes($newTaskRun);
+            } else {
+                // For standalone tasks: copy input artifacts from old run
+                $inputArtifactIds = $taskRun->inputArtifacts()->pluck('artifacts.id')->toArray();
+                if (!empty($inputArtifactIds)) {
+                    $newTaskRun->inputArtifacts()->sync($inputArtifactIds);
+                    $newTaskRun->updateRelationCounter('inputArtifacts');
+                }
+            }
+
+            // Link the old run to the new one and soft delete
+            $taskRun->parent_task_run_id = $newTaskRun->id;
+            $taskRun->save();
+            $taskRun->delete();
+
+            // Update all previously soft-deleted historical runs to point to the new active run
+            // This maintains a flat chain structure where all history points to the current active run
+            TaskRun::onlyTrashed()
+                ->where('parent_task_run_id', $taskRun->id)
+                ->update(['parent_task_run_id' => $newTaskRun->id]);
         } finally {
             LockHelper::release($taskRun);
         }
+
+        // Dispatch job to prepare task processes for the new run
+        (new PrepareTaskProcessJob($newTaskRun))->dispatch();
+
+        return $newTaskRun;
+    }
+
+    /**
+     * Clone a task run for restart.
+     * Creates a new run with reset state, copying task_definition_id, workflow_run_id, workflow_node_id, and task_input_id.
+     */
+    protected static function cloneForRestart(TaskRun $taskRun): TaskRun
+    {
+        $newTaskRun = $taskRun->taskDefinition->taskRuns()->create([
+            'workflow_run_id'          => $taskRun->workflow_run_id,
+            'workflow_node_id'         => $taskRun->workflow_node_id,
+            'task_input_id'            => $taskRun->task_input_id,
+            'restart_count'            => $taskRun->restart_count + 1,
+            'task_process_error_count' => 0,
+        ]);
+
+        return $newTaskRun;
     }
 
     /**

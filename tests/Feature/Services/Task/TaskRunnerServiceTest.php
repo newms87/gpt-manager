@@ -8,10 +8,14 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
+use App\Models\Workflow\WorkflowConnection;
+use App\Models\Workflow\WorkflowNode;
+use App\Models\Workflow\WorkflowRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\TaskRunnerService;
 use Illuminate\Database\Eloquent\Builder;
+use Newms87\Danx\Exceptions\ValidationError;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\AuthenticatedTestCase;
 
@@ -184,44 +188,48 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
     #[Test]
     public function restart_clears_error_counts(): void
     {
-        // GIVEN: A TaskRun with error counts
+        // GIVEN: A TaskRun with error counts that is in FAILED state (not running)
         $taskDefinition = TaskDefinition::factory()->create([
             'task_runner_name' => 'agent-thread',
         ]);
 
-        $taskRun = TaskRunnerService::prepareTaskRun($taskDefinition);
-        TaskRunnerService::prepareTaskProcesses($taskRun);
-
-        // Set error counts and failed state
-        $taskRun->task_process_error_count = 5;
-        $taskRun->failed_at                = now();
-        $taskRun->started_at               = now();
-        $taskRun->save();
-
-        // Create some task processes with errors
-        TaskProcess::factory()->count(3)->create([
-            'task_run_id' => $taskRun->id,
-            'error_count' => 2,
+        // Create a failed TaskRun directly to avoid status recalculation issues
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id'       => $taskDefinition->id,
+            'task_process_error_count' => 5,
+            'failed_at'                => now(),
+            'started_at'               => now(),
         ]);
 
-        // Verify error count is set
+        // Create some completed task processes with errors (not active/pending)
+        TaskProcess::factory()->count(3)->create([
+            'task_run_id'  => $taskRun->id,
+            'error_count'  => 2,
+            'started_at'   => now(),
+            'completed_at' => now(),
+            'failed_at'    => now(),
+        ]);
+
+        // Verify error count is set and task run is in failed state
         $this->assertEquals(5, $taskRun->task_process_error_count);
-        $this->assertEquals(4, $taskRun->taskProcesses()->count(), 'Should have 4 task processes (1 from prepare + 3 manually created)');
+        $this->assertEquals(3, $taskRun->taskProcesses()->count());
+        $this->assertTrue($taskRun->isFailed(), 'TaskRun should be in failed state');
 
-        // WHEN: The TaskRun is restarted
-        TaskRunnerService::restart($taskRun);
+        // WHEN: The TaskRun is restarted (returns the NEW task run)
+        $newTaskRun = TaskRunnerService::restart($taskRun);
 
-        // THEN: Error count should be reset to 0
+        // THEN: NEW TaskRun should have error count reset to 0
+        $this->assertEquals(0, $newTaskRun->task_process_error_count, 'task_process_error_count should be reset to 0 on new run');
+
+        // AND: NEW TaskRun should have reset timestamp fields
+        $this->assertNull($newTaskRun->failed_at, 'failed_at should be null on new run');
+        $this->assertNull($newTaskRun->stopped_at, 'stopped_at should be null on new run');
+        $this->assertNull($newTaskRun->skipped_at, 'skipped_at should be null on new run');
+
+        // AND: Old TaskRun should be soft-deleted and point to new one
         $taskRun->refresh();
-        $this->assertEquals(0, $taskRun->task_process_error_count, 'task_process_error_count should be reset to 0 on restart');
-
-        // AND: Critical timestamp fields should be reset (failed_at is the key one)
-        $this->assertNull($taskRun->failed_at, 'failed_at should be null - TaskRun is no longer in failed state');
-        $this->assertNull($taskRun->stopped_at, 'stopped_at should be null - TaskRun is no longer stopped');
-        $this->assertNull($taskRun->skipped_at, 'skipped_at should be null - TaskRun is no longer skipped');
-
-        // Note: started_at and completed_at may be set by the restart process running the new task processes,
-        // but the important thing is that error counts are cleared and failed state is reset
+        $this->assertNotNull($taskRun->deleted_at, 'Old TaskRun should be soft-deleted');
+        $this->assertEquals($newTaskRun->id, $taskRun->parent_task_run_id, 'Old TaskRun should point to new one');
     }
 
     // ============================================================================
@@ -595,5 +603,477 @@ class TaskRunnerServiceTest extends AuthenticatedTestCase
             $taskRun->status,
             'TaskRun should NOT be stuck in Running state'
         );
+    }
+
+    // ============================================================================
+    // Tests for TaskRun Restart Clone Feature
+    // ============================================================================
+
+    #[Test]
+    public function restart_creates_new_task_run_and_soft_deletes_old(): void
+    {
+        // GIVEN: A completed task run (created directly with completed state)
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'restart_count'      => 0,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        $oldTaskRunId = $taskRun->id;
+        $this->assertTrue($taskRun->isCompleted(), 'TaskRun should be completed before restart');
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: A new TaskRun is created
+        $this->assertNotEquals($oldTaskRunId, $newTaskRun->id, 'New TaskRun should have different ID');
+        $this->assertInstanceOf(TaskRun::class, $newTaskRun);
+
+        // AND: Old TaskRun is soft-deleted
+        $taskRun->refresh();
+        $this->assertNotNull($taskRun->deleted_at, 'Old TaskRun should be soft-deleted');
+
+        // AND: Old TaskRun points to new one via parent_task_run_id
+        $this->assertEquals($newTaskRun->id, $taskRun->parent_task_run_id, 'Old TaskRun should point to new one');
+
+        // AND: New TaskRun has incremented restart_count
+        $this->assertEquals(1, $newTaskRun->restart_count, 'New TaskRun should have restart_count of 1');
+    }
+
+    #[Test]
+    public function restart_preserves_task_relationships(): void
+    {
+        // GIVEN: A completed task run
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: New TaskRun has same task_definition_id
+        $this->assertEquals(
+            $taskRun->task_definition_id,
+            $newTaskRun->task_definition_id,
+            'New TaskRun should have same task_definition_id'
+        );
+    }
+
+    #[Test]
+    public function restart_preserves_workflow_relationships(): void
+    {
+        // GIVEN: A task run that is part of a workflow (with complete relationships)
+        $workflowRun  = WorkflowRun::factory()->create();
+        $workflowNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflow_definition_id,
+        ]);
+
+        // Use the workflow node's task definition to ensure proper relationship
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $workflowNode->task_definition_id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $workflowNode->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: New TaskRun has same workflow_run_id and workflow_node_id
+        $this->assertEquals(
+            $taskRun->workflow_run_id,
+            $newTaskRun->workflow_run_id,
+            'New TaskRun should have same workflow_run_id'
+        );
+        $this->assertEquals(
+            $taskRun->workflow_node_id,
+            $newTaskRun->workflow_node_id,
+            'New TaskRun should have same workflow_node_id'
+        );
+    }
+
+    #[Test]
+    public function restart_preserves_task_input_id(): void
+    {
+        // GIVEN: A task run with a task_input_id
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'task_input_id'      => 123,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: New TaskRun has same task_input_id
+        $this->assertEquals(
+            $taskRun->task_input_id,
+            $newTaskRun->task_input_id,
+            'New TaskRun should have same task_input_id'
+        );
+    }
+
+    #[Test]
+    public function restart_multiple_times_maintains_flat_chain(): void
+    {
+        // GIVEN: A completed task run
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun1       = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'restart_count'      => 0,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // WHEN: First restart
+        $taskRun2 = TaskRunnerService::restart($taskRun1);
+
+        // Complete second run for next restart
+        $taskRun2->started_at   = now();
+        $taskRun2->completed_at = now();
+        $taskRun2->save();
+
+        // Second restart
+        $taskRun3 = TaskRunnerService::restart($taskRun2);
+
+        // THEN: Both old TaskRuns point to the final active TaskRun (flat chain)
+        $taskRun1->refresh();
+        $taskRun2->refresh();
+
+        $this->assertEquals(
+            $taskRun3->id,
+            $taskRun1->parent_task_run_id,
+            'First old TaskRun should point to final active TaskRun'
+        );
+        $this->assertEquals(
+            $taskRun3->id,
+            $taskRun2->parent_task_run_id,
+            'Second old TaskRun should point to final active TaskRun'
+        );
+
+        // AND: restart_count increments correctly
+        $this->assertEquals(0, $taskRun1->restart_count, 'First TaskRun should have restart_count 0');
+        $this->assertEquals(1, $taskRun2->restart_count, 'Second TaskRun should have restart_count 1');
+        $this->assertEquals(2, $taskRun3->restart_count, 'Third TaskRun should have restart_count 2');
+
+        // AND: Both old runs are soft-deleted
+        $this->assertNotNull($taskRun1->deleted_at, 'First TaskRun should be soft-deleted');
+        $this->assertNotNull($taskRun2->deleted_at, 'Second TaskRun should be soft-deleted');
+        $this->assertNull($taskRun3->deleted_at, 'Third (active) TaskRun should NOT be soft-deleted');
+    }
+
+    #[Test]
+    public function restart_leaves_child_processes_on_old_run(): void
+    {
+        // GIVEN: A task run with multiple task processes
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // Create some task processes on the old run
+        $process1 = TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'started_at'   => now(),
+            'completed_at' => now(),
+        ]);
+        $process2 = TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'started_at'   => now(),
+            'completed_at' => now(),
+        ]);
+
+        $oldProcessCount = $taskRun->taskProcesses()->count();
+        $this->assertEquals(2, $oldProcessCount, 'Old TaskRun should have 2 processes');
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: Old TaskRun's processes are untouched
+        $taskRun->refresh();
+        $this->assertEquals(2, $taskRun->taskProcesses()->count(), 'Old TaskRun should still have its processes');
+
+        // AND: Processes still belong to old run (checking via fresh query)
+        $process1->refresh();
+        $process2->refresh();
+        $this->assertEquals($taskRun->id, $process1->task_run_id, 'Process 1 should still belong to old TaskRun');
+        $this->assertEquals($taskRun->id, $process2->task_run_id, 'Process 2 should still belong to old TaskRun');
+
+        // Note: In tests, the PrepareTaskProcessJob runs synchronously and creates new processes
+        // The key assertion is that OLD processes remain on the OLD run
+    }
+
+    #[Test]
+    public function restart_throws_validation_error_when_task_run_is_running(): void
+    {
+        // GIVEN: A task run that is currently running
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'completed_at'       => null, // Not completed
+            'failed_at'          => null, // Not failed
+            'stopped_at'         => null, // Not stopped
+        ]);
+
+        // Create a running process
+        TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'started_at'   => now(),
+            'completed_at' => null,
+        ]);
+
+        $taskRun->updateActiveProcessCount()->save();
+        $taskRun->refresh();
+
+        $this->assertEquals(WorkflowStatesContract::STATUS_RUNNING, $taskRun->status, 'TaskRun should be running');
+
+        // WHEN/THEN: Restart should throw validation error
+        $this->expectException(ValidationError::class);
+        $this->expectExceptionMessage('TaskRun is currently running, cannot restart');
+
+        TaskRunnerService::restart($taskRun);
+    }
+
+    #[Test]
+    public function restart_copies_input_artifacts_for_standalone_task(): void
+    {
+        // GIVEN: A standalone task run (no workflow) with input artifacts
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'workflow_run_id'    => null,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // Add input artifacts
+        $artifact1 = Artifact::factory()->create();
+        $artifact2 = Artifact::factory()->create();
+        $taskRun->inputArtifacts()->sync([$artifact1->id, $artifact2->id]);
+        $taskRun->updateRelationCounter('inputArtifacts');
+
+        $this->assertEquals(2, $taskRun->inputArtifacts()->count(), 'Old TaskRun should have 2 input artifacts');
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: New TaskRun has the same input artifacts
+        $this->assertEquals(2, $newTaskRun->inputArtifacts()->count(), 'New TaskRun should have 2 input artifacts');
+
+        $oldArtifactIds = $taskRun->inputArtifacts()->pluck('artifacts.id')->sort()->values()->toArray();
+        $newArtifactIds = $newTaskRun->inputArtifacts()->pluck('artifacts.id')->sort()->values()->toArray();
+
+        $this->assertEquals($oldArtifactIds, $newArtifactIds, 'New TaskRun should have same input artifact IDs');
+    }
+
+    #[Test]
+    public function restart_syncs_input_artifacts_from_workflow_source_nodes(): void
+    {
+        // GIVEN: A workflow with source node that has output artifacts
+        $workflowRun = WorkflowRun::factory()->create();
+
+        // Create source node and its task run with output artifacts
+        $sourceNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflow_definition_id,
+        ]);
+        $sourceTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $sourceNode->task_definition_id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $sourceNode->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // Add output artifacts to source task run
+        $artifact1 = Artifact::factory()->create();
+        $artifact2 = Artifact::factory()->create();
+        $sourceTaskRun->outputArtifacts()->sync([$artifact1->id, $artifact2->id]);
+
+        // Create target node and its task run
+        $targetNode = WorkflowNode::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflow_definition_id,
+        ]);
+
+        // Create connection from source to target
+        WorkflowConnection::factory()->create([
+            'workflow_definition_id' => $workflowRun->workflow_definition_id,
+            'source_node_id'         => $sourceNode->id,
+            'target_node_id'         => $targetNode->id,
+        ]);
+
+        $targetTaskRun = TaskRun::factory()->create([
+            'task_definition_id' => $targetNode->task_definition_id,
+            'workflow_run_id'    => $workflowRun->id,
+            'workflow_node_id'   => $targetNode->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // Ensure relationships are loaded
+        $targetTaskRun->load(['workflowRun', 'workflowNode']);
+
+        // WHEN: The target task run is restarted
+        $newTaskRun = TaskRunnerService::restart($targetTaskRun);
+
+        // THEN: New TaskRun should have input artifacts from source node's output
+        $this->assertEquals(2, $newTaskRun->inputArtifacts()->count(), 'New TaskRun should have input artifacts from source node');
+
+        $sourceOutputIds = $sourceTaskRun->outputArtifacts()->pluck('artifacts.id')->sort()->values()->toArray();
+        $newInputIds     = $newTaskRun->inputArtifacts()->pluck('artifacts.id')->sort()->values()->toArray();
+
+        $this->assertEquals($sourceOutputIds, $newInputIds, 'New TaskRun input artifacts should match source node output artifacts');
+    }
+
+    #[Test]
+    public function restart_new_run_has_reset_state(): void
+    {
+        // GIVEN: A failed task run with various state values
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id'       => $taskDefinition->id,
+            'task_process_error_count' => 5,
+            'restart_count'            => 2,
+            'started_at'               => now()->subHour(),
+            'failed_at'                => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: New TaskRun has reset error count
+        $this->assertEquals(0, $newTaskRun->task_process_error_count, 'Error count should be reset to 0');
+
+        // AND: restart_count is incremented
+        $this->assertEquals(3, $newTaskRun->restart_count, 'restart_count should be incremented');
+
+        // AND: Timestamps are reset (pending state)
+        $this->assertNull($newTaskRun->started_at, 'started_at should be null');
+        $this->assertNull($newTaskRun->completed_at, 'completed_at should be null');
+        $this->assertNull($newTaskRun->failed_at, 'failed_at should be null');
+        $this->assertNull($newTaskRun->stopped_at, 'stopped_at should be null');
+        $this->assertNull($newTaskRun->skipped_at, 'skipped_at should be null');
+    }
+
+    #[Test]
+    public function restart_returns_new_task_run(): void
+    {
+        // GIVEN: A completed task run
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $result = TaskRunnerService::restart($taskRun);
+
+        // THEN: The returned value is the NEW TaskRun
+        $this->assertInstanceOf(TaskRun::class, $result);
+        $this->assertNotEquals($taskRun->id, $result->id, 'Returned TaskRun should be the new one');
+        $this->assertNull($result->deleted_at, 'Returned TaskRun should not be soft-deleted');
+    }
+
+    #[Test]
+    public function restart_from_stopped_task_run_succeeds(): void
+    {
+        // GIVEN: A stopped task run
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'stopped_at'         => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: Restart succeeds and creates new run
+        $this->assertInstanceOf(TaskRun::class, $newTaskRun);
+        $this->assertNotEquals($taskRun->id, $newTaskRun->id);
+        $this->assertEquals(1, $newTaskRun->restart_count);
+    }
+
+    #[Test]
+    public function restart_from_failed_task_run_succeeds(): void
+    {
+        // GIVEN: A failed task run
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun        = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'failed_at'          => now(),
+        ]);
+
+        // WHEN: The task run is restarted
+        $newTaskRun = TaskRunnerService::restart($taskRun);
+
+        // THEN: Restart succeeds and creates new run
+        $this->assertInstanceOf(TaskRun::class, $newTaskRun);
+        $this->assertNotEquals($taskRun->id, $newTaskRun->id);
+        $this->assertEquals(1, $newTaskRun->restart_count);
+    }
+
+    #[Test]
+    public function historical_runs_relationship_returns_soft_deleted_runs(): void
+    {
+        // GIVEN: A task run that has been restarted multiple times
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun1       = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'restart_count'      => 0,
+            'started_at'         => now()->subHours(3),
+            'completed_at'       => now()->subHours(2),
+        ]);
+
+        $taskRun2               = TaskRunnerService::restart($taskRun1);
+        $taskRun2->started_at   = now()->subHours(2);
+        $taskRun2->completed_at = now()->subHour();
+        $taskRun2->save();
+
+        $taskRun3 = TaskRunnerService::restart($taskRun2);
+
+        // WHEN: Accessing historicalRuns relationship
+        $historicalRuns = $taskRun3->historicalRuns;
+
+        // THEN: Returns both soft-deleted runs ordered by most recent first
+        $this->assertEquals(2, $historicalRuns->count(), 'Should have 2 historical runs');
+        $this->assertEquals($taskRun2->id, $historicalRuns->first()->id, 'Most recent historical run should be first');
+        $this->assertEquals($taskRun1->id, $historicalRuns->last()->id, 'Oldest historical run should be last');
+    }
+
+    #[Test]
+    public function parent_run_relationship_returns_active_run(): void
+    {
+        // GIVEN: A task run that has been restarted
+        $taskDefinition = TaskDefinition::factory()->create();
+        $taskRun1       = TaskRun::factory()->create([
+            'task_definition_id' => $taskDefinition->id,
+            'started_at'         => now(),
+            'completed_at'       => now(),
+        ]);
+
+        $taskRun2 = TaskRunnerService::restart($taskRun1);
+
+        // Refresh to get updated parent_task_run_id
+        $taskRun1->refresh();
+
+        // WHEN: Accessing parentRun relationship on soft-deleted run
+        $parentRun = $taskRun1->parentRun;
+
+        // THEN: Returns the active run
+        $this->assertNotNull($parentRun, 'parentRun should not be null');
+        $this->assertEquals($taskRun2->id, $parentRun->id, 'parentRun should be the active run');
     }
 }

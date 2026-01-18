@@ -7,7 +7,6 @@
                     :task-run="taskRun"
                     class="bg-sky-950"
                     size="xs"
-                    @restart="$emit('restart')"
                 />
                 <ActionButton
                     v-if="isRunning"
@@ -96,7 +95,7 @@
 import TaskDefinitionMetadataModal from "@/components/Modules/TaskDefinitions/TaskDefinitionMetadataModal.vue";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import ShowTaskProcessesButton from "@/components/Modules/WorkflowCanvas/ShowTaskProcessesButton";
-import { activeWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
+import { activeWorkflowRun, refreshWorkflowRun } from "@/components/Modules/WorkflowDefinitions/store";
 import { dxWorkflowRun } from "@/components/Modules/WorkflowDefinitions/WorkflowRuns/config";
 import { TaskRun, WorkflowNode } from "@/types";
 import { FaSolidBarcode as MetaIcon } from "danx-icon";
@@ -107,7 +106,6 @@ const emit = defineEmits<{
     edit: void;
     remove: void;
     copy: void;
-    restart: void;
 }>();
 const props = defineProps<{
     workflowNode?: WorkflowNode;
@@ -120,7 +118,14 @@ const props = defineProps<{
 const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 
 const startNodeAction = dxWorkflowRun.getAction("start-node");
-const restartAction = dxTaskRun.getAction("restart");
+const restartAction = dxTaskRun.getAction("restart", {
+    onFinish: () => {
+        // Refresh the workflow run to pick up the new TaskRun that replaced the restarted one
+        if (activeWorkflowRun.value) {
+            refreshWorkflowRun(activeWorkflowRun.value);
+        }
+    }
+});
 const resumeAction = dxTaskRun.getAction("resume");
 const stopAction = dxTaskRun.getAction("stop");
 const isStopped = computed(() => ["Stopped"].includes(props.taskRun?.status));

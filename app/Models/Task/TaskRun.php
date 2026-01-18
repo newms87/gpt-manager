@@ -32,6 +32,9 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     use ActionModelTrait, AuditableTrait, HasDebugLogging, HasFactory, HasRelationCountersTrait, HasUsageTracking, HasWorkflowStatesTrait, SoftDeletes;
 
     protected $fillable = [
+        'parent_task_run_id',
+        'workflow_run_id',
+        'workflow_node_id',
         'started_at',
         'stopped_at',
         'completed_at',
@@ -39,6 +42,7 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
         'skipped_at',
         'task_input_id',
         'task_process_error_count',
+        'restart_count',
     ];
 
     public array $relationCounters = [
@@ -80,6 +84,26 @@ class TaskRun extends Model implements AuditableContract, WorkflowStatesContract
     public function taskInput(): BelongsTo|TaskInput
     {
         return $this->belongsTo(TaskInput::class);
+    }
+
+    /**
+     * The active task run that this historical (soft-deleted) run was replaced by.
+     * Only soft-deleted runs have a parent - active runs have NULL.
+     */
+    public function parentRun(): BelongsTo
+    {
+        return $this->belongsTo(TaskRun::class, 'parent_task_run_id');
+    }
+
+    /**
+     * Historical runs that were replaced by this active run.
+     * Returns soft-deleted runs ordered by most recent first.
+     */
+    public function historicalRuns(): HasMany
+    {
+        return $this->hasMany(TaskRun::class, 'parent_task_run_id')
+            ->onlyTrashed()
+            ->orderByDesc('created_at');
     }
 
     public function workflowRun(): BelongsTo|WorkflowDefinition
