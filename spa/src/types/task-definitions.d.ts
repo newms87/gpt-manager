@@ -88,6 +88,7 @@ export interface TaskRun extends TaskRunner {
 	output_artifacts_count: number;
 	inputArtifacts?: Artifact[];
 	outputArtifacts?: Artifact[];
+	historicalRuns?: TaskRun[];
 }
 
 export interface TaskProcess extends TaskRunner {

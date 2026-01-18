@@ -77,6 +77,7 @@ ActionRoute::routes('task-artifact-filters', new TaskArtifactFiltersController);
 ActionRoute::routes('task-inputs', new TaskInputsController);
 ActionRoute::routes('task-runs', new TaskRunsController, function () {
     Route::get('{taskRun}/errors', [TaskRunsController::class, 'errors']);
+    Route::get('{taskRun}/history', [TaskRunsController::class, 'history']);
 });
 ActionRoute::routes('task-processes', new TaskProcessesController, function () {
     Route::get('{taskProcess}/history', [TaskProcessesController::class, 'history']);

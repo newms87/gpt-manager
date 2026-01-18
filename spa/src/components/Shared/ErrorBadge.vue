@@ -1,9 +1,11 @@
 <template>
     <div
         v-if="errorCount && errorCount > 0"
-        class="flex items-center gap-1 px-2 py-1 bg-red-100 rounded-full cursor-pointer hover:bg-red-200 transition-colors"
+        class="flex items-center gap-1 px-2 py-1 bg-red-100 rounded-full cursor-pointer hover:bg-red-200 transition-colors nopan nodrag"
         :class="[badgeClass, { 'animate-pulse': animate }]"
-        @click="showErrorDialog = true"
+        @click.stop="showErrorDialog = true"
+        @mousedown.stop
+        @pointerdown.stop
     >
         <FaSolidTriangleExclamation class="w-3 h-3 text-red-600" />
         <span class="text-xs font-bold text-red-700">{{ errorCount }}</span>

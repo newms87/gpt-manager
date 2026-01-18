@@ -21,6 +21,7 @@ class TaskRunResource extends ActionResource
             'stopped_at'             => $taskRun->stopped_at,
             'failed_at'              => $taskRun->failed_at,
             'process_count'          => $taskRun->process_count,
+            'restart_count'          => $taskRun->restart_count,
             'error_count'            => $taskRun->task_process_error_count,
             'created_at'             => $taskRun->created_at,
             'updated_at'             => $taskRun->updated_at,

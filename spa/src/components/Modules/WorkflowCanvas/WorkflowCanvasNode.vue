@@ -4,6 +4,18 @@
             <LoadingSandLottie class="w-32" autoplay />
         </div>
 
+        <!-- Restart History Badge -->
+        <LabelPillWidget
+            v-if="taskRun?.restart_count"
+            :label="`${taskRun.restart_count} restart${taskRun.restart_count > 1 ? 's' : ''}`"
+            color="orange"
+            size="xs"
+            class="absolute top-[-0.5rem] left-[-0.5rem] z-20 whitespace-nowrap cursor-pointer hover:opacity-80 nopan nodrag"
+            @click.stop="isShowingHistory = true"
+            @mousedown.stop
+            @pointerdown.stop
+        />
+
         <!-- Error Badge -->
         <ErrorBadge
             v-if="taskRun"
@@ -66,6 +78,13 @@
                 />
             </div>
         </div>
+
+        <TaskRunHistoryDialog
+            v-if="isShowingHistory"
+            :task-run="taskRun"
+            :is-showing="isShowingHistory"
+            @close="isShowingHistory = false"
+        />
     </div>
 </template>
 
@@ -75,13 +94,14 @@ import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions/config";
 import { BaseTaskRunnerNode } from "@/components/Modules/TaskDefinitions/TaskRunners/Nodes";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import NodeHeaderBar from "@/components/Modules/WorkflowCanvas/NodeHeaderBar";
+import TaskRunHistoryDialog from "@/components/Modules/WorkflowCanvas/TaskRunHistoryDialog.vue";
 import { useWorkflowNode } from "@/components/Modules/WorkflowCanvas/useWorkflowNode";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
 import ErrorBadge from "@/components/Shared/ErrorBadge.vue";
 import { TaskRun, WorkflowDefinition, WorkflowRun } from "@/types";
 import { Node } from "@vue-flow/core";
-import { EditableDiv } from "quasar-ui-danx";
-import { computed } from "vue";
+import { EditableDiv, LabelPillWidget } from "quasar-ui-danx";
+import { computed, ref } from "vue";
 
 defineEmits<{
     (e: "copy", node: Node): void;
@@ -106,6 +126,7 @@ const taskDefinition = computed(() => workflowNode.value?.taskDefinition);
 const taskRun = computed<TaskRun>(() => props.workflowRun?.taskRuns?.find((tr) => tr.workflow_node_id == +props.node.id));
 
 const updateTaskDefinitionAction = dxTaskDefinition.getAction("update");
+const isShowingHistory = ref(false);
 
 const {
     taskRunner,

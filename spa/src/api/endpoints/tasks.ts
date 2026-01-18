@@ -35,6 +35,14 @@ export const tasks = {
 	),
 
 	/**
+	 * Task run history endpoint
+	 * @endpoint GET /task-runs/:id/history
+	 */
+	runHistory: createUrlBuilder<{ id: number }>(
+		(params) => `/task-runs/${params.id}/history`
+	),
+
+	/**
 	 * Task inputs endpoint
 	 * @endpoint /task-inputs
 	 */

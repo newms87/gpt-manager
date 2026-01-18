@@ -9,6 +9,7 @@ use App\Services\Task\TaskProcessRunnerService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Repositories\ActionRepository;
 use Override;
@@ -45,6 +46,10 @@ class TaskProcessRepository extends ActionRepository
 
     public function applyAction(string $action, $model = null, ?array $data = null)
     {
+        if ($model === null) {
+            throw new ValidationError('Task process not found');
+        }
+
         return match ($action) {
             'restart' => $this->restartTaskProcess($model),
             'resume'  => $this->resumeTaskProcess($model),
