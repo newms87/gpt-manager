@@ -47,7 +47,7 @@
                     size="xs"
                 />
             </div>
-            <template v-if="!isTaskRunning && !readonly">
+            <template v-if="!readonly">
                 <ActionButton
                     v-if="hasMetadata"
                     :icon="MetaIcon"
@@ -114,8 +114,6 @@ const props = defineProps<{
     loading?: boolean;
     readonly?: boolean;
 }>();
-
-const isTaskRunning = computed(() => ["Running"].includes(props.taskRun?.status));
 
 const startNodeAction = dxWorkflowRun.getAction("start-node");
 const restartAction = dxTaskRun.getAction("restart", {
