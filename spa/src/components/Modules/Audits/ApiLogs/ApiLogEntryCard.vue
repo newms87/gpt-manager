@@ -18,7 +18,7 @@
                 </LabelPillWidget>
                 <ElapsedTimer
                     :start-time="apiLog.started_at"
-                    :end-time="apiLog.finished_at"
+                    :end-time="effectiveEndTime"
                 />
                 <LabelPillWidget :color="isDark ? 'slate' : 'slate-soft'" size="sm">
                     {{ fDateTime(apiLog.created_at) }}
@@ -219,6 +219,23 @@ const responseData = computed(() => parseJsonSafely(props.apiLog.response));
 
 // Timeout indicator computed properties
 const isInProgress = computed(() => props.apiLog.status_code === null || props.apiLog.status_code === undefined);
+
+// Effective end time for ElapsedTimer - stops timer when finished or timed out
+const effectiveEndTime = computed(() => {
+    // If finished_at exists, use it
+    if (props.apiLog.finished_at) {
+        return props.apiLog.finished_at;
+    }
+    // If will_timeout_at has passed, use the timeout time to stop the timer
+    if (props.apiLog.will_timeout_at) {
+        const timeoutTime = new Date(props.apiLog.will_timeout_at).getTime();
+        if (timeoutTime <= Date.now()) {
+            return props.apiLog.will_timeout_at;
+        }
+    }
+    // Otherwise, truly in progress - no end time
+    return undefined;
+});
 
 // Reactive timestamp that updates every second to drive the timeout countdown
 const currentTime = ref(Date.now());

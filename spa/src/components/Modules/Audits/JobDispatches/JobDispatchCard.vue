@@ -63,7 +63,7 @@
                 <!-- Elapsed Timer -->
                 <ElapsedTimer
                     :start-time="job.ran_at"
-                    :end-time="job.completed_at"
+                    :end-time="effectiveEndTime"
                     size="sm"
                     :class="{ 'scale-110': isInProgress }"
                 />
@@ -320,6 +320,23 @@ const isLoadingErrors = ref(false);
 
 const jobStatus = computed(() => JOB_DISPATCH_STATUS.resolve(props.job.status));
 const isInProgress = computed(() => props.job.status === "Running");
+
+// Effective end time for ElapsedTimer - handles timed out jobs without completed_at
+const effectiveEndTime = computed(() => {
+    // If completed_at exists, use it
+    if (props.job.completed_at) {
+        return props.job.completed_at;
+    }
+    // If timeout_at has passed, use the timeout time to stop the timer
+    if (props.job.timeout_at) {
+        const timeoutTime = new Date(props.job.timeout_at).getTime();
+        if (timeoutTime <= Date.now()) {
+            return props.job.timeout_at;
+        }
+    }
+    // Otherwise, truly in progress - no end time
+    return undefined;
+});
 
 // Format time with seconds (e.g., "10:30:45am")
 function fTime(dateTime: string | null) {
