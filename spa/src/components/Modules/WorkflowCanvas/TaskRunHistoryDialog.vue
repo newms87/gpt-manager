@@ -82,20 +82,15 @@
 									class="text-xs"
 									color="purple"
 									size="xs"
-									@show="loadRunProcesses(run)"
 								/>
-								<div v-if="expandedSections[`processes-${run.id}`]" class="mt-2 bg-slate-800 rounded p-2 space-y-2">
-									<QSkeleton v-if="loadingProcesses[run.id]" class="h-16" />
-									<template v-else-if="run.processes">
-										<div v-for="process in run.processes" :key="process.id" class="text-sm text-slate-300">
-											<div class="flex items-center gap-2">
-												<LabelPillWidget :label="`pid: ${process.id}`" color="sky" size="xs" />
-												<LabelPillWidget v-if="process.operation" :label="process.operation" :color="getOperationColor(process.operation)" size="xs" />
-												<span class="truncate">{{ process.activity }}</span>
-												<WorkflowStatusTimerPill :runner="process" />
-											</div>
-										</div>
-									</template>
+								<div v-if="expandedSections[`processes-${run.id}`]" class="mt-2 bg-slate-800 rounded p-2">
+									<TaskProcessList
+										:filter="{ task_run_id: run.id, withTrashed: true }"
+										:show-batch-actions="false"
+										:enable-web-socket="false"
+										:fill-height="false"
+										:per-page="5"
+									/>
 								</div>
 							</div>
 
@@ -151,7 +146,7 @@ import { apiUrls } from "@/api";
 import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxTaskRun } from "@/components/Modules/TaskDefinitions/TaskRuns/config";
 import { WorkflowStatusTimerPill } from "@/components/Modules/WorkflowDefinitions/Shared";
-import { useHashedColor } from "@/composables/useHashedColor";
+import TaskProcessList from "@/components/Modules/WorkflowCanvas/TaskProcessList";
 import { TaskRun } from "@/types";
 import { FaSolidClockRotateLeft } from "danx-icon";
 import { QSkeleton, QSpinnerGears } from "quasar";
@@ -170,13 +165,8 @@ defineEmits<{
 const isLoading = ref(false);
 const historicalRuns = ref<TaskRun[]>([]);
 const expandedSections = reactive<Record<string, boolean>>({});
-const loadingProcesses = reactive<Record<number, boolean>>({});
 const loadingInputArtifacts = reactive<Record<number, boolean>>({});
 const loadingOutputArtifacts = reactive<Record<number, boolean>>({});
-
-function getOperationColor(operation: string | undefined) {
-	return useHashedColor(ref(operation)).value;
-}
 
 async function loadHistory() {
 	isLoading.value = true;
@@ -188,21 +178,6 @@ async function loadHistory() {
 		historicalRuns.value = [];
 	} finally {
 		isLoading.value = false;
-	}
-}
-
-async function loadRunProcesses(run: TaskRun) {
-	if (run.processes || loadingProcesses[run.id]) return;
-
-	loadingProcesses[run.id] = true;
-	try {
-		const result = await dxTaskRun.routes.details(run, { processes: true }, { params: { withTrashed: true } });
-		// Update the local run object since historicalRuns is not managed by the danx store
-		if (result?.processes) {
-			run.processes = result.processes;
-		}
-	} finally {
-		loadingProcesses[run.id] = false;
 	}
 }
 

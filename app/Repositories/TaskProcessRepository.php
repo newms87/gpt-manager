@@ -22,8 +22,15 @@ class TaskProcessRepository extends ActionRepository
 
     public function listQuery(): Builder
     {
-        return parent::listQuery()
+        $query = parent::listQuery()
             ->orderByDesc('id');
+
+        // Support withTrashed query parameter to include soft-deleted records
+        if (request()->boolean('withTrashed')) {
+            $query->withTrashed();
+        }
+
+        return $query;
     }
 
     public function applyAction(string $action, $model = null, ?array $data = null)
