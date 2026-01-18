@@ -222,9 +222,14 @@ function onThreadUpdated(updatedThread: AgentThread) {
 	// If the thread is still running, preserve any optimistic "thinking" message
 	if (updatedThread.is_running && collaborationThread.value?.chat_messages) {
 		// Find optimistic thinking messages (negative IDs with is_thinking flag)
-		const optimisticThinkingMessages = collaborationThread.value.chat_messages.filter(
-			msg => msg.id < 0 && msg.data?.is_thinking === true
-		);
+		// Give them a fresh future timestamp to ensure they stay at the bottom after sorting
+		const optimisticThinkingMessages = collaborationThread.value.chat_messages
+			.filter(msg => msg.id < 0 && msg.data?.is_thinking === true)
+			.map(msg => ({
+				...msg,
+				// Give it a future timestamp to ensure it stays at the bottom
+				timestamp: new Date(Date.now() + 1000).toISOString()
+			}));
 
 		if (optimisticThinkingMessages.length > 0) {
 			// Append optimistic thinking messages to the server's messages
@@ -324,8 +329,14 @@ async function startCollaboration(files: File[], prompt: string) {
 	if (!template.value) return;
 
 	// Create optimistic messages using helper
+	// Give assistant message a future timestamp to ensure it stays at the end after server updates
 	const userMsg = createOptimisticMessage({ role: "user", content: prompt });
-	const assistantMsg = createOptimisticMessage({ role: "assistant", content: "", isThinking: true });
+	const assistantMsg = createOptimisticMessage({
+		role: "assistant",
+		content: "",
+		isThinking: true,
+		timestampOffset: 1000 // 1 second in the future to ensure it stays at the end
+	});
 
 	// Create an optimistic thread to display immediately
 	collaborationThread.value = {
@@ -372,15 +383,17 @@ interface OptimisticMessageOptions {
 	role: "user" | "assistant";
 	content: string;
 	isThinking?: boolean;
+	timestampOffset?: number; // milliseconds to add to current time
 }
 
 function createOptimisticMessage(options: OptimisticMessageOptions) {
+	const timestamp = new Date(Date.now() + (options.timestampOffset || 0));
 	return {
 		id: getOptimisticId(),
 		role: options.role,
 		title: "",
 		content: options.content,
-		timestamp: new Date().toISOString(),
+		timestamp: timestamp.toISOString(),
 		...(options.isThinking ? { data: { is_thinking: true } } : {})
 	};
 }
@@ -395,8 +408,14 @@ async function sendMessage(payload: SendMessagePayload) {
 	isSaved.value = false;
 
 	// Create optimistic messages using helper
+	// Give assistant message a future timestamp to ensure it stays at the end after server updates
 	const userMsg = createOptimisticMessage({ role: "user", content: payload.message });
-	const assistantMsg = createOptimisticMessage({ role: "assistant", content: "", isThinking: true });
+	const assistantMsg = createOptimisticMessage({
+		role: "assistant",
+		content: "",
+		isThinking: true,
+		timestampOffset: 1000 // 1 second in the future to ensure it stays at the end
+	});
 
 	// Immediately add optimistic messages to the thread
 	const currentMessages = collaborationThread.value.chat_messages || [];

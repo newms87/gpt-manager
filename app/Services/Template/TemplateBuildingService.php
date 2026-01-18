@@ -16,6 +16,7 @@ use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
+use Newms87\Danx\Models\Job\JobDispatch;
 
 /**
  * Service for building HTML templates using an LLM agent.
@@ -29,7 +30,7 @@ class TemplateBuildingService
 
     protected const string BUILDER_AGENT_NAME = 'Template Builder';
 
-    protected const int DEFAULT_TIMEOUT = 300;
+    protected const int DEFAULT_TIMEOUT = 600;
 
     /**
      * Get the model to use for template building.
@@ -49,20 +50,33 @@ class TemplateBuildingService
         $template->refresh();
 
         if ($template->building_job_dispatch_id) {
-            // Already building - merge context into pending
-            $existing                        = $template->pending_build_context ?? [];
-            $existing[]                      = $context;
-            $template->pending_build_context = $existing;
-            $template->save();
+            // Check if the current job has timed out
+            $currentJob = JobDispatch::find($template->building_job_dispatch_id);
 
-            static::logDebug('Build queued - template already building', [
-                'template_id'           => $template->id,
-                'pending_context_count' => count($existing),
-            ]);
+            if ($currentJob?->isTimedOut()) {
+                // Job timed out - clear it and start fresh
+                static::logDebug('Previous build job timed out, starting new build', [
+                    'template_id'       => $template->id,
+                    'timed_out_job_id'  => $template->building_job_dispatch_id,
+                ]);
+                $template->building_job_dispatch_id = null;
+                // Fall through to start new build below
+            } else {
+                // Still running - queue the request
+                $existing                        = $template->pending_build_context ?? [];
+                $existing[]                      = $context;
+                $template->pending_build_context = $existing;
+                $template->save();
 
-            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+                static::logDebug('Build queued - template already building', [
+                    'template_id'           => $template->id,
+                    'pending_context_count' => count($existing),
+                ]);
 
-            return;
+                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+
+                return;
+            }
         }
 
         // Not building - start new build
@@ -207,20 +221,16 @@ class TemplateBuildingService
     }
 
     /**
-     * Build the prompt for the builder agent with instructions, current template content, and context.
+     * Build the prompt for the builder agent with current template content and context.
      *
-     * This ensures the builder agent knows:
-     * 1. Its role and JSON response format (from builder-agent.md)
-     * 2. The current template HTML/CSS content to modify
-     * 3. What modifications are requested (the context)
+     * Agent instructions are passed via api_options['instructions'] on the Agent,
+     * so this prompt only includes:
+     * 1. The current template HTML/CSS content to modify
+     * 2. What modifications are requested (the context)
      */
     protected function buildBuilderPrompt(TemplateDefinition $template, string $context): string
     {
-        $prompt = "# Template Builder Instructions\n\n";
-        $prompt .= $this->getBuilderAgentInstructions() . "\n\n";
-
-        $prompt .= "---\n\n";
-        $prompt .= "# Current Template State\n\n";
+        $prompt = "# Current Template State\n\n";
 
         // Include current HTML content if it exists
         if ($template->html_content) {
@@ -249,7 +259,7 @@ class TemplateBuildingService
         $prompt .= $context . "\n\n";
 
         $prompt .= "---\n\n";
-        $prompt .= 'Please provide your response in the JSON format specified in the instructions above.';
+        $prompt .= 'Please provide your response in the JSON format specified in your instructions.';
 
         return $prompt;
     }
@@ -368,12 +378,17 @@ class TemplateBuildingService
 
     /**
      * Find or create the builder agent.
+     *
+     * Instructions are stored in api_options so they're included with every API call,
+     * even when using previousResponseId optimization that skips old messages.
      */
     protected function findOrCreateBuilderAgent(): Agent
     {
         $agent = Agent::where('name', self::BUILDER_AGENT_NAME)
             ->whereNull('team_id')
             ->first();
+
+        $instructions = $this->getBuilderAgentInstructions();
 
         if (!$agent) {
             $model = $this->getBuilderModel();
@@ -383,6 +398,7 @@ class TemplateBuildingService
                 'model'       => $model,
                 'description' => 'Generates HTML templates from PDF/image sources through collaborative refinement.',
                 'api_options' => [
+                    'instructions'    => $instructions,
                     'response_format' => [
                         'type' => 'json_object',
                     ],
@@ -393,6 +409,34 @@ class TemplateBuildingService
                 'agent_id' => $agent->id,
                 'model'    => $model,
             ]);
+        } else {
+            // Update model and instructions if they differ from config
+            $model               = $this->getBuilderModel();
+            $currentInstructions = $agent->api_options['instructions'] ?? null;
+            $needsUpdate         = false;
+            $updates             = [];
+
+            if ($agent->model !== $model) {
+                $updates['model'] = $model;
+                $needsUpdate      = true;
+            }
+
+            if ($currentInstructions !== $instructions) {
+                $updates['api_options'] = array_merge($agent->api_options ?? [], [
+                    'instructions' => $instructions,
+                ]);
+                $needsUpdate = true;
+            }
+
+            if ($needsUpdate) {
+                $agent->update($updates);
+
+                static::logDebug('Updated Template Builder agent', [
+                    'agent_id'             => $agent->id,
+                    'model_updated'        => isset($updates['model']),
+                    'instructions_updated' => isset($updates['api_options']),
+                ]);
+            }
         }
 
         return $agent;

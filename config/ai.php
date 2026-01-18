@@ -63,8 +63,14 @@ return [
 
     // Template collaboration (conversation agent)
     'template_collaboration' => [
-        'model'   => env('AI_TEMPLATE_COLLABORATION_MODEL', 'gpt-5-nano'),
+        'model'   => env('AI_TEMPLATE_COLLABORATION_MODEL', 'gpt-5-mini'),
         'timeout' => env('AI_TEMPLATE_COLLABORATION_TIMEOUT', 120),
+    ],
+
+    // Template planning (planning agent for complex requests)
+    'template_planning' => [
+        'model'   => env('AI_TEMPLATE_PLANNING_MODEL', 'gpt-5.2'),
+        'timeout' => env('AI_TEMPLATE_PLANNING_TIMEOUT', 300),
     ],
 
     // Template building (HTML/CSS generation agent)

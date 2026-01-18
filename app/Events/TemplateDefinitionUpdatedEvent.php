@@ -30,12 +30,12 @@ class TemplateDefinitionUpdatedEvent extends ModelSavedEvent
     protected function updatedData(): array
     {
         return TemplateDefinitionResource::make($this->templateDefinition, [
-            '*'                     => false,
-            'name'                  => true,
-            'html_content'          => true,
-            'css_content'           => true,
-            'building_job_dispatch' => true,
-            'pending_build_context' => true,
-        ]);
+            '*'                        => false,
+            'name'                     => true,
+            'building_job_dispatch_id' => true,
+        ]) + [
+            // Add a simple boolean flag instead of sending the full pending context array
+            'has_pending_build' => !empty($this->templateDefinition->pending_build_context),
+        ];
     }
 }

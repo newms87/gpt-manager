@@ -97,13 +97,9 @@ class TemplateCollaborationService
                             'description' => 'User-facing conversational response',
                         ],
                         'action' => [
-                            'type'        => ['object', 'null'],
-                            'description' => 'Optional action to trigger template modification',
-                            'properties'  => [
-                                'type'    => ['type' => 'string', 'enum' => ['update_template']],
-                                'context' => ['type' => 'string', 'description' => 'Instructions for the HTML builder agent'],
-                            ],
-                            'required' => ['type', 'context'],
+                            'type'        => ['string', 'null'],
+                            'enum'        => ['plan', 'build', null],
+                            'description' => 'Action to trigger: plan (complex changes), build (simple changes), or null (conversation only)',
                         ],
                     ],
                     'required'             => ['message'],
@@ -138,7 +134,10 @@ class TemplateCollaborationService
     /**
      * Process the conversation agent's response.
      *
-     * If the response includes an action, dispatch the appropriate job.
+     * Routes to planning or building based on the action type:
+     * - "plan" -> TemplatePlanningService (for complex changes)
+     * - "build" -> TemplateBuildingService (for simple changes)
+     * - null -> no dispatch (conversation only)
      */
     protected function processConversationResponse(AgentThread $thread, ?AgentThreadMessage $responseMessage): void
     {
@@ -156,12 +155,11 @@ class TemplateCollaborationService
             return;
         }
 
-        // Check for action
-        $action = $responseData['action'] ?? null;
+        $action      = $responseData['action']  ?? null;
+        $userMessage = $responseData['message'] ?? null;
 
         // Extract the user-facing message and update the message content
         // This ensures the frontend receives clean text instead of raw JSON
-        $userMessage = $responseData['message'] ?? null;
         if ($userMessage) {
             $responseMessage->content = $userMessage;
 
@@ -173,21 +171,43 @@ class TemplateCollaborationService
             $responseMessage->save();
         }
 
-        if ($action && is_array($action) && ($action['type'] ?? null) === 'update_template') {
-            $context = $action['context'] ?? '';
-
-            if ($context && $thread->collaboratable instanceof TemplateDefinition) {
-                static::logDebug('Dispatching template build job', [
-                    'template_id'    => $thread->collaboratable_id,
-                    'context_length' => strlen($context),
-                ]);
-
-                app(TemplateBuildingService::class)->dispatchBuild(
-                    $thread->collaboratable,
-                    $context
-                );
-            }
+        if (!$thread->collaboratable instanceof TemplateDefinition) {
+            return;
         }
+
+        $template = $thread->collaboratable;
+
+        // Get the last user message for context
+        $lastUserMessage = $thread->messages()
+            ->where('role', 'user')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        $userContext = $lastUserMessage?->content ?? '';
+
+        if ($action === 'plan') {
+            static::logDebug('Dispatching template planning', [
+                'template_id'    => $template->id,
+                'context_length' => strlen($userContext),
+            ]);
+
+            app(TemplatePlanningService::class)->dispatchPlan(
+                $template,
+                $userContext,
+                $thread
+            );
+        } elseif ($action === 'build') {
+            static::logDebug('Dispatching template build', [
+                'template_id'    => $template->id,
+                'context_length' => strlen($userContext),
+            ]);
+
+            app(TemplateBuildingService::class)->dispatchBuild(
+                $template,
+                $userContext
+            );
+        }
+        // If action is null, no dispatch needed - conversation only
     }
 
     /**
@@ -224,17 +244,31 @@ class TemplateCollaborationService
                 'model'    => $model,
             ]);
         } else {
-            // Update existing agent if instructions are missing or outdated
+            // Update model and instructions if they differ from config
+            $model               = $this->getConversationModel();
             $currentInstructions = $agent->api_options['instructions'] ?? null;
-            if ($currentInstructions !== $instructions) {
-                $agent->update([
-                    'api_options' => array_merge($agent->api_options ?? [], [
-                        'instructions' => $instructions,
-                    ]),
-                ]);
+            $needsUpdate         = false;
+            $updates             = [];
 
-                static::logDebug('Updated Conversation Agent instructions', [
-                    'agent_id' => $agent->id,
+            if ($agent->model !== $model) {
+                $updates['model'] = $model;
+                $needsUpdate      = true;
+            }
+
+            if ($currentInstructions !== $instructions) {
+                $updates['api_options'] = array_merge($agent->api_options ?? [], [
+                    'instructions' => $instructions,
+                ]);
+                $needsUpdate = true;
+            }
+
+            if ($needsUpdate) {
+                $agent->update($updates);
+
+                static::logDebug('Updated Conversation Agent', [
+                    'agent_id'             => $agent->id,
+                    'model_updated'        => isset($updates['model']),
+                    'instructions_updated' => isset($updates['api_options']),
                 ]);
             }
         }

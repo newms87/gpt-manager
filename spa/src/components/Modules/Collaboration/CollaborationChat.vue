@@ -161,8 +161,11 @@ const visibleMessages = computed<AgentThreadMessage[]>(() => {
 			return dateA - dateB;
 		}
 		// When timestamps are equal, sort by ID for stable ordering
+		if (a.id < 0 && b.id < 0) {
+			// For negative IDs (optimistic): higher value first (-1 before -2)
+			return b.id - a.id;
+		}
 		// For positive IDs: ascending (1, 2, 3)
-		// For negative IDs (optimistic): -1 before -2 before -3 (higher value first)
 		return a.id - b.id;
 	});
 
