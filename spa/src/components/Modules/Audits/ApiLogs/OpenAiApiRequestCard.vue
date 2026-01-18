@@ -24,25 +24,14 @@
 
         <!-- Instructions -->
         <div v-if="requestData?.instructions">
-            <div class="flex items-center gap-2 mb-2">
-                <div :class="themeClass('text-slate-200', 'text-slate-700')" class="text-sm font-bold">Instructions</div>
-                <ShowHideButton v-model="showInstructions" label="" size="xs" color="sky-invert" />
-            </div>
-            <div v-if="showInstructions" :class="themeClass('text-slate-300', 'text-slate-600')" class="text-sm">
-                <div v-if="!showFullInstructions && instructionsPreview" class="mb-2">
-                    {{ instructionsPreview }}
-                    <ActionButton
-                        label="Show more"
-                        color="sky"
-                        size="xs"
-                        class="ml-2"
-                        @click="showFullInstructions = true"
-                    />
-                </div>
-                <div v-else class="whitespace-pre-wrap">
-                    {{ requestData.instructions }}
-                </div>
-            </div>
+            <div :class="themeClass('text-slate-200', 'text-slate-700')" class="text-sm font-bold mb-2">Instructions</div>
+            <CodeViewer
+                :model-value="requestData.instructions"
+                format="markdown"
+                :theme="isDark ? 'dark' : 'light'"
+                collapsible
+                hide-footer
+            />
         </div>
 
         <!-- Input Messages -->
@@ -188,8 +177,6 @@ const props = defineProps<{
 }>();
 
 // Toggle states
-const showInstructions = ref(true);
-const showFullInstructions = ref(false);
 const showResponseFormat = ref(false);
 const expandedMessageFiles = ref<Record<number, boolean>>({});
 const expandedMessageText = ref<Record<number, boolean>>({});
@@ -202,16 +189,6 @@ const normalizedInput = computed(() => {
         return [{ role: "user", content: [{ type: "input_text", text: input }] }];
     }
     return input;
-});
-
-const instructionsPreview = computed(() => {
-    if (!props.requestData?.instructions) return "";
-    const instructions = props.requestData.instructions;
-    if (instructions.length <= 200) {
-        showFullInstructions.value = true;
-        return "";
-    }
-    return instructions.substring(0, 200) + "...";
 });
 
 function getRoleIcon(role: string) {

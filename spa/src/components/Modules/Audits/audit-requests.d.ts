@@ -13,7 +13,7 @@ export interface ApiLog {
     id: string;
     api_class: string;
     service_name: string;
-    status_code: number;
+    status_code: number | null;
     method: string;
     url: string;
     request: string | AnyObject;
@@ -23,6 +23,7 @@ export interface ApiLog {
     run_time_ms: number | string;
     started_at?: string;
     finished_at?: string;
+    will_timeout_at?: string;
     created_at: string;
 }
 

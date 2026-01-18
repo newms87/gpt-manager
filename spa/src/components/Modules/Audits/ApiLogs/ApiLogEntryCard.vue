@@ -7,6 +7,15 @@
                 <ApiStatusCodeBadge :status-code="apiLog.status_code" />
             </div>
             <div class="flex-x flex-shrink-0 space-x-2">
+                <!-- Timeout indicator for in-progress requests -->
+                <LabelPillWidget
+                    v-if="isInProgress && apiLog.will_timeout_at"
+                    :color="isNearTimeout ? 'red' : 'amber'"
+                    size="sm"
+                >
+                    Timeout {{ timeoutDisplay }}
+                    <QTooltip class="text-base">Will timeout at {{ fDateTimeMs(apiLog.will_timeout_at) }}</QTooltip>
+                </LabelPillWidget>
                 <ElapsedTimer
                     :start-time="apiLog.started_at"
                     :end-time="apiLog.finished_at"
@@ -143,19 +152,22 @@ const requestHeaders = computed(() => Object.keys(props.apiLog.request_headers).
 })));
 
 const methodClass = computed(() => {
-    switch (props.apiLog.method) {
-        case "GET":
-            return "bg-sky-600";
-        case "POST":
-            return "bg-lime-700";
-        case "PUT":
-            return "bg-amber-600";
-        case "PATCH":
-            return "bg-indigo-500";
-        case "DELETE":
-        default:
-            return "bg-red-800";
-    }
+    const darkClasses: Record<string, string> = {
+        GET: "bg-sky-600 text-sky-100",
+        POST: "bg-lime-700 text-lime-100",
+        PUT: "bg-amber-600 text-amber-100",
+        PATCH: "bg-indigo-500 text-indigo-100",
+        DELETE: "bg-red-800 text-red-100"
+    };
+    const lightClasses: Record<string, string> = {
+        GET: "bg-sky-100 text-sky-800 border border-sky-300",
+        POST: "bg-lime-100 text-lime-800 border border-lime-300",
+        PUT: "bg-amber-100 text-amber-800 border border-amber-300",
+        PATCH: "bg-indigo-100 text-indigo-800 border border-indigo-300",
+        DELETE: "bg-red-100 text-red-800 border border-red-300"
+    };
+    const classes = isDark.value ? darkClasses : lightClasses;
+    return classes[props.apiLog.method] || classes.DELETE;
 });
 
 const decodedUrl = computed(() => decodeURIComponent(props.apiLog.url).replace(/ /g, "+"));
@@ -204,4 +216,29 @@ function parseJsonSafely(data: string | object): object | null {
 
 const requestData = computed(() => parseJsonSafely(props.apiLog.request));
 const responseData = computed(() => parseJsonSafely(props.apiLog.response));
+
+// Timeout indicator computed properties
+const isInProgress = computed(() => props.apiLog.status_code === null || props.apiLog.status_code === undefined);
+
+const secondsUntilTimeout = computed(() => {
+    if (!props.apiLog.will_timeout_at) return null;
+    const timeoutTime = new Date(props.apiLog.will_timeout_at).getTime();
+    const now = Date.now();
+    return Math.max(0, Math.floor((timeoutTime - now) / 1000));
+});
+
+const isNearTimeout = computed(() => {
+    const seconds = secondsUntilTimeout.value;
+    return seconds !== null && seconds <= 30;
+});
+
+const timeoutDisplay = computed(() => {
+    const seconds = secondsUntilTimeout.value;
+    if (seconds === null) return "";
+    if (seconds <= 0) return "now";
+    if (seconds < 60) return `in ${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `in ${minutes}m ${remainingSeconds}s`;
+});
 </script>
