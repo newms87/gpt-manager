@@ -1,7 +1,7 @@
 <template>
     <div class="relative flex flex-col overflow-hidden">
-        <div class="flex-x gap-2" :class="dense ? 'mb-4' : 'mb-8'">
-            <div class="flex-grow text-lg" :class="titleClass">{{ computedTitle }}</div>
+        <div class="flex-x gap-2 mb-4">
+            <div class="flex-grow text-lg" :class="themeClass('text-slate-200', 'text-slate-800')">Child Artifacts</div>
             <SearchBox
                 v-model="searchText"
                 class="w-96"
@@ -15,7 +15,7 @@
                     <QSkeleton v-for="i in pagination.perPage" :key="i" class="h-48 rounded-lg" />
                 </div>
             </template>
-            <div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Artifacts</div>
+            <div v-else-if="artifacts.length === 0" class="text-xl text-center text-gray-500">No Child Artifacts</div>
             <div v-else class="relative h-full overflow-y-auto">
                 <LoadingOverlay v-if="isLoading && artifacts.length > 0" />
 
@@ -24,66 +24,53 @@
                         v-for="artifact in artifacts"
                         :key="artifact.id"
                         :artifact="artifact"
-                        :level="level"
-                        @open-dialog="openArtifactDialog"
+                        @open-dialog="(art, tab) => emit('navigate', art, tab)"
                     />
                 </div>
             </div>
         </div>
 
         <PaginationNavigator
-            v-if="pagination.total > 12"
+            v-if="pagination.total > 10"
             v-model="pagination"
             class="bg-sky-950 text-slate-400 py-2 mt-4 px-3 shadow-lg rounded-lg"
-            remember-key="artifact-filter-list"
-            :page-sizes="[12, 24, 48, 96]"
-            :default-size="12"
+            remember-key="child-artifact-list"
         />
-
-        <!-- Single shared dialog for artifact details -->
-        <ArtifactDetailDialog ref="artifactDetailDialogRef" />
     </div>
 </template>
 
 <script setup lang="ts">
 import ArtifactCard from "@/components/Modules/Artifacts/ArtifactCard.vue";
-import ArtifactDetailDialog from "@/components/Modules/Artifacts/ArtifactDetailDialog.vue";
 import ArtifactFilterButton from "@/components/Modules/Artifacts/ArtifactFilterButton.vue";
 import { dxArtifact } from "@/components/Modules/Artifacts/config";
 import { LoadingOverlay, PaginationNavigator, SearchBox } from "@/components/Shared";
+import { useAuditCardTheme } from "@/composables/useAuditCardTheme";
 import { Artifact } from "@/types";
 import { PaginationModel } from "@/types/Pagination";
 import { AnyObject, ListControlsPagination } from "quasar-ui-danx";
 import { QSkeleton } from "quasar";
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
+const props = defineProps<{
+    parentArtifactId: number;
+}>();
+
 type ContentTab = "text" | "files" | "json" | "meta" | "children";
 
-const props = withDefaults(defineProps<{
-    title?: string;
-    titleClass?: string;
-    filter?: AnyObject;
-    dense?: boolean;
-    level?: number;
-}>(), {
-    titleClass: "",
-    title: null,
-    filter: null,
-    level: 0
-});
+const emit = defineEmits<{
+    navigate: [artifact: Artifact, tab: ContentTab];
+}>();
 
-// Reference to the artifact detail dialog
-const artifactDetailDialogRef = ref<InstanceType<typeof ArtifactDetailDialog> | null>(null);
+const { themeClass } = useAuditCardTheme();
 
 // Artifacts data
 const artifacts = shallowRef<Artifact[]>([]);
 const isLoading = ref(false);
 
-const computedTitle = computed(() => props.title === null ? (props.level ? `Level ${props.level} Artifacts` : "Top-Level Artifacts") : props.title);
 // Pagination state
 const pagination = ref<PaginationModel>({
     page: 1,
-    perPage: 12,
+    perPage: 10,
     total: 0
 });
 
@@ -91,9 +78,9 @@ const pagination = ref<PaginationModel>({
 const searchText = ref("");
 const filters = ref<AnyObject>({});
 
-// Merge parent filter (like parent_artifact_id) with filters from filter component
+// Merge parent filter with filters from filter component
 const mergedFilters = computed(() => {
-    return { ...props.filter, ...filters.value, keywords: searchText.value };
+    return { parent_artifact_id: props.parentArtifactId, ...filters.value, keywords: searchText.value };
 });
 
 // Requested fields for artifacts
@@ -128,13 +115,6 @@ async function loadArtifacts() {
     artifacts.value = results.data as Artifact[];
     pagination.value.total = results.meta.total || 0;
     isLoading.value = false;
-}
-
-/**
- * Open the shared artifact detail dialog
- */
-function openArtifactDialog(artifact: Artifact, tab: ContentTab) {
-    artifactDetailDialogRef.value?.open(artifact, tab);
 }
 
 // Initial load

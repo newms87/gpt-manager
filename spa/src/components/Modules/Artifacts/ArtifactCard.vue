@@ -1,197 +1,251 @@
 <template>
-    <div class="bg-slate-900 p-2 rounded-lg">
-        <div class="flex-x mb-2 space-x-2 w-full max-w-full overflow-hidden">
-            <LabelPillWidget :label="idLabel" color="sky" size="xs" class="flex-shrink-0" />
-            <LabelPillWidget
-                v-if="artifact.task_process_id"
-                :label="`pid: ${artifact.task_process_id}`"
-                color="sky"
-                size="xs"
-                class="cursor-pointer hover:outline outline-2 outline-sky-700 underline hover:text-sky-300 whitespace-nowrap"
-                :class="{'outline !outline-4 outline-sky-400 !text-sky-300': isShowingTaskProcess}"
-                @click="toggleShowTaskProcess"
-            />
-            <LabelPillWidget :label="fDateTime(artifact.created_at)" color="blue" size="xs" class="flex-shrink-0" />
-            <LabelPillWidget :label="artifact.position" color="green" size="xs" class="flex-shrink-0" />
-            <div class="flex-grow min-w-0 overflow-hidden">{{ artifact.name }}</div>
-            <ShowHideButton
-                v-if="artifact.text_content"
-                v-model="isShowingText"
-                class="bg-green-900 flex-shrink-0"
-                size="sm"
-                :show-icon="TextIcon"
-                tooltip="Show Text"
-            />
-            <ShowHideButton
-                v-if="artifact.files?.length > 0"
-                v-model="isShowingFiles"
-                class="bg-amber-900 flex-shrink-0"
-                size="sm"
-                :show-icon="FilesIcon"
-                tooltip="Show Files"
-            />
-            <ShowHideButton
-                v-if="artifact.json_content"
-                v-model="isShowingJson"
-                class="bg-purple-700 flex-shrink-0"
-                size="sm"
-                :show-icon="JsonIcon"
-                tooltip="Show Json Content"
-            />
-            <ShowHideButton
-                v-if="artifact.meta"
-                v-model="isShowingMeta"
-                class="bg-slate-500 text-slate-300 flex-shrink-0"
-                size="sm"
-                :show-icon="MetaIcon"
-                tooltip="Show Artifact Meta"
-            />
-            <ShowHideButton
-                v-if="hasGroup"
-                v-model="isShowingGroup"
-                class="bg-indigo-700 flex-shrink-0"
-                size="sm"
-                :show-icon="GroupIcon"
-                tooltip="Show Child Artifacts"
-                :label="artifact.child_artifacts_count"
-            />
-            <ShowHideButton
-                v-if="typeCount > 1"
-                :model-value="isShowingAll"
-                class="bg-sky-900 flex-shrink-0"
-                size="sm"
-                tooltip="Show All Data"
-                @update:model-value="onToggleAll()"
-            />
-        </div>
-        <ListTransition>
-            <div v-if="isShowingTaskProcess">
-                <NodeTaskProcessCard v-if="taskProcess" :task-process="taskProcess" class="bg-slate-700 p-4" />
-                <QSkeleton v-else class="h-20 w-full" />
+    <QCard
+        :class="themeClass('bg-slate-700', 'bg-white border border-slate-200')"
+        class="overflow-hidden shadow-lg"
+    >
+        <!-- Header Section -->
+        <div class="p-3">
+            <!-- Top row: ID, Position, Model, Timestamp -->
+            <div class="flex items-center gap-2 flex-wrap mb-2">
+                <LabelPillWidget
+                    :label="`#${artifact.id}`"
+                    :color="themeClass('sky', 'sky-soft')"
+                    size="xs"
+                />
+                <LabelPillWidget
+                    :label="`pos: ${artifact.position}`"
+                    :color="themeClass('emerald', 'emerald-soft')"
+                    size="xs"
+                />
+                <LabelPillWidget
+                    v-if="artifact.model"
+                    :label="artifact.model"
+                    :color="themeClass('purple', 'purple-soft')"
+                    size="xs"
+                />
+                <div class="flex-1" />
+                <LabelPillWidget
+                    :label="fDateTime(artifact.created_at)"
+                    :color="themeClass('slate', 'slate-soft')"
+                    size="xs"
+                />
             </div>
-            <div v-if="hasFiles && isShowingFiles">
-                <div class="flex items-stretch justify-start flex-wrap gap-2">
-                    <div
-                        v-for="file in artifact.files"
-                        :key="'file-upload-' + file.id"
-                        class="flex flex-col items-center"
+
+            <!-- Artifact Name row with icon buttons on right -->
+            <div class="flex items-start gap-2">
+                <div class="flex-1 min-w-0">
+                    <!-- Artifact Name (prominent, 2-line clamp) -->
+                    <h3
+                        :class="themeClass('text-slate-100', 'text-slate-800')"
+                        class="text-sm font-semibold line-clamp-2 mb-1"
                     >
-                        <FilePreview
-                            class="cursor-pointer bg-gray-200 w-32 h-32"
-                            :file="file"
-                            :related-files="artifact.files"
-                            downloadable
+                        {{ artifact.name }}
+                    </h3>
+
+                    <!-- Transform indicator if original_artifact_id -->
+                    <div v-if="artifact.original_artifact_id" class="flex items-center gap-1 text-xs">
+                        <LabelPillWidget
+                            :label="`Transformed from #${artifact.original_artifact_id}`"
+                            :color="themeClass('amber', 'amber-soft')"
+                            size="xs"
                         />
-                        <div
-                            class="text-xs text-gray-400 mt-1 w-32 text-center truncate"
-                            :title="(file.page_number) + '. ' + file.filename"
-                        >
-                            {{ file.page_number }}. {{ file.filename }}
-                        </div>
                     </div>
                 </div>
+
+                <!-- Action buttons on right side -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <!-- Text button -->
+                    <ActionButton
+                        v-if="hasText"
+                        :icon="TextIcon"
+                        :color="themeClass('green-invert', 'green-soft')"
+                        size="md"
+                        :tooltip="`Text ${textCount}`"
+                        @click="emit('open-dialog', artifact, 'text')"
+                    >
+                        <span
+                            :class="themeClass('text-slate-400', 'text-slate-500')"
+                            class="ml-1 text-sm font-medium"
+                        >
+                            {{ textCount }}
+                        </span>
+                    </ActionButton>
+
+                    <!-- Files button -->
+                    <ActionButton
+                        v-if="hasFiles"
+                        :icon="FilesIcon"
+                        :color="themeClass('orange', 'orange')"
+                        size="md"
+                        :tooltip="`Files ${filesCount}`"
+                        @click="emit('open-dialog', artifact, 'files')"
+                    >
+                        <span
+                            :class="themeClass('text-slate-400', 'text-slate-500')"
+                            class="ml-1 text-sm font-medium"
+                        >
+                            {{ filesCount }}
+                        </span>
+                    </ActionButton>
+
+                    <!-- JSON button -->
+                    <ActionButton
+                        v-if="hasJson"
+                        :icon="JsonIcon"
+                        :color="themeClass('purple', 'purple')"
+                        size="md"
+                        :tooltip="`JSON ${jsonCount}`"
+                        @click="emit('open-dialog', artifact, 'json')"
+                    >
+                        <span
+                            :class="themeClass('text-slate-400', 'text-slate-500')"
+                            class="ml-1 text-sm font-medium"
+                        >
+                            {{ jsonCount }}
+                        </span>
+                    </ActionButton>
+
+                    <!-- Meta button -->
+                    <ActionButton
+                        v-if="hasMeta"
+                        :icon="MetaIcon"
+                        :color="themeClass('slate-invert', 'slate-soft')"
+                        size="md"
+                        :tooltip="`Meta ${metaCount}`"
+                        @click="emit('open-dialog', artifact, 'meta')"
+                    >
+                        <span
+                            :class="themeClass('text-slate-400', 'text-slate-500')"
+                            class="ml-1 text-sm font-medium"
+                        >
+                            {{ metaCount }}
+                        </span>
+                    </ActionButton>
+
+                    <!-- Children button -->
+                    <ActionButton
+                        v-if="hasGroup"
+                        :icon="GroupIcon"
+                        :color="themeClass('blue-invert', 'blue-soft')"
+                        size="md"
+                        :tooltip="`Children ${childrenCount}`"
+                        @click="emit('open-dialog', artifact, 'children')"
+                    >
+                        <span
+                            :class="themeClass('text-slate-400', 'text-slate-500')"
+                            class="ml-1 text-sm font-medium"
+                        >
+                            {{ childrenCount }}
+                        </span>
+                    </ActionButton>
+                </div>
             </div>
-            <div v-if="hasText && isShowingText">
-                <pre class="text-sm text-slate-300 whitespace-pre-wrap bg-slate-800 p-3 rounded">{{ artifact.text_content }}</pre>
-            </div>
-            <div v-if="hasJson && isShowingJson">
-                <CodeViewer
-                    :model-value="artifact.json_content"
-                    format="yaml"
-                />
-            </div>
-            <div v-if="hasMeta && isShowingMeta">
-                <CodeViewer
-                    :model-value="artifact.meta"
-                    format="yaml"
-                />
-            </div>
-            <ArtifactList
-                v-if="hasGroup && isShowingGroup"
-                :filter="{parent_artifact_id: artifact.id}"
-                dense
-                class="bg-slate-800 p-4"
-                :level="(level||0)+1"
+        </div>
+
+        <!-- Metadata Bar (if task_process_id) -->
+        <div
+            v-if="artifact.task_process_id"
+            :class="themeClass('bg-slate-800/50 border-slate-600', 'bg-slate-50 border-slate-200')"
+            class="border-t border-b px-3 py-2"
+        >
+            <LabelPillWidget
+                :label="`Process #${artifact.task_process_id}`"
+                :color="themeClass('cyan', 'cyan-soft')"
+                size="xs"
+                class="cursor-pointer hover:outline outline-2 outline-cyan-500"
+                :class="{'outline !outline-4 !outline-cyan-400': isShowingTaskProcess}"
+                @click="toggleShowTaskProcess"
             />
-        </ListTransition>
-    </div>
+        </div>
+
+        <!-- Task Process Expandable Section (kept inline since it's context, not content) -->
+        <QSlideTransition>
+            <div v-if="isShowingTaskProcess" :class="[themeClass('bg-slate-800 border-slate-600', 'bg-slate-100 border-slate-200'), 'border-t']">
+                <div :class="themeClass('bg-slate-700 border-slate-600', 'bg-white border-slate-200')" class="border-b px-3 py-2 flex items-center justify-between">
+                    <span :class="themeClass('text-cyan-300', 'text-cyan-700')" class="font-medium text-sm">Task Process</span>
+                    <ActionButton
+                        type="cancel"
+                        color="slate"
+                        size="xs"
+                        tooltip="Close task process"
+                        @click="isShowingTaskProcess = false"
+                    />
+                </div>
+                <div class="p-3">
+                    <NodeTaskProcessCard v-if="taskProcess" :task-process="taskProcess" :class="themeClass('bg-slate-600', 'bg-white')" class="p-3" />
+                    <QSkeleton v-else class="h-20 w-full" />
+                </div>
+            </div>
+        </QSlideTransition>
+    </QCard>
 </template>
+
 <script setup lang="ts">
-import ArtifactList from "@/components/Modules/Artifacts/ArtifactList";
 import { dxTaskProcess } from "@/components/Modules/TaskDefinitions/TaskRuns/TaskProcesses/config";
 import NodeTaskProcessCard from "@/components/Modules/WorkflowCanvas/NodeTaskProcessCard";
-import { useStoredFileUpdates } from "@/composables/useStoredFileUpdates";
+import { useAuditCardTheme } from "@/composables/useAuditCardTheme";
 import { Artifact, TaskProcess } from "@/types";
 import {
-    FaSolidBarcode as MetaIcon,
-    FaSolidDatabase as JsonIcon,
-    FaSolidFile as FilesIcon,
-    FaSolidLayerGroup as GroupIcon,
-    FaSolidT as TextIcon
+    FaSolidCircleInfo as MetaIcon,
+    FaSolidCode as JsonIcon,
+    FaSolidFileLines as TextIcon,
+    FaSolidFolder as FilesIcon,
+    FaSolidLayerGroup as GroupIcon
 } from "danx-icon";
-import { CodeViewer, fDateTime, FilePreview, LabelPillWidget, ListTransition, ShowHideButton } from "quasar-ui-danx";
-import { computed, ref, shallowRef, watch } from "vue";
+import { ActionButton, fDateTime, LabelPillWidget } from "quasar-ui-danx";
+import { QCard, QSkeleton, QSlideTransition } from "quasar";
+import { computed, ref, shallowRef } from "vue";
 
-const props = defineProps<{
-    artifact: Artifact,
-    show?: boolean;
-    showText?: boolean;
-    showFiles?: boolean;
-    showJson?: boolean;
-    showMeta?: boolean;
-    showGroup?: boolean;
+type ContentTab = "text" | "files" | "json" | "meta" | "children";
+
+const props = withDefaults(defineProps<{
+    artifact: Artifact;
     level?: number;
+}>(), {
+    level: 0
+});
+
+const emit = defineEmits<{
+    "open-dialog": [artifact: Artifact, tab: ContentTab];
 }>();
 
+const { themeClass } = useAuditCardTheme();
+
+// Content type checks
 const hasText = computed(() => !!props.artifact.text_content);
 const hasFiles = computed(() => !!props.artifact.files?.length);
 const hasJson = computed(() => !!props.artifact.json_content);
 const hasMeta = computed(() => !!props.artifact.meta);
 const hasGroup = computed(() => (props.artifact.child_artifacts_count || 0) > 0);
-const typeCount = computed(() => [hasText.value, hasJson.value, hasFiles.value, hasGroup.value].filter(Boolean).length);
-const isShowingText = ref(props.showText);
-const isShowingFiles = ref(props.showFiles);
-const isShowingJson = ref(props.showJson);
-const isShowingMeta = ref(props.showMeta);
-const isShowingGroup = ref(props.showGroup);
+
+// Content counts
+const textCount = computed(() => {
+    if (!props.artifact.text_content) return 0;
+    return props.artifact.text_content.length;
+});
+
+const filesCount = computed(() => props.artifact.files?.length || 0);
+
+const jsonCount = computed(() => {
+    if (!props.artifact.json_content) return 0;
+    if (Array.isArray(props.artifact.json_content)) {
+        return props.artifact.json_content.length;
+    }
+    return Object.keys(props.artifact.json_content).length;
+});
+
+const metaCount = computed(() => {
+    if (!props.artifact.meta) return 0;
+    if (Array.isArray(props.artifact.meta)) {
+        return props.artifact.meta.length;
+    }
+    return Object.keys(props.artifact.meta).length;
+});
+
+const childrenCount = computed(() => props.artifact.child_artifacts_count || 0);
+
+// Task process state
 const isShowingTaskProcess = ref(false);
-
-const idLabel = computed(() => "Artifact: " + (props.artifact.original_artifact_id ? props.artifact.original_artifact_id + " -> " : "") + props.artifact.id);
-
-const isShowingAll = computed(() =>
-    (!hasText.value || isShowingText.value) &&
-    (!hasFiles.value || isShowingFiles.value) &&
-    (!hasJson.value || isShowingJson.value) &&
-    (!hasMeta.value || isShowingMeta.value) &&
-    (!hasGroup.value || isShowingGroup.value)
-);
-
-function onToggleAll(state: boolean = null) {
-    state = state === null ? !isShowingAll.value : state;
-    isShowingText.value = state;
-    isShowingFiles.value = state;
-    isShowingJson.value = state;
-    isShowingMeta.value = state;
-    isShowingGroup.value = state;
-}
-
-watch(() => props.show, onToggleAll);
-watch(() => props.showText, (state) => {
-    isShowingText.value = state;
-});
-watch(() => props.showFiles, (state) => {
-    isShowingFiles.value = state;
-});
-watch(() => props.showJson, (state) => {
-    isShowingJson.value = state;
-});
-watch(() => props.showMeta, (state) => {
-    isShowingMeta.value = state;
-});
-watch(() => props.showGroup, (state) => {
-    isShowingGroup.value = state;
-});
-
 const taskProcess = shallowRef<TaskProcess>(null);
 
 async function toggleShowTaskProcess() {
@@ -203,17 +257,4 @@ async function toggleShowTaskProcess() {
         taskProcess.value = await dxTaskProcess.routes.details({ id: props.artifact.task_process_id } as TaskProcess) as TaskProcess;
     }
 }
-
-// Subscribe to file updates for real-time transcoding progress
-const { subscribeToFileUpdates, unsubscribeFromFileUpdates } = useStoredFileUpdates();
-
-// Subscribe to files when they're actually visible (isShowingFiles is true)
-watch([() => props.artifact.files, isShowingFiles], ([files, showing]) => {
-    if (showing && files?.length > 0) {
-        files.forEach(file => subscribeToFileUpdates(file));
-    } else if (!showing && files?.length > 0) {
-        // Unsubscribe when files are hidden
-        files.forEach(file => unsubscribeFromFileUpdates(file));
-    }
-});
 </script>
