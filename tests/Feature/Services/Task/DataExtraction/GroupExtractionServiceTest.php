@@ -579,7 +579,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         $prompt = $this->service->buildExtractionPrompt($group, $teamObject, $fragmentSelector, false);
 
         // Then: Prompt includes existing object data
-        $this->assertStringContainsString('EXISTING OBJECT DATA', $prompt);
+        $this->assertStringContainsString('Existing Object Data', $prompt);
         $this->assertStringContainsString('John Smith', $prompt);
         $this->assertStringContainsString('Client', $prompt);
     }

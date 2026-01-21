@@ -882,42 +882,25 @@ class DuplicateRecordResolver
      */
     protected function buildComparisonPrompt(array $extractedData, Collection $candidates): string
     {
-        $prompt = "# Duplicate Record Detection\n\n";
-        $prompt .= "You are comparing extracted data against existing records to find duplicates.\n\n";
+        $template = file_get_contents(resource_path('prompts/extract-data/duplicate-record-comparison.md'));
 
-        $prompt .= "## Extracted Data\n\n";
-        $prompt .= "```json\n";
-        $prompt .= json_encode($extractedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-        $prompt .= "\n```\n\n";
-
-        $prompt .= "## Existing Records\n\n";
-
+        // Build the existing records list
+        $existingRecordsList = '';
         foreach ($candidates as $index => $candidate) {
             $candidateNumber = $index + 1;
-            $prompt .= "{$candidateNumber}. **ID: {$candidate->id}**\n\n";
+            $existingRecordsList .= "{$candidateNumber}. **ID: {$candidate->id}**\n\n";
 
             $candidateData = $this->buildCandidateData($candidate);
 
-            $prompt .= "```json\n";
-            $prompt .= json_encode($candidateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            $prompt .= "\n```\n\n";
+            $existingRecordsList .= "```json\n";
+            $existingRecordsList .= json_encode($candidateData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $existingRecordsList .= "\n```\n\n";
         }
 
-        $prompt .= "## Task\n\n";
-        $prompt .= "Determine if the extracted data matches any existing record. Consider:\n\n";
-        $prompt .= "- **Name variations:** John Smith vs John W. Smith vs J. Smith\n";
-        $prompt .= "- **Date format differences:** 2024-01-15 vs Jan 15, 2024\n";
-        $prompt .= "- **Minor spelling variations:** Centre vs Center\n";
-        $prompt .= "- **Missing fields:** Some fields may be missing but core identifying fields should match\n";
-        $prompt .= "- **Case sensitivity:** Ignore case differences\n\n";
-
-        $prompt .= "**Important:**\n";
-        $prompt .= "- Set `is_duplicate` to `true` only if you are confident there is a match\n";
-        $prompt .= "- Set `matching_record_id` to the ID of the matching record, or `null` if no match\n";
-        $prompt .= "- Set `confidence` to a value between 0.0 and 1.0 (0.0 = no confidence, 1.0 = certain)\n";
-        $prompt .= "- Provide a clear explanation citing specific fields that match or differ\n";
-
-        return $prompt;
+        return strtr($template, [
+            '{{extracted_data_json}}'    => json_encode($extractedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+            '{{existing_records_list}}'  => $existingRecordsList,
+        ]);
     }
 
     /**

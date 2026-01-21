@@ -19,49 +19,19 @@ class IdentityPlanningPromptBuilder
         $isArray      = $objectTypeInfo['is_array']      ?? false;
         $simpleFields = $objectTypeInfo['simple_fields'] ?? [];
 
-        $prompt = "# Identity Field Selection Task\n\n";
-        $prompt .= "You are tasked with selecting identity fields for a specific object type in a data extraction schema.\n\n";
+        $template = file_get_contents(resource_path('prompts/extract-data/identity-field-selection.md'));
 
-        $prompt .= "## Object Type Information\n\n";
-        $prompt .= "**Name:** $name\n";
-        $prompt .= "**Path:** $path\n";
-        $prompt .= "**Level:** $level\n";
-        if ($parentType) {
-            $prompt .= "**Parent Type:** $parentType\n";
-        }
-        $prompt .= '**Is Array:** ' . ($isArray ? 'Yes' : 'No') . "\n\n";
+        $parentTypeLine = $parentType ? "**Parent Type:** $parentType\n" : '';
 
-        $prompt .= "## Available Simple Fields\n\n";
-        $prompt .= "These are the simple (non-nested) fields available for this object type:\n\n";
-        $prompt .= $this->convertSimpleFieldsToYaml($simpleFields);
-        $prompt .= "\n";
-
-        $prompt .= "## Configuration\n\n";
-        $prompt .= '- **Group Max Points:** ' . $config['group_max_points'] . " (maximum fields per group)\n\n";
-
-        $prompt .= "## Your Task\n\n";
-        $prompt .= "1. **Select Identity Fields:** Choose fields that uniquely identify this object type.\n";
-        $prompt .= "   - Prefer fields like name, date, ID, or unique identifiers\n";
-        $prompt .= "   - These fields should help distinguish one instance from another\n";
-        $prompt .= "   - For array types, identity is especially important\n";
-        $prompt .= "   - Use your judgment to determine how many identity fields are needed based on the schema\n\n";
-
-        $prompt .= "2. **Select Skim Fields:** Choose additional simple fields to extract together with identity fields in \"skim\" mode.\n";
-        $prompt .= "   - Include ALL identity fields in skim_fields\n";
-        $prompt .= "   - Add other simple fields that are quick to extract\n";
-        $prompt .= '   - Total skim fields should not exceed group_max_points (' . $config['group_max_points'] . ")\n";
-        $prompt .= "   - These will be extracted in a single pass with the identity fields\n\n";
-
-        $prompt .= "3. **Provide Reasoning:** Briefly explain why you chose these identity fields.\n\n";
-
-        $prompt .= "4. **Describe Identification Content:** Provide a clear description that explains:\n";
-        $prompt .= "   - What type of document content or sections would contain the identity fields\n";
-        $prompt .= "   - What visual or textual cues to look for on a page\n";
-        $prompt .= "   - This description helps classify pages by relevance for identifying this object type\n\n";
-
-        $prompt .= 'Generate your response now.';
-
-        return $prompt;
+        return strtr($template, [
+            '{{name}}'             => $name,
+            '{{path}}'             => $path,
+            '{{level}}'            => $level,
+            '{{parent_type_line}}' => $parentTypeLine,
+            '{{is_array}}'         => $isArray ? 'Yes' : 'No',
+            '{{fields_yaml}}'      => $this->convertSimpleFieldsToYaml($simpleFields),
+            '{{group_max_points}}' => $config['group_max_points'],
+        ]);
     }
 
     /**
@@ -73,50 +43,15 @@ class IdentityPlanningPromptBuilder
         $path  = $objectTypeInfo['path']  ?? '';
         $level = $objectTypeInfo['level'] ?? 0;
 
-        $prompt = "# Remaining Fields Grouping Task\n\n";
-        $prompt .= "You are tasked with grouping remaining fields for data extraction.\n\n";
+        $template = file_get_contents(resource_path('prompts/extract-data/remaining-fields-grouping.md'));
 
-        $prompt .= "## Object Type Information\n\n";
-        $prompt .= "**Name:** $name\n";
-        $prompt .= "**Path:** $path\n";
-        $prompt .= "**Level:** $level\n\n";
-
-        $prompt .= "## Remaining Fields to Group\n\n";
-        $prompt .= "These fields were NOT included in the identity skim group and need to be organized:\n\n";
-        $prompt .= $this->convertSimpleFieldsToYaml($remainingFields);
-        $prompt .= "\n";
-
-        $prompt .= "## Configuration\n\n";
-        $prompt .= '- **Group Max Points:** ' . $config['group_max_points'] . " (maximum fields per group)\n\n";
-
-        $prompt .= "## Your Task\n\n";
-        $prompt .= "Create logical extraction groups for these remaining fields:\n\n";
-        $prompt .= "1. **Group Related Fields:** Organize fields into logical groups based on:\n";
-        $prompt .= "   - Semantic similarity (e.g., address fields together)\n";
-        $prompt .= "   - Document structure (e.g., fields likely found in same section)\n";
-        $prompt .= "   - Data type or purpose\n\n";
-
-        $prompt .= "2. **Assign Search Modes:** For each group, choose an appropriate search_mode:\n";
-        $prompt .= "   - **skim:** For singular values that can be resolved the first time they're encountered.\n";
-        $prompt .= "     Examples: names, dates, locations, IDs - things with ONE particular value that just needs to be found.\n";
-        $prompt .= "     Use when the field's value won't change or accumulate as you read more pages.\n";
-        $prompt .= "   - **exhaustive:** For values that could be added to by information across multiple pages.\n";
-        $prompt .= "     Examples: assessments of a patient, all findings in a report, items in a list.\n";
-        $prompt .= "     Use when the field's value might be augmented by additional information on different pages.\n";
-        $prompt .= "   - **Key distinction:** If it's a singular value resolved once, use skim. If it accumulates over multiple pages, use exhaustive.\n\n";
-
-        $prompt .= '3. **Respect Size Limits:** Each group should not exceed ' . $config['group_max_points'] . " fields.\n\n";
-
-        $prompt .= "4. **Name Groups Descriptively:** Use clear, meaningful names for each group.\n\n";
-
-        $prompt .= "5. **Describe Each Group:** Provide a clear description for each group that explains:\n";
-        $prompt .= "   - What type of document content or sections would contain these fields\n";
-        $prompt .= "   - What visual or textual cues to look for on a page\n";
-        $prompt .= "   - This description helps classify pages by relevance to the group\n\n";
-
-        $prompt .= 'Generate your extraction groups now.';
-
-        return $prompt;
+        return strtr($template, [
+            '{{name}}'             => $name,
+            '{{path}}'             => $path,
+            '{{level}}'            => $level,
+            '{{fields_yaml}}'      => $this->convertSimpleFieldsToYaml($remainingFields),
+            '{{group_max_points}}' => $config['group_max_points'],
+        ]);
     }
 
     /**
@@ -131,33 +66,15 @@ class IdentityPlanningPromptBuilder
         $name = $objectTypeInfo['object_type'] ?? $objectTypeInfo['name'] ?? 'Object';
         $path = $objectTypeInfo['path']        ?? '';
 
-        $prompt = "# Follow-up: Missing Fields Grouping (Attempt $attemptNumber)\n\n";
-        $prompt .= 'Your previous response did not include all required fields. ';
-        $prompt .= "Please group the following **missing fields** that were not included in your previous response.\n\n";
+        $template = file_get_contents(resource_path('prompts/extract-data/remaining-fields-followup.md'));
 
-        $prompt .= "## Object Type Information\n\n";
-        $prompt .= "**Name:** $name\n";
-        $prompt .= "**Path:** $path\n\n";
-
-        $prompt .= "## Missing Fields to Group\n\n";
-        $prompt .= "These fields were NOT included in your previous response and MUST be grouped:\n\n";
-        $prompt .= $this->convertSimpleFieldsToYaml($missingFields);
-        $prompt .= "\n";
-
-        $prompt .= "## Configuration\n\n";
-        $prompt .= '- **Group Max Points:** ' . $config['group_max_points'] . " (maximum fields per group)\n\n";
-
-        $prompt .= "## Your Task\n\n";
-        $prompt .= "**IMPORTANT:** You MUST include ALL of the missing fields listed above in your response.\n\n";
-        $prompt .= "Create logical extraction groups for these missing fields:\n\n";
-        $prompt .= "1. **Group Related Fields:** Organize fields into logical groups\n";
-        $prompt .= "2. **Assign Search Modes:** Choose 'skim' (singular values resolved once) or 'exhaustive' (values that accumulate across pages) for each group\n";
-        $prompt .= '3. **Respect Size Limits:** Each group should not exceed ' . $config['group_max_points'] . " fields\n";
-        $prompt .= "4. **Describe Each Group:** Provide a clear description explaining what document content or sections contain these fields\n\n";
-
-        $prompt .= 'Generate your extraction groups for the missing fields now.';
-
-        return $prompt;
+        return strtr($template, [
+            '{{name}}'             => $name,
+            '{{path}}'             => $path,
+            '{{attempt_number}}'   => $attemptNumber,
+            '{{fields_yaml}}'      => $this->convertSimpleFieldsToYaml($missingFields),
+            '{{group_max_points}}' => $config['group_max_points'],
+        ]);
     }
 
     /**
@@ -179,6 +96,11 @@ class IdentityPlanningPromptBuilder
                     'items'       => ['type' => 'string'],
                     'description' => 'All fields to extract in skim mode (includes identity_fields)',
                 ],
+                'search_mode' => [
+                    'type'        => 'string',
+                    'enum'        => ['skim', 'exhaustive'],
+                    'description' => 'skim: for singular values resolved once (names, dates, IDs). exhaustive: for values that accumulate across pages (lists, findings, assessments)',
+                ],
                 'description' => [
                     'type'        => 'string',
                     'description' => 'A clear description of what type of document content or page sections would contain the identity fields for this object type. This is used to classify pages by relevance.',
@@ -188,7 +110,7 @@ class IdentityPlanningPromptBuilder
                     'description' => 'Brief explanation of identity field selection',
                 ],
             ],
-            'required' => ['identity_fields', 'skim_fields', 'description'],
+            'required' => ['identity_fields', 'skim_fields', 'search_mode', 'description'],
         ];
 
         $schemaDefinition                = new SchemaDefinition();

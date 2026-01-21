@@ -219,12 +219,12 @@ class ContextWindowService
             ->values()
             ->join(', ');
 
-        return sprintf(
-            'CONTEXT PAGES: Pages %s are provided as context only. ' .
-            "Extract data primarily from the TARGET pages (%s), using context pages to understand surrounding information.\n\n",
-            $contextPageNumbers,
-            $targetPageNumbers
-        );
+        $template = file_get_contents(resource_path('prompts/extract-data/context-pages.md'));
+
+        return strtr($template, [
+            '{{context_pages}}' => $contextPageNumbers,
+            '{{target_pages}}'  => $targetPageNumbers,
+        ]);
     }
 
     /**

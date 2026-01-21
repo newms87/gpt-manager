@@ -191,7 +191,7 @@ class GroupExtractionService
 
         // Create a temporary in-memory SchemaDefinition with the enhanced fragment schema
         // Use hash for uniqueness - OpenAI has 64 char limit on schema names
-        $groupHash = substr(md5($group['name'] ?? 'unknown'), 0, 8);
+        $groupHash            = substr(md5($group['name'] ?? 'unknown'), 0, 8);
         $tempSchemaDefinition = new SchemaDefinition([
             'name'   => 'group-extraction-' . $groupHash,
             'schema' => $responseSchema,
@@ -335,71 +335,71 @@ class GroupExtractionService
         ?Collection $artifacts = null,
         ?array $config = null
     ): string {
+        $template = file_get_contents(resource_path('prompts/extract-data/remaining-field-extraction.md'));
+
         $groupName = $group['name'] ?? 'data';
 
-        // Get existing object data
-        $existingData = $this->getExistingObjectData($teamObject);
-
-        $prompt = "You are extracting $groupName data from documents into a structured format.\n\n";
-
-        // Add user-provided extraction instructions if configured
+        // Build additional instructions section
+        $additionalInstructions = '';
         $extractionInstructions = $config['extraction_instructions'] ?? null;
         if ($extractionInstructions) {
-            $prompt .= "## Additional Instructions\n{$extractionInstructions}\n\n";
+            $additionalInstructions = "## Additional Instructions\n{$extractionInstructions}\n\n";
         }
 
-        // Add context page instructions if artifacts have context pages
+        // Build context instructions section
+        $contextInstructions = '';
         if ($artifacts !== null) {
             $contextInstructions = app(ContextWindowService::class)->buildContextPromptInstructions($artifacts);
-            if ($contextInstructions !== '') {
-                $prompt .= $contextInstructions;
-            }
         }
 
-        // Include existing object data if any
+        // Build existing data section
+        $existingDataSection = '';
+        $existingData        = $this->getExistingObjectData($teamObject);
         if (!empty($existingData)) {
-            $prompt .= "EXISTING OBJECT DATA:\n";
-            $prompt .= "Type: {$teamObject->type}\n";
-            $prompt .= "Name: {$teamObject->name}\n";
-            $prompt .= json_encode($existingData, JSON_PRETTY_PRINT) . "\n\n";
+            $existingDataSection = "## Existing Object Data\n\n";
+            $existingDataSection .= "Type: {$teamObject->type}\n";
+            $existingDataSection .= "Name: {$teamObject->name}\n\n";
+            $existingDataSection .= json_encode($existingData, JSON_PRETTY_PRINT) . "\n\n";
         }
 
-        $prompt .= "INSTRUCTIONS:\n";
-        $prompt .= "- Extract the requested fields from the provided documents\n";
-        $prompt .= "- If a field cannot be found, set it to null\n";
-        $prompt .= "- Merge with existing data where appropriate (update or append as needed)\n";
-
-        // Add page source instructions if artifacts are provided
+        // Build page source instructions section
+        $pageSourceInstructions = '';
         if ($artifacts !== null) {
-            $pageSourceInstructions = app(PageSourceService::class)->buildPageSourceInstructions($artifacts);
-            if ($pageSourceInstructions !== '') {
-                $prompt .= '- ' . str_replace("\n", "\n- ", $pageSourceInstructions) . "\n";
+            $pageSourceInstructionsText = app(PageSourceService::class)->buildPageSourceInstructions($artifacts);
+            if ($pageSourceInstructionsText !== '') {
+                $pageSourceInstructions = '- ' . str_replace("\n", "\n- ", $pageSourceInstructionsText) . "\n";
             }
         }
 
+        // Build confidence scale section
+        $confidenceScale = '';
         if ($includeConfidence) {
-            $prompt .= "- Rate your confidence (1-5) for each extracted field:\n";
-            $prompt .= "  1 = Very uncertain, likely incorrect\n";
-            $prompt .= "  2 = Uncertain, might be incorrect\n";
-            $prompt .= "  3 = Moderately confident, probably correct\n";
-            $prompt .= "  4 = Confident, very likely correct\n";
-            $prompt .= "  5 = Highly confident, definitely correct\n\n";
-
-            $prompt .= "RESPOND WITH JSON:\n";
-            $prompt .= "{\n";
-            $prompt .= "  \"data\": { extracted fields },\n";
-            $prompt .= "  \"page_sources\": { \"field_name\": page_number, ... },\n";
-            $prompt .= "  \"confidence\": { \"field_name\": score, ... }\n";
-            $prompt .= "}\n";
-        } else {
-            $prompt .= "\nRESPOND WITH JSON:\n";
-            $prompt .= "{\n";
-            $prompt .= "  \"data\": { extracted fields },\n";
-            $prompt .= "  \"page_sources\": { \"field_name\": page_number, ... }\n";
-            $prompt .= "}\n";
+            $confidenceScale = "- Rate your confidence (1-5) for each extracted field:\n";
+            $confidenceScale .= "  1 = Very uncertain, likely incorrect\n";
+            $confidenceScale .= "  2 = Uncertain, might be incorrect\n";
+            $confidenceScale .= "  3 = Moderately confident, probably correct\n";
+            $confidenceScale .= "  4 = Confident, very likely correct\n";
+            $confidenceScale .= "  5 = Highly confident, definitely correct\n";
         }
 
-        return $prompt;
+        // Build response format section
+        $responseFormat = "RESPOND WITH JSON:\n```json\n{\n";
+        $responseFormat .= "  \"data\": { extracted fields },\n";
+        $responseFormat .= '  "page_sources": { "field_name": page_number, ... }';
+        if ($includeConfidence) {
+            $responseFormat .= ",\n  \"confidence\": { \"field_name\": score, ... }";
+        }
+        $responseFormat .= "\n}\n```";
+
+        return strtr($template, [
+            '{{group_name}}'               => $groupName,
+            '{{additional_instructions}}'  => $additionalInstructions,
+            '{{context_instructions}}'     => $contextInstructions,
+            '{{existing_data}}'            => $existingDataSection,
+            '{{page_source_instructions}}' => $pageSourceInstructions,
+            '{{confidence_scale}}'         => $confidenceScale,
+            '{{response_format}}'          => $responseFormat,
+        ]);
     }
 
     /**
