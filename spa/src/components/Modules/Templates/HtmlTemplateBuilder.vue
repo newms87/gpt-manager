@@ -24,6 +24,7 @@
 							:can-view-jobs="canViewJobs"
 							:is-loading-job-dispatches="isLoadingJobDispatches"
 							@retry-build="handleRetryBuild"
+							@cancel-build="emit('cancel-build')"
 							@load-job-dispatches="emit('load-job-dispatches')"
 						/>
 					</div>
@@ -140,6 +141,7 @@ const emit = defineEmits<{
 	"send-batch": [messages: QueuedMessage[]];
 	"screenshot-captured": [requestId: string, file: File];
 	"retry-build": [];
+	"cancel-build": [];
 	"load-job-dispatches": [];
 }>();
 

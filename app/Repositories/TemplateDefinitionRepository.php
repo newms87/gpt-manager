@@ -67,6 +67,10 @@ class TemplateDefinitionRepository extends ActionRepository
             'restore-version'          => $service->restoreVersion(
                 TemplateDefinitionHistory::find($data['history_id'])
             ),
+            'cancel-build'             => $service->cancelBuild(
+                $model,
+                $data['discard_pending'] ?? false
+            ),
             default                    => parent::applyAction($action, $model, $data)
         };
     }

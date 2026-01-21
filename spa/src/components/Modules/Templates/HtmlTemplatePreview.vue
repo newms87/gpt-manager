@@ -89,6 +89,15 @@
 						</svg>
 						<span class="text-sm font-medium">{{ buildPhase === "planning" ? "Planning..." : "Building..." }}</span>
 						<span v-if="elapsedTime" :class="['text-xs', buildPhase === 'planning' ? 'text-purple-500' : 'text-teal-500']">{{ elapsedTime }}</span>
+						<!-- Stop button - only show when not in error state -->
+						<ActionButton
+							v-if="buildingJobDispatch?.status !== 'Exception' && buildingJobDispatch?.status !== 'Failed'"
+							type="stop"
+							color="slate"
+							size="xs"
+							tooltip="Stop build"
+							@click="emit('cancel-build')"
+						/>
 					</div>
 
 					<!-- Pending builds count -->
@@ -202,6 +211,7 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
 	(e: "retry-build"): void;
+	(e: "cancel-build"): void;
 	(e: "load-job-dispatches"): void;
 }>();
 

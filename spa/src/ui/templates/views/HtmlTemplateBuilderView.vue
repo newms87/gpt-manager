@@ -67,6 +67,7 @@
 				@send-batch="sendBatchedMessages"
 				@screenshot-captured="uploadScreenshot"
 				@retry-build="handleRetryBuild"
+				@cancel-build="handleCancelBuild"
 				@load-job-dispatches="loadJobDispatches"
 			/>
 		</div>
@@ -132,6 +133,7 @@ const { subscribeToThread, subscribeToTemplate, subscribeToJobDispatch } = useTe
 // Get actions using the standard pattern
 const startCollaborationAction = dxTemplateDefinition.getAction("start-collaboration");
 const sendMessageAction = dxTemplateDefinition.getAction("send-message");
+const cancelBuildAction = dxTemplateDefinition.getAction("cancel-build");
 
 // Use action's isApplying for loading state
 const isCollaborationLoading = computed(() =>
@@ -477,6 +479,15 @@ async function handleRetryBuild() {
 	// TODO: Call backend to clear the failed build and trigger a new one
 	// For now, just log the request
 	console.log("Retry build requested for template:", template.value.id);
+}
+
+/**
+ * Handle cancel build request from the preview component
+ * Cancels the currently running build
+ */
+async function handleCancelBuild() {
+	if (!template.value) return;
+	await cancelBuildAction.trigger(template.value, { discard_pending: false });
 }
 
 // Watch for route changes
