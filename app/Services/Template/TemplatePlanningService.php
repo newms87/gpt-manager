@@ -2,7 +2,6 @@
 
 namespace App\Services\Template;
 
-use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplatePlanningJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
@@ -81,8 +80,6 @@ class TemplatePlanningService
                     'pending_count' => count($existing),
                 ]);
 
-                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
-
                 return;
             }
         }
@@ -104,8 +101,6 @@ class TemplatePlanningService
             'template_id'     => $template->id,
             'job_dispatch_id' => $template->building_job_dispatch_id,
         ]);
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
     }
 
     /**
@@ -168,12 +163,10 @@ class TemplatePlanningService
                     static::logDebug('No plan generated from planning agent');
                     $template->building_job_dispatch_id = null;
                     $template->save();
-                    TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
                 }
             } else {
                 $template->building_job_dispatch_id = null;
                 $template->save();
-                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
             }
         } catch (\Throwable $e) {
             static::logDebug('Planning failed', [
@@ -183,7 +176,6 @@ class TemplatePlanningService
 
             $template->building_job_dispatch_id = null;
             $template->save();
-            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
 
             throw $e;
         }
@@ -210,8 +202,6 @@ class TemplatePlanningService
         // Clear the build state (job is already marked as aborted)
         $template->building_job_dispatch_id = null;
         $template->save();
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
 
         return true;
     }

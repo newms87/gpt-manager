@@ -2,8 +2,6 @@
 
 namespace App\Services\Template;
 
-use App\Events\AgentThreadUpdatedEvent;
-use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
@@ -148,9 +146,6 @@ class TemplateCollaborationService
             $thread->agent_id = $originalAgentId;
             $thread->save();
         }
-
-        // Broadcast thread update
-        AgentThreadUpdatedEvent::dispatch($thread, 'updated');
     }
 
     /**
@@ -174,8 +169,6 @@ class TemplateCollaborationService
         // Clear the build state (job is already marked as aborted)
         $template->building_job_dispatch_id = null;
         $template->save();
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
 
         return true;
     }

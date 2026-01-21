@@ -2,7 +2,6 @@
 
 namespace App\Services\Template;
 
-use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateBuildingJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
@@ -82,8 +81,6 @@ class TemplateBuildingService
                     'pending_context_count' => count($existing),
                 ]);
 
-                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
-
                 return;
             }
         }
@@ -104,11 +101,9 @@ class TemplateBuildingService
         }
 
         static::logDebug('Build job dispatched', [
-            'template_id'      => $template->id,
-            'job_dispatch_id'  => $template->building_job_dispatch_id,
+            'template_id'     => $template->id,
+            'job_dispatch_id' => $template->building_job_dispatch_id,
         ]);
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
     }
 
     /**
@@ -217,9 +212,6 @@ class TemplateBuildingService
             if ($template->building_job_dispatch_id !== null) {
                 $template->building_job_dispatch_id = null;
                 $template->save();
-
-                // Notify frontend that build is complete
-                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
             }
 
             // Check for pending builds
@@ -248,8 +240,6 @@ class TemplateBuildingService
         // Clear the build state (job is already marked as aborted)
         $template->building_job_dispatch_id = null;
         $template->save();
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
 
         return true;
     }
@@ -409,9 +399,6 @@ class TemplateBuildingService
                 'html_length' => strlen($htmlContent ?? ''),
                 'css_length'  => strlen($cssContent ?? ''),
             ]);
-
-            // Broadcast update
-            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
         }
 
         // Sync variables (extracted from HTML)
@@ -475,8 +462,6 @@ class TemplateBuildingService
                 'html_edits_applied' => $htmlResult['applied_count'],
                 'css_edits_applied'  => $cssResult['applied_count'],
             ]);
-
-            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
         }
 
         // Sync variables (extracted from HTML)

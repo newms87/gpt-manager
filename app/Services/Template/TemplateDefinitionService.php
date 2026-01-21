@@ -3,7 +3,6 @@
 namespace App\Services\Template;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
@@ -27,6 +26,7 @@ use Newms87\Danx\Models\Utilities\StoredFile;
 class TemplateDefinitionService
 {
     use HasDebugLogging;
+
     /**
      * Create a new template definition.
      */
@@ -215,18 +215,20 @@ class TemplateDefinitionService
         // Mark the job as aborted
         $jobDispatch->update(['status' => JobDispatch::STATUS_ABORTED]);
 
+        // Clear the building job reference immediately (triggers event via booted())
+        $template->building_job_dispatch_id = null;
+
         if ($discardPending) {
             $template->pending_build_context = null;
-            $template->save();
         }
+
+        $template->save();
 
         static::logDebug('Build cancellation requested', [
             'template_id'     => $template->id,
             'job_dispatch_id' => $jobDispatch->id,
             'discard_pending' => $discardPending,
         ]);
-
-        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
 
         return $template;
     }

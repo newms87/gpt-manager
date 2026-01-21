@@ -2,6 +2,7 @@
 
 namespace App\Models\Template;
 
+use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Models\Agent\AgentThread;
 use App\Models\Team\Team;
 use App\Models\User;
@@ -67,6 +68,12 @@ class TemplateDefinition extends Model implements AuditableContract
 
             if (isset($dirty['html_content']) || isset($dirty['css_content'])) {
                 TemplateDefinitionHistory::write($template);
+            }
+        });
+
+        static::saved(function (TemplateDefinition $template) {
+            if ($template->wasRecentlyCreated || $template->wasChanged(['name', 'building_job_dispatch_id', 'pending_build_context'])) {
+                TemplateDefinitionUpdatedEvent::broadcast($template);
             }
         });
     }
