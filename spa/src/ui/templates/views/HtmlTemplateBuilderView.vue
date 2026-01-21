@@ -69,6 +69,8 @@
 				@retry-build="handleRetryBuild"
 				@cancel-build="handleCancelBuild"
 				@load-job-dispatches="loadJobDispatches"
+				@update-html="handleUpdateHtml"
+				@update-css="handleUpdateCss"
 			/>
 		</div>
 
@@ -488,6 +490,30 @@ async function handleRetryBuild() {
 async function handleCancelBuild() {
 	if (!template.value) return;
 	await cancelBuildAction.trigger(template.value, { discard_pending: false });
+}
+
+/**
+ * Handle HTML content update from the code editor
+ */
+async function handleUpdateHtml(html: string) {
+	if (!template.value) return;
+	isSaving.value = true;
+	isSaved.value = false;
+	await updateTemplateAction.trigger(template.value, { html_content: html });
+	isSaving.value = false;
+	isSaved.value = true;
+}
+
+/**
+ * Handle CSS content update from the code editor
+ */
+async function handleUpdateCss(css: string) {
+	if (!template.value) return;
+	isSaving.value = true;
+	isSaved.value = false;
+	await updateTemplateAction.trigger(template.value, { css_content: css });
+	isSaving.value = false;
+	isSaved.value = true;
 }
 
 // Watch for route changes

@@ -140,8 +140,9 @@
 					<CodeViewer
 						:model-value="html"
 						format="html"
-						:can-edit="false"
+						:can-edit="true"
 						theme="light"
+						@update:model-value="emit('update-html', $event)"
 					/>
 				</div>
 				<div v-if="css">
@@ -152,8 +153,9 @@
 					<CodeViewer
 						:model-value="css"
 						format="css"
-						:can-edit="false"
+						:can-edit="true"
 						theme="light"
+						@update:model-value="emit('update-css', $event)"
 					/>
 				</div>
 			</div>
@@ -213,6 +215,8 @@ const emit = defineEmits<{
 	(e: "retry-build"): void;
 	(e: "cancel-build"): void;
 	(e: "load-job-dispatches"): void;
+	(e: "update-html", html: string): void;
+	(e: "update-css", css: string): void;
 }>();
 
 /**

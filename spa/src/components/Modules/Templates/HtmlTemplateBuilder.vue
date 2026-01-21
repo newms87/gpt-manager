@@ -26,6 +26,8 @@
 							@retry-build="handleRetryBuild"
 							@cancel-build="emit('cancel-build')"
 							@load-job-dispatches="emit('load-job-dispatches')"
+							@update-html="emit('update-html', $event)"
+							@update-css="emit('update-css', $event)"
 						/>
 					</div>
 				</template>
@@ -143,6 +145,8 @@ const emit = defineEmits<{
 	"retry-build": [];
 	"cancel-build": [];
 	"load-job-dispatches": [];
+	"update-html": [html: string];
+	"update-css": [css: string];
 }>();
 
 const previewContainerRef = ref<HTMLElement | null>(null);
