@@ -429,7 +429,7 @@ Configure via `TaskDefinition.task_runner_config`:
 |--------|---------|-------------|
 | `global_search_mode` | `'intelligent'` | Search mode: `intelligent`, `skim_only`, `exhaustive_only` |
 | `confidence_threshold` | `3` | Confidence level (1-5) to stop skim mode |
-| `skim_batch_size` | `5` | Pages per batch in skim mode |
+| `batch_size` | `5` | Pages per batch for extraction |
 | `group_max_points` | `10` | Maximum fields per extraction group |
 | `enable_context_pages` | `false` | Include adjacent pages for context |
 | `adjacency_threshold` | varies | Pages within this range are grouped |
