@@ -76,10 +76,16 @@ return [
     'template_planning' => [
         'timeout'        => env('AI_TEMPLATE_PLANNING_TIMEOUT', 300),
         'efforts'        => [
-            'low' => [
+            'very_low' => [
                 'model'       => 'gpt-5-nano',
                 'api_options' => [
-                    'reasoning' => ['effort' => 'medium'],
+                    'reasoning' => ['effort' => 'low'],
+                ],
+            ],
+            'low' => [
+                'model'       => 'gpt-5-mini',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'low'],
                 ],
             ],
             'medium' => [
@@ -89,6 +95,12 @@ return [
                 ],
             ],
             'high' => [
+                'model'       => 'gpt-5.2',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'medium'],
+                ],
+            ],
+            'very_high' => [
                 'model'       => 'gpt-5.2',
                 'api_options' => [
                     'reasoning' => ['effort' => 'high'],
@@ -102,6 +114,12 @@ return [
     'template_building' => [
         'timeout'        => env('AI_TEMPLATE_BUILDING_TIMEOUT', 300),
         'efforts'        => [
+            'very_low' => [
+                'model'       => 'gpt-5-nano',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'low'],
+                ],
+            ],
             'low' => [
                 'model'       => 'gpt-5',
                 'api_options' => [
@@ -115,6 +133,12 @@ return [
                 ],
             ],
             'high' => [
+                'model'       => 'gpt-5.2-codex',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'medium'],
+                ],
+            ],
+            'very_high' => [
                 'model'       => 'gpt-5.2-codex',
                 'api_options' => [
                     'reasoning' => ['effort' => 'high'],

@@ -134,16 +134,27 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 
 | Level | When Planning | When Building |
 |-------|---------------|---------------|
-| **low** | Simple outline, clear requirements | Color changes, text updates, minor CSS |
+| **very_low** | Trivial outline, obvious structure | Single property change (one color, one font) |
+| **low** | Simple outline, clear requirements | Minor CSS tweaks, text updates |
 | **medium** | Standard template, moderate complexity | New sections, moderate HTML changes |
 | **high** | Complex multi-section, detailed analysis | Full template generation, major restructuring |
+| **very_high** | Highly complex, intricate requirements | Complete redesign, pixel-perfect matching |
 
 ### Examples
 
-**Simple color change** → `action: "build"`, `effort: "low"`
+**Single color change** → `action: "build"`, `effort: "very_low"`
 ```json
 {
   "message": "Making the header blue now.",
+  "action": "build",
+  "effort": "very_low"
+}
+```
+
+**Minor styling tweaks** → `action: "build"`, `effort: "low"`
+```json
+{
+  "message": "Updating the font and spacing.",
   "action": "build",
   "effort": "low"
 }
@@ -167,9 +178,20 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 }
 ```
 
+**Pixel-perfect recreation from image** → `action: "plan"`, `effort: "very_high"`
+```json
+{
+  "message": "I'll carefully plan this to match your reference exactly.",
+  "action": "plan",
+  "effort": "very_high"
+}
+```
+
 ### Key Guidelines
 
-- Default to `"low"` or `"medium"` - only use `"high"` for genuinely complex requests
+- Default to `"low"` or `"medium"` for most requests
+- Use `"very_low"` only for trivial single-property changes
+- Use `"high"` or `"very_high"` only for genuinely complex requests
 - When in doubt, use `"medium"` as a safe default
 - Only include `effort` when `action` is `"plan"` or `"build"`
 - When `action: null`, do NOT include effort field
@@ -180,7 +202,7 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 {
   "message": "Your friendly response",
   "action": "plan" | "build" | null,
-  "effort": "low" | "medium" | "high"
+  "effort": "very_low" | "low" | "medium" | "high" | "very_high"
 }
 ```
 

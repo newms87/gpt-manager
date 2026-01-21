@@ -111,8 +111,8 @@ class TemplateCollaborationService
                         ],
                         'effort' => [
                             'type'        => ['string', 'null'],
-                            'enum'        => ['low', 'medium', 'high', null],
-                            'description' => 'Effort level for the action: low (simple/minor), medium (standard), high (complex/comprehensive)',
+                            'enum'        => ['very_low', 'low', 'medium', 'high', 'very_high', null],
+                            'description' => 'Effort level: very_low (trivial), low (simple), medium (standard), high (complex), very_high (highly complex)',
                         ],
                     ],
                     'required'             => ['message'],
