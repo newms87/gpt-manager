@@ -129,10 +129,10 @@ These principles prevent tech debt accumulation and ensure consistent, maintaina
 
 ### docs/project/PROJECT_IMPLEMENTATION.md (Technical Details - Read Second)
 - File path requirements (relative paths only)
-- Build commands (yarn build, sail test, sail pint)
+- Build commands (yarn build, sail test)
 - Docker/Sail commands
 - Authentication & API testing
-- Code quality standards
+- Code quality standards (Pint runs automatically via hook)
 - PHPUnit testing standards
 
 ### Domain-Specific Guides (Read Third)
@@ -154,9 +154,9 @@ This is a blocking requirement - absolute paths require manual approval and brea
 **ALWAYS use relative paths:**
 - ✅ `./vendor/bin/sail artisan migrate`
 - ✅ `./vendor/bin/sail test --filter=MyTest`
-- ✅ `./vendor/bin/sail pint app/Services/MyService.php`
 - ✅ `yarn build`
 - ✅ `php artisan ...` (when inside container)
+- Note: Pint (code formatting) runs automatically via Claude Code hook after PHP file edits
 
 **NEVER use absolute paths:**
 - ❌ `/home/user/project/vendor/bin/sail ...`

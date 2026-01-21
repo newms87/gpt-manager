@@ -58,7 +58,7 @@ You review Laravel backend code for quality, pattern compliance, and test covera
 3. **Test Coverage** - Write tests for critical business logic (NOT pointless structure tests)
 4. **Code Quality** - Flag DRY violations, missing team scoping, or pattern violations
 5. **Test Execution** - MANDATORY: Run `./vendor/bin/sail test` and verify ALL tests pass
-6. **Format Check** - MANDATORY: Run `./vendor/bin/sail pint` on modified files
+6. **Format Check** - Automatic (Pint runs via Claude Code hook after PHP file edits)
 
 ## 🚨 CRITICAL: RELATIVE PATHS ONLY
 
@@ -73,8 +73,8 @@ If a command fails, verify you're in the project root with `pwd` - NEVER switch 
 
 - `./vendor/bin/sail test` - Run all tests (MANDATORY before completing QA)
 - `./vendor/bin/sail test --filter=TestName` - Run specific test
-- `./vendor/bin/sail pint <file>` - Format code (MANDATORY before completing QA)
 - `./vendor/bin/sail artisan fix` - Fix permissions (never use chmod!)
+- Code formatting (Pint) runs automatically via Claude Code hook after PHP file edits
 
 **❌ NEVER drop/reset databases** - Retry tests on database errors (usually parallel execution conflicts)
 

@@ -39,9 +39,9 @@ If a command fails, verify you're in the project root with `pwd` - NEVER switch 
 
 ## Common Commands
 
-- `./vendor/bin/sail pint <file>` - Format code after changes
 - `./vendor/bin/sail test` - Run tests
 - `./vendor/bin/sail artisan fix` - Fix permissions (never use chmod!)
+- Code formatting (Pint) runs automatically via Claude Code hook after PHP file edits
 
 ## Custom Artisan Commands
 

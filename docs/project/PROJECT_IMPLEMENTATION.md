@@ -58,9 +58,8 @@ The projects are locally linked via yarn/npm symlinks. Building quasar-ui-danx d
   - Run all tests
   - Add `--filter=TestName` for specific tests
 
-- **Code Formatting**: `./vendor/bin/sail pint <file>`
-  - **ALWAYS run after modifying ANY PHP file**
-  - Ensures consistent code style
+- **Code Formatting**: Runs automatically via Claude Code hook after PHP file edits
+  - No manual action required - Pint runs automatically on save
 
 - **Artisan Commands**: `./vendor/bin/sail artisan [command]`
   - All Laravel CLI commands go through Sail
@@ -92,7 +91,7 @@ The projects are locally linked via yarn/npm symlinks. Building quasar-ui-danx d
 
 - Use `./vendor/bin/sail artisan` for all artisan commands
 - Use `./vendor/bin/sail test` for running tests
-- Use `./vendor/bin/sail pint` for code formatting
+- Code formatting runs automatically via Claude Code hook (no manual pint needed)
 - Use `./vendor/bin/sail php` for running PHP files
 - Run `./vendor/bin/sail artisan fix` for permission issues
 - Never use chmod on files to fix permissions - always use `./vendor/bin/sail artisan fix`

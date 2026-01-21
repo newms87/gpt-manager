@@ -35,8 +35,8 @@ This is a blocking requirement - absolute paths require manual approval and brea
 ### Laravel
 - `./vendor/bin/sail test` - Run tests
 - `./vendor/bin/sail test --filter=TestName` - Run specific test
-- `./vendor/bin/sail pint <file>` - Format code
 - `./vendor/bin/sail artisan fix` - Fix permissions (never use chmod!)
+- Code formatting (Pint) runs automatically via Claude Code hook after PHP file edits
 
 ### Vue/SPA
 - `yarn build` - Build and validate
