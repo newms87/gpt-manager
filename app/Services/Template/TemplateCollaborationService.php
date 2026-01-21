@@ -43,6 +43,14 @@ class TemplateCollaborationService
     }
 
     /**
+     * Get API options from config for conversation agent.
+     */
+    protected function getConversationApiOptions(): array
+    {
+        return config('ai.template_collaboration.api_options', []);
+    }
+
+    /**
      * Get the model to use for generation agent (initial collaboration).
      * Uses template_building model since that's what the builder agent uses.
      */
@@ -101,6 +109,11 @@ class TemplateCollaborationService
                             'enum'        => ['plan', 'build', null],
                             'description' => 'Action to trigger: plan (complex changes), build (simple changes), or null (conversation only)',
                         ],
+                        'effort' => [
+                            'type'        => ['string', 'null'],
+                            'enum'        => ['low', 'medium', 'high', null],
+                            'description' => 'Effort level for the action: low (simple/minor), medium (standard), high (complex/comprehensive)',
+                        ],
                     ],
                     'required'             => ['message'],
                     'additionalProperties' => false,
@@ -156,6 +169,7 @@ class TemplateCollaborationService
         }
 
         $action      = $responseData['action']  ?? null;
+        $effort      = $responseData['effort']  ?? null;
         $userMessage = $responseData['message'] ?? null;
 
         // Extract the user-facing message and update the message content
@@ -163,9 +177,16 @@ class TemplateCollaborationService
         if ($userMessage) {
             $responseMessage->content = $userMessage;
 
-            // Store the action in data for debugging/tracking if present
+            // Store action and effort in data for UI display and debugging
+            $metadata = [];
             if ($action) {
-                $responseMessage->data = array_merge($responseMessage->data ?? [], ['action' => $action]);
+                $metadata['action'] = $action;
+            }
+            if ($effort) {
+                $metadata['effort'] = $effort;
+            }
+            if ($metadata) {
+                $responseMessage->data = array_merge($responseMessage->data ?? [], $metadata);
             }
 
             $responseMessage->save();
@@ -189,22 +210,26 @@ class TemplateCollaborationService
             static::logDebug('Dispatching template planning', [
                 'template_id'    => $template->id,
                 'context_length' => strlen($userContext),
+                'effort'         => $effort,
             ]);
 
             app(TemplatePlanningService::class)->dispatchPlan(
                 $template,
                 $userContext,
-                $thread
+                $thread,
+                $effort
             );
         } elseif ($action === 'build') {
             static::logDebug('Dispatching template build', [
                 'template_id'    => $template->id,
                 'context_length' => strlen($userContext),
+                'effort'         => $effort,
             ]);
 
             app(TemplateBuildingService::class)->dispatchBuild(
                 $template,
-                $userContext
+                $userContext,
+                $effort
             );
         }
         // If action is null, no dispatch needed - conversation only
@@ -231,12 +256,12 @@ class TemplateCollaborationService
                 'team_id'     => null,
                 'model'       => $model,
                 'description' => 'Fast conversational agent for template collaboration. Provides quick responses and determines when to trigger template builds.',
-                'api_options' => [
+                'api_options' => array_merge($this->getConversationApiOptions(), [
                     'instructions'    => $instructions,
                     'response_format' => [
                         'type' => 'json_object',
                     ],
-                ],
+                ]),
             ]);
 
             static::logDebug('Created Conversation Agent', [
@@ -256,9 +281,11 @@ class TemplateCollaborationService
             }
 
             if ($currentInstructions !== $instructions) {
-                $updates['api_options'] = array_merge($agent->api_options ?? [], [
-                    'instructions' => $instructions,
-                ]);
+                $updates['api_options'] = array_merge(
+                    $this->getConversationApiOptions(),
+                    $agent->api_options ?? [],
+                    ['instructions' => $instructions]
+                );
                 $needsUpdate = true;
             }
 

@@ -1,24 +1,37 @@
 <template>
 	<div
 		class="overflow-hidden rounded-lg border shadow-sm animate-message-in"
-		:class="[avatar.messageClass, isCodeGeneration ? 'ring-1 ring-green-200' : '']"
+		:class="[avatar.messageClass, isCodeGeneration ? 'ring-1 ring-green-200' : '', isQueued ? 'opacity-60' : '']"
 	>
-		<div class="flex items-center px-3 py-2">
-			<div class="rounded-full p-1.5 w-7 h-7 flex items-center justify-center shadow-sm" :class="avatar.class">
-				<component :is="avatar.icon" class="w-3 text-white" :class="avatar.iconClass" />
+		<div class="flex items-center px-2 py-1">
+			<div class="rounded-full p-1 w-5 h-5 flex items-center justify-center shadow-sm" :class="avatar.class">
+				<component :is="avatar.icon" class="w-2.5 text-white" :class="avatar.iconClass" />
 			</div>
 			<div class="font-semibold text-slate-700 ml-2 flex-grow text-sm">
 				{{ roleLabel }}
 			</div>
-			<div class="text-xs text-slate-400 mr-2 whitespace-nowrap">
+			<div class="text-xs text-slate-400 mr-2 whitespace-nowrap flex items-center gap-2">
 				{{ fDateTime(message.timestamp) }}
+				<span
+					v-if="isQueued"
+					class="px-2 py-0.5 bg-slate-200 text-slate-500 rounded-full"
+				>
+					Queued
+				</span>
+				<span
+					v-if="actionEffortLabel"
+					class="px-2 py-0.5 rounded-full"
+					:class="actionEffortClass"
+				>
+					{{ actionEffortLabel }}
+				</span>
 			</div>
 			<ShowHideButton v-model="showContent" :name="'collab-message-' + message.id" />
 		</div>
 
 		<template v-if="showContent">
 			<QSeparator class="bg-slate-200/60" />
-			<div class="text-sm px-3 py-3">
+			<div class="text-sm px-2 py-1.5">
 				<!-- Thinking indicator for optimistic messages -->
 				<div
 					v-if="isThinking"
@@ -135,8 +148,10 @@ import { computed, ref } from "vue";
 const props = withDefaults(defineProps<{
 	message: AgentThreadMessage;
 	readonly?: boolean;
+	isQueued?: boolean;
 }>(), {
-	readonly: false
+	readonly: false,
+	isQueued: false
 });
 
 defineEmits<{
@@ -146,7 +161,8 @@ defineEmits<{
 const showContent = ref(true);
 
 const isUserMessage = computed(() => props.message.role === "user");
-const hasFiles = computed(() => props.message.files && props.message.files.length > 0);
+// Queued messages only have fileIds (numbers), not full file objects, so skip file preview for them
+const hasFiles = computed(() => !props.isQueued && props.message.files && props.message.files.length > 0);
 
 /**
  * Check if this is an optimistic "thinking" message
@@ -167,9 +183,37 @@ const avatar = computed<{
 	messageClass?: string;
 }>(() => {
 	if (isUserMessage.value) {
-		return { icon: UserIcon, class: "bg-lime-500", messageClass: "bg-white border-lime-200/80" };
+		// Queued user messages get muted border color
+		const borderClass = props.isQueued ? "border-slate-300" : "border-lime-200/80";
+		return { icon: UserIcon, class: "bg-lime-500", messageClass: `bg-white ${borderClass}` };
 	}
 	return { icon: AssistantIcon, class: "bg-sky-500", iconClass: "w-4", messageClass: "bg-sky-50/50 border-sky-200/80" };
+});
+
+/**
+ * Get action and effort label for display (e.g., "Planning (high)")
+ */
+const actionEffortLabel = computed(() => {
+	if (props.message.role !== "assistant") return null;
+	const data = props.message.data as Record<string, unknown> | undefined;
+	if (!data?.action) return null;
+
+	const action = data.action === "plan" ? "Planning" : data.action === "build" ? "Building" : null;
+	if (!action) return null;
+
+	const effort = data.effort as string | undefined;
+	return effort ? `${action} (${effort})` : action;
+});
+
+/**
+ * Get styling class for action/effort badge
+ */
+const actionEffortClass = computed(() => {
+	const data = props.message.data as Record<string, unknown> | undefined;
+	if (data?.action === "plan") {
+		return "bg-purple-100 text-purple-700";
+	}
+	return "bg-teal-100 text-teal-700";
 });
 
 /**
