@@ -3,6 +3,7 @@
 namespace App\Services\Template;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
+use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\AgentThreadMessage;
@@ -10,9 +11,11 @@ use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateDefinitionHistory;
 use App\Services\Demand\TemplateVariableService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
+use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
@@ -23,6 +26,7 @@ use Newms87\Danx\Models\Utilities\StoredFile;
  */
 class TemplateDefinitionService
 {
+    use HasDebugLogging;
     /**
      * Create a new template definition.
      */
@@ -190,6 +194,41 @@ class TemplateDefinitionService
         $history->restore();
 
         return $template->fresh();
+    }
+
+    /**
+     * Cancel an in-progress build or plan for the template.
+     *
+     * Marks the JobDispatch as aborted, which the building/planning services check
+     * after the LLM responds. If the status is aborted, they abort processing.
+     *
+     * @param  bool  $discardPending  Whether to also discard queued pending build contexts
+     */
+    public function cancelBuild(TemplateDefinition $template, bool $discardPending = false): TemplateDefinition
+    {
+        $jobDispatch = $template->buildingJobDispatch;
+
+        if (!$jobDispatch) {
+            throw new ValidationError('No build in progress to cancel');
+        }
+
+        // Mark the job as aborted
+        $jobDispatch->update(['status' => JobDispatch::STATUS_ABORTED]);
+
+        if ($discardPending) {
+            $template->pending_build_context = null;
+            $template->save();
+        }
+
+        static::logDebug('Build cancellation requested', [
+            'template_id'     => $template->id,
+            'job_dispatch_id' => $jobDispatch->id,
+            'discard_pending' => $discardPending,
+        ]);
+
+        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+
+        return $template;
     }
 
     /**

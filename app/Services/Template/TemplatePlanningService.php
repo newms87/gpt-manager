@@ -143,6 +143,11 @@ class TemplatePlanningService
                 'status'        => $threadRun->status,
             ]);
 
+            // Check for cancellation before dispatching build
+            if ($this->checkCancellation($template)) {
+                return;
+            }
+
             if ($threadRun->isCompleted()) {
                 $plan = $threadRun->lastMessage?->content ?? '';
 
@@ -182,6 +187,33 @@ class TemplatePlanningService
 
             throw $e;
         }
+    }
+
+    /**
+     * Check if the build was cancelled and handle cleanup if so.
+     *
+     * @return bool True if cancelled (should return early), false to continue
+     */
+    protected function checkCancellation(TemplateDefinition $template): bool
+    {
+        $template->refresh();
+        $jobDispatch = $template->buildingJobDispatch;
+
+        if (!$jobDispatch || $jobDispatch->status !== JobDispatch::STATUS_ABORTED) {
+            return false;
+        }
+
+        static::logDebug('Planning cancelled, aborting', [
+            'template_id' => $template->id,
+        ]);
+
+        // Clear the build state (job is already marked as aborted)
+        $template->building_job_dispatch_id = null;
+        $template->save();
+
+        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+
+        return true;
     }
 
     protected function createPlanningThread(TemplateDefinition $template, ?string $effort = null): AgentThread

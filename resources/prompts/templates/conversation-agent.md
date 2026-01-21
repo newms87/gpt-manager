@@ -132,13 +132,13 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 
 ### Effort Levels
 
-| Level | When Planning | When Building |
-|-------|---------------|---------------|
-| **very_low** | Trivial outline, obvious structure | Single property change (one color, one font) |
-| **low** | Simple outline, clear requirements | Minor CSS tweaks, text updates |
-| **medium** | Standard template, moderate complexity | New sections, moderate HTML changes |
-| **high** | Complex multi-section, detailed analysis | Full template generation, major restructuring |
-| **very_high** | Highly complex, intricate requirements | Complete redesign, pixel-perfect matching |
+| Level | Scope (~lines changed) | When Planning | When Building |
+|-------|------------------------|---------------|---------------|
+| **very_low** | Under ~30 lines | Trivial outline, obvious structure | Single property change, simple tweaks |
+| **low** | Under ~100 lines | Simple outline, clear requirements | Minor CSS tweaks, add simple section |
+| **medium** | Under ~300 lines | Standard template, moderate complexity | New sections, moderate HTML changes |
+| **high** | 300+ lines | Complex multi-section, detailed analysis | Full template generation, major restructuring |
+| **very_high** | Complete rebuild | Highly complex, intricate requirements | Complete redesign, pixel-perfect matching |
 
 ### Examples
 
@@ -151,10 +151,19 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 }
 ```
 
-**Minor styling tweaks** → `action: "build"`, `effort: "low"`
+**Add a table row** → `action: "build"`, `effort: "very_low"`
 ```json
 {
-  "message": "Updating the font and spacing.",
+  "message": "Adding that row now.",
+  "action": "build",
+  "effort": "very_low"
+}
+```
+
+**Add footer with contact info** → `action: "build"`, `effort: "low"`
+```json
+{
+  "message": "Adding the footer with your contact details.",
   "action": "build",
   "effort": "low"
 }
@@ -189,12 +198,27 @@ When dispatching work (`action: "plan"` or `action: "build"`), you must also sel
 
 ### Key Guidelines
 
-- Default to `"low"` or `"medium"` for most requests
-- Use `"very_low"` only for trivial single-property changes
-- Use `"high"` or `"very_high"` only for genuinely complex requests
-- When in doubt, use `"medium"` as a safe default
+- **Start at `"very_low"` and scale UP only when needed**
+- Most small requests should be `"very_low"`: color changes, text edits, minor CSS, font changes, adding a simple element
+- Scale to `"low"` when adding a few related elements (e.g., a footer with contact info, a small table)
+- Scale to `"medium"` when creating something substantial (e.g., a new billing section, full invoice)
+- Reserve `"high"` and `"very_high"` for genuinely complex or pixel-perfect work
 - Only include `effort` when `action` is `"plan"` or `"build"`
 - When `action: null`, do NOT include effort field
+
+### Effort Selection Examples
+
+| Request | Effort | Why |
+|---------|--------|-----|
+| "Change header color to blue" | very_low | One line change |
+| "Update the font to Arial" | very_low | One property |
+| "Add a new row to the table" | very_low | Simple addition |
+| "Make the logo bigger" | very_low | One property |
+| "Add a footer with contact info" | low | A few elements |
+| "Add a payment terms section" | low | Small new section |
+| "Create a billing section with address fields" | low/medium | Multiple related elements |
+| "Create a full invoice template" | medium | New template structure |
+| "Recreate this exact design from the image" | high/very_high | Complex matching |
 
 ## Response Format
 

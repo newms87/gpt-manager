@@ -3,6 +3,7 @@
 namespace App\Services\Template;
 
 use App\Events\AgentThreadUpdatedEvent;
+use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateCollaborationJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
@@ -14,6 +15,7 @@ use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Models\Job\JobDispatch;
 use Newms87\Danx\Models\Utilities\StoredFile;
 
 /**
@@ -130,6 +132,13 @@ class TemplateCollaborationService
                 'status'        => $threadRun->status,
             ]);
 
+            // Check for cancellation before processing response
+            if ($thread->collaboratable instanceof TemplateDefinition) {
+                if ($this->checkCancellation($thread->collaboratable)) {
+                    return;
+                }
+            }
+
             // Process the response
             if ($threadRun->isCompleted()) {
                 $this->processConversationResponse($thread, $threadRun->lastMessage);
@@ -142,6 +151,33 @@ class TemplateCollaborationService
 
         // Broadcast thread update
         AgentThreadUpdatedEvent::dispatch($thread, 'updated');
+    }
+
+    /**
+     * Check if the build was cancelled and handle cleanup if so.
+     *
+     * @return bool True if cancelled (should return early), false to continue
+     */
+    protected function checkCancellation(TemplateDefinition $template): bool
+    {
+        $template->refresh();
+        $jobDispatch = $template->buildingJobDispatch;
+
+        if (!$jobDispatch || $jobDispatch->status !== JobDispatch::STATUS_ABORTED) {
+            return false;
+        }
+
+        static::logDebug('Collaboration cancelled, aborting processing', [
+            'template_id' => $template->id,
+        ]);
+
+        // Clear the build state (job is already marked as aborted)
+        $template->building_job_dispatch_id = null;
+        $template->save();
+
+        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+
+        return true;
     }
 
     /**

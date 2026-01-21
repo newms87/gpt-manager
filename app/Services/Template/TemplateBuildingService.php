@@ -6,12 +6,10 @@ use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Jobs\TemplateBuildingJob;
 use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
-use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateVariable;
-use App\Repositories\MessageRepository;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
@@ -138,35 +136,55 @@ class TemplateBuildingService
 
             // Create a temporary in-memory SchemaDefinition with the JSON schema
             // This allows us to use proper structured JSON output instead of json_object type
+            // Supports both full replacement and partial edits response types
             $tempSchemaDefinition = new SchemaDefinition([
                 'name'   => 'builder-response',
                 'schema' => [
                     'type'       => 'object',
                     'properties' => [
-                        'html_content' => [
+                        'response_type' => [
                             'type'        => 'string',
-                            'description' => 'The HTML template markup',
+                            'enum'        => ['full', 'partial'],
+                            'description' => 'full for complete replacement, partial for anchored edits',
+                        ],
+                        // For full response (complete replacement):
+                        'html_content' => [
+                            'type'        => ['string', 'null'],
+                            'description' => 'The HTML template markup (for full response)',
                         ],
                         'css_content' => [
-                            'type'        => 'string',
-                            'description' => 'CSS styles for the template',
+                            'type'        => ['string', 'null'],
+                            'description' => 'CSS styles for the template (for full response)',
                         ],
-                        'variable_names' => [
-                            'type'        => 'array',
-                            'items'       => ['type' => 'string'],
-                            'description' => 'Variable names extracted from data-var-* attributes',
+                        // For partial response (anchored edits):
+                        'html_edits' => [
+                            'type'        => ['array', 'null'],
+                            'description' => 'Anchored replacement edits for HTML (for partial response)',
+                            'items'       => [
+                                'type'       => 'object',
+                                'properties' => [
+                                    'old_string' => ['type' => 'string', 'description' => 'Exact content to find (must match uniquely)'],
+                                    'new_string' => ['type' => 'string', 'description' => 'Replacement content'],
+                                ],
+                                'required'             => ['old_string', 'new_string'],
+                                'additionalProperties' => false,
+                            ],
                         ],
-                        'screenshot_request' => [
-                            'type'        => ['object', 'boolean'],
-                            'description' => 'Screenshot request object or false if not needed',
-                            'properties'  => [
-                                'id'     => ['type' => 'string'],
-                                'status' => ['type' => 'string', 'enum' => ['pending']],
-                                'reason' => ['type' => 'string'],
+                        'css_edits' => [
+                            'type'        => ['array', 'null'],
+                            'description' => 'Anchored replacement edits for CSS (for partial response)',
+                            'items'       => [
+                                'type'       => 'object',
+                                'properties' => [
+                                    'old_string' => ['type' => 'string', 'description' => 'Exact content to find (must match uniquely)'],
+                                    'new_string' => ['type' => 'string', 'description' => 'Replacement content'],
+                                ],
+                                'required'             => ['old_string', 'new_string'],
+                                'additionalProperties' => false,
                             ],
                         ],
                     ],
-                    'required'             => ['html_content', 'css_content', 'variable_names'],
+                    'required'             => ['response_type'],
                     'additionalProperties' => false,
                 ],
             ]);
@@ -182,21 +200,58 @@ class TemplateBuildingService
                 'status'        => $threadRun->status,
             ]);
 
+            // Check for cancellation before processing response
+            if ($this->checkCancellation($template)) {
+                return;
+            }
+
             // Process the response
             if ($threadRun->isCompleted()) {
                 $this->processBuilderResponse($threadRun, $template);
             }
         } finally {
-            // Clear the building job dispatch ID
-            $template->building_job_dispatch_id = null;
-            $template->save();
+            // Refresh to check if cancellation already cleared the job dispatch ID
+            $template->refresh();
 
-            // Notify frontend that build is complete
-            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+            // Only clear if not already cleared by cancellation
+            if ($template->building_job_dispatch_id !== null) {
+                $template->building_job_dispatch_id = null;
+                $template->save();
+
+                // Notify frontend that build is complete
+                TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+            }
 
             // Check for pending builds
             $this->processPendingBuilds($template);
         }
+    }
+
+    /**
+     * Check if the build was cancelled and handle cleanup if so.
+     *
+     * @return bool True if cancelled (should return early), false to continue
+     */
+    protected function checkCancellation(TemplateDefinition $template): bool
+    {
+        $template->refresh();
+        $jobDispatch = $template->buildingJobDispatch;
+
+        if (!$jobDispatch || $jobDispatch->status !== JobDispatch::STATUS_ABORTED) {
+            return false;
+        }
+
+        static::logDebug('Build cancelled, aborting processing', [
+            'template_id' => $template->id,
+        ]);
+
+        // Clear the build state (job is already marked as aborted)
+        $template->building_job_dispatch_id = null;
+        $template->save();
+
+        TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+
+        return true;
     }
 
     /**
@@ -280,8 +335,7 @@ class TemplateBuildingService
     /**
      * Process the builder agent's response.
      *
-     * Extracts html_content, css_content, and variable_names from the response,
-     * updates the template (triggering auto-versioning), and syncs variables.
+     * Routes to appropriate handler based on response_type (full or partial).
      */
     protected function processBuilderResponse(AgentThreadRun $run, TemplateDefinition $template): array
     {
@@ -310,11 +364,31 @@ class TemplateBuildingService
             ];
         }
 
+        $responseType = $responseData['response_type'] ?? 'full';
+
+        static::logDebug('Response type detected', [
+            'template_id'   => $template->id,
+            'response_type' => $responseType,
+        ]);
+
+        if ($responseType === 'partial') {
+            return $this->processPartialResponse($run, $responseData, $template);
+        }
+
+        return $this->processFullResponse($run, $responseData, $template);
+    }
+
+    /**
+     * Process a full replacement response.
+     *
+     * Extracts html_content and css_content from the response,
+     * updates the template (triggering auto-versioning), and syncs variables from HTML.
+     */
+    protected function processFullResponse(AgentThreadRun $run, array $responseData, TemplateDefinition $template): array
+    {
         // Extract content from response
-        $htmlContent       = $responseData['html_content']       ?? null;
-        $cssContent        = $responseData['css_content']        ?? null;
-        $variableNames     = $responseData['variable_names']     ?? [];
-        $screenshotRequest = $responseData['screenshot_request'] ?? null;
+        $htmlContent = $responseData['html_content'] ?? null;
+        $cssContent  = $responseData['css_content']  ?? null;
 
         // Update template if we have new content (triggers auto-versioning)
         $updated = false;
@@ -330,7 +404,7 @@ class TemplateBuildingService
 
         if ($updated) {
             $template->save();
-            static::logDebug('Template content updated', [
+            static::logDebug('Template content updated (full)', [
                 'template_id' => $template->id,
                 'html_length' => strlen($htmlContent ?? ''),
                 'css_length'  => strlen($cssContent ?? ''),
@@ -340,25 +414,155 @@ class TemplateBuildingService
             TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
         }
 
-        // Sync variables
-        $variablesSynced = $this->syncVariables($template, $variableNames);
+        // Sync variables (extracted from HTML)
+        $variablesSynced = $this->syncVariables($template, []);
 
-        // Handle screenshot request in message data
-        if ($screenshotRequest && is_array($screenshotRequest) && $screenshotRequest !== false) {
-            $this->storeScreenshotRequest($run->lastMessage, $screenshotRequest);
-        }
-
-        static::logDebug('Builder response processed', [
-            'template_updated'       => $updated,
-            'variables_synced'       => $variablesSynced,
-            'has_screenshot_request' => $screenshotRequest !== null && $screenshotRequest !== false,
+        static::logDebug('Full response processed', [
+            'template_updated' => $updated,
+            'variables_synced' => $variablesSynced,
         ]);
 
         return [
-            'status'             => 'success',
-            'screenshot_request' => $screenshotRequest !== false ? $screenshotRequest : null,
-            'variables_synced'   => $variablesSynced,
+            'status'           => 'success',
+            'variables_synced' => $variablesSynced,
         ];
+    }
+
+    /**
+     * Process a partial edits response.
+     *
+     * Applies anchored replacement edits to HTML and CSS content.
+     */
+    protected function processPartialResponse(AgentThreadRun $run, array $responseData, TemplateDefinition $template): array
+    {
+        $htmlEdits = $responseData['html_edits'] ?? [];
+        $cssEdits  = $responseData['css_edits']  ?? [];
+
+        static::logDebug('Processing partial edits', [
+            'template_id'     => $template->id,
+            'html_edit_count' => count($htmlEdits),
+            'css_edit_count'  => count($cssEdits),
+        ]);
+
+        $editService = app(TemplateEditService::class);
+
+        $htmlResult = $editService->applyEdits($template->html_content ?? '', $htmlEdits);
+        $cssResult  = $editService->applyEdits($template->css_content ?? '', $cssEdits);
+
+        // Collect recoverable errors
+        $htmlErrors = array_filter($htmlResult['errors'], fn($e) => $e['recoverable'] ?? false);
+        $cssErrors  = array_filter($cssResult['errors'], fn($e) => $e['recoverable'] ?? false);
+
+        if (!empty($htmlErrors) || !empty($cssErrors)) {
+            return $this->handleRecoverableErrors($template, $htmlErrors, $cssErrors);
+        }
+
+        // Apply successful edits
+        $updated = false;
+        if ($htmlResult['content'] !== $template->html_content) {
+            $template->html_content = $htmlResult['content'];
+            $updated                = true;
+        }
+        if ($cssResult['content'] !== $template->css_content) {
+            $template->css_content = $cssResult['content'];
+            $updated               = true;
+        }
+
+        if ($updated) {
+            $template->save();
+            static::logDebug('Template content updated (partial)', [
+                'template_id'        => $template->id,
+                'html_edits_applied' => $htmlResult['applied_count'],
+                'css_edits_applied'  => $cssResult['applied_count'],
+            ]);
+
+            TemplateDefinitionUpdatedEvent::dispatch($template, 'updated');
+        }
+
+        // Sync variables (extracted from HTML)
+        $variablesSynced = $this->syncVariables($template, []);
+
+        static::logDebug('Partial response processed', [
+            'applied_count'    => $htmlResult['applied_count'] + $cssResult['applied_count'],
+            'variables_synced' => $variablesSynced,
+        ]);
+
+        return [
+            'status'           => 'success',
+            'applied_count'    => $htmlResult['applied_count'] + $cssResult['applied_count'],
+            'variables_synced' => $variablesSynced,
+        ];
+    }
+
+    /**
+     * Handle recoverable edit errors.
+     *
+     * Logs errors and optionally dispatches a correction build if auto_correct is enabled.
+     */
+    protected function handleRecoverableErrors(
+        TemplateDefinition $template,
+        array $htmlErrors,
+        array $cssErrors
+    ): array {
+        static::logDebug('Recoverable edit errors detected', [
+            'template_id'      => $template->id,
+            'html_error_count' => count($htmlErrors),
+            'css_error_count'  => count($cssErrors),
+        ]);
+
+        // Build error feedback for potential LLM correction
+        $allErrors = array_merge(
+            array_map(fn($e) => array_merge($e, ['content_type' => 'html']), $htmlErrors),
+            array_map(fn($e) => array_merge($e, ['content_type' => 'css']), $cssErrors)
+        );
+
+        // Check if auto-correction is enabled
+        if (config('ai.template_building.partial_edits.auto_correct', false)) {
+            $correctionContext = $this->buildCorrectionContext($template, $allErrors);
+            $this->dispatchBuild($template, $correctionContext, effort: 'low');
+
+            return [
+                'status' => 'correcting',
+                'errors' => $allErrors,
+            ];
+        }
+
+        // Otherwise, log and continue (partial edits already applied)
+        return [
+            'status'  => 'partial_failure',
+            'errors'  => $allErrors,
+            'message' => 'Some edits could not be applied. Applied edits have been saved.',
+        ];
+    }
+
+    /**
+     * Build correction context message for failed edits.
+     *
+     * Generates a message explaining which edits failed and why,
+     * so the LLM can retry with corrected anchors.
+     */
+    protected function buildCorrectionContext(TemplateDefinition $template, array $errors): string
+    {
+        $context = "Some edits could not be applied. Please review and retry:\n\n";
+
+        foreach ($errors as $error) {
+            $type  = $error['content_type'];
+            $index = $error['index'];
+
+            if (($error['recovery_action'] ?? '') === 'expand_anchor') {
+                $count   = $error['count'] ?? 'multiple';
+                $context .= "{$type} Edit #{$index}: Found {$count} matches. ";
+                $context .= "Provide a longer old_string with more surrounding context.\n";
+            } elseif (($error['recovery_action'] ?? '') === 'rebase') {
+                $context .= "{$type} Edit #{$index}: Anchor not found. Content may have changed.\n";
+            } else {
+                $context .= "{$type} Edit #{$index}: {$error['hint']}\n";
+            }
+        }
+
+        $context .= "\n---\nCurrent template content has been updated. Please use response_type: 'full' or provide corrected partial edits.";
+
+        return $context;
     }
 
     /**
@@ -491,59 +695,5 @@ class TemplateBuildingService
     {
         // Convert snake_case to Title Case
         return ucwords(str_replace('_', ' ', $name));
-    }
-
-    /**
-     * Store screenshot request in message data.
-     */
-    protected function storeScreenshotRequest(AgentThreadMessage $message, array $screenshotRequest): void
-    {
-        $data                       = $message->data ?? [];
-        $data['screenshot_request'] = [
-            'id'           => $screenshotRequest['id'] ?? uniqid('screenshot_'),
-            'status'       => 'pending',
-            'reason'       => $screenshotRequest['reason'] ?? 'Screenshot requested by LLM',
-            'requested_at' => now()->toIso8601String(),
-        ];
-
-        $message->data = $data;
-        $message->save();
-
-        static::logDebug('Screenshot request stored in message', [
-            'message_id' => $message->id,
-            'request_id' => $data['screenshot_request']['id'],
-        ]);
-    }
-
-    /**
-     * Handle screenshot response from frontend.
-     *
-     * Updates the message data with screenshot info and attaches the screenshot file.
-     */
-    public function handleScreenshotResponse(AgentThreadMessage $message, \Newms87\Danx\Models\Utilities\StoredFile $screenshot): void
-    {
-        static::logDebug('Handling screenshot response', [
-            'message_id'    => $message->id,
-            'screenshot_id' => $screenshot->id,
-        ]);
-
-        // Update message data with screenshot completion
-        $data = $message->data ?? [];
-        if (isset($data['screenshot_request'])) {
-            $data['screenshot_request']['status']        = 'completed';
-            $data['screenshot_request']['screenshot_id'] = $screenshot->id;
-            $data['screenshot_request']['completed_at']  = now()->toIso8601String();
-        }
-
-        $message->data = $data;
-        $message->save();
-
-        // Attach screenshot to message
-        app(MessageRepository::class)->saveFiles($message, [$screenshot->id]);
-
-        static::logDebug('Screenshot response handled', [
-            'message_id'    => $message->id,
-            'screenshot_id' => $screenshot->id,
-        ]);
     }
 }
