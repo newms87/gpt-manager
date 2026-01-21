@@ -63,20 +63,65 @@ return [
 
     // Template collaboration (conversation agent)
     'template_collaboration' => [
-        'model'   => env('AI_TEMPLATE_COLLABORATION_MODEL', 'gpt-5-mini'),
-        'timeout' => env('AI_TEMPLATE_COLLABORATION_TIMEOUT', 120),
+        'model'       => env('AI_TEMPLATE_COLLABORATION_MODEL', 'gpt-5-nano'),
+        'timeout'     => env('AI_TEMPLATE_COLLABORATION_TIMEOUT', 120),
+        'api_options' => [
+            'reasoning' => [
+                'effort' => 'low',
+            ],
+        ],
     ],
 
     // Template planning (planning agent for complex requests)
     'template_planning' => [
-        'model'   => env('AI_TEMPLATE_PLANNING_MODEL', 'gpt-5.2'),
-        'timeout' => env('AI_TEMPLATE_PLANNING_TIMEOUT', 300),
+        'timeout'        => env('AI_TEMPLATE_PLANNING_TIMEOUT', 300),
+        'efforts'        => [
+            'low' => [
+                'model'       => 'gpt-5-nano',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'medium'],
+                ],
+            ],
+            'medium' => [
+                'model'       => 'gpt-5-mini',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'medium'],
+                ],
+            ],
+            'high' => [
+                'model'       => 'gpt-5.2',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'high'],
+                ],
+            ],
+        ],
+        'default_effort' => 'low',
     ],
 
     // Template building (HTML/CSS generation agent)
     'template_building' => [
-        'model'   => env('AI_TEMPLATE_BUILDING_MODEL', 'gpt-5.2-codex'),
-        'timeout' => env('AI_TEMPLATE_BUILDING_TIMEOUT', 300),
+        'timeout'        => env('AI_TEMPLATE_BUILDING_TIMEOUT', 300),
+        'efforts'        => [
+            'low' => [
+                'model'       => 'gpt-5',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'low'],
+                ],
+            ],
+            'medium' => [
+                'model'       => 'gpt-5.2',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'medium'],
+                ],
+            ],
+            'high' => [
+                'model'       => 'gpt-5.2-codex',
+                'api_options' => [
+                    'reasoning' => ['effort' => 'high'],
+                ],
+            ],
+        ],
+        'default_effort' => 'medium',
     ],
 
     // Artifact deduplication

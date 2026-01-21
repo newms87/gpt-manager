@@ -21,9 +21,12 @@ class TemplatePlanningJob extends Job
     public function __construct(
         public TemplateDefinition $template,
         public string $userMessage,
-        public AgentThread $thread
+        public AgentThread $thread,
+        public ?string $effort = null
     ) {
-        static::logDebug("TemplatePlanningJob created for template {$template->id}");
+        static::logDebug("TemplatePlanningJob created for template {$template->id}", [
+            'effort' => $effort,
+        ]);
         parent::__construct();
     }
 
@@ -37,7 +40,8 @@ class TemplatePlanningJob extends Job
         app(TemplatePlanningService::class)->plan(
             $this->template,
             $this->userMessage,
-            $this->thread
+            $this->thread,
+            $this->effort
         );
     }
 }

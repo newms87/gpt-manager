@@ -33,8 +33,9 @@ The templates system allows users to create reusable document templates (invoice
 │    TemplateVariable         - Variable definitions + mappings       │
 │    TemplateDefinitionHistory- Auto-versioning snapshots             │
 │                                                                     │
-│  Services (Two-Agent Architecture):                                 │
+│  Services (Three-Agent Architecture):                               │
 │    TemplateCollaborationService - Fast conversation (gpt-5-nano)    │
+│    TemplatePlanningService      - Complex planning layer            │
 │    TemplateBuildingService      - Powerful builder (gpt-5.2-codex)  │
 │    TemplateRenderingService     - Orchestrates rendering            │
 │    HtmlRenderingService         - HTML template renderer            │
@@ -43,25 +44,33 @@ The templates system allows users to create reusable document templates (invoice
 │                                                                     │
 │  Jobs:                                                              │
 │    TemplateCollaborationJob - Queues collaboration messages         │
+│    TemplatePlanningJob      - Queues complex planning tasks         │
 │    TemplateBuildingJob      - Queues template builds                │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Two-Agent Architecture
+### Three-Agent Architecture
 
-The template system uses a sophisticated two-agent pattern:
+The template system uses a sophisticated three-agent pattern:
 
 1. **Conversation Agent** (`TemplateCollaborationService`, model: `gpt-5-nano`)
    - Fast responses to user messages
-   - Understands user intent and provides feedback
-   - Optionally dispatches build jobs when template changes are needed
+   - Brief acknowledgments only - NO detailed planning
+   - Dispatches to Planning or Building based on complexity
 
-2. **Builder Agent** (`TemplateBuildingService`, model: `gpt-5.2-codex`)
+2. **Planning Agent** (`TemplatePlanningService`)
+   - Creates detailed implementation plans for complex requests
+   - Analyzes current template state
+   - Outputs structured plan for Builder agent
+
+3. **Builder Agent** (`TemplateBuildingService`, model: `gpt-5.2-codex`)
    - Powerful model for complex template generation
    - Actually modifies HTML/CSS content
+   - Follows plans from Planning agent
+   - Syncs template variables from generated content
    - Runs asynchronously via job dispatch
 
-This separation provides fast conversation feedback while ensuring high-quality template generation.
+This separation provides fast conversation feedback, thoughtful planning for complex requests, and high-quality template generation.
 
 ## Data Models
 
@@ -175,9 +184,21 @@ Fast conversation agent for user interactions and initial collaboration setup.
 **Key Responsibilities:**
 - Start new collaboration threads via `startCollaboration()`
 - Handle user messages in real-time
-- Provide conversational feedback
+- Provide brief acknowledgments only - NO detailed planning
 - Determine when template modifications are needed
-- Dispatch build jobs to `TemplateBuildingService` when needed
+- Dispatch to Planning agent for complex requests or directly to Builder for simple changes
+
+### TemplatePlanningService
+
+**Location:** `app/Services/Template/TemplatePlanningService.php`
+
+Planning agent for complex template modification requests.
+
+**Key Responsibilities:**
+- Create detailed implementation plans for complex requests
+- Analyze current template state (HTML/CSS)
+- Output structured plans for the Builder agent
+- Run asynchronously via `TemplatePlanningJob`
 
 ### TemplateBuildingService
 
@@ -189,6 +210,7 @@ Powerful builder agent for actual template modifications.
 
 **Key Responsibilities:**
 - Generate/modify HTML and CSS content
+- Follow plans from Planning agent for complex changes
 - Process source files (PDFs, images) for template recreation
 - Sync template variables from generated content
 - Run asynchronously via `TemplateBuildingJob`
@@ -264,6 +286,12 @@ Resolves variable values from various sources.
 **Location:** `app/Jobs/TemplateCollaborationJob.php`
 
 Queues collaboration messages for async processing.
+
+### TemplatePlanningJob
+
+**Location:** `app/Jobs/TemplatePlanningJob.php`
+
+Queues complex planning tasks for async processing.
 
 ### TemplateBuildingJob
 
@@ -522,7 +550,7 @@ interface ScreenshotRequest {
 6. TemplateCollaborationService initiates LLM conversation
 7. Frontend subscribes to Pusher events for real-time updates
 
-### Message Flow (Two-Agent Pattern)
+### Message Flow (Three-Agent Pattern)
 
 1. User types message and clicks Send (or Ctrl+Enter)
 2. Frontend adds optimistic messages:
@@ -530,8 +558,12 @@ interface ScreenshotRequest {
    - Assistant "thinking" message (shows spinner)
 3. `sendMessageAction.trigger()` sends to backend
 4. Backend queues `TemplateCollaborationJob` (fast gpt-5-nano)
-5. Collaboration agent responds conversationally
-6. If template changes needed, collaboration agent dispatches `TemplateBuildingJob` (gpt-5.2-codex)
+5. Conversation agent responds with brief acknowledgment
+6. Based on complexity:
+   - **Complex requests:** Conversation agent dispatches `TemplatePlanningJob`
+     - Planning agent creates detailed implementation plan
+     - Planning agent dispatches `TemplateBuildingJob` with the plan
+   - **Simple requests:** Conversation agent dispatches `TemplateBuildingJob` directly
 7. Build job updates template HTML/CSS and syncs variables
 8. Pusher events notify frontend of:
    - Thread updates (conversation messages)
@@ -566,6 +598,7 @@ app/
 ├── Services/Template/
 │   ├── TemplateDefinitionService.php
 │   ├── TemplateCollaborationService.php
+│   ├── TemplatePlanningService.php
 │   ├── TemplateBuildingService.php
 │   ├── TemplateRenderingService.php
 │   ├── HtmlRenderingService.php
@@ -575,6 +608,7 @@ app/
 │   └── TemplateVariableService.php
 ├── Jobs/
 │   ├── TemplateCollaborationJob.php
+│   ├── TemplatePlanningJob.php
 │   └── TemplateBuildingJob.php
 ├── Http/Controllers/Template/
 │   └── TemplateDefinitionsController.php

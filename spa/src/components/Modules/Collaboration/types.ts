@@ -2,6 +2,17 @@ import { AgentThread, AgentThreadMessage } from "@/types";
 import { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 
 /**
+ * A message queued locally while waiting for LLM response
+ * Uses negative IDs to distinguish from server-generated messages
+ */
+export interface QueuedMessage {
+	id: number;  // Negative temporary ID
+	content: string;
+	timestamp: string;
+	fileIds?: number[];  // File IDs if any
+}
+
+/**
  * Extended thread interface for collaboration contexts
  * Includes optional polymorphic relationship fields
  */

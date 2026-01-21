@@ -12,6 +12,7 @@
 				:readonly="readonly"
 				class="flex-grow overflow-hidden"
 				@send-message="$emit('send-message', $event)"
+				@send-batch="$emit('send-batch', $event)"
 				@screenshot-needed="$emit('screenshot-needed', $event)"
 			/>
 		</div>
@@ -38,7 +39,7 @@
 
 <script setup lang="ts">
 import CollaborationChat from "@/components/Modules/Collaboration/CollaborationChat.vue";
-import { CollaborationThread, SendMessagePayload } from "@/components/Modules/Collaboration/types";
+import { CollaborationThread, QueuedMessage, SendMessagePayload } from "@/components/Modules/Collaboration/types";
 import { getItem, setItem } from "quasar-ui-danx";
 import { onMounted, onUnmounted, ref } from "vue";
 
@@ -58,6 +59,7 @@ withDefaults(defineProps<{
 
 defineEmits<{
 	"send-message": [payload: SendMessagePayload];
+	"send-batch": [messages: QueuedMessage[]];
 	"screenshot-needed": [requestId: string];
 }>();
 

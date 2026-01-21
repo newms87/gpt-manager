@@ -149,10 +149,14 @@ export function useTemplateCollaboration(template: Ref<TemplateDefinition | null
 
         try {
             const result = await dxTemplateDefinition.routes.details(template.value, {
+                html_content: true,
+                css_content: true,
+                history: true,
                 collaboration_threads: { chat_messages: true },
                 building_job_dispatch: true,
                 pending_build_context: true,
-                job_dispatch_count: true
+                job_dispatch_count: true,
+                template_variable_count: true
             });
 
             if (result) {

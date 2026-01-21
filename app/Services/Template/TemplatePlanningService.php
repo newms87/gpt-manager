@@ -26,9 +26,18 @@ class TemplatePlanningService
 
     protected const string PLANNING_AGENT_NAME = 'Template Planning Agent';
 
-    protected function getPlanningModel(): string
+    protected function getModelForEffort(?string $effort): string
     {
-        return config('ai.template_planning.model');
+        $effort = $effort ?? config('ai.template_planning.default_effort', 'low');
+
+        return config("ai.template_planning.efforts.{$effort}.model", 'gpt-5-nano');
+    }
+
+    protected function getApiOptionsForEffort(?string $effort): array
+    {
+        $effort = $effort ?? config('ai.template_planning.default_effort', 'low');
+
+        return config("ai.template_planning.efforts.{$effort}.api_options", []);
     }
 
     protected function getPlanningTimeout(): int
@@ -42,7 +51,8 @@ class TemplatePlanningService
     public function dispatchPlan(
         TemplateDefinition $template,
         string $userMessage,
-        AgentThread $thread
+        AgentThread $thread,
+        ?string $effort = null
     ): void {
         $template->refresh();
 
@@ -77,7 +87,7 @@ class TemplatePlanningService
             }
         }
 
-        $job = new TemplatePlanningJob($template, $userMessage, $thread);
+        $job = new TemplatePlanningJob($template, $userMessage, $thread, $effort);
         $job->dispatch();
 
         $jobDispatch = $job->getJobDispatch();
@@ -104,16 +114,18 @@ class TemplatePlanningService
     public function plan(
         TemplateDefinition $template,
         string $userMessage,
-        AgentThread $thread
+        AgentThread $thread,
+        ?string $effort = null
     ): void {
         static::logDebug('Starting template planning', [
             'template_id'    => $template->id,
             'message_length' => strlen($userMessage),
+            'effort'         => $effort,
         ]);
 
         try {
-            // Create planning thread
-            $planThread = $this->createPlanningThread($template);
+            // Create planning thread with effort-based model
+            $planThread = $this->createPlanningThread($template, $effort);
 
             // Build comprehensive prompt
             $prompt = $this->buildPlanningPrompt($template, $userMessage, $thread);
@@ -172,9 +184,9 @@ class TemplatePlanningService
         }
     }
 
-    protected function createPlanningThread(TemplateDefinition $template): AgentThread
+    protected function createPlanningThread(TemplateDefinition $template, ?string $effort = null): AgentThread
     {
-        $agent = $this->findOrCreatePlanningAgent();
+        $agent = $this->findOrCreatePlanningAgent($effort);
 
         $thread = AgentThreadBuilderService::for($agent, $template->team_id)
             ->named("Plan: {$template->name}")
@@ -183,6 +195,7 @@ class TemplatePlanningService
         static::logDebug('Created planning thread', [
             'thread_id'   => $thread->id,
             'template_id' => $template->id,
+            'effort'      => $effort,
         ]);
 
         return $thread;
@@ -264,58 +277,44 @@ class TemplatePlanningService
         return implode("\n\n", $history);
     }
 
-    protected function findOrCreatePlanningAgent(): Agent
+    protected function findOrCreatePlanningAgent(?string $effort = null): Agent
     {
         $agent = Agent::where('name', self::PLANNING_AGENT_NAME)
             ->whereNull('team_id')
             ->first();
 
         $instructions = $this->getPlanningAgentInstructions();
+        $model        = $this->getModelForEffort($effort);
+        $apiOptions   = array_merge($this->getApiOptionsForEffort($effort), [
+            'instructions' => $instructions,
+        ]);
 
         if (!$agent) {
-            $model = $this->getPlanningModel();
             $agent = Agent::create([
                 'name'        => self::PLANNING_AGENT_NAME,
                 'team_id'     => null,
                 'model'       => $model,
                 'description' => 'Plans complex template modifications before passing to builder agent.',
-                'api_options' => [
-                    'instructions' => $instructions,
-                ],
+                'api_options' => $apiOptions,
             ]);
 
             static::logDebug('Created Planning Agent', [
                 'agent_id' => $agent->id,
                 'model'    => $model,
+                'effort'   => $effort,
             ]);
         } else {
-            // Update model and instructions if they differ from config
-            $model               = $this->getPlanningModel();
-            $currentInstructions = $agent->api_options['instructions'] ?? null;
-            $needsUpdate         = false;
-            $updates             = [];
+            // Always update model and api_options based on current effort level
+            $agent->update([
+                'model'       => $model,
+                'api_options' => $apiOptions,
+            ]);
 
-            if ($agent->model !== $model) {
-                $updates['model'] = $model;
-                $needsUpdate      = true;
-            }
-
-            if ($currentInstructions !== $instructions) {
-                $updates['api_options'] = array_merge($agent->api_options ?? [], [
-                    'instructions' => $instructions,
-                ]);
-                $needsUpdate = true;
-            }
-
-            if ($needsUpdate) {
-                $agent->update($updates);
-
-                static::logDebug('Updated Planning Agent', [
-                    'agent_id'             => $agent->id,
-                    'model_updated'        => isset($updates['model']),
-                    'instructions_updated' => isset($updates['api_options']),
-                ]);
-            }
+            static::logDebug('Updated Planning Agent for effort', [
+                'agent_id' => $agent->id,
+                'model'    => $model,
+                'effort'   => $effort,
+            ]);
         }
 
         return $agent;

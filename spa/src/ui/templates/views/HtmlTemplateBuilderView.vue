@@ -64,6 +64,7 @@
 				class="h-full"
 				@start-collaboration="startCollaboration"
 				@send-message="sendMessage"
+				@send-batch="sendBatchedMessages"
 				@screenshot-captured="uploadScreenshot"
 				@retry-build="handleRetryBuild"
 				@load-job-dispatches="loadJobDispatches"
@@ -90,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { CollaborationVersionHistory, SendMessagePayload } from "@/components/Modules/Collaboration";
+import { CollaborationVersionHistory, QueuedMessage, SendMessagePayload } from "@/components/Modules/Collaboration";
 import { HtmlTemplateBuilder } from "@/components/Modules/Templates";
 import { AgentThread } from "@/types";
 import {
@@ -439,6 +440,20 @@ async function sendMessage(payload: SendMessagePayload) {
 	// will handle updating the thread when the job completes with real messages
 	isSaving.value = false;
 	isSaved.value = true;
+}
+
+/**
+ * Send multiple queued messages as a single combined message
+ * Combines all queued messages into one message separated by newlines
+ */
+async function sendBatchedMessages(messages: QueuedMessage[]) {
+	if (!messages.length) return;
+
+	// Combine all messages into one, separated by double newlines for readability
+	const combinedContent = messages.map(m => m.content).join("\n\n");
+
+	// Use the existing sendMessage flow with the combined content
+	await sendMessage({ message: combinedContent });
 }
 
 /**

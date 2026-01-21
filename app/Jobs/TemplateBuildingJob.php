@@ -19,9 +19,12 @@ class TemplateBuildingJob extends Job
 
     public function __construct(
         public TemplateDefinition $template,
-        public string $buildContext
+        public string $buildContext,
+        public ?string $effort = null
     ) {
-        static::logDebug("TemplateBuildingJob created for template {$template->id}");
+        static::logDebug("TemplateBuildingJob created for template {$template->id}", [
+            'effort' => $effort,
+        ]);
         parent::__construct();
     }
 
@@ -32,6 +35,6 @@ class TemplateBuildingJob extends Job
 
     public function run(): void
     {
-        app(TemplateBuildingService::class)->build($this->template, $this->buildContext);
+        app(TemplateBuildingService::class)->build($this->template, $this->buildContext, $this->effort);
     }
 }

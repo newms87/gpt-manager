@@ -7,6 +7,7 @@
 				:thread="thread"
 				:loading="loading"
 				@send-message="$emit('send-message', $event)"
+				@send-batch="$emit('send-batch', $event)"
 				@screenshot-needed="handleScreenshotRequest"
 			>
 				<template #preview>
@@ -109,6 +110,7 @@ import {
 	CollaborationFileUpload,
 	CollaborationPanel,
 	CollaborationScreenshotCapture,
+	QueuedMessage,
 	SendMessagePayload
 } from "@/components/Modules/Collaboration";
 import HtmlTemplatePreview from "@/components/Modules/Templates/HtmlTemplatePreview.vue";
@@ -135,6 +137,7 @@ const emit = defineEmits<{
 	"update-template": [updates: TemplateUpdatePayload];
 	"start-collaboration": [files: File[], prompt: string];
 	"send-message": [payload: SendMessagePayload];
+	"send-batch": [messages: QueuedMessage[]];
 	"screenshot-captured": [requestId: string, file: File];
 	"retry-build": [];
 	"load-job-dispatches": [];

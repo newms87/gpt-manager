@@ -32,12 +32,23 @@ class TemplateBuildingService
 
     protected const int DEFAULT_TIMEOUT = 600;
 
-    /**
-     * Get the model to use for template building.
-     */
-    protected function getBuilderModel(): string
+    protected function getModelForEffort(?string $effort): string
     {
-        return config('ai.template_building.model');
+        $effort = $effort ?? config('ai.template_building.default_effort', 'medium');
+
+        return config("ai.template_building.efforts.{$effort}.model", 'gpt-5.2');
+    }
+
+    protected function getApiOptionsForEffort(?string $effort): array
+    {
+        $effort = $effort ?? config('ai.template_building.default_effort', 'medium');
+
+        return config("ai.template_building.efforts.{$effort}.api_options", []);
+    }
+
+    protected function getBuildingTimeout(): int
+    {
+        return config('ai.template_building.timeout', 300);
     }
 
     /**
@@ -45,7 +56,7 @@ class TemplateBuildingService
      *
      * Handles queueing/merging when a build is already in progress.
      */
-    public function dispatchBuild(TemplateDefinition $template, string $context): void
+    public function dispatchBuild(TemplateDefinition $template, string $context, ?string $effort = null): void
     {
         $template->refresh();
 
@@ -80,7 +91,7 @@ class TemplateBuildingService
         }
 
         // Not building - start new build
-        $job = new TemplateBuildingJob($template, $context);
+        $job = new TemplateBuildingJob($template, $context, $effort);
         $job->dispatch();
 
         $jobDispatch = $job->getJobDispatch();
@@ -107,16 +118,17 @@ class TemplateBuildingService
      *
      * This is the main entry point called by TemplateBuildingJob.
      */
-    public function build(TemplateDefinition $template, string $context): void
+    public function build(TemplateDefinition $template, string $context, ?string $effort = null): void
     {
         static::logDebug('Starting template build', [
             'template_id'    => $template->id,
             'context_length' => strlen($context),
+            'effort'         => $effort,
         ]);
 
         try {
-            // Create a fresh build thread (not linked to template's collaborationThreads)
-            $thread = $this->createBuildThread($template);
+            // Create a fresh build thread with effort-based model (not linked to template's collaborationThreads)
+            $thread = $this->createBuildThread($template, $effort);
 
             // Build a comprehensive prompt with instructions, current template content, and context
             $prompt = $this->buildBuilderPrompt($template, $context);
@@ -195,9 +207,9 @@ class TemplateBuildingService
      * Importantly, we do NOT call forCollaboratable() so these threads don't pollute
      * the template's collaborationThreads relationship.
      */
-    protected function createBuildThread(TemplateDefinition $template): AgentThread
+    protected function createBuildThread(TemplateDefinition $template, ?string $effort = null): AgentThread
     {
-        $agent = $this->findOrCreateBuilderAgent();
+        $agent = $this->findOrCreateBuilderAgent($effort);
 
         // Create a fresh thread without linking to template's collaborationThreads
         $thread = AgentThreadBuilderService::for($agent, $template->team_id)
@@ -207,6 +219,7 @@ class TemplateBuildingService
         static::logDebug('Created build thread', [
             'thread_id'   => $thread->id,
             'template_id' => $template->id,
+            'effort'      => $effort,
         ]);
 
         return $thread;
@@ -382,61 +395,47 @@ class TemplateBuildingService
      * Instructions are stored in api_options so they're included with every API call,
      * even when using previousResponseId optimization that skips old messages.
      */
-    protected function findOrCreateBuilderAgent(): Agent
+    protected function findOrCreateBuilderAgent(?string $effort = null): Agent
     {
         $agent = Agent::where('name', self::BUILDER_AGENT_NAME)
             ->whereNull('team_id')
             ->first();
 
         $instructions = $this->getBuilderAgentInstructions();
+        $model        = $this->getModelForEffort($effort);
+        $apiOptions   = array_merge($this->getApiOptionsForEffort($effort), [
+            'instructions'    => $instructions,
+            'response_format' => [
+                'type' => 'json_object',
+            ],
+        ]);
 
         if (!$agent) {
-            $model = $this->getBuilderModel();
             $agent = Agent::create([
                 'name'        => self::BUILDER_AGENT_NAME,
                 'team_id'     => null,
                 'model'       => $model,
                 'description' => 'Generates HTML templates from PDF/image sources through collaborative refinement.',
-                'api_options' => [
-                    'instructions'    => $instructions,
-                    'response_format' => [
-                        'type' => 'json_object',
-                    ],
-                ],
+                'api_options' => $apiOptions,
             ]);
 
             static::logDebug('Created Template Builder agent', [
                 'agent_id' => $agent->id,
                 'model'    => $model,
+                'effort'   => $effort,
             ]);
         } else {
-            // Update model and instructions if they differ from config
-            $model               = $this->getBuilderModel();
-            $currentInstructions = $agent->api_options['instructions'] ?? null;
-            $needsUpdate         = false;
-            $updates             = [];
+            // Always update model and api_options based on current effort level
+            $agent->update([
+                'model'       => $model,
+                'api_options' => $apiOptions,
+            ]);
 
-            if ($agent->model !== $model) {
-                $updates['model'] = $model;
-                $needsUpdate      = true;
-            }
-
-            if ($currentInstructions !== $instructions) {
-                $updates['api_options'] = array_merge($agent->api_options ?? [], [
-                    'instructions' => $instructions,
-                ]);
-                $needsUpdate = true;
-            }
-
-            if ($needsUpdate) {
-                $agent->update($updates);
-
-                static::logDebug('Updated Template Builder agent', [
-                    'agent_id'             => $agent->id,
-                    'model_updated'        => isset($updates['model']),
-                    'instructions_updated' => isset($updates['api_options']),
-                ]);
-            }
+            static::logDebug('Updated Template Builder agent for effort', [
+                'agent_id' => $agent->id,
+                'model'    => $model,
+                'effort'   => $effort,
+            ]);
         }
 
         return $agent;
