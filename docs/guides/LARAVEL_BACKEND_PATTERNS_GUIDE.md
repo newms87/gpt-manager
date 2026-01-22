@@ -425,6 +425,108 @@ public function getTotalCostAttribute(): float
 
 Resources handle API data transformation. They extend `ActionResource` from danx.
 
+### ActionResource Field Loading Pattern (danx)
+
+**CRITICAL**: This pattern controls what data is returned in API responses. Misunderstanding this is a common source of bugs.
+
+#### Field Types in Resources
+
+**1. Scalar Fields (Always Included)**
+```php
+public static function data(Model $model): array
+{
+    return [
+        'id' => $model->id,                           // Always returned
+        'name' => $model->name,                       // Always returned
+        'schema_definition_id' => $model->schema_definition_id,  // Always returned
+    ];
+}
+```
+
+**2. Callable Fields (Only When Requested)**
+```php
+public static function data(Model $model): array
+{
+    return [
+        // Only returned when frontend requests { schema_definition: true }
+        'schema_definition' => fn($fields) => SchemaDefinitionResource::make($model->schemaDefinition, $fields),
+
+        // Only returned when frontend requests { artifacts: true }
+        'artifacts' => fn($fields) => ArtifactResource::collection($model->artifacts, $fields),
+
+        // Lazy-loaded text fields (only when explicitly requested)
+        'html_content' => fn() => $model->html_content,
+    ];
+}
+```
+
+**How it works:**
+- Scalar values (strings, numbers, booleans, arrays) are ALWAYS included in the response
+- Callable fields (wrapped in `fn() =>` or `fn($fields) =>`) are ONLY included when explicitly requested
+- The `$fields` parameter allows nested field requests for recursive loading
+
+#### How to Request Callable Fields (Frontend)
+
+```typescript
+// Basic - only scalar fields returned
+const template = await routes.details({ id });
+
+// Request specific callable fields
+const template = await routes.details({ id }, {
+    schema_definition: true,
+    artifacts: true
+});
+
+// Request nested fields (for relationships with their own callable fields)
+const template = await routes.details({ id }, {
+    schema_definition: { fragments: true, associations: true }
+});
+
+// Request all top-level callable fields
+const template = await routes.details({ id }, { '*': true });
+```
+
+#### When Relationship Data Is Missing from API Response
+
+If a relationship isn't appearing in the API response:
+
+1. **Check the Resource** - Is it a callable field? (wrapped in `fn($fields) =>`)
+2. **Check the frontend call** - Did you request it? (e.g., `{ field_name: true }`)
+
+**The fix is ALWAYS in the frontend API call**, not in eager loading or elsewhere.
+
+**Common mistake:**
+```php
+// WRONG - Adding eager loading does NOT fix missing API response data
+public function query(): Builder
+{
+    return parent::query()->with(['schemaDefinition']); // This only affects performance!
+}
+```
+
+**Correct fix:**
+```typescript
+// RIGHT - Request the callable field in the frontend
+await routes.details({ id }, { schema_definition: true });
+```
+
+#### Resource Details Override
+
+Override `details()` to set default fields for the detail/show view:
+
+```php
+#[\Override]
+public static function details(Model $model, ?array $includeFields = null): array
+{
+    return static::make($model, $includeFields ?? [
+        'stored_file'           => true,
+        'schema_definition'     => true,
+        'template_variables'    => true,
+        'html_content'          => true,  // Lazy-loaded text field
+    ]);
+}
+```
+
 ### Resource Structure Template
 
 ```php
@@ -440,18 +542,31 @@ class [Model]Resource extends ActionResource
     public static function data([Model] $model): array
     {
         return [
+            // Scalar fields - always included
             'id' => $model->id,
             'name' => $model->name,
             'status' => $model->status,
+            'parent_id' => $model->parent_id,
             'created_at' => $model->created_at,
             'updated_at' => $model->updated_at,
-            
-            // Computed fields
-            'display_name' => static::getDisplayName($model),
-            
-            // Relationships (loaded conditionally)
-            'children' => static::loadChildren($model),
+
+            // Callable fields - only when requested
+            'parent' => fn($fields) => ParentResource::make($model->parent, $fields),
+            'children' => fn($fields) => ChildResource::collection($model->children, $fields),
+
+            // Lazy-loaded heavy fields - only when requested
+            'large_text_field' => fn() => $model->large_text_field,
         ];
+    }
+
+    #[\Override]
+    public static function details(Model $model, ?array $includeFields = null): array
+    {
+        return static::make($model, $includeFields ?? [
+            'parent' => true,
+            'children' => true,
+            'large_text_field' => true,
+        ]);
     }
 }
 ```
@@ -882,11 +997,41 @@ public function scopeWithRelatedData(Builder $query): Builder
 });
 ```
 
-### Eager Loading Rules
+### Eager Loading - Performance Only, NOT Data Availability
 
-**Eager loading is ONLY for collections, not single instances.**
+**CRITICAL MISCONCEPTION**: Adding eager loading does NOT make relationship data available in API responses.
 
-❌ **NEVER use `$with` on models or `load()` on single instances:**
+#### How Laravel Eloquent Works
+
+- Relationships are ALWAYS available via lazy loading (Eloquent loads them on first access)
+- Eager loading (`->with(['relationship'])`) ONLY prevents N+1 query performance issues
+- Adding eager loading has ZERO effect on what data is returned in API responses
+
+#### When Relationship Data Is Missing from API Response
+
+**WRONG approach**: Add eager loading to repository
+**RIGHT approach**:
+1. Check the Resource - does it include the relationship as a callable field?
+2. Check the frontend API call - is the field requested? (e.g., `{ relationship_name: true }`)
+
+**Example - If `schema_definition` isn't in the API response:**
+- Do NOT add `'schemaDefinition'` to repository's `->with([])`
+- DO add `schema_definition: true` to the frontend's API details call
+
+#### When to Use Eager Loading
+
+Use eager loading ONLY for performance optimization when:
+- You are querying a COLLECTION of models (not a single instance)
+- You KNOW the relationship will be accessed for ALL items in the collection
+- You want to prevent N+1 queries
+
+Adding unnecessary eager loading HURTS performance by loading data you may not need.
+
+#### Eager Loading Rules for Collections vs Single Instances
+
+**Eager loading is ONLY beneficial for collections, not single instances.**
+
+**NEVER use `$with` on models or `load()` on single instances:**
 
 ```php
 // BAD: $with forces loading for ALL queries
@@ -897,7 +1042,7 @@ $model = Model::find($id);
 $model->load(['agent']);  // Pointless - no batching benefit
 ```
 
-✅ **CORRECT: Lazy load single instances, eager load collections:**
+**CORRECT: Lazy load single instances, eager load collections:**
 
 ```php
 // Single instance: just access when needed (Laravel caches it)

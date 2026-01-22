@@ -13,6 +13,7 @@ export { default as LoadCsvTaskRunnerConfig } from "./LoadCsvTaskRunnerConfig.vu
 export { default as MergeArtifactsTaskRunnerConfig } from "./MergeArtifactsTaskRunnerConfig.vue";
 export { default as PagesOrganizerTaskRunnerConfig } from "./PagesOrganizerTaskRunnerConfig.vue";
 export { default as RunWorkflowTaskRunnerConfig } from "./RunWorkflowTaskRunnerConfig.vue";
+export { default as SchemaDefinitionArtifactTaskRunnerConfig } from "./SchemaDefinitionArtifactTaskRunnerConfig.vue";
 export { default as SequentialCategoryMatcherTaskRunnerConfig } from "./SequentialCategoryMatcherTaskRunnerConfig.vue";
 export { default as SplitArtifactsTaskRunnerConfig } from "./SplitArtifactsTaskRunnerConfig.vue";
 export { default as SplitByFileTaskRunnerConfig } from "./SplitByFileTaskRunnerConfig.vue";

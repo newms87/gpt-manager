@@ -265,8 +265,8 @@ class UiDemandWorkflowLifecycleTest extends AuthenticatedTestCase
         $this->assertArrayHasKey('workflow_run_id', $updatedDemand->metadata);
         $this->assertEquals($workflowRun->id, $updatedDemand->metadata['workflow_run_id']);
 
-        // Verify artifacts are attached to UiDemand with output_document category
-        $outputArtifacts = $updatedDemand->artifacts()->wherePivot('category', 'output_document')->get();
+        // Verify artifacts are attached to TeamObject with output_document category
+        $outputArtifacts = $teamObject->fresh()->getArtifactsByCategory('output_document');
         $this->assertCount(2, $outputArtifacts);
 
         $outputArtifactIds = $outputArtifacts->pluck('id')->toArray();

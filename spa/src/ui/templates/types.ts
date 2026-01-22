@@ -1,4 +1,4 @@
-import type { AgentThread } from "@/types";
+import type { AgentThread, SchemaDefinition } from "@/types";
 import type { SchemaAssociation, FragmentSelector } from "@/types/prompts";
 import type { ActionTargetItem, UploadedFile } from "quasar-ui-danx";
 
@@ -107,6 +107,9 @@ export interface TemplateDefinition extends ActionTargetItem {
   stored_file?: UploadedFile;
   preview_stored_file_id?: number;
   preview_stored_file?: UploadedFile;
+  // Schema definition for variable mappings
+  schema_definition_id?: number;
+  schema_definition?: SchemaDefinition;
   // Building status fields
   building_job_dispatch_id?: number;
   pending_build_context?: string[];

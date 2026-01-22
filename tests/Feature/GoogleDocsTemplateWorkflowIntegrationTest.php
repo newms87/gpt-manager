@@ -7,6 +7,7 @@ use App\Events\WorkflowRunUpdatedEvent;
 use App\Listeners\WorkflowListenerCompletedListener;
 use App\Models\Agent\Agent;
 use App\Models\Demand\UiDemand;
+use App\Models\TeamObject\TeamObject;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
@@ -61,12 +62,17 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
             'task_runner_name' => TemplateTaskRunner::RUNNER_NAME,
         ]);
 
-        // 2. Create UiDemand with template
-        $uiDemand = UiDemand::factory()->create([
+        // 2. Create TeamObject and UiDemand
+        $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status'  => UiDemand::STATUS_DRAFT,
-            'title'   => 'Integration Test Demand',
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
+            'title'          => 'Integration Test Demand',
         ]);
 
         // 3. Create template StoredFile

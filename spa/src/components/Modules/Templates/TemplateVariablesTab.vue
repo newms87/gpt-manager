@@ -169,13 +169,12 @@ const canSuggestMappings = computed(() => {
 });
 
 /**
- * Initialize selected schema from template
+ * Initialize selected schema from template's relationship
  */
 watch(
-	() => props.template.schema_definition_id,
-	(schemaId) => {
-		// Schema will be loaded by SchemaEditorToolbox from the store
-		// We just need to sync the ID
+	() => props.template.schema_definition,
+	(schemaDefinition) => {
+		selectedSchema.value = schemaDefinition || null;
 	},
 	{ immediate: true }
 );

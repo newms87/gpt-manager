@@ -43,4 +43,10 @@ export const schemas = {
 	 * @endpoint /schemas/associations
 	 */
 	schemasAssociations: buildApiUrl("/schemas/associations"),
+
+	/**
+	 * Artifact category definitions endpoint
+	 * @endpoint /schemas/artifact-category-definitions
+	 */
+	artifactCategoryDefinitions: buildApiUrl("/schemas/artifact-category-definitions"),
 } as const;

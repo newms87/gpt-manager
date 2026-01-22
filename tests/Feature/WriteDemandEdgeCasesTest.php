@@ -361,11 +361,11 @@ class WriteDemandEdgeCasesTest extends AuthenticatedTestCase
             'workflow_type' => 'organize_files',
         ]);
 
-        // Create artifact with organized_file category for extract_data workflow to use
+        // Create artifact with organized_file category for extract_data workflow to use (attached to TeamObject)
         $organizedArtifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
+        $teamObject->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
 
         // Create completed extract data workflow run
         $extractDataWorkflowRun = WorkflowRun::factory()->create([

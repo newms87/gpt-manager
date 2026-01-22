@@ -77,7 +77,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $organizedArtifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
+        $teamObject->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
 
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");
@@ -287,7 +287,7 @@ class UiDemandsControllerTest extends AuthenticatedTestCase
         $organizedArtifact = Artifact::factory()->create([
             'team_id' => $this->user->currentTeam->id,
         ]);
-        $uiDemand->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
+        $teamObject->artifacts()->attach($organizedArtifact->id, ['category' => 'organized_file']);
 
         // When
         $response = $this->postJson("/api/ui-demands/{$uiDemand->id}/workflow/extract_data");

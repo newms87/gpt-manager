@@ -206,6 +206,16 @@ When instructing the `laravel-backend-qa-tester` agent to run tests:
 - `./vendor/bin/sail test` - Run Laravel tests
 - `./vendor/bin/sail pint` - Format Laravel code
 
+**🔄 Queue Worker Restart (IMPORTANT):**
+
+After making changes to any code that affects **jobs, task runners, or queue-processed code**, you MUST run:
+
+```bash
+./vendor/bin/sail artisan queue:restart
+```
+
+This signals Horizon workers to restart and pick up the new code. Without this, workers continue running the old code even though files have changed.
+
 **Key Dependencies:**
 - `quasar-ui-danx` - Shared UI component library
 - Laravel Sail - Docker development environment

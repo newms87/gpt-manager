@@ -33,6 +33,7 @@ import {
 	MergeArtifactsTaskRunnerConfig,
 	PagesOrganizerTaskRunnerConfig,
 	RunWorkflowTaskRunnerConfig,
+	SchemaDefinitionArtifactTaskRunnerConfig,
 	SequentialCategoryMatcherTaskRunnerConfig,
 	SplitArtifactsTaskRunnerConfig,
 	SplitByFileTaskRunnerConfig,
@@ -136,6 +137,12 @@ export const TaskRunnerClasses = {
 			lottieClass: "w-[10rem]"
 		},
 		config: RunWorkflowTaskRunnerConfig
+	},
+	"Schema Definition Artifact": {
+		name: "Schema Definition Artifact",
+		description: "Create artifacts based on a schema definition structure.",
+		lottie: SaveToDbLottie,
+		config: SchemaDefinitionArtifactTaskRunnerConfig
 	},
 	"Save To Database": {
 		name: "Save To Database",

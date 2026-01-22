@@ -4,12 +4,17 @@ namespace App\Models\TeamObject;
 
 use App\Events\TeamObjectUpdatedEvent;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Task\Artifact;
+use App\Models\Task\Artifactable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Traits\ActionModelTrait;
@@ -72,6 +77,24 @@ class TeamObject extends Model implements AuditableContract
     public function attributes(): HasMany|TeamObjectAttribute
     {
         return $this->hasMany(TeamObjectAttribute::class, 'team_object_id');
+    }
+
+    public function artifactables(): MorphMany|Artifactable
+    {
+        return $this->morphMany(Artifactable::class, 'artifactable');
+    }
+
+    public function artifacts(): MorphToMany|Artifact
+    {
+        return $this->morphToMany(Artifact::class, 'artifactable')->withTimestamps()->orderBy('position');
+    }
+
+    /**
+     * Get artifacts filtered by category.
+     */
+    public function getArtifactsByCategory(string $category): Collection
+    {
+        return $this->artifacts()->wherePivot('category', $category)->get();
     }
 
     public function delete()

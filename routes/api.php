@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Ai\AgentsController;
+use App\Http\Controllers\Ai\ArtifactCategoryDefinitionsController;
 use App\Http\Controllers\Ai\ArtifactsController;
 use App\Http\Controllers\Ai\ContentSourcesController;
 use App\Http\Controllers\Ai\McpServersController;
@@ -65,6 +66,7 @@ ActionRoute::routes('schemas/definitions', new SchemaDefinitionsController, func
 });
 ActionRoute::routes('schemas/fragments', new SchemaFragmentsController);
 ActionRoute::routes('schemas/associations', new SchemaAssociationsController);
+ActionRoute::routes('schemas/artifact-category-definitions', new ArtifactCategoryDefinitionsController);
 
 // Artifacts
 ActionRoute::routes('artifacts', new ArtifactsController);

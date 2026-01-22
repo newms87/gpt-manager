@@ -469,7 +469,76 @@ loading = "action.isApplying"
 <div v-show="isExpanded">...</div>
 ```
 
-## 7. Styling Patterns
+## 7. API Data Loading - ActionResource Pattern
+
+This project uses danx's ActionResource pattern. Understanding how fields are loaded is critical.
+
+### Field Types (Backend)
+
+1. **Scalar fields** - Always included in responses (id, name, foreign keys)
+2. **Callable fields** - Only included when explicitly requested (relationships, computed data)
+
+### Requesting Callable Fields
+
+```typescript
+// Basic - only scalar fields returned
+const template = await dxTemplateDefinition.routes.details({ id: templateId });
+// Returns: { id, name, schema_definition_id, ... }
+// Does NOT return: schema_definition (it's callable)
+
+// Request specific relationships
+const template = await dxTemplateDefinition.routes.details({ id: templateId }, {
+    schema_definition: true,
+    artifacts: true
+});
+// Now includes: schema_definition, artifacts
+
+// Request nested relationships
+const template = await dxTemplateDefinition.routes.details({ id: templateId }, {
+    schema_definition: { fragments: true, associations: true }
+});
+// Includes schema_definition WITH its fragments and associations
+```
+
+### When Relationship Data Is Missing
+
+If you have `schema_definition_id` but not `schema_definition`:
+
+**The fix is ALWAYS in your API call** - add `{ schema_definition: true }` to the request.
+
+- **WRONG**: Ask backend to add eager loading
+- **RIGHT**: Request the field in your API call
+
+### Lazy Loading Relationships (Performance)
+
+**DO NOT load all relationships upfront.** Load them lazily when the user needs them.
+
+```typescript
+// Initial page load - only default scalar data
+const template = ref(null);
+template.value = await routes.details({ id });
+
+// Later, when user opens a tab or expands a section - load the relationship
+await routes.details(template.value, { schema_definition: true });
+// NOTE: No reassignment needed! The storeObject() system automatically
+// populates the relationship on the existing object EVERYWHERE it's used
+// (even in lists and other pages)
+```
+
+**When to load relationships:**
+- When a tab containing the data is opened
+- When a collapsed section is expanded
+- When a hidden section becomes visible
+- NOT on initial page load (unless immediately visible)
+
+**Key insight:** The `storeObject()` system used by `routes.list()` and `routes.details()` automatically merges loaded data into existing ActionResource objects. Loading a relationship updates that object everywhere it's referenced.
+
+### List vs Details
+
+- `routes.list()` - Usually returns minimal data (scalars only)
+- `routes.details()` - Can request full relationships via second parameter
+
+## 8. Styling Patterns
 
 ### Tailwind Classes
 
@@ -526,7 +595,7 @@ loading = "action.isApplying"
 </style>
 ```
 
-## 8. Common Composables
+## 9. Common Composables
 
 ### useAssistantState
 
@@ -563,7 +632,7 @@ pusher.onEvent("Model", "updated", (data) => {
 });
 ```
 
-## 9. Formatting Functions
+## 10. Formatting Functions
 
 **CRITICAL: Formatters MUST be used 100% of the time for all data display - NEVER use raw values or create custom formatting**
 
@@ -586,7 +655,7 @@ fNumber(1234.56);         // "1,234.56"
 
 **For complete function signatures and all available formatters, read the source files in quasar-ui-danx/helpers/formats/**
 
-## 10. TypeScript Patterns
+## 11. TypeScript Patterns
 
 ### Component Props
 
@@ -616,7 +685,7 @@ const modelValue = defineModel<string>();
 const agent = defineModel<Agent | null>();
 ```
 
-## 11. Direct Modification vs Emits Pattern
+## 12. Direct Modification vs Emits Pattern
 
 **Use `dxController.getAction()` for direct resource modifications when the component has the resource object available.**
 

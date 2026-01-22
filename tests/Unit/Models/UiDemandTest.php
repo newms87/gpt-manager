@@ -3,7 +3,6 @@
 namespace Tests\Unit\Models;
 
 use App\Models\Demand\UiDemand;
-use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Workflow\WorkflowDefinition;
 use App\Models\Workflow\WorkflowRun;
@@ -385,72 +384,6 @@ class UiDemandTest extends AuthenticatedTestCase
 
         // Then
         $this->assertEquals($workflowRun->id, $latestRun->id);
-    }
-
-    /**
-     * Test getArtifactsByCategory returns artifacts for specific category
-     */
-    #[Test]
-    public function getArtifactsByCategory_withArtifacts_returnsCorrectArtifacts(): void
-    {
-        // Given
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'title'   => 'Test Demand',
-        ]);
-
-        $medicalArtifact1 = Artifact::factory()->create([
-            'team_id'      => $this->user->currentTeam->id,
-            'text_content' => 'Medical Summary 1',
-        ]);
-
-        $medicalArtifact2 = Artifact::factory()->create([
-            'team_id'      => $this->user->currentTeam->id,
-            'text_content' => 'Medical Summary 2',
-        ]);
-
-        $outputArtifact = Artifact::factory()->create([
-            'team_id'      => $this->user->currentTeam->id,
-            'text_content' => 'Output Document',
-        ]);
-
-        $uiDemand->artifacts()->attach([
-            $medicalArtifact1->id => ['category' => 'medical_summary'],
-            $medicalArtifact2->id => ['category' => 'medical_summary'],
-            $outputArtifact->id   => ['category' => 'output_document'],
-        ]);
-
-        // When
-        $medicalArtifacts = $uiDemand->getArtifactsByCategory('medical_summary');
-        $outputArtifacts  = $uiDemand->getArtifactsByCategory('output_document');
-
-        // Then
-        $this->assertCount(2, $medicalArtifacts);
-        $this->assertCount(1, $outputArtifacts);
-        $this->assertTrue($medicalArtifacts->contains($medicalArtifact1));
-        $this->assertTrue($medicalArtifacts->contains($medicalArtifact2));
-        $this->assertTrue($outputArtifacts->contains($outputArtifact));
-    }
-
-    /**
-     * Test getArtifactsByCategory returns empty collection when no artifacts exist
-     */
-    #[Test]
-    public function getArtifactsByCategory_withNoArtifacts_returnsEmptyCollection(): void
-    {
-        // Given
-        $uiDemand = UiDemand::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'title'   => 'Test Demand',
-        ]);
-
-        // When
-        $artifacts = $uiDemand->getArtifactsByCategory('medical_summary');
-
-        // Then
-        $this->assertCount(0, $artifacts);
     }
 
     /**

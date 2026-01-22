@@ -19,7 +19,8 @@ class TemplateVariable extends Model implements AuditableContract
     // Mapping type constants
     public const string MAPPING_TYPE_AI = 'ai',
         MAPPING_TYPE_ARTIFACT           = 'artifact',
-        MAPPING_TYPE_TEAM_OBJECT        = 'team_object';
+        MAPPING_TYPE_TEAM_OBJECT        = 'team_object',
+        MAPPING_TYPE_VERBATIM           = 'verbatim';
 
     // Multi-value strategy constants
     public const string STRATEGY_JOIN  = 'join',
@@ -106,6 +107,11 @@ class TemplateVariable extends Model implements AuditableContract
         return $this->mapping_type === self::MAPPING_TYPE_TEAM_OBJECT;
     }
 
+    public function isVerbatimMapped(): bool
+    {
+        return $this->mapping_type === self::MAPPING_TYPE_VERBATIM;
+    }
+
     /**
      * Validation
      */
@@ -115,7 +121,7 @@ class TemplateVariable extends Model implements AuditableContract
             'template_definition_id'            => ['required', 'exists:template_definitions,id'],
             'name'                              => ['required', 'string', 'max:255'],
             'description'                       => ['nullable', 'string'],
-            'mapping_type'                      => ['required', 'in:' . self::MAPPING_TYPE_AI . ',' . self::MAPPING_TYPE_ARTIFACT . ',' . self::MAPPING_TYPE_TEAM_OBJECT],
+            'mapping_type'                      => ['required', 'in:' . self::MAPPING_TYPE_AI . ',' . self::MAPPING_TYPE_ARTIFACT . ',' . self::MAPPING_TYPE_TEAM_OBJECT . ',' . self::MAPPING_TYPE_VERBATIM],
             'artifact_categories'               => ['nullable', 'array'],
             'artifact_fragment_selector'        => ['nullable', 'array'],
             'team_object_schema_association_id' => ['nullable', 'exists:schema_associations,id'],

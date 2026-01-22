@@ -81,6 +81,11 @@ class SchemaDefinition extends Model implements AuditableContract, ResourcePacka
         return $this->hasMany(SchemaAssociation::class);
     }
 
+    public function artifactCategoryDefinitions(): ArtifactCategoryDefinition|HasMany
+    {
+        return $this->hasMany(ArtifactCategoryDefinition::class);
+    }
+
     public function validate(): static
     {
         validator($this->toArray(), [

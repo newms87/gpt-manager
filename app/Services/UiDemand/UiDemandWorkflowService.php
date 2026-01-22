@@ -13,6 +13,7 @@ use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use App\Services\Workflow\WorkflowRunnerService;
 use Newms87\Danx\Exceptions\ValidationError;
+use Newms87\Danx\Models\Utilities\StoredFile;
 
 class UiDemandWorkflowService
 {
@@ -107,9 +108,9 @@ class UiDemandWorkflowService
                 ->wherePivot('category', $artifactCategory)
                 ->get();
 
-            // If no artifacts found on workflow run, try getting from UiDemand directly
-            if ($artifacts->isEmpty()) {
-                $artifacts = $uiDemand->getArtifactsByCategory($artifactCategory);
+            // If no artifacts found on workflow run, try getting from TeamObject
+            if ($artifacts->isEmpty() && $uiDemand->teamObject) {
+                $artifacts = $uiDemand->teamObject->getArtifactsByCategory($artifactCategory);
             }
 
             if ($artifacts->isEmpty()) {
@@ -157,22 +158,18 @@ TEXT;
         $inputArtifacts = [$workflowInput->toArtifact()];
 
         // Add artifacts from previous workflows if configured
-        if (isset($inputConfig['include_artifacts_from'])) {
+        if (isset($inputConfig['include_artifacts_from']) && $uiDemand->teamObject) {
             foreach ($inputConfig['include_artifacts_from'] as $artifactSource) {
-                $sourceWorkflow = $artifactSource['workflow'] ?? null;
                 $sourceCategory = $artifactSource['category'] ?? null;
 
-                if ($sourceWorkflow && $sourceCategory) {
-                    // Get artifacts from UiDemand filtered by category
-                    $artifacts = $uiDemand->artifacts()
-                        ->wherePivot('category', $sourceCategory)
-                        ->withPivot(['category'])
-                        ->get();
+                if ($sourceCategory) {
+                    // Get artifacts from TeamObject filtered by category
+                    $artifacts = $uiDemand->teamObject->getArtifactsByCategory($sourceCategory);
 
                     // Store categories in artifact meta before passing to workflow
                     foreach ($artifacts as $artifact) {
                         $meta               = $artifact->meta ?? [];
-                        $meta['__category'] = $artifact->pivot->category;
+                        $meta['__category'] = $sourceCategory;
                         $artifact->meta     = $meta;
                         $artifact->save();
                         $inputArtifacts[] = $artifact;
@@ -228,7 +225,7 @@ TEXT;
         $displayConfig = $workflowConfig['display_artifacts'] ?? false;
         if ($displayConfig) {
             $category = $displayConfig['artifact_category'] ?? 'output';
-            $this->attachArtifactsToUiDemand($uiDemand, $outputArtifacts, $category);
+            $this->attachArtifactsToTeamObject($uiDemand, $outputArtifacts, $category);
         }
 
         // Update metadata with completion timestamp
@@ -328,14 +325,19 @@ TEXT;
     }
 
     /**
-     * Attach artifacts to UiDemand with specified category
-     * Also attaches any StoredFiles from those artifacts to UiDemand's outputFiles
+     * Attach artifacts to the UiDemand's TeamObject with specified category.
+     * Also attaches any StoredFiles from those artifacts to UiDemand's outputFiles.
      */
-    protected function attachArtifactsToUiDemand(UiDemand $uiDemand, $artifacts, string $category): void
+    protected function attachArtifactsToTeamObject(UiDemand $uiDemand, $artifacts, string $category): void
     {
+        // Require a TeamObject to attach artifacts to
+        if (!$uiDemand->teamObject) {
+            return;
+        }
+
         foreach ($artifacts as $artifact) {
-            // Attach artifact to UiDemand with specified category
-            $uiDemand->artifacts()->syncWithoutDetaching([$artifact->id => ['category' => $category]]);
+            // Attach artifact to TeamObject with specified category
+            $uiDemand->teamObject->artifacts()->syncWithoutDetaching([$artifact->id => ['category' => $category]]);
 
             // Attach any StoredFiles from the artifact to UiDemand's outputFiles with category 'output'
             // Note: UiDemand->outputFiles() relationship filters for category 'output'
@@ -346,7 +348,7 @@ TEXT;
                 foreach ($storedFileIds as $storedFileId) {
                     $storedFilesWithCategory[$storedFileId] = ['category' => 'output'];
                 }
-                $uiDemand->morphToMany(\Newms87\Danx\Models\Utilities\StoredFile::class, 'storable', 'stored_file_storables')
+                $uiDemand->morphToMany(StoredFile::class, 'storable', 'stored_file_storables')
                     ->syncWithoutDetaching($storedFilesWithCategory);
             }
         }

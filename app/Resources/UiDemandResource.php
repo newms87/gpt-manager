@@ -83,7 +83,7 @@ class UiDemandResource extends ActionResource
             }
 
             $category  = $displayConfig['artifact_category'] ?? null;
-            $artifacts = $category ? $demand->getArtifactsByCategory($category) : collect();
+            $artifacts = ($category && $demand->teamObject) ? $demand->teamObject->getArtifactsByCategory($category) : collect();
 
             $artifactSections[] = [
                 'workflow_key'      => $workflow['key'],

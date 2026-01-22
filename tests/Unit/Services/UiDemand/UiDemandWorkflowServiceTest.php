@@ -169,13 +169,13 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'workflow_type' => 'write_medical_summary',
         ]);
 
-        // Create medical summary artifacts
+        // Create medical summary artifacts attached to TeamObject
         $artifact = Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'text_content' => 'Medical summary content',
         ]);
 
-        $uiDemand->artifacts()->attach($artifact->id, ['category' => 'medical_summary']);
+        $teamObject->artifacts()->attach($artifact->id, ['category' => 'medical_summary']);
 
         // When
         $workflowRun = $this->service->runWorkflow($uiDemand, 'write_demand_letter', []);
@@ -416,7 +416,7 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function handleUiDemandWorkflowComplete_withSuccessfulWriteMedicalSummaryWorkflow_attachesArtifacts(): void
+    public function handleUiDemandWorkflowComplete_withSuccessfulWriteMedicalSummaryWorkflow_attachesArtifactsToTeamObject(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -430,12 +430,17 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'completed_at'           => now(),
         ]);
 
+        $teamObject = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
         $uiDemand = UiDemand::factory()->create([
-            'team_id'  => $this->user->currentTeam->id,
-            'user_id'  => $this->user->id,
-            'status'   => UiDemand::STATUS_DRAFT,
-            'metadata' => [],
-            'title'    => 'Test Demand',
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
+            'metadata'       => [],
+            'title'          => 'Test Demand',
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'write_medical_summary']);
@@ -473,14 +478,14 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
         $this->assertArrayHasKey('write_medical_summary_completed_at', $updatedDemand->metadata);
 
-        // Verify artifact was attached with medical_summary category
-        $medicalSummaries = $updatedDemand->medicalSummaries;
+        // Verify artifact was attached to TeamObject with medical_summary category
+        $medicalSummaries = $teamObject->fresh()->getArtifactsByCategory('medical_summary');
         $this->assertCount(1, $medicalSummaries);
         $this->assertEquals($artifact->id, $medicalSummaries->first()->id);
     }
 
     #[Test]
-    public function handleUiDemandWorkflowComplete_withSuccessfulWriteDemandLetterWorkflow_attachesFiles(): void
+    public function handleUiDemandWorkflowComplete_withSuccessfulWriteDemandLetterWorkflow_attachesFilesToTeamObject(): void
     {
         // Given
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -494,11 +499,16 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
             'completed_at'           => now(),
         ]);
 
-        $uiDemand = UiDemand::factory()->create([
+        $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
-            'status'  => UiDemand::STATUS_DRAFT,
-            'title'   => 'Test Demand',
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'status'         => UiDemand::STATUS_DRAFT,
+            'team_object_id' => $teamObject->id,
+            'title'          => 'Test Demand',
         ]);
 
         $uiDemand->workflowRuns()->attach($workflowRun->id, ['workflow_type' => 'write_demand_letter']);
@@ -539,8 +549,8 @@ class UiDemandWorkflowServiceTest extends AuthenticatedTestCase
         $this->assertEquals(UiDemand::STATUS_DRAFT, $updatedDemand->status);
         $this->assertArrayHasKey('write_demand_letter_completed_at', $updatedDemand->metadata);
 
-        // Verify artifact was attached with output_document category
-        $outputArtifacts = $updatedDemand->artifacts()->wherePivot('category', 'output_document')->get();
+        // Verify artifact was attached to TeamObject with output_document category
+        $outputArtifacts = $teamObject->fresh()->getArtifactsByCategory('output_document');
         $this->assertCount(1, $outputArtifacts);
         $this->assertEquals($artifact->id, $outputArtifacts->first()->id);
 

@@ -274,6 +274,73 @@ ONE correct way to do everything. If something uses the wrong name, fix it at th
 
 ---
 
+## 🚨 MISSING RELATIONSHIP DATA - ActionResource Field Loading
+
+**CRITICAL**: When a relationship isn't in the API response, the issue is almost ALWAYS the frontend API call, NOT eager loading.
+
+### How danx ActionResource Works
+
+In ActionResource, there are two types of fields:
+
+**1. Scalar fields** - Always included in the response:
+```php
+'id' => $model->id,
+'name' => $model->name,
+'schema_definition_id' => $model->schema_definition_id,  // Always returned
+```
+
+**2. Callable fields** - Only included when explicitly requested:
+```php
+'schema_definition' => fn($fields) => SchemaDefinitionResource::make($model->schemaDefinition, $fields),  // Only if requested
+'artifacts' => fn($fields) => ArtifactResource::collection($model->artifacts, $fields),  // Only if requested
+```
+
+### When Relationship Data Is Missing
+
+If a relationship isn't appearing in the API response:
+
+1. **Check the Resource** - Is it a callable field? (wrapped in `fn($fields) =>`)
+2. **Check the frontend call** - Did you request it? (e.g., `{ field_name: true }`)
+
+**The fix is ALWAYS in the frontend API call:**
+```typescript
+// WRONG - Basic call doesn't include callable fields
+await routes.details({ id });
+
+// RIGHT - Explicitly request the callable field
+await routes.details({ id }, { schema_definition: true });
+
+// RIGHT - Request nested fields
+await routes.details({ id }, { schema_definition: { fragments: true } });
+```
+
+### The Eager Loading Misconception
+
+Agents often incorrectly add eager loading to "fix" missing data:
+```php
+// WRONG - This does NOT fix missing relationship data in API responses
+public function query(): Builder
+{
+    return parent::query()->with(['schemaDefinition']); // NO! Wrong fix!
+}
+```
+
+**Why this is wrong:**
+1. **Eager loading does NOT affect what data is returned** - It only affects performance
+2. **Laravel lazy loads relationships automatically** - The data is available either way
+3. **Unnecessary eager loading hurts performance** - Loads data we may not need
+
+### When to Use Eager Loading
+
+Eager loading is ONLY for performance optimization when:
+- Querying a COLLECTION of models (not a single instance)
+- You KNOW the relationship will be accessed for ALL items
+- You want to prevent N+1 queries
+
+**See `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md` section "ActionResource Field Loading Pattern" for complete details.**
+
+---
+
 ## 🚨 CRITICAL: Reverting Changes - NEVER Use Git Commands
 
 **NEVER use `git checkout` or `git revert` to undo changes**

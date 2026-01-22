@@ -8,6 +8,7 @@ export interface SchemaDefinition extends ActionTargetItem {
 	schema: JsonSchema;
 	response_example: object | object[];
 	agents: Agent[];
+	artifact_category_definitions?: ArtifactCategoryDefinition[];
 	meta?: {
 		color?: string;
 		[key: string]: any;
@@ -23,6 +24,17 @@ export interface SchemaFragment extends ActionTargetItem {
 	schema_definition_id: string;
 	name: string;
 	fragment_selector: FragmentSelector;
+}
+
+export interface ArtifactCategoryDefinition extends ActionTargetItem {
+	id: string;
+	schema_definition_id: string;
+	name: string;
+	label: string;
+	prompt: string;
+	fragment_selector: string[] | null;
+	editable: boolean;
+	deletable: boolean;
 }
 
 export interface SchemaAssociation extends ActionTargetItem {

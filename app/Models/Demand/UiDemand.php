@@ -3,7 +3,6 @@
 namespace App\Models\Demand;
 
 use App\Events\UiDemandUpdatedEvent;
-use App\Models\Task\Artifact;
 use App\Models\Team\Team;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Traits\HasUsageTracking;
@@ -98,20 +97,6 @@ class UiDemand extends Model implements Auditable
             ->withTimestamps();
     }
 
-    public function artifacts(): MorphToMany
-    {
-        return $this->morphToMany(Artifact::class, 'artifactable')
-            ->withPivot('category')
-            ->withTimestamps()
-            ->orderBy('position');
-    }
-
-    public function medicalSummaries(): MorphToMany
-    {
-        return $this->artifacts()
-            ->wherePivot('category', 'medical_summary');
-    }
-
     public function teamObject(): BelongsTo
     {
         return $this->belongsTo(TeamObject::class);
@@ -142,7 +127,6 @@ class UiDemand extends Model implements Auditable
         return $query->withCount([
             'inputFiles as input_files_count',
             'outputFiles as output_files_count',
-            'medicalSummaries as medical_summaries_count',
         ]);
     }
 
@@ -217,13 +201,4 @@ class UiDemand extends Model implements Auditable
             ->get();
     }
 
-    /**
-     * Get all artifacts for a specific category
-     */
-    public function getArtifactsByCategory(string $category): Collection
-    {
-        return $this->artifacts()
-            ->wherePivot('category', $category)
-            ->get();
-    }
 }

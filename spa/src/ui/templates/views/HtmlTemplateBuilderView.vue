@@ -278,7 +278,8 @@ async function loadTemplate() {
 			building_job_dispatch: true,
 			pending_build_context: true,
 			job_dispatch_count: true,
-			template_variable_count: true
+			template_variable_count: true,
+			schema_definition: true
 		});
 
 		if (result) {
