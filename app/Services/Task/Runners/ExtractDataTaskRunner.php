@@ -158,13 +158,21 @@ class ExtractDataTaskRunner extends AgentThreadTaskRunner
             throw new ValidationError('No classification schema found in TaskRun meta');
         }
 
+        // Get schema definition ID for classification cache
+        $schemaDefinitionId = $this->taskRun->taskDefinition->schema_definition_id;
+
+        if (!$schemaDefinitionId) {
+            throw new ValidationError('No schema definition ID found for classification cache');
+        }
+
         // Run classification on this page
         $classificationService = app(ClassificationExecutorService::class);
         $classificationResult  = $classificationService->classifyPage(
             $this->taskRun,
             $this->taskProcess,
             $booleanSchema,
-            $childArtifact
+            $childArtifact,
+            $schemaDefinitionId
         );
 
         static::logDebug('Classification completed for page', [

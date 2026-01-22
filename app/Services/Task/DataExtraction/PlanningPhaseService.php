@@ -147,11 +147,15 @@ class PlanningPhaseService
         $taskRun->outputArtifacts()->syncWithoutDetaching([$parentArtifact->id]);
         $taskRun->updateRelationCounter('outputArtifacts');
 
+        // Get schema definition ID for classification cache
+        $schemaDefinitionId = $taskRun->taskDefinition->schema_definition_id;
+
         // Create per-page classification processes
         $classificationOrchestrator->createClassifyProcessesPerPage(
             $taskRun,
             $parentArtifact->children,
-            $booleanSchema
+            $booleanSchema,
+            $schemaDefinitionId
         );
 
         static::logDebug('Transitioned to classification phase', [

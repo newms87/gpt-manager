@@ -58,27 +58,33 @@ class ClassificationOrchestrator
      * @param  TaskRun  $taskRun  The task run to create processes for
      * @param  Collection  $childArtifacts  Collection of child artifacts (one per page)
      * @param  array  $booleanSchema  The classification schema to check cache for
+     * @param  int  $schemaDefinitionId  The schema definition ID for cache storage location
      * @return array Array of created TaskProcess instances
      */
     public function createClassifyProcessesPerPage(
         TaskRun $taskRun,
         Collection $childArtifacts,
-        array $booleanSchema
+        array $booleanSchema,
+        int $schemaDefinitionId
     ): array {
         static::logDebug('Creating classify processes per page', [
             'task_run_id'           => $taskRun->id,
             'child_artifacts_count' => $childArtifacts->count(),
+            'schema_definition_id'  => $schemaDefinitionId,
         ]);
 
         $processes               = [];
         $classificationExecutor  = app(ClassificationExecutorService::class);
         $skippedCount            = 0;
 
+        // Compute schema hash once for cache lookups
+        $schemaHash = hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
         foreach ($childArtifacts as $childArtifact) {
             $pageNumber = $childArtifact->position;
 
-            // Check if this artifact has cached classification
-            if ($classificationExecutor->hasCachedClassification($childArtifact, $booleanSchema)) {
+            // Check if this artifact has cached classification (uses schema definition ID + hash)
+            if ($classificationExecutor->hasCachedClassification($childArtifact, $schemaDefinitionId, $booleanSchema)) {
                 static::logDebug('Skipping page with cached classification', [
                     'artifact_id' => $childArtifact->id,
                     'page_number' => $pageNumber,
@@ -86,7 +92,7 @@ class ClassificationOrchestrator
 
                 // Get cached result and store in artifact meta
                 $storedFile   = $childArtifact->storedFiles()->first();
-                $cachedResult = $storedFile ? $classificationExecutor->getCachedClassification($storedFile, $booleanSchema) : null;
+                $cachedResult = $storedFile ? $classificationExecutor->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash) : null;
 
                 if ($cachedResult) {
                     $meta                   = $childArtifact->meta ?? [];

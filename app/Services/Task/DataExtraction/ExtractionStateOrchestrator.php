@@ -496,10 +496,14 @@ class ExtractionStateOrchestrator
             return;
         }
 
+        // Get schema definition ID for classification cache
+        $schemaDefinitionId = $taskRun->taskDefinition->schema_definition_id;
+
         $classificationOrchestrator->createClassifyProcessesPerPage(
             $taskRun,
             $parentArtifact->children,
-            $booleanSchema
+            $booleanSchema,
+            $schemaDefinitionId
         );
 
         static::logDebug('Created classification processes', [

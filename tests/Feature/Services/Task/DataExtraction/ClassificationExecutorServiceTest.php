@@ -104,22 +104,26 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
             'diagnosis_codes' => true,
         ];
 
-        // When: Storing classification in cache
+        $schemaDefinitionId = 12345;
+        $schemaHash         = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema]);
+
+        // When: Storing classification in cache (keyed by schema definition ID)
         $this->invokeProtectedMethod(
             $this->service,
             'storeCachedClassification',
-            [$storedFile, $schema, $classificationResult]
+            [$storedFile, $schemaDefinitionId, $schemaHash, $classificationResult]
         );
 
-        // Then: Result is stored in StoredFile.meta['classifications'][schema_hash]
+        // Then: Result is stored in StoredFile.meta['classifications'][schemaDefinitionId]
         $storedFile->refresh();
         $this->assertIsArray($storedFile->meta);
         $this->assertArrayHasKey('classifications', $storedFile->meta);
 
-        $schemaHash = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema]);
-        $this->assertArrayHasKey($schemaHash, $storedFile->meta['classifications']);
+        $cacheKey = (string)$schemaDefinitionId;
+        $this->assertArrayHasKey($cacheKey, $storedFile->meta['classifications']);
 
-        $cached = $storedFile->meta['classifications'][$schemaHash];
+        $cached = $storedFile->meta['classifications'][$cacheKey];
+        $this->assertEquals($schemaDefinitionId, $cached['schema_definition_id']);
         $this->assertEquals($schemaHash, $cached['schema_hash']);
         $this->assertEquals($classificationResult, $cached['result']);
         $this->assertArrayHasKey('classified_at', $cached);
@@ -128,7 +132,7 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
     #[Test]
     public function cache_hit_returns_stored_result(): void
     {
-        // Given: A StoredFile with cached classification
+        // Given: A StoredFile with cached classification (keyed by schema definition ID)
         $schema = [
             'type'       => 'object',
             'properties' => [
@@ -143,22 +147,24 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
             'diagnosis_codes' => true,
         ];
 
-        $schemaHash = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema]);
+        $schemaDefinitionId = 12345;
+        $schemaHash         = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema]);
 
         $storedFile = StoredFile::factory()->create([
             'meta' => [
                 'classifications' => [
-                    $schemaHash => [
-                        'schema_hash'   => $schemaHash,
-                        'classified_at' => now()->toIso8601String(),
-                        'result'        => $cachedResult,
+                    (string)$schemaDefinitionId => [
+                        'schema_definition_id' => $schemaDefinitionId,
+                        'schema_hash'          => $schemaHash,
+                        'classified_at'        => now()->toIso8601String(),
+                        'result'               => $cachedResult,
                     ],
                 ],
             ],
         ]);
 
         // When: Getting cached classification
-        $result = $this->invokeProtectedMethod($this->service, 'getCachedClassification', [$storedFile, $schema]);
+        $result = $this->service->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash);
 
         // Then: Returns cached result
         $this->assertEquals($cachedResult, $result);
@@ -182,15 +188,18 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
             ],
         ];
 
+        $schemaDefinitionId = 12345;
+        $schemaHash         = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema]);
+
         // When: Attempting to get cached classification
-        $result = $this->invokeProtectedMethod($this->service, 'getCachedClassification', [$storedFile, $schema]);
+        $result = $this->service->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash);
 
         // Then: Returns null
         $this->assertNull($result);
     }
 
     #[Test]
-    public function schema_change_creates_separate_cache_entry(): void
+    public function different_schema_definitions_create_separate_cache_entries(): void
     {
         // Given: A StoredFile with one cached classification
         $schema1 = [
@@ -207,21 +216,24 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
             'diagnosis_codes' => true,
         ];
 
+        $schemaDefinitionId1 = 12345;
+        $schemaHash1         = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema1]);
+
         $storedFile = StoredFile::factory()->create([
             'meta' => null,
         ]);
 
-        // Store first classification
+        // Store first classification (schema definition ID 1)
         $this->invokeProtectedMethod(
             $this->service,
             'storeCachedClassification',
-            [$storedFile, $schema1, $result1]
+            [$storedFile, $schemaDefinitionId1, $schemaHash1, $result1]
         );
 
         $storedFile->refresh();
         $this->assertCount(1, $storedFile->meta['classifications']);
 
-        // When: Storing a different schema classification
+        // When: Storing a classification for a different schema definition ID
         $schema2 = [
             'type'       => 'object',
             'properties' => [
@@ -236,22 +248,77 @@ class ClassificationExecutorServiceTest extends AuthenticatedTestCase
             'billing' => false,
         ];
 
+        $schemaDefinitionId2 = 67890;
+        $schemaHash2         = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema2]);
+
         $this->invokeProtectedMethod(
             $this->service,
             'storeCachedClassification',
-            [$storedFile, $schema2, $result2]
+            [$storedFile, $schemaDefinitionId2, $schemaHash2, $result2]
         );
 
-        // Then: Both cache entries exist
+        // Then: Both cache entries exist (keyed by different schema definition IDs)
         $storedFile->refresh();
         $this->assertCount(2, $storedFile->meta['classifications']);
 
         // Verify both entries are retrievable
-        $cachedResult1 = $this->invokeProtectedMethod($this->service, 'getCachedClassification', [$storedFile, $schema1]);
-        $cachedResult2 = $this->invokeProtectedMethod($this->service, 'getCachedClassification', [$storedFile, $schema2]);
+        $cachedResult1 = $this->service->getCachedClassification($storedFile, $schemaDefinitionId1, $schemaHash1);
+        $cachedResult2 = $this->service->getCachedClassification($storedFile, $schemaDefinitionId2, $schemaHash2);
 
         $this->assertEquals($result1, $cachedResult1);
         $this->assertEquals($result2, $cachedResult2);
+    }
+
+    #[Test]
+    public function schema_change_with_same_definition_id_busts_cache(): void
+    {
+        // Given: A StoredFile with cached classification for a schema definition
+        $schema1 = [
+            'type'       => 'object',
+            'properties' => [
+                'diagnosis_codes' => [
+                    'type'        => 'boolean',
+                    'description' => 'Page contains diagnosis codes',
+                ],
+            ],
+        ];
+
+        $result1 = [
+            'diagnosis_codes' => true,
+        ];
+
+        $schemaDefinitionId = 12345;
+        $schemaHash1        = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema1]);
+
+        $storedFile = StoredFile::factory()->create([
+            'meta' => [
+                'classifications' => [
+                    (string)$schemaDefinitionId => [
+                        'schema_definition_id' => $schemaDefinitionId,
+                        'schema_hash'          => $schemaHash1,
+                        'classified_at'        => now()->toIso8601String(),
+                        'result'               => $result1,
+                    ],
+                ],
+            ],
+        ]);
+
+        // When: Schema changes (new hash) but same schema definition ID
+        $schema2 = [
+            'type'       => 'object',
+            'properties' => [
+                'billing' => [
+                    'type'        => 'boolean',
+                    'description' => 'Page contains billing information',
+                ],
+            ],
+        ];
+
+        $schemaHash2 = $this->invokeProtectedMethod($this->service, 'computeSchemaHash', [$schema2]);
+
+        // Then: Cache returns null (hash mismatch = cache busted)
+        $cachedResult = $this->service->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash2);
+        $this->assertNull($cachedResult, 'Cache should be busted when schema hash changes');
     }
 
     #[Test]

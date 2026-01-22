@@ -56,13 +56,15 @@ class ClassificationExecutorService
      * @param  TaskProcess  $taskProcess  The task process for this classification
      * @param  array  $booleanSchema  Boolean schema mapping property names to descriptions
      * @param  Artifact  $artifact  Single artifact to classify (must have storedFiles attached)
+     * @param  int  $schemaDefinitionId  The schema definition ID for cache storage location
      * @return array Boolean map like ['diagnosis_codes' => true, 'billing' => false, ...]
      */
     public function classifyPage(
         TaskRun $taskRun,
         TaskProcess $taskProcess,
         array $booleanSchema,
-        Artifact $artifact
+        Artifact $artifact,
+        int $schemaDefinitionId
     ): array {
         $taskDefinition   = $taskRun->taskDefinition;
         $schemaDefinition = $taskDefinition->schemaDefinition;
@@ -82,15 +84,20 @@ class ClassificationExecutorService
             throw new ValidationError('No StoredFile found for Artifact: ' . $artifact->id);
         }
 
+        // Compute schema hash for cache invalidation
+        $schemaHash = $this->computeSchemaHash($booleanSchema);
+
         static::logDebug('Classifying single page', [
-            'artifact_id'    => $artifact->id,
-            'stored_file_id' => $storedFile->id,
-            'page_number'    => $artifact->position ?? 'unknown',
-            'property_count' => count($booleanSchema['properties'] ?? []),
+            'artifact_id'          => $artifact->id,
+            'stored_file_id'       => $storedFile->id,
+            'page_number'          => $artifact->position ?? 'unknown',
+            'property_count'       => count($booleanSchema['properties'] ?? []),
+            'schema_definition_id' => $schemaDefinitionId,
+            'schema_hash'          => substr($schemaHash, 0, 12) . '...',
         ]);
 
-        // Check cache before running LLM
-        $cachedResult = $this->getCachedClassification($storedFile, $booleanSchema);
+        // Check cache before running LLM (uses schema definition ID for lookup, hash for invalidation)
+        $cachedResult = $this->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash);
 
         if ($cachedResult !== null) {
             static::logDebug('Returning cached classification (skipping LLM call)', [
@@ -166,8 +173,8 @@ class ClassificationExecutorService
             'results'     => $classificationResults,
         ]);
 
-        // Store result in cache
-        $this->storeCachedClassification($storedFile, $booleanSchema, $classificationResults);
+        // Store result in cache (keyed by schema definition ID, includes hash for invalidation)
+        $this->storeCachedClassification($storedFile, $schemaDefinitionId, $schemaHash, $classificationResults);
 
         return $classificationResults;
     }
@@ -186,13 +193,15 @@ class ClassificationExecutorService
 
     /**
      * Check if an artifact has cached classification result.
-     * Returns true if the artifact's StoredFile has a cached result for the given schema.
+     * Returns true if the artifact's StoredFile has a cached result for the given schema definition
+     * AND the cached schema hash matches the current schema hash (cache not busted).
      *
      * @param  Artifact  $artifact  The artifact to check
-     * @param  array  $booleanSchema  The schema to check cache for
-     * @return bool True if cached result exists, false otherwise
+     * @param  int  $schemaDefinitionId  The schema definition ID for cache lookup
+     * @param  array  $booleanSchema  The schema to check cache hash against
+     * @return bool True if valid cached result exists, false otherwise
      */
-    public function hasCachedClassification(Artifact $artifact, array $booleanSchema): bool
+    public function hasCachedClassification(Artifact $artifact, int $schemaDefinitionId, array $booleanSchema): bool
     {
         $storedFile = $artifact->storedFiles()->first();
 
@@ -200,7 +209,8 @@ class ClassificationExecutorService
             return false;
         }
 
-        $cachedResult = $this->getCachedClassification($storedFile, $booleanSchema);
+        $schemaHash   = $this->computeSchemaHash($booleanSchema);
+        $cachedResult = $this->getCachedClassification($storedFile, $schemaDefinitionId, $schemaHash);
 
         return $cachedResult !== null;
     }
@@ -255,33 +265,51 @@ class ClassificationExecutorService
     }
 
     /**
-     * Get cached classification result for a file with a specific schema.
-     * Returns null if no cache exists.
+     * Get cached classification result for a file with a specific schema definition.
+     * Uses schema definition ID for storage location lookup and schema hash for cache invalidation.
+     * Returns null if no cache exists or if the cached schema hash differs from the current hash (cache busted).
      *
      * @param  StoredFile  $storedFile  The file to check cache for
-     * @param  array  $booleanSchema  The schema used for classification
-     * @return array|null Cached classification result or null if no cache exists
+     * @param  int  $schemaDefinitionId  The schema definition ID for cache lookup
+     * @param  string  $schemaHash  The current schema hash for cache invalidation
+     * @return array|null Cached classification result or null if no cache exists or cache is busted
      */
-    public function getCachedClassification(StoredFile $storedFile, array $booleanSchema): ?array
+    public function getCachedClassification(StoredFile $storedFile, int $schemaDefinitionId, string $schemaHash): ?array
     {
-        $schemaHash = $this->computeSchemaHash($booleanSchema);
-
         $classifications = $storedFile->meta['classifications'] ?? [];
-        $cachedEntry     = $classifications[$schemaHash]        ?? null;
+
+        // Look up by schema definition ID (stored as string key)
+        $cacheKey    = (string)$schemaDefinitionId;
+        $cachedEntry = $classifications[$cacheKey] ?? null;
 
         if (!$cachedEntry || !isset($cachedEntry['result']) || !is_array($cachedEntry['result'])) {
             static::logDebug('No cached classification found', [
-                'stored_file_id' => $storedFile->id,
-                'schema_hash'    => substr($schemaHash, 0, 12) . '...',
+                'stored_file_id'       => $storedFile->id,
+                'schema_definition_id' => $schemaDefinitionId,
+            ]);
+
+            return null;
+        }
+
+        // Check if cached schema hash matches current hash (cache invalidation)
+        $cachedHash = $cachedEntry['schema_hash'] ?? null;
+
+        if ($cachedHash !== $schemaHash) {
+            static::logDebug('Cached classification hash mismatch (cache busted)', [
+                'stored_file_id'       => $storedFile->id,
+                'schema_definition_id' => $schemaDefinitionId,
+                'cached_hash'          => $cachedHash ? substr($cachedHash, 0, 12) . '...' : 'none',
+                'current_hash'         => substr($schemaHash, 0, 12) . '...',
             ]);
 
             return null;
         }
 
         static::logDebug('Using cached classification', [
-            'stored_file_id' => $storedFile->id,
-            'schema_hash'    => substr($schemaHash, 0, 12) . '...',
-            'classified_at'  => $cachedEntry['classified_at'] ?? 'unknown',
+            'stored_file_id'       => $storedFile->id,
+            'schema_definition_id' => $schemaDefinitionId,
+            'schema_hash'          => substr($schemaHash, 0, 12) . '...',
+            'classified_at'        => $cachedEntry['classified_at'] ?? 'unknown',
         ]);
 
         return $cachedEntry['result'];
@@ -289,26 +317,31 @@ class ClassificationExecutorService
 
     /**
      * Store classification result in cache on the StoredFile.
+     * Uses schema definition ID as the storage key (overwrites any existing entry for that ID).
+     * Includes schema hash for cache invalidation on future lookups.
      *
      * @param  StoredFile  $storedFile  The file to cache results for
-     * @param  array  $booleanSchema  The schema used for classification
+     * @param  int  $schemaDefinitionId  The schema definition ID for cache storage location
+     * @param  string  $schemaHash  The schema hash for cache invalidation
      * @param  array  $classificationResult  The classification results to cache
      */
     protected function storeCachedClassification(
         StoredFile $storedFile,
-        array $booleanSchema,
+        int $schemaDefinitionId,
+        string $schemaHash,
         array $classificationResult
     ): void {
-        $schemaHash = $this->computeSchemaHash($booleanSchema);
-
         // Get existing classifications or create empty array
         $classifications = $storedFile->meta['classifications'] ?? [];
 
-        // Store classification with metadata
-        $classifications[$schemaHash] = [
-            'schema_hash'   => $schemaHash,
-            'classified_at' => now()->toIso8601String(),
-            'result'        => $classificationResult,
+        // Store classification keyed by schema definition ID (as string key)
+        // This will overwrite any existing entry for this schema definition
+        $cacheKey                    = (string)$schemaDefinitionId;
+        $classifications[$cacheKey] = [
+            'schema_definition_id' => $schemaDefinitionId,
+            'schema_hash'          => $schemaHash,
+            'classified_at'        => now()->toIso8601String(),
+            'result'               => $classificationResult,
         ];
 
         // Update meta field
@@ -318,8 +351,9 @@ class ClassificationExecutorService
         $storedFile->save();
 
         static::logDebug('Stored classification in cache', [
-            'stored_file_id' => $storedFile->id,
-            'schema_hash'    => substr($schemaHash, 0, 12) . '...',
+            'stored_file_id'       => $storedFile->id,
+            'schema_definition_id' => $schemaDefinitionId,
+            'schema_hash'          => substr($schemaHash, 0, 12) . '...',
         ]);
     }
 }

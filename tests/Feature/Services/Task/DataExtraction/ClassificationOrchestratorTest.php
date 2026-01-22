@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Services\Task\DataExtraction;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
@@ -28,9 +29,13 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
     #[Test]
     public function createClassifyProcessesPerPage_creates_process_for_each_child_artifact(): void
     {
-        // Given: TaskRun and child artifacts
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        // Given: TaskRun and child artifacts with a schema definition
+        $schemaDefinition = SchemaDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $taskDefinition   = TaskDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+        $taskRun = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
 
         // Create parent artifact
         $parentArtifact = Artifact::create([
@@ -71,7 +76,7 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
         ];
 
         // When: Creating classify processes per page
-        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema);
+        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema, $schemaDefinition->id);
 
         // Then: Process created for each child artifact
         $this->assertCount(2, $processes);
@@ -390,8 +395,12 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
     public function createClassifyProcessesPerPage_skips_artifacts_with_cached_results(): void
     {
         // Given: TaskRun with child artifacts, one with cached classification
-        $taskDefinition = TaskDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
-        $taskRun        = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
+        $schemaDefinition = SchemaDefinition::factory()->create(['team_id' => $this->user->currentTeam->id]);
+        $taskDefinition   = TaskDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+        $taskRun = TaskRun::factory()->create(['task_definition_id' => $taskDefinition->id]);
 
         // Create parent artifact
         $parentArtifact = Artifact::create([
@@ -409,7 +418,10 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
             ],
         ];
 
-        // Create cached StoredFile for first child
+        // Cache key is now schema definition ID (as string)
+        $schemaHash = hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+
+        // Create cached StoredFile for first child (keyed by schema definition ID)
         $cachedStoredFile = \Newms87\Danx\Models\Utilities\StoredFile::create([
             'filename'  => 'page1.pdf',
             'mime_type' => 'application/pdf',
@@ -418,10 +430,11 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
             'filepath'  => 'test/page1.pdf',
             'meta'      => [
                 'classifications' => [
-                    hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) => [
-                        'schema_hash'   => hash('sha256', json_encode($booleanSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
-                        'classified_at' => now()->toIso8601String(),
-                        'result'        => ['has_diagnosis' => true],
+                    (string)$schemaDefinition->id => [
+                        'schema_definition_id' => $schemaDefinition->id,
+                        'schema_hash'          => $schemaHash,
+                        'classified_at'        => now()->toIso8601String(),
+                        'result'               => ['has_diagnosis' => true],
                     ],
                 ],
             ],
@@ -450,7 +463,7 @@ class ClassificationOrchestratorTest extends AuthenticatedTestCase
         $childArtifacts = new Collection([$child1, $child2]);
 
         // When: Creating classify processes per page
-        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema);
+        $processes = $this->orchestrator->createClassifyProcessesPerPage($taskRun, $childArtifacts, $booleanSchema, $schemaDefinition->id);
 
         // Then: Only one process created (second page without cache)
         $this->assertCount(1, $processes);
