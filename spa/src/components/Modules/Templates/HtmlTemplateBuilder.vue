@@ -23,11 +23,17 @@
 							:job-dispatch-count="template.job_dispatch_count"
 							:can-view-jobs="canViewJobs"
 							:is-loading-job-dispatches="isLoadingJobDispatches"
+							:template="template"
+							:template-variables="templateVariables"
+							:template-variable-count="template.template_variable_count"
 							@retry-build="handleRetryBuild"
 							@cancel-build="emit('cancel-build')"
 							@load-job-dispatches="emit('load-job-dispatches')"
+							@load-template-variables="emit('load-template-variables')"
 							@update-html="emit('update-html', $event)"
 							@update-css="emit('update-css', $event)"
+							@update-schema="emit('update-schema', $event)"
+							@update-variable="emit('update-variable', $event)"
 						/>
 					</div>
 				</template>
@@ -118,7 +124,7 @@ import {
 } from "@/components/Modules/Collaboration";
 import HtmlTemplatePreview from "@/components/Modules/Templates/HtmlTemplatePreview.vue";
 import { authUser } from "@/helpers/auth";
-import type { TemplateDefinition, TemplateUpdatePayload } from "@/ui/templates/types";
+import type { TemplateDefinition, TemplateUpdatePayload, TemplateVariable } from "@/ui/templates/types";
 import { AgentThread } from "@/types";
 import { ActionButton } from "quasar-ui-danx";
 import { computed, ref } from "vue";
@@ -129,11 +135,15 @@ const props = withDefaults(defineProps<{
 	loading?: boolean;
 	previewVariables?: Record<string, string>;
 	isLoadingJobDispatches?: boolean;
+	templateVariables?: TemplateVariable[];
+	isLoadingTemplateVariables?: boolean;
 }>(), {
 	thread: null,
 	loading: false,
 	previewVariables: () => ({}),
-	isLoadingJobDispatches: false
+	isLoadingJobDispatches: false,
+	templateVariables: () => [],
+	isLoadingTemplateVariables: false
 });
 
 const emit = defineEmits<{
@@ -145,8 +155,11 @@ const emit = defineEmits<{
 	"retry-build": [];
 	"cancel-build": [];
 	"load-job-dispatches": [];
+	"load-template-variables": [];
 	"update-html": [html: string];
 	"update-css": [css: string];
+	"update-schema": [schemaId: number | null];
+	"update-variable": [variable: TemplateVariable];
 }>();
 
 const previewContainerRef = ref<HTMLElement | null>(null);

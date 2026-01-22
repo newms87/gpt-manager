@@ -1,0 +1,30 @@
+type: object
+properties:
+  mappings:
+    type: array
+    items:
+      type: object
+      properties:
+        variable_id:
+          type: integer
+          description: ID of the template variable
+        suggested_fragment_id:
+          type:
+            - integer
+            - "null"
+          description: ID of the suggested schema fragment, or null if no match
+        confidence:
+          type: number
+          description: Confidence score from 0.0 to 1.0
+        reasoning:
+          type: string
+          description: Brief explanation of why this mapping was suggested
+      required:
+        - variable_id
+        - suggested_fragment_id
+        - confidence
+        - reasoning
+      additionalProperties: false
+required:
+  - mappings
+additionalProperties: false

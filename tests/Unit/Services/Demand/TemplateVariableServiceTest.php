@@ -390,4 +390,211 @@ class TemplateVariableServiceTest extends AuthenticatedTestCase
         $this->assertNotNull($preserved->teamObjectSchemaAssociation);
         $this->assertEquals($schemaDefinition->id, $preserved->teamObjectSchemaAssociation->schema_definition_id);
     }
+
+    // ==========================================
+    // SOFT DELETE RESTORE BEHAVIOR TESTS
+    // ==========================================
+
+    public function test_syncVariablesFromGoogleDoc_restoresSoftDeletedVariable_insteadOfCreatingNew(): void
+    {
+        // Given
+        $template = TemplateDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create a variable and then soft delete it
+        $deletedVariable = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'restored_variable',
+            'description'            => 'Custom description to verify restoration',
+            'mapping_type'           => TemplateVariable::MAPPING_TYPE_ARTIFACT,
+            'artifact_categories'    => ['custom_category'],
+            'multi_value_strategy'   => TemplateVariable::STRATEGY_FIRST,
+            'multi_value_separator'  => ' | ',
+        ]);
+        $originalId = $deletedVariable->id;
+        $deletedVariable->delete();
+
+        // Verify it was soft deleted
+        $this->assertSoftDeleted('template_variables', ['id' => $originalId]);
+
+        // When - sync with the same variable name
+        $variableNames = ['restored_variable'];
+        $result        = app(TemplateVariableService::class)->syncVariablesFromGoogleDoc($template, $variableNames);
+
+        // Then
+        $this->assertCount(1, $result);
+        $restoredVariable = $result->first();
+
+        // Verify same record was restored (not new)
+        $this->assertEquals($originalId, $restoredVariable->id);
+        $this->assertNull($restoredVariable->deleted_at);
+
+        // Verify existing configuration was preserved
+        $this->assertEquals('Custom description to verify restoration', $restoredVariable->description);
+        $this->assertEquals(TemplateVariable::MAPPING_TYPE_ARTIFACT, $restoredVariable->mapping_type);
+        $this->assertEquals(['custom_category'], $restoredVariable->artifact_categories);
+        $this->assertEquals(TemplateVariable::STRATEGY_FIRST, $restoredVariable->multi_value_strategy);
+        $this->assertEquals(' | ', $restoredVariable->multi_value_separator);
+
+        // Verify no new record was created
+        $totalVariables = TemplateVariable::withTrashed()
+            ->where('template_definition_id', $template->id)
+            ->where('name', 'restored_variable')
+            ->count();
+        $this->assertEquals(1, $totalVariables);
+    }
+
+    public function test_syncVariablesFromGoogleDoc_preservesExistingConfiguration_onRestore(): void
+    {
+        // Given
+        $template = TemplateDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $schemaFragment = SchemaFragment::factory()->create([
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        // Create variable with TeamObject mapping and schema association
+        $deletedVariable = TemplateVariable::factory()->teamObjectMapped()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'team_object_var',
+            'description'            => 'Team object variable description',
+            'multi_value_strategy'   => TemplateVariable::STRATEGY_UNIQUE,
+        ]);
+
+        $association = SchemaAssociation::factory()->create([
+            'schema_definition_id' => $schemaDefinition->id,
+            'schema_fragment_id'   => $schemaFragment->id,
+            'object_type'          => TemplateVariable::class,
+            'object_id'            => $deletedVariable->id,
+        ]);
+
+        $deletedVariable->team_object_schema_association_id = $association->id;
+        $deletedVariable->save();
+
+        $originalId = $deletedVariable->id;
+        $deletedVariable->delete();
+
+        // When - sync with the same variable name
+        $variableNames = ['team_object_var'];
+        $result        = app(TemplateVariableService::class)->syncVariablesFromGoogleDoc($template, $variableNames);
+
+        // Then
+        $this->assertCount(1, $result);
+        $restoredVariable = $result->first();
+
+        // Verify restoration preserved all configuration
+        $this->assertEquals($originalId, $restoredVariable->id);
+        $this->assertEquals(TemplateVariable::MAPPING_TYPE_TEAM_OBJECT, $restoredVariable->mapping_type);
+        $this->assertEquals('Team object variable description', $restoredVariable->description);
+        $this->assertEquals(TemplateVariable::STRATEGY_UNIQUE, $restoredVariable->multi_value_strategy);
+
+        // Verify schema association was preserved
+        $this->assertEquals($association->id, $restoredVariable->team_object_schema_association_id);
+    }
+
+    public function test_syncVariablesFromGoogleDoc_softDeletesVariables_noLongerInSource(): void
+    {
+        // Given
+        $template = TemplateDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        $var1 = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'keep_this',
+        ]);
+
+        $var2 = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'remove_this_1',
+        ]);
+
+        $var3 = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'remove_this_2',
+        ]);
+
+        // When - sync with only one variable
+        $variableNames = ['keep_this'];
+        $result        = app(TemplateVariableService::class)->syncVariablesFromGoogleDoc($template, $variableNames);
+
+        // Then
+        $this->assertCount(1, $result);
+        $this->assertEquals('keep_this', $result->first()->name);
+
+        // Verify kept variable still active
+        $this->assertDatabaseHas('template_variables', [
+            'id'         => $var1->id,
+            'deleted_at' => null,
+        ]);
+
+        // Verify other variables were soft deleted (not hard deleted)
+        $this->assertSoftDeleted('template_variables', ['id' => $var2->id]);
+        $this->assertSoftDeleted('template_variables', ['id' => $var3->id]);
+
+        // Verify records still exist in database with deleted_at set
+        $this->assertDatabaseHas('template_variables', ['id' => $var2->id]);
+        $this->assertDatabaseHas('template_variables', ['id' => $var3->id]);
+    }
+
+    public function test_syncVariablesFromGoogleDoc_handlesMultipleRestorations(): void
+    {
+        // Given
+        $template = TemplateDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'user_id' => $this->user->id,
+        ]);
+
+        // Create and soft delete multiple variables
+        $var1 = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'var_alpha',
+            'description'            => 'Alpha description',
+        ]);
+        $var2 = TemplateVariable::factory()->create([
+            'template_definition_id' => $template->id,
+            'name'                   => 'var_beta',
+            'description'            => 'Beta description',
+        ]);
+
+        $var1->delete();
+        $var2->delete();
+
+        // When - restore both
+        $variableNames = ['var_alpha', 'var_beta', 'var_gamma'];
+        $result        = app(TemplateVariableService::class)->syncVariablesFromGoogleDoc($template, $variableNames);
+
+        // Then
+        $this->assertCount(3, $result);
+
+        // Verify restorations
+        $alpha = TemplateVariable::where('name', 'var_alpha')
+            ->where('template_definition_id', $template->id)
+            ->first();
+        $this->assertEquals($var1->id, $alpha->id);
+        $this->assertEquals('Alpha description', $alpha->description);
+
+        $beta = TemplateVariable::where('name', 'var_beta')
+            ->where('template_definition_id', $template->id)
+            ->first();
+        $this->assertEquals($var2->id, $beta->id);
+        $this->assertEquals('Beta description', $beta->description);
+
+        // Verify new variable was created
+        $gamma = TemplateVariable::where('name', 'var_gamma')
+            ->where('template_definition_id', $template->id)
+            ->first();
+        $this->assertNotNull($gamma);
+        $this->assertEquals(TemplateVariable::MAPPING_TYPE_AI, $gamma->mapping_type);
+    }
 }

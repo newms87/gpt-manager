@@ -12,6 +12,7 @@ use App\Services\Demand\TemplateVariableService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\ModelHelper;
 use Newms87\Danx\Models\Job\JobDispatch;
@@ -231,6 +232,67 @@ class TemplateDefinitionService
         ]);
 
         return $template;
+    }
+
+    /**
+     * Set or clear the schema definition lock on a template.
+     * When schema changes, clears schema association on variables that reference a different schema.
+     */
+    public function setSchemaDefinition(TemplateDefinition $template, ?int $schemaDefinitionId): TemplateDefinition
+    {
+        $this->validateOwnership($template);
+
+        return DB::transaction(function () use ($template, $schemaDefinitionId) {
+            $previousSchemaId               = $template->schema_definition_id;
+            $template->schema_definition_id = $schemaDefinitionId;
+            $template->save();
+
+            // If schema changed and there was a previous schema, clear invalid variable associations
+            if ($previousSchemaId !== $schemaDefinitionId && $previousSchemaId !== null) {
+                $this->clearInvalidVariableAssociations($template, $schemaDefinitionId);
+            }
+
+            return $template->fresh();
+        });
+    }
+
+    /**
+     * Clear schema associations on variables whose association references a different schema.
+     */
+    protected function clearInvalidVariableAssociations(TemplateDefinition $template, ?int $newSchemaId): void
+    {
+        $variables = $template->templateVariables()
+            ->whereNotNull('team_object_schema_association_id')
+            ->with('teamObjectSchemaAssociation')
+            ->get();
+
+        foreach ($variables as $variable) {
+            $association = $variable->teamObjectSchemaAssociation;
+
+            // Clear if no new schema or association references a different schema
+            if (!$association || $newSchemaId === null || $association->schema_definition_id !== $newSchemaId) {
+                $variable->team_object_schema_association_id = null;
+                $variable->save();
+
+                // Also delete the orphaned schema association
+                $association?->delete();
+            }
+        }
+    }
+
+    /**
+     * Sync template variables from HTML content.
+     * Extracts variable names from data-var-* attributes and syncs them.
+     */
+    public function syncVariablesFromHtml(TemplateDefinition $template): TemplateDefinition
+    {
+        $this->validateOwnership($template);
+
+        $variableNames = $template->extractVariableNames();
+
+        app(TemplateVariableService::class)->syncVariablesFromGoogleDoc($template, $variableNames);
+
+        return $template->fresh();
     }
 
     /**

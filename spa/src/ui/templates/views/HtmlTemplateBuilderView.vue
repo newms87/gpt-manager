@@ -61,6 +61,8 @@
 				:loading="isCollaborationLoading"
 				:preview-variables="previewVariables"
 				:is-loading-job-dispatches="isLoadingJobDispatches"
+				:template-variables="template.template_variables || []"
+				:is-loading-template-variables="isLoadingVariables"
 				class="h-full"
 				@start-collaboration="startCollaboration"
 				@send-message="sendMessage"
@@ -69,8 +71,11 @@
 				@retry-build="handleRetryBuild"
 				@cancel-build="handleCancelBuild"
 				@load-job-dispatches="loadJobDispatches"
+				@load-template-variables="loadTemplateVariables"
 				@update-html="handleUpdateHtml"
 				@update-css="handleUpdateCss"
+				@update-schema="handleUpdateSchema"
+				@update-variable="handleUpdateVariable"
 			/>
 		</div>
 
@@ -108,7 +113,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { dxTemplateDefinition } from "../config";
 import { useTemplateCollaboration } from "../composables/useTemplateCollaboration";
-import type { TemplateDefinition, TemplateDefinitionHistory } from "../types";
+import type { TemplateDefinition, TemplateDefinitionHistory, TemplateVariable } from "../types";
 
 const route = useRoute();
 const router = useRouter();
@@ -313,7 +318,7 @@ async function loadJobDispatches() {
  * Lazy load template variables when needed
  */
 async function loadTemplateVariables() {
-	if (!template.value || template.value.template_variables || isLoadingVariables.value) return;
+	if (!template.value || template.value.template_variables?.length > 0 || isLoadingVariables.value) return;
 	isLoadingVariables.value = true;
 	await dxTemplateDefinition.routes.details(template.value, { template_variables: true });
 	isLoadingVariables.value = false;
@@ -512,6 +517,33 @@ async function handleUpdateCss(css: string) {
 	isSaving.value = true;
 	isSaved.value = false;
 	await updateTemplateAction.trigger(template.value, { css_content: css });
+	isSaving.value = false;
+	isSaved.value = true;
+}
+
+/**
+ * Handle schema definition update from the Variables tab
+ */
+async function handleUpdateSchema(schemaId: number | null) {
+	if (!template.value) return;
+	isSaving.value = true;
+	isSaved.value = false;
+	const setSchemaAction = dxTemplateDefinition.getAction("set-schema");
+	await setSchemaAction.trigger(template.value, { schema_definition_id: schemaId });
+	isSaving.value = false;
+	isSaved.value = true;
+}
+
+/**
+ * Handle variable update from the Variables tab
+ */
+async function handleUpdateVariable(variable: TemplateVariable) {
+	if (!template.value) return;
+	isSaving.value = true;
+	isSaved.value = false;
+	// Use the update-variable action
+	const updateVariableAction = dxTemplateDefinition.getAction("update-variable");
+	await updateVariableAction.trigger(template.value, { variable_id: variable.id, ...variable });
 	isSaving.value = false;
 	isSaved.value = true;
 }

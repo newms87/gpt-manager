@@ -61,6 +61,17 @@ return [
         'timeout'     => 300,
     ],
 
+    // Variable mapping suggestions (AI-powered schema fragment matching)
+    'variable_mapping_suggestions' => [
+        'model'       => env('AI_VARIABLE_MAPPING_MODEL', 'gpt-5-mini'),
+        'timeout'     => env('AI_VARIABLE_MAPPING_TIMEOUT', 120),
+        'api_options' => [
+            'reasoning' => [
+                'effort' => 'low',
+            ],
+        ],
+    ],
+
     // Template collaboration (conversation agent)
     'template_collaboration' => [
         'model'       => env('AI_TEMPLATE_COLLABORATION_MODEL', 'gpt-5-nano'),
@@ -146,6 +157,12 @@ return [
             ],
         ],
         'default_effort' => 'medium',
+        'partial_edits'  => [
+            // Threshold in bytes below which full replacement is always used
+            'small_file_threshold' => env('AI_TEMPLATE_BUILDING_SMALL_FILE_THRESHOLD', 1000),
+            // Whether to automatically dispatch a correction build on recoverable errors
+            'auto_correct'         => env('AI_TEMPLATE_BUILDING_AUTO_CORRECT', false),
+        ],
     ],
 
     // Artifact deduplication

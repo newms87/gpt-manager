@@ -4,6 +4,7 @@ namespace App\Models\Template;
 
 use App\Events\TemplateDefinitionUpdatedEvent;
 use App\Models\Agent\AgentThread;
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Team\Team;
 use App\Models\User;
 use App\Rules\TeamScopedUniqueRule;
@@ -41,6 +42,7 @@ class TemplateDefinition extends Model implements AuditableContract
     protected $fillable = [
         'team_id',
         'user_id',
+        'schema_definition_id',
         'type',
         'stored_file_id',
         'name',
@@ -86,6 +88,11 @@ class TemplateDefinition extends Model implements AuditableContract
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function schemaDefinition(): BelongsTo
+    {
+        return $this->belongsTo(SchemaDefinition::class);
     }
 
     public function storedFile(): BelongsTo

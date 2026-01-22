@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Models;
 
+use App\Models\Schema\SchemaDefinition;
 use App\Models\Team\Team;
 use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateVariable;
@@ -352,5 +353,98 @@ class TemplateDefinitionTest extends AuthenticatedTestCase
 
         // Then
         $this->assertArrayNotHasKey('template_variables', $casts);
+    }
+
+    // =====================================================
+    // SCHEMA DEFINITION RELATIONSHIP TESTS
+    // =====================================================
+
+    public function test_schemaDefinition_relationship_exists(): void
+    {
+        // Given
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $template = TemplateDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        // When
+        $loadedSchema = $template->schemaDefinition;
+
+        // Then
+        $this->assertNotNull($loadedSchema);
+        $this->assertEquals($schemaDefinition->id, $loadedSchema->id);
+        $this->assertInstanceOf(SchemaDefinition::class, $loadedSchema);
+    }
+
+    public function test_schemaDefinition_relationship_returns_null_when_not_set(): void
+    {
+        // Given
+        $template = TemplateDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => null,
+        ]);
+
+        // When
+        $loadedSchema = $template->schemaDefinition;
+
+        // Then
+        $this->assertNull($loadedSchema);
+    }
+
+    public function test_schema_definition_id_is_fillable(): void
+    {
+        // Given
+        $fillable = (new TemplateDefinition())->getFillable();
+
+        // Then
+        $this->assertContains('schema_definition_id', $fillable);
+    }
+
+    public function test_schemaDefinition_can_be_set_and_retrieved(): void
+    {
+        // Given
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $template = TemplateDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => null,
+        ]);
+
+        // When
+        $template->schema_definition_id = $schemaDefinition->id;
+        $template->save();
+
+        // Then
+        $template->refresh();
+        $this->assertEquals($schemaDefinition->id, $template->schema_definition_id);
+        $this->assertEquals($schemaDefinition->id, $template->schemaDefinition->id);
+    }
+
+    public function test_schemaDefinition_can_be_cleared(): void
+    {
+        // Given
+        $schemaDefinition = SchemaDefinition::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+        ]);
+
+        $template = TemplateDefinition::factory()->create([
+            'team_id'              => $this->user->currentTeam->id,
+            'schema_definition_id' => $schemaDefinition->id,
+        ]);
+
+        // When
+        $template->schema_definition_id = null;
+        $template->save();
+
+        // Then
+        $template->refresh();
+        $this->assertNull($template->schema_definition_id);
+        $this->assertNull($template->schemaDefinition);
     }
 }

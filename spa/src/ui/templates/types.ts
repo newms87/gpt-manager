@@ -32,6 +32,9 @@ export interface TemplateVariable extends ActionTargetItem {
   schema_association_id?: number;
   schema_association?: SchemaAssociation;
   team_object_field?: string;
+  // Used when setting schema association via fragment
+  schema_definition_id?: number;
+  schema_fragment_id?: number;
   // AI mapping configuration
   ai_instructions?: string;
   ai_prompt?: string;
@@ -49,6 +52,7 @@ export interface TemplateVariable extends ActionTargetItem {
   position?: number;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
 }
 
 /**

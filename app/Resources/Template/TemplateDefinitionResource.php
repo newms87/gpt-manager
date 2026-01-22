@@ -5,6 +5,7 @@ namespace App\Resources\Template;
 use App\Models\Template\TemplateDefinition;
 use App\Resources\Agent\AgentThreadResource;
 use App\Resources\Auth\UserResource;
+use App\Resources\Schema\SchemaDefinitionResource;
 use Illuminate\Database\Eloquent\Model;
 use Newms87\Danx\Resources\ActionResource;
 use Newms87\Danx\Resources\Job\JobDispatchResource;
@@ -28,6 +29,7 @@ class TemplateDefinitionResource extends ActionResource
             'updated_at'               => $templateDefinition->updated_at,
             'building_job_dispatch_id' => $templateDefinition->building_job_dispatch_id,
             'pending_build_context'    => $templateDefinition->pending_build_context,
+            'schema_definition_id'     => $templateDefinition->schema_definition_id,
 
             // Cached counter columns for lightweight counts
             'job_dispatch_count'       => user()?->can('view_jobs_in_ui')
@@ -40,6 +42,7 @@ class TemplateDefinitionResource extends ActionResource
             'css_content'              => fn() => $templateDefinition->css_content,
 
             // Relationships (loaded conditionally)
+            'schema_definition'        => fn($fields) => SchemaDefinitionResource::make($templateDefinition->schemaDefinition, $fields),
             'building_job_dispatch'    => fn($fields) => JobDispatchResource::make($templateDefinition->buildingJobDispatch, $fields),
             'stored_file'              => fn($fields) => StoredFileResource::make($templateDefinition->storedFile, $fields),
             'preview_stored_file'      => fn($fields) => StoredFileResource::make($templateDefinition->previewStoredFile, $fields),

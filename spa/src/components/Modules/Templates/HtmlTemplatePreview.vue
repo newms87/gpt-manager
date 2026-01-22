@@ -34,6 +34,30 @@
 					class="absolute bottom-0 left-2 right-2 h-0.5 bg-sky-500 rounded-t-full"
 				/>
 			</button>
+			<!-- Variables tab -->
+			<button
+				v-if="template"
+				:class="[
+					'px-4 py-2.5 text-sm font-medium transition-all duration-200 relative',
+					activeTab === 'variables'
+						? 'text-green-600'
+						: 'text-green-500 hover:text-green-700 hover:bg-green-50'
+				]"
+				@click="activeTab = 'variables'"
+			>
+				<VariablesIcon class="w-3.5 inline-block mr-1.5 -mt-0.5" />
+				Variables
+				<span
+					v-if="templateVariableCount !== null && templateVariableCount > 0"
+					class="ml-1 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full"
+				>
+					{{ templateVariableCount }}
+				</span>
+				<span
+					v-if="activeTab === 'variables'"
+					class="absolute bottom-0 left-2 right-2 h-0.5 bg-green-500 rounded-t-full"
+				/>
+			</button>
 			<!-- Jobs tab - only shown when user has permission and there are job dispatches -->
 			<button
 				v-if="canViewJobs && jobDispatchCount && jobDispatchCount > 0"
@@ -160,6 +184,15 @@
 				</div>
 			</div>
 
+			<!-- Variables tab -->
+			<TemplateVariablesTab
+				v-else-if="activeTab === 'variables' && template"
+				:template="template"
+				:variables="templateVariables"
+				@update-schema="emit('update-schema', $event)"
+				@update-variable="emit('update-variable', $event)"
+			/>
+
 			<!-- Jobs tab -->
 			<div v-else-if="activeTab === 'jobs'" class="h-full overflow-auto bg-white rounded-lg shadow-lg ring-1 ring-slate-200/50 p-6">
 				<div v-if="isLoadingJobDispatches" class="flex items-center justify-center h-full">
@@ -173,10 +206,12 @@
 
 <script setup lang="ts">
 import JobDispatchList from "@/components/Modules/Audits/JobDispatches/JobDispatchList.vue";
+import TemplateVariablesTab from "@/components/Modules/Templates/TemplateVariablesTab.vue";
 import { provideAuditCardTheme } from "@/composables/useAuditCardTheme";
-import type { BuildingJobDispatch } from "@/ui/templates/types";
+import type { BuildingJobDispatch, TemplateDefinition, TemplateVariable } from "@/ui/templates/types";
 import {
 	FaSolidCode as CodeIcon,
+	FaSolidCodeBranch as VariablesIcon,
 	FaSolidEye as EyeIcon,
 	FaSolidFileCode as DocumentIcon,
 	FaSolidHashtag as CssIcon,
@@ -200,6 +235,9 @@ const props = withDefaults(defineProps<{
 	jobDispatchCount?: number | null;
 	canViewJobs?: boolean;
 	isLoadingJobDispatches?: boolean;
+	template?: TemplateDefinition | null;
+	templateVariables?: TemplateVariable[];
+	templateVariableCount?: number | null;
 }>(), {
 	css: "",
 	variables: () => ({}),
@@ -208,15 +246,21 @@ const props = withDefaults(defineProps<{
 	jobDispatches: () => [],
 	jobDispatchCount: null,
 	canViewJobs: false,
-	isLoadingJobDispatches: false
+	isLoadingJobDispatches: false,
+	template: null,
+	templateVariables: () => [],
+	templateVariableCount: null
 });
 
 const emit = defineEmits<{
 	(e: "retry-build"): void;
 	(e: "cancel-build"): void;
 	(e: "load-job-dispatches"): void;
+	(e: "load-template-variables"): void;
 	(e: "update-html", html: string): void;
 	(e: "update-css", css: string): void;
+	(e: "update-schema", schemaId: number | null): void;
+	(e: "update-variable", variable: TemplateVariable): void;
 }>();
 
 /**
@@ -266,14 +310,18 @@ const elapsedTime = computed(() => {
 
 const containerRef = ref<HTMLElement | null>(null);
 const iframeRef = ref<HTMLIFrameElement | null>(null);
-const activeTab = ref<"preview" | "code" | "jobs">("preview");
+const activeTab = ref<"preview" | "code" | "variables" | "jobs">("preview");
 
 /**
  * Refresh job dispatches every time Jobs tab is opened
+ * Load template variables when Variables tab is opened
  */
 watch(activeTab, (tab) => {
 	if (tab === "jobs" && !props.isLoadingJobDispatches) {
 		emit("load-job-dispatches");
+	}
+	if (tab === "variables" && props.templateVariables.length === 0) {
+		emit("load-template-variables");
 	}
 });
 

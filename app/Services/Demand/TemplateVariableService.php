@@ -14,25 +14,32 @@ use Newms87\Danx\Exceptions\ValidationError;
 class TemplateVariableService
 {
     /**
-     * Sync variables from Google Doc template
-     * Creates new variables with default mapping_type='ai', preserves existing configurations, deletes orphaned variables
+     * Sync variables from Google Doc or HTML template.
+     * Creates new variables with default mapping_type='ai', restores trashed variables, soft-deletes orphaned variables.
      */
     public function syncVariablesFromGoogleDoc(TemplateDefinition $template, array $variableNames): Collection
     {
         $this->validateTemplateOwnership($template);
 
         return DB::transaction(function () use ($template, $variableNames) {
-            // Get existing variables for this template
-            $existingVariables       = app(TemplateVariableRepository::class)->findForTemplate($template);
+            // Get existing variables including trashed to restore if needed
+            $existingVariables = TemplateVariable::withTrashed()
+                ->where('template_definition_id', $template->id)
+                ->get();
             $existingVariablesByName = $existingVariables->keyBy('name');
 
             // Track which variables we're keeping
             $keptVariableNames = [];
 
-            // Create or update variables based on Google Doc
+            // Create or restore variables based on source template
             foreach ($variableNames as $variableName) {
-                if ($existingVariablesByName->has($variableName)) {
-                    // Variable exists - keep its configuration
+                $existingVariable = $existingVariablesByName->get($variableName);
+
+                if ($existingVariable) {
+                    // Variable exists - restore if trashed (preserves existing configuration)
+                    if ($existingVariable->trashed()) {
+                        $existingVariable->restore();
+                    }
                     $keptVariableNames[] = $variableName;
                 } else {
                     // New variable - create with default mapping_type='ai'
@@ -49,10 +56,9 @@ class TemplateVariableService
                 }
             }
 
-            // Delete variables that no longer exist in the template
-            $variablesToDelete = $existingVariables->filter(function ($variable) use ($keptVariableNames) {
-                return !in_array($variable->name, $keptVariableNames);
-            });
+            // Soft-delete active variables that no longer exist in the template
+            $activeVariables   = $existingVariables->filter(fn($v) => !$v->trashed());
+            $variablesToDelete = $activeVariables->filter(fn($v) => !in_array($v->name, $keptVariableNames));
 
             foreach ($variablesToDelete as $variable) {
                 $variable->delete();

@@ -7,6 +7,7 @@ use App\Models\Agent\AgentThreadMessage;
 use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateDefinitionHistory;
 use App\Services\Template\TemplateDefinitionService;
+use App\Services\Template\TemplateVariableMappingService;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Repositories\ActionRepository;
 
@@ -71,6 +72,12 @@ class TemplateDefinitionRepository extends ActionRepository
                 $model,
                 $data['discard_pending'] ?? false
             ),
+            'set-schema'               => $service->setSchemaDefinition(
+                $model,
+                $data['schema_definition_id'] ?? null
+            ),
+            'suggest-mappings'         => app(TemplateVariableMappingService::class)->suggestVariableMappings($model),
+            'sync-variables'           => $service->syncVariablesFromHtml($model),
             default                    => parent::applyAction($action, $model, $data)
         };
     }
