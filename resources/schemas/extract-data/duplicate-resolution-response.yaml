@@ -1,0 +1,31 @@
+# Schema for duplicate record resolution response
+type: object
+properties:
+  is_duplicate:
+    type: boolean
+    description: Whether the extracted data matches an existing record
+  matching_record_id:
+    type:
+      - integer
+      - 'null'
+    description: ID of the matching record, or null if no match
+  confidence:
+    type: number
+    minimum: 0
+    maximum: 1
+    description: Confidence level between 0.0 (no confidence) and 1.0 (certain)
+  explanation:
+    type: string
+    description: Clear explanation citing specific fields that match or differ
+  updated_values:
+    type: object
+    description: >
+      Best values to update on the existing record. Only include fields where
+      extracted data has better/more complete values than the existing record.
+      Do not include fields where values are equal or existing record has better data.
+    additionalProperties: true
+required:
+  - is_duplicate
+  - matching_record_id
+  - confidence
+  - explanation

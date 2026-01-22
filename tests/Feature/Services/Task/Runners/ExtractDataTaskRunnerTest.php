@@ -59,7 +59,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
             'agent_id'             => $this->agent->id,
             'task_runner_config'   => [
                 'confidence_threshold' => 3,
-                'skim_batch_size'      => 5,
+                'batch_size'           => 5,
             ],
         ]);
 
@@ -1433,7 +1433,7 @@ class ExtractDataTaskRunnerTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService to return extracted data
         $this->mock(\App\Services\Task\DataExtraction\GroupExtractionService::class, function ($mock) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->once()
                 ->andReturn([
                     'data' => [

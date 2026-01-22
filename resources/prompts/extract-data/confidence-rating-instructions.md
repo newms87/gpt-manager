@@ -1,0 +1,1 @@
+Rate your confidence (1-5) for each extracted identity field. 1=very uncertain/likely incorrect, 2=uncertain/might be wrong, 3=moderately confident/probably correct, 4=confident/very likely correct, 5=highly confident/definitely correct.

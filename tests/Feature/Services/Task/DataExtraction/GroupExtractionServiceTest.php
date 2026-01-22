@@ -35,11 +35,11 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
     }
 
     // =========================================================================
-    // extractWithSkimMode() tests
+    // extract() tests - unified extraction with stopOnConfidence parameter
     // =========================================================================
 
     #[Test]
-    public function extractWithSkimMode_processes_artifacts_in_batches(): void
+    public function extract_processes_artifacts_in_batches(): void
     {
         // Given: TaskRun with configured batch size
         $agent            = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -53,7 +53,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             'agent_id'             => $agent->id,
             'schema_definition_id' => $schemaDefinition->id,
             'task_runner_config'   => [
-                'skim_batch_size'      => 2, // Small batch size for testing
+                'batch_size'           => 2, // Small batch size for testing
                 'confidence_threshold' => 4,
             ],
         ]);
@@ -89,8 +89,8 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             });
         });
 
-        // When: Running skim mode extraction
-        $result = $serviceMock->extractWithSkimMode($taskRun, $taskProcess, $group, $artifacts, $teamObject);
+        // When: Running extraction with stopOnConfidence=true (skim mode)
+        $result = $serviceMock->extract($taskRun, $taskProcess, $group, $artifacts, $teamObject, null, stopOnConfidence: true);
 
         // Then: All batches were processed (low confidence forces all batches)
         $this->assertEquals(3, $batchCount); // 5 artifacts / 2 per batch = 3 batches
@@ -98,7 +98,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function extractWithSkimMode_stops_early_when_all_fields_have_high_confidence(): void
+    public function extract_with_stopOnConfidence_stops_early_when_all_fields_have_high_confidence(): void
     {
         // Given: TaskRun with configured threshold
         $agent            = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -112,7 +112,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             'agent_id'             => $agent->id,
             'schema_definition_id' => $schemaDefinition->id,
             'task_runner_config'   => [
-                'skim_batch_size'      => 2,
+                'batch_size'           => 2,
                 'confidence_threshold' => 4,
             ],
         ]);
@@ -148,8 +148,8 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             });
         });
 
-        // When: Running skim mode extraction
-        $result = $serviceMock->extractWithSkimMode($taskRun, $taskProcess, $group, $artifacts, $teamObject);
+        // When: Running extraction with stopOnConfidence=true (skim mode)
+        $result = $serviceMock->extract($taskRun, $taskProcess, $group, $artifacts, $teamObject, null, stopOnConfidence: true);
 
         // Then: Stopped early after first batch (high confidence)
         $this->assertEquals(1, $batchCount);
@@ -158,7 +158,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function extractWithSkimMode_takes_highest_confidence_score_for_each_field(): void
+    public function extract_with_stopOnConfidence_takes_highest_confidence_score_for_each_field(): void
     {
         // Given: TaskRun setup
         $agent            = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -172,7 +172,7 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             'agent_id'             => $agent->id,
             'schema_definition_id' => $schemaDefinition->id,
             'task_runner_config'   => [
-                'skim_batch_size'      => 2,
+                'batch_size'           => 2,
                 'confidence_threshold' => 5, // High threshold to force all batches
             ],
         ]);
@@ -209,20 +209,16 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             });
         });
 
-        // When: Running skim mode extraction
-        $result = $serviceMock->extractWithSkimMode($taskRun, $taskProcess, $group, $artifacts, $teamObject);
+        // When: Running extraction with stopOnConfidence=true (skim mode)
+        $result = $serviceMock->extract($taskRun, $taskProcess, $group, $artifacts, $teamObject, null, stopOnConfidence: true);
 
         // Then: Both batches processed (confidence threshold 5 not met)
         $this->assertEquals(2, $batchCount);
         $this->assertIsArray($result);
     }
 
-    // =========================================================================
-    // extractExhaustive() tests
-    // =========================================================================
-
     #[Test]
-    public function extractExhaustive_processes_all_artifacts(): void
+    public function extract_without_stopOnConfidence_processes_all_batches(): void
     {
         // Given: TaskRun with artifacts
         $agent            = Agent::factory()->create(['team_id' => $this->user->currentTeam->id]);
@@ -235,6 +231,10 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
             'team_id'              => $this->user->currentTeam->id,
             'agent_id'             => $agent->id,
             'schema_definition_id' => $schemaDefinition->id,
+            'task_runner_config'   => [
+                'batch_size'           => 2,
+                'confidence_threshold' => 4,
+            ],
         ]);
 
         $taskRun = TaskRun::factory()->create([
@@ -255,26 +255,26 @@ class GroupExtractionServiceTest extends AuthenticatedTestCase
         ];
 
         // Create partial mock to mock runExtractionOnArtifacts (which makes LLM calls)
-        $callCount   = 0;
-        $serviceMock = $this->partialMock(GroupExtractionService::class, function (MockInterface $mock) use (&$callCount) {
-            $mock->shouldReceive('runExtractionOnArtifacts')->once()->andReturnUsing(function () use (&$callCount) {
-                $callCount++;
+        $batchCount  = 0;
+        $serviceMock = $this->partialMock(GroupExtractionService::class, function (MockInterface $mock) use (&$batchCount) {
+            $mock->shouldReceive('runExtractionOnArtifacts')->andReturnUsing(function () use (&$batchCount) {
+                $batchCount++;
 
                 return [
                     'data' => [
                         'name'  => 'Extracted Name',
                         'email' => 'test@example.com',
                     ],
-                    'confidence' => [],
+                    'confidence' => ['name' => 5], // High confidence - but we don't stop!
                 ];
             });
         });
 
-        // When: Running exhaustive extraction
-        $result = $serviceMock->extractExhaustive($taskRun, $taskProcess, $group, $artifacts, $teamObject);
+        // When: Running extraction with stopOnConfidence=false (exhaustive mode)
+        $result = $serviceMock->extract($taskRun, $taskProcess, $group, $artifacts, $teamObject, null, stopOnConfidence: false);
 
-        // Then: Called once with all artifacts (no batching)
-        $this->assertEquals(1, $callCount);
+        // Then: All batches processed regardless of high confidence
+        $this->assertEquals(3, $batchCount); // 5 artifacts / 2 per batch = 3 batches
         $this->assertArrayHasKey('data', $result);
         $this->assertArrayHasKey('name', $result['data']);
         $this->assertEquals('Extracted Name', $result['data']['name']);

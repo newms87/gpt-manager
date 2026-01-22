@@ -1,0 +1,18 @@
+# Schema for conflict resolution response
+# This is a base template - properties are dynamically built per-field
+# Each conflict field gets a property with this structure
+
+field_resolution:
+  type: object
+  description: Resolution for a field conflict
+  properties:
+    resolved_value:
+      type: string
+      description: The correct/best value for this field based on the source pages
+    source_page:
+      type: integer
+      description: The primary page number that informed this value
+  required:
+    - resolved_value
+    - source_page
+  additionalProperties: false

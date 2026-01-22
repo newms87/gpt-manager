@@ -2405,4 +2405,107 @@ class DuplicateRecordResolverTest extends AuthenticatedTestCase
         // Then: No exact match because string comparison doesn't normalize
         $this->assertFalse($result2->hasExactMatch(), 'Non-date string fields should not be date-normalized');
     }
+
+    #[Test]
+    public function findCandidates_normalizes_whitespace_differences_for_exact_match(): void
+    {
+        // Given: TeamObject with address containing comma separator
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Location',
+            'name'    => 'Office Location',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $candidate->id,
+            'name'           => 'address',
+            'text_value'     => '14111 E. Alameda Ave. Suite 200, Aurora, CO 80012',
+        ]);
+
+        // When: Finding candidates with address containing newline instead of comma
+        // This simulates LLM extracting address with different whitespace formatting
+        $result = $this->resolver->findCandidates(
+            objectType: 'Location',
+            searchQueries: [['name' => '%Office Location%']],
+            rootObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: [
+                'name'    => 'Office Location',
+                'address' => "14111 E. Alameda Ave. Suite 200\nAurora, CO 80012",
+            ],
+            identityFields: ['name', 'address']
+        );
+
+        // Then: Returns exact match because whitespace differences are normalized
+        $this->assertTrue(
+            $result->hasExactMatch(),
+            'Expected exact match when addresses differ only by whitespace/comma formatting'
+        );
+        $this->assertEquals($candidate->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_normalizes_multiple_spaces_for_exact_match(): void
+    {
+        // Given: TeamObject with name containing single spaces
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Client',
+            'name'    => 'John William Smith',
+        ]);
+
+        // When: Finding candidates with name containing multiple spaces
+        $result = $this->resolver->findCandidates(
+            objectType: 'Client',
+            searchQueries: [['name' => '%John%Smith%']],
+            rootObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: ['name' => 'John  William   Smith'], // Multiple spaces
+            identityFields: ['name']
+        );
+
+        // Then: Returns exact match because multiple spaces are normalized to single space
+        $this->assertTrue(
+            $result->hasExactMatch(),
+            'Expected exact match when names differ only by multiple spaces'
+        );
+        $this->assertEquals($candidate->id, $result->exactMatchId);
+    }
+
+    #[Test]
+    public function findCandidates_normalizes_tabs_and_newlines_for_exact_match(): void
+    {
+        // Given: TeamObject with description containing normal spaces
+        $candidate = TeamObject::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'type'    => 'Note',
+            'name'    => 'Test Note',
+        ]);
+
+        TeamObjectAttribute::factory()->create([
+            'team_object_id' => $candidate->id,
+            'name'           => 'description',
+            'text_value'     => 'Line one Line two Line three',
+        ]);
+
+        // When: Finding candidates with description containing tabs and newlines
+        $result = $this->resolver->findCandidates(
+            objectType: 'Note',
+            searchQueries: [['name' => '%Test Note%']],
+            rootObjectId: null,
+            schemaDefinitionId: null,
+            extractedData: [
+                'name'        => 'Test Note',
+                'description' => "Line one\tLine two\nLine three",
+            ],
+            identityFields: ['name', 'description']
+        );
+
+        // Then: Returns exact match because tabs and newlines are normalized to spaces
+        $this->assertTrue(
+            $result->hasExactMatch(),
+            'Expected exact match when descriptions differ only by tabs/newlines vs spaces'
+        );
+        $this->assertEquals($candidate->id, $result->exactMatchId);
+    }
 }

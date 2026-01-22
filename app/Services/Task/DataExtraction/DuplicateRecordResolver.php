@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * Service for resolving duplicate TeamObjects during data extraction.
@@ -866,6 +867,10 @@ class DuplicateRecordResolver
 
     /**
      * Normalize a value for comparison.
+     *
+     * Handles whitespace variations commonly found in extracted data:
+     * - Newlines, tabs, multiple spaces normalized to single space
+     * - Comma-space sequences normalized to single space (handles "Suite 200, Aurora" vs "Suite 200 Aurora")
      */
     protected function normalizeValue(mixed $value): string
     {
@@ -873,8 +878,16 @@ class DuplicateRecordResolver
             return '';
         }
 
-        // Convert to string and normalize whitespace/case
-        return trim(strtolower((string)$value));
+        $string = (string)$value;
+
+        // Normalize all whitespace (newlines, tabs, multiple spaces) to single space
+        $string = preg_replace('/\s+/', ' ', $string);
+
+        // Normalize comma-space to just space (handles address formatting variations)
+        $string = str_replace(', ', ' ', $string);
+
+        // Lowercase and trim
+        return trim(strtolower($string));
     }
 
     /**
@@ -939,33 +952,12 @@ class DuplicateRecordResolver
 
     /**
      * Create a transient SchemaDefinition for duplicate resolution response format.
+     *
+     * Loads the schema from an external YAML file for maintainability.
      */
     protected function createDuplicateResolutionSchema(): SchemaDefinition
     {
-        $schema = [
-            'type'       => 'object',
-            'properties' => [
-                'is_duplicate'       => [
-                    'type'        => 'boolean',
-                    'description' => 'Whether the extracted data matches an existing record',
-                ],
-                'matching_record_id' => [
-                    'type'        => ['integer', 'null'],
-                    'description' => 'ID of the matching record, or null if no match',
-                ],
-                'confidence'         => [
-                    'type'        => 'number',
-                    'minimum'     => 0,
-                    'maximum'     => 1,
-                    'description' => 'Confidence level between 0.0 (no confidence) and 1.0 (certain)',
-                ],
-                'explanation'        => [
-                    'type'        => 'string',
-                    'description' => 'Clear explanation citing specific fields that match or differ',
-                ],
-            ],
-            'required'   => ['is_duplicate', 'matching_record_id', 'confidence', 'explanation'],
-        ];
+        $schema = Yaml::parseFile(resource_path('schemas/extract-data/duplicate-resolution-response.yaml'));
 
         $schemaDefinition         = new SchemaDefinition;
         $schemaDefinition->schema = $schema;
@@ -1040,10 +1032,16 @@ class DuplicateRecordResolver
         $isDuplicate      = $data['is_duplicate']       ?? false;
         $matchingRecordId = $data['matching_record_id'] ?? null;
         $confidence       = (float)($data['confidence'] ?? 0.0);
-        $explanation      = $data['explanation'] ?? 'No explanation provided';
+        $explanation      = $data['explanation']        ?? 'No explanation provided';
+        $updatedValues    = $data['updated_values']     ?? null;
 
         // Clamp confidence to valid range
         $confidence = max(0.0, min(1.0, $confidence));
+
+        // Filter out empty updated_values
+        if (is_array($updatedValues) && empty($updatedValues)) {
+            $updatedValues = null;
+        }
 
         // Find the matching object if specified
         $existingObject = null;
@@ -1068,9 +1066,11 @@ class DuplicateRecordResolver
         }
 
         static::logDebug('Parsed resolution result', [
-            'is_duplicate'   => $isDuplicate,
-            'record_id'      => $matchingRecordId,
-            'confidence'     => $confidence,
+            'is_duplicate'          => $isDuplicate,
+            'record_id'             => $matchingRecordId,
+            'confidence'            => $confidence,
+            'has_updated_values'    => $updatedValues !== null,
+            'updated_values_fields' => $updatedValues ? array_keys($updatedValues) : [],
         ]);
 
         return new ResolutionResult(
@@ -1078,7 +1078,8 @@ class DuplicateRecordResolver
             existingObjectId: $matchingRecordId,
             existingObject: $existingObject,
             explanation: $explanation,
-            confidence: $confidence
+            confidence: $confidence,
+            updatedValues: $updatedValues
         );
     }
 }

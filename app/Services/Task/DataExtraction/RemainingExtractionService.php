@@ -65,25 +65,16 @@ class RemainingExtractionService
 
         $groupExtractionService = app(GroupExtractionService::class);
 
-        // Route to appropriate extraction mode
-        $extractionResult = match ($searchMode) {
-            'skim' => $groupExtractionService->extractWithSkimMode(
-                $taskRun,
-                $taskProcess,
-                $extractionGroup,
-                $artifacts,
-                $teamObject,
-                $allArtifacts
-            ),
-            default => $groupExtractionService->extractExhaustive(
-                $taskRun,
-                $taskProcess,
-                $extractionGroup,
-                $artifacts,
-                $teamObject,
-                $allArtifacts
-            ),
-        };
+        // Both modes use the same extraction method, only differing in early stopping behavior
+        $extractionResult = $groupExtractionService->extract(
+            taskRun: $taskRun,
+            taskProcess: $taskProcess,
+            group: $extractionGroup,
+            artifacts: $artifacts,
+            teamObject: $teamObject,
+            allArtifacts: $allArtifacts,
+            stopOnConfidence: $searchMode === 'skim'
+        );
 
         $extractedData = $extractionResult['data']         ?? [];
         $pageSources   = $extractionResult['page_sources'] ?? [];

@@ -147,7 +147,7 @@ class PerObjectPlanningService
             'identity_group'     => [
                 'identity_fields' => $response['identity_fields'] ?? [],
                 'skim_fields'     => $skimFields,
-                'search_mode'     => 'skim',
+                'search_mode'     => $response['search_mode']     ?? 'skim',
                 'description'     => $response['description']     ?? null,
             ],
             'has_remaining_fields' => $hasRemainingFields,
@@ -532,7 +532,7 @@ class PerObjectPlanningService
                         'object_type'       => $objectType,
                         'identity_fields'   => $identityGroup['identity_fields'] ?? [],
                         'skim_fields'       => $identityGroup['skim_fields']     ?? [],
-                        'search_mode'       => $identityGroup['search_mode']     ?? 'skim',
+                        'search_mode'       => ($planData['is_array'] ?? false) ? 'exhaustive' : ($identityGroup['search_mode'] ?? 'skim'),
                         'description'       => $identityGroup['description']     ?? null,
                         'fragment_selector' => $fragmentSelector,
                     ];
@@ -552,7 +552,7 @@ class PerObjectPlanningService
                         'name'              => $group['name']        ?? 'Unnamed Group',
                         'description'       => $group['description'] ?? null,
                         'fields'            => $group['fields']      ?? [],
-                        'search_mode'       => $group['search_mode'] ?? 'exhaustive',
+                        'search_mode'       => ($planData['is_array'] ?? false) ? 'exhaustive' : ($group['search_mode'] ?? 'exhaustive'),
                         'object_type'       => $objectType,
                         'fragment_selector' => $fragmentSelector,
                     ];

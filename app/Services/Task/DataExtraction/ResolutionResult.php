@@ -17,7 +17,8 @@ readonly class ResolutionResult
         public ?int $existingObjectId,
         public ?TeamObject $existingObject,
         public string $explanation,
-        public float $confidence = 0.0
+        public float $confidence = 0.0,
+        public ?array $updatedValues = null
     ) {
     }
 
@@ -57,5 +58,24 @@ readonly class ResolutionResult
         }
 
         return "No duplicate found: {$this->explanation}";
+    }
+
+    /**
+     * Check if there are updated values to apply to the existing record.
+     */
+    public function hasUpdatedValues(): bool
+    {
+        return $this->hasDuplicate() && !empty($this->updatedValues);
+    }
+
+    /**
+     * Get the updated values to apply to the existing record.
+     *
+     * Returns an associative array of field name => best value pairs.
+     * Only contains fields where the extracted data has better/more complete values.
+     */
+    public function getUpdatedValues(): ?array
+    {
+        return $this->updatedValues;
     }
 }

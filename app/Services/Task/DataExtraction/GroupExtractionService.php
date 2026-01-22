@@ -12,39 +12,47 @@ use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
+use App\Traits\MergesExtractionResults;
 use Exception;
 use Illuminate\Support\Collection;
 
 class GroupExtractionService
 {
     use HasDebugLogging;
+    use MergesExtractionResults;
 
     /**
-     * Extract data using skim mode.
-     * Process artifacts in batches, stopping early when all fields have sufficient confidence.
+     * Extract data from artifacts using batched processing.
+     *
+     * Both skim and exhaustive modes use the same batch loop:
+     * - Skim mode ($stopOnConfidence = true): breaks early when all fields have sufficient confidence
+     * - Exhaustive mode ($stopOnConfidence = false): processes all batches without early stopping
      *
      * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
+     * @param  bool  $stopOnConfidence  When true, stops processing when all fields have high confidence (skim mode)
      * @return array{data: array, page_sources: array}
      */
-    public function extractWithSkimMode(
+    public function extract(
         TaskRun $taskRun,
         TaskProcess $taskProcess,
         array $group,
         Collection $artifacts,
         TeamObject $teamObject,
-        ?Collection $allArtifacts = null
+        ?Collection $allArtifacts = null,
+        bool $stopOnConfidence = false
     ): array {
         $config              = $taskRun->taskDefinition->task_runner_config;
         $confidenceThreshold = $config['confidence_threshold'] ?? 3;
-        $batchSize           = $config['skim_batch_size']      ?? 5;
+        $batchSize           = $config['batch_size']           ?? 5;
 
         $extractedData         = [];
         $cumulativeConfidence  = [];
         $cumulativePageSources = [];
 
-        static::logDebug('Starting skim mode extraction', [
+        static::logDebug('Starting extraction', [
             'artifact_count'       => $artifacts->count(),
-            'confidence_threshold' => $confidenceThreshold,
+            'stop_on_confidence'   => $stopOnConfidence,
+            'confidence_threshold' => $stopOnConfidence ? $confidenceThreshold : 'N/A',
             'batch_size'           => $batchSize,
         ]);
 
@@ -52,13 +60,21 @@ class GroupExtractionService
         foreach ($artifacts->chunk($batchSize) as $batchIndex => $batch) {
             static::logDebug("Processing batch $batchIndex with " . $batch->count() . ' artifacts');
 
-            $batchResult = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $batch, $teamObject, true, $allArtifacts);
+            $batchResult = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $batch, $teamObject, $stopOnConfidence, $allArtifacts);
 
-            // Merge batch data with cumulative data
-            $extractedData = array_replace_recursive($extractedData, $batchResult['data']);
+            // Merge batch data with cumulative data (preserving non-null values from earlier batches)
+            // and track which fields were actually updated
+            $mergeResult   = $this->mergeExtractionResultsWithTracking($extractedData, $batchResult['data']);
+            $extractedData = $mergeResult['merged'];
 
-            // Merge page sources (later batches override earlier ones)
-            $cumulativePageSources = array_merge($cumulativePageSources, $batchResult['page_sources'] ?? []);
+            // Only merge page sources for fields that were actually updated
+            // This prevents later batches with empty data from overwriting page_sources
+            $batchPageSources      = $batchResult['page_sources'] ?? [];
+            $cumulativePageSources = $this->mergePageSourcesForUpdatedFields(
+                $cumulativePageSources,
+                $batchPageSources,
+                $mergeResult['updated_fields']
+            );
 
             // Update confidence scores (take the highest confidence for each field)
             foreach ($batchResult['confidence'] ?? [] as $field => $score) {
@@ -67,43 +83,19 @@ class GroupExtractionService
                 }
             }
 
-            // Check if all expected fields have high enough confidence
-            if ($this->allFieldsHaveHighConfidence($group, $cumulativeConfidence, $confidenceThreshold)) {
+            // Check if we should stop early (skim mode only)
+            if ($stopOnConfidence && $this->allFieldsHaveHighConfidence($group, $cumulativeConfidence, $confidenceThreshold)) {
                 $highConfidenceFields = array_filter($cumulativeConfidence, fn($score) => $score >= $confidenceThreshold);
-                static::logDebug('Skim mode: stopping early - all fields have sufficient confidence', [
-                    'batches_processed'       => $batchIndex + 1,
-                    'high_confidence_fields'  => array_keys($highConfidenceFields),
-                    'confidence_scores'       => $cumulativeConfidence,
+                static::logDebug('Stopping early - all fields have sufficient confidence', [
+                    'batches_processed'      => $batchIndex + 1,
+                    'high_confidence_fields' => array_keys($highConfidenceFields),
+                    'confidence_scores'      => $cumulativeConfidence,
                 ]);
                 break;
             }
         }
 
         return ['data' => $extractedData, 'page_sources' => $cumulativePageSources];
-    }
-
-    /**
-     * Extract data using exhaustive mode.
-     * Process all artifacts and aggregate results.
-     *
-     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
-     * @return array{data: array, page_sources: array}
-     */
-    public function extractExhaustive(
-        TaskRun $taskRun,
-        TaskProcess $taskProcess,
-        array $group,
-        Collection $artifacts,
-        TeamObject $teamObject,
-        ?Collection $allArtifacts = null
-    ): array {
-        static::logDebug('Starting exhaustive mode extraction', [
-            'artifact_count' => $artifacts->count(),
-        ]);
-
-        $result = $this->runExtractionOnArtifacts($taskRun, $taskProcess, $group, $artifacts, $teamObject, false, $allArtifacts);
-
-        return ['data' => $result['data'], 'page_sources' => $result['page_sources'] ?? []];
     }
 
     /**
@@ -177,7 +169,8 @@ class GroupExtractionService
         }
 
         // Build schema from fragment selector
-        $jsonSchemaService = app(JsonSchemaService::class);
+        // Enable null values so LLM can return null instead of placeholder strings like "<null>"
+        $jsonSchemaService = app(JsonSchemaService::class)->includeNullValues();
         $fragmentSchema    = $jsonSchemaService->applyFragmentSelector(
             $schemaDefinition->schema,
             $fragmentSelector
@@ -309,10 +302,12 @@ class GroupExtractionService
             ];
         }
 
+        // Load description from shared external file
+        $description = trim(file_get_contents(resource_path('prompts/extract-data/confidence-rating-instructions.md')));
+
         return [
             'type'                 => 'object',
-            'description'          => 'Rate your confidence (1-5) for each extracted field. ' .
-                                     '1=very uncertain, 5=highly confident.',
+            'description'          => $description,
             'properties'           => $properties,
             'additionalProperties' => [
                 'type'    => 'integer',

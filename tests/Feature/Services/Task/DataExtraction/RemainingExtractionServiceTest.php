@@ -62,7 +62,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
             'task_runner_config'   => [
                 'extraction_timeout'   => 60,
                 'confidence_threshold' => 3,
-                'skim_batch_size'      => 5,
+                'batch_size'           => 5,
             ],
         ]);
 
@@ -185,7 +185,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify skim mode is called
-            $mock->shouldReceive('extractWithSkimMode')
+            $mock->shouldReceive('extract')
                 ->once()
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
@@ -264,7 +264,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
             // Verify exhaustive mode is called
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->once()
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
@@ -328,8 +328,8 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            // Verify extractExhaustive is called for unknown mode
-            $mock->shouldReceive('extractExhaustive')
+            // Verify extract() is called for unknown mode (defaults to stopOnConfidence=false)
+            $mock->shouldReceive('extract')
                 ->once()
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
@@ -398,7 +398,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService and verify updateTeamObjectWithExtractedData is called
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData, $teamObject) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')
@@ -470,7 +470,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
@@ -532,7 +532,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService to return empty data
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => [], 'page_sources' => []]);  // Empty extraction result
 
             // updateTeamObjectWithExtractedData should NOT be called
@@ -595,7 +595,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
@@ -656,7 +656,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
         });
 
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldReceive('updateTeamObjectWithExtractedData')->once();
@@ -740,7 +740,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             // updateTeamObjectWithExtractedData should NOT be called for array extraction
@@ -838,7 +838,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
@@ -956,7 +956,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');
@@ -1066,7 +1066,7 @@ class RemainingExtractionServiceTest extends AuthenticatedTestCase
 
         // Mock GroupExtractionService
         $this->mock(GroupExtractionService::class, function (MockInterface $mock) use ($extractedData) {
-            $mock->shouldReceive('extractExhaustive')
+            $mock->shouldReceive('extract')
                 ->andReturn(['data' => $extractedData, 'page_sources' => []]);
 
             $mock->shouldNotReceive('updateTeamObjectWithExtractedData');

@@ -31,6 +31,22 @@ These principles MUST appear in EVERY plan and as the FIRST item in EVERY todo l
 | **Test-First** | Bug fixes: failing test → fix → verify |
 | **Delegate** | Orchestrator → Architect → Engineer → QA (never skip) |
 
+**📝 PLAN WRITING RULES - NO CODE IN PLANS**
+
+When writing plans (in plan mode or plan files):
+
+| ✅ DO | ❌ DON'T |
+|-------|----------|
+| Describe requirements in natural language | Write implementation code |
+| Explain what needs to change | Show how to implement it line-by-line |
+| List files that need modification | Include code blocks with full implementations |
+| Describe the solution approach | Dictate specific code patterns |
+| Use bullet points and prose | Use code snippets longer than 1-2 lines |
+
+**Plans document WHAT and WHY, not HOW.** The engineers who implement will determine the code.
+
+**Exception:** Tiny snippets (1-2 lines max) are acceptable ONLY to clarify a specific point, such as a method signature or attribute name.
+
 **🚨 MISSION CRITICAL: SUB-AGENT INVOCATION PREAMBLE 🚨**
 
 When invoking ANY sub-agent using the Task tool, you MUST ALWAYS include this preamble at the start of your prompt:

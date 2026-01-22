@@ -70,6 +70,26 @@
                 </ul>
             </div>
 
+            <!-- Batch Size Field -->
+            <NumberField
+                v-model="batchSize"
+                label="Batch Size"
+                tooltip="Pages processed per LLM call (default: 5)"
+                :min="1"
+                :max="20"
+                prepend-label
+                class="mb-2"
+                @update:model-value="debounceChange"
+            />
+            <div class="text-xs text-gray-500 mb-6 ml-1">
+                <p>Number of pages processed per LLM call (1-20):</p>
+                <ul class="list-disc pl-5 mt-1">
+                    <li><b>Smaller batch (1-3):</b> More focused extraction, better for dense documents</li>
+                    <li><b>Larger batch (6-20):</b> Faster processing, better for sparse documents</li>
+                    <li class="mt-1 text-gray-600"><b>Recommended:</b> 5 for balanced throughput</li>
+                </ul>
+            </div>
+
             <div class="text-lg font-medium mb-3 mt-6">Grouping Configuration</div>
 
             <!-- Group Max Points Field -->
@@ -244,7 +264,7 @@
 </template>
 
 <script setup lang="ts">
-import { MarkdownEditor } from "quasar-ui-danx";
+import { MarkdownEditor, NumberField } from "quasar-ui-danx";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { TaskDefinition } from "@/types";
 import { useDebounceFn } from "@vueuse/core";
@@ -257,6 +277,7 @@ export interface ExtractDataTaskRunnerConfig {
     group_max_points: number;
     global_search_mode: "intelligent" | "skim_only" | "exhaustive_only";
     confidence_threshold: number;
+    batch_size?: number;
     enable_context_pages?: boolean;
     adjacency_threshold?: number;
     classification_context_before: number;
@@ -274,6 +295,7 @@ const config = computed(() => (props.taskDefinition.task_runner_config || {}) as
 const groupMaxPoints = ref(config.value.group_max_points ?? 10);
 const globalSearchMode = ref(config.value.global_search_mode ?? "intelligent");
 const confidenceThreshold = ref(config.value.confidence_threshold ?? 3);
+const batchSize = ref(config.value.batch_size);
 const enableContextPages = ref(config.value.enable_context_pages ?? false);
 const adjacencyThreshold = ref(config.value.adjacency_threshold ?? 3);
 const classificationContextBefore = ref(config.value.classification_context_before ?? 2);
@@ -290,6 +312,7 @@ const debounceChange = useDebounceFn(() => {
             group_max_points: Number(groupMaxPoints.value) || 10,
             global_search_mode: globalSearchMode.value || "intelligent",
             confidence_threshold: Number(confidenceThreshold.value) || 3,
+            batch_size: batchSize.value ? Number(batchSize.value) : undefined,
             enable_context_pages: enableContextPages.value,
             adjacency_threshold: Number(adjacencyThreshold.value) || 3,
             classification_context_before: Number(classificationContextBefore.value) || 2,

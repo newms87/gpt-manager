@@ -264,10 +264,15 @@ class ExtractionProcessOrchestratorTest extends AuthenticatedTestCase
         $this->assertCount(1, $processes);
         $this->assertEquals(ExtractDataTaskRunner::OPERATION_EXTRACT_IDENTITY, $processes[0]->operation);
         $this->assertEquals(0, $processes[0]->meta['level']);
-        $this->assertArrayHasKey('identity_group', $processes[0]->meta);
 
-        // Verify input artifacts are attached
-        $this->assertGreaterThan(0, $processes[0]->inputArtifacts()->count());
+        // Verify input artifacts are attached (includes config artifact + classified artifacts)
+        $inputArtifacts = $processes[0]->inputArtifacts()->get();
+        $this->assertGreaterThan(0, $inputArtifacts->count());
+
+        // Verify config artifact contains identity_group (architecture moved config to artifact)
+        $configArtifact = $inputArtifacts->firstWhere('name', 'Process Config');
+        $this->assertNotNull($configArtifact, 'Process Config artifact should be attached');
+        $this->assertArrayHasKey('identity_group', $configArtifact->meta);
     }
 
     #[Test]
@@ -571,10 +576,19 @@ class ExtractionProcessOrchestratorTest extends AuthenticatedTestCase
             $processes[0]->operation
         );
 
-        // Verify the page artifact was attached as input
+        // Verify input artifacts include both config artifact and page artifact
         $inputArtifacts = $processes[0]->inputArtifacts()->get();
-        $this->assertCount(1, $inputArtifacts, 'Expected page artifact to be attached as input');
-        $this->assertEquals($pageArtifact->id, $inputArtifacts->first()->id);
+        $this->assertCount(2, $inputArtifacts, 'Expected config artifact and page artifact to be attached as input');
+
+        // Verify config artifact is present
+        $configArtifact = $inputArtifacts->firstWhere('name', 'Process Config');
+        $this->assertNotNull($configArtifact, 'Process Config artifact should be attached');
+
+        // Verify the page artifact is present
+        $this->assertTrue(
+            $inputArtifacts->contains('id', $pageArtifact->id),
+            'Page artifact should be attached as input'
+        );
     }
 
     #[Test]

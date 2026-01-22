@@ -4,6 +4,7 @@ namespace App\Services\Task\DataExtraction;
 
 use App\Models\Agent\AgentThread;
 use App\Models\Schema\SchemaDefinition;
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
@@ -13,6 +14,7 @@ use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Traits\HasDebugLogging;
+use App\Traits\MergesExtractionResults;
 use App\Traits\SchemaFieldHelper;
 use App\Traits\TeamObjectRelationshipHelper;
 use Carbon\Carbon;
@@ -53,6 +55,7 @@ use Symfony\Component\Yaml\Yaml;
 class IdentityExtractionService
 {
     use HasDebugLogging;
+    use MergesExtractionResults;
     use SchemaFieldHelper;
     use TeamObjectRelationshipHelper;
 
@@ -279,13 +282,26 @@ class IdentityExtractionService
         ];
 
         // Resolve duplicates using DuplicateRecordResolver
-        $matchId = $this->resolveDuplicate(
+        $resolution = $this->resolveDuplicate(
             taskRun: $taskRun,
             taskProcess: $taskProcess,
             identityGroup: $identityGroup,
             extractionResult: $itemExtractionResult,
             parentObjectId: $parentObjectId
         );
+
+        // Extract matchId for downstream use
+        $matchId = $resolution->hasDuplicate() ? $resolution->existingObjectId : null;
+
+        // Merge updated values into identification data when LLM found better values
+        // This allows updating the existing record with more complete data
+        if ($resolution->hasUpdatedValues()) {
+            $identificationData = array_merge($identificationData, $resolution->getUpdatedValues());
+
+            static::logDebug('Merging updated values from duplicate resolution', [
+                'updated_fields' => array_keys($resolution->getUpdatedValues()),
+            ]);
+        }
 
         // Get relationship key from fragment_selector (schema is source of truth)
         $relationshipKey = app(FragmentSelectorService::class)->getLeafKey($fragmentSelector, $objectType);
@@ -313,10 +329,11 @@ class IdentityExtractionService
         app(ResolvedObjectsService::class)->storeInProcessArtifacts($taskProcess, $identityGroup['object_type'], $teamObject->id);
 
         static::logDebug('Identity extraction completed', [
-            'object_type'        => $identityGroup['object_type'],
-            'object_id'          => $teamObject->id,
-            'was_existing'       => $matchId !== null,
-            'resolved_parent_id' => $parentObjectId,
+            'object_type'          => $identityGroup['object_type'],
+            'object_id'            => $teamObject->id,
+            'was_existing'         => $matchId !== null,
+            'resolved_parent_id'   => $parentObjectId,
+            'had_updated_values'   => $resolution->hasUpdatedValues(),
         ]);
 
         // Build and attach output artifact(s)
@@ -438,13 +455,26 @@ class IdentityExtractionService
             ];
 
             // Resolve duplicates for this item (scoped to parent)
-            $matchId = $this->resolveDuplicate(
+            $resolution = $this->resolveDuplicate(
                 taskRun: $taskRun,
                 taskProcess: $taskProcess,
                 identityGroup: $identityGroup,
                 extractionResult: $itemExtractionResult,
                 parentObjectId: $parentObjectId
             );
+
+            // Extract matchId for downstream use
+            $matchId = $resolution->hasDuplicate() ? $resolution->existingObjectId : null;
+
+            // Merge updated values into item data when LLM found better values
+            // This allows updating the existing record with more complete data
+            if ($resolution->hasUpdatedValues()) {
+                $itemData = array_merge($itemData, $resolution->getUpdatedValues());
+
+                static::logDebug('Merging updated values from duplicate resolution', [
+                    'updated_fields' => array_keys($resolution->getUpdatedValues()),
+                ]);
+            }
 
             // Create or use existing TeamObject
             // $leafKey is the relationship key from the schema (computed at start of method)
@@ -482,9 +512,10 @@ class IdentityExtractionService
             );
 
             static::logDebug('Processed array identity item', [
-                'object_id'   => $teamObject->id,
-                'object_name' => $teamObject->name,
-                'was_update'  => $matchId !== null,
+                'object_id'          => $teamObject->id,
+                'object_name'        => $teamObject->name,
+                'was_update'         => $matchId !== null,
+                'had_updated_values' => $resolution->hasUpdatedValues(),
             ]);
         }
 
@@ -536,12 +567,16 @@ class IdentityExtractionService
     /**
      * Extract identity fields with search query using LLM.
      *
-     * Routes to skim mode or exhaustive mode based on search_mode in process meta.
+     * Both skim and exhaustive modes use the same batch loop:
+     * - Skim mode ($stopOnConfidence = true): breaks early when all identity fields have sufficient confidence
+     * - Exhaustive mode ($stopOnConfidence = false): processes all batches without early stopping
+     *
      * For array extractions, search queries are omitted from the initial extraction
      * and generated via a follow-up request to SearchQueryGenerationService.
      *
      * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
      * @param  bool  $includeSearchQuery  When true, includes search_query in schema (default true for single objects, false for arrays)
+     * @return array{data: array, parent_id: int|null, page_sources: array, search_query: array}
      */
     protected function extractIdentityWithSearchQuery(
         TaskRun $taskRun,
@@ -561,79 +596,38 @@ class IdentityExtractionService
             return [];
         }
 
-        // Route to appropriate extraction mode based on identity group config
-        // The $group parameter already contains the full identity group including search_mode
-        $searchMode = $group['search_mode'] ?? 'exhaustive';
+        // Determine if we should stop early based on search mode
+        $searchMode       = $group['search_mode'] ?? 'exhaustive';
+        $stopOnConfidence = $searchMode === 'skim';
 
-        if ($searchMode === 'skim') {
-            return $this->extractWithSkimMode(
-                $taskRun,
-                $taskProcess,
-                $group,
-                $artifacts,
-                $possibleParentIds,
-                $allArtifacts,
-                $includeSearchQuery
-            );
-        }
-
-        // Exhaustive mode: process all artifacts in a single request
-        $responseSchema = $this->buildExtractionResponseSchema(
-            $schemaDefinition,
-            $group,
-            $possibleParentIds,
-            includeConfidence: false,
-            includeSearchQuery: $includeSearchQuery
-        );
-
-        return $this->runExtractionThread(
-            $taskRun,
-            $taskProcess,
-            $artifacts,
-            $responseSchema,
-            $possibleParentIds,
-            $allArtifacts
-        );
-    }
-
-    /**
-     * Extract identity data using skim mode.
-     * Process artifacts in batches, stopping early when all identity fields have sufficient confidence.
-     *
-     * @param  array<int>  $possibleParentIds
-     * @param  Collection|null  $allArtifacts  All artifacts for context expansion (optional)
-     * @param  bool  $includeSearchQuery  When true, includes search_query in schema
-     * @return array{data: array, parent_id: int|null, page_sources: array, search_query: array}
-     */
-    protected function extractWithSkimMode(
-        TaskRun $taskRun,
-        TaskProcess $taskProcess,
-        array $group,
-        Collection $artifacts,
-        array $possibleParentIds,
-        ?Collection $allArtifacts = null,
-        bool $includeSearchQuery = true
-    ): array {
         $config              = $taskRun->taskDefinition->task_runner_config;
         $confidenceThreshold = $config['confidence_threshold'] ?? 3;
-        $batchSize           = $config['skim_batch_size']      ?? 5;
+        $batchSize           = $config['batch_size']           ?? 5;
         $identityFields      = $group['identity_fields']       ?? [];
 
         $cumulativeData        = [];
         $cumulativeConfidence  = [];
         $cumulativePageSources = [];
         $cumulativeSearchQuery = [];
+        $cumulativeConflicts   = [];
         $resolvedParentId      = null;
 
-        static::logDebug('Starting skim mode identity extraction', [
-            'artifact_count'       => $artifacts->count(),
-            'confidence_threshold' => $confidenceThreshold,
+        // Filter out the Process Config artifact - it should not be included in batch processing
+        // The config artifact is used for configuration, not for LLM extraction
+        $pageArtifacts = $artifacts->filter(
+            fn(Artifact $artifact) => $artifact->name !== ProcessConfigArtifactService::CONFIG_ARTIFACT_NAME
+        );
+
+        static::logDebug('Starting identity extraction', [
+            'artifact_count'       => $pageArtifacts->count(),
+            'stop_on_confidence'   => $stopOnConfidence,
+            'confidence_threshold' => $stopOnConfidence ? $confidenceThreshold : 'N/A',
             'batch_size'           => $batchSize,
             'identity_fields'      => $identityFields,
         ]);
 
         // Process artifacts in batches
-        foreach ($artifacts->chunk($batchSize) as $batchIndex => $batch) {
+        foreach ($pageArtifacts->chunk($batchSize) as $batchIndex => $batch) {
             static::logDebug("Processing identity extraction batch $batchIndex with " . $batch->count() . ' artifacts');
 
             $batchResult = $this->runExtractionOnBatch(
@@ -642,22 +636,38 @@ class IdentityExtractionService
                 $batch,
                 $group,
                 $possibleParentIds,
-                includeConfidence: true,
+                includeConfidence: $stopOnConfidence,
                 allArtifacts: $allArtifacts,
                 includeSearchQuery: $includeSearchQuery
             );
 
-            // Merge batch data with cumulative data (later batches override earlier values)
-            $batchData      = $batchResult['data'] ?? [];
-            $cumulativeData = array_replace_recursive($cumulativeData, $batchData);
+            // Merge batch data with cumulative data, tracking updates AND detecting conflicts
+            // A conflict occurs when both batches have meaningful but different values
+            $batchData        = $batchResult['data']         ?? [];
+            $batchPageSources = $batchResult['page_sources'] ?? [];
+
+            $mergeResult = $this->mergeExtractionResultsWithConflicts(
+                $cumulativeData,
+                $batchData,
+                $cumulativePageSources,
+                $batchPageSources
+            );
+
+            $cumulativeData      = $mergeResult['merged'];
+            $cumulativeConflicts = array_merge($cumulativeConflicts, $mergeResult['conflicts']);
 
             // Use first parent_id found (from first batch that resolves it)
             if ($resolvedParentId === null && !empty($batchResult['parent_id'])) {
                 $resolvedParentId = $batchResult['parent_id'];
             }
 
-            // Merge page sources (later batches override earlier ones)
-            $cumulativePageSources = array_merge($cumulativePageSources, $batchResult['page_sources'] ?? []);
+            // Only merge page sources for fields that were actually updated
+            // This prevents later batches with empty data from overwriting page_sources
+            $cumulativePageSources = $this->mergePageSourcesForUpdatedFields(
+                $cumulativePageSources,
+                $batchPageSources,
+                $mergeResult['updated_fields']
+            );
 
             // Take the most complete search query (first non-empty) - only when includeSearchQuery is true
             if ($includeSearchQuery && empty($cumulativeSearchQuery) && !empty($batchResult['search_query'])) {
@@ -671,10 +681,10 @@ class IdentityExtractionService
                 }
             }
 
-            // Check if all identity fields have high enough confidence
-            if ($this->allFieldsHaveHighConfidence($identityFields, $cumulativeConfidence, $confidenceThreshold)) {
+            // Check if we should stop early (skim mode only)
+            if ($stopOnConfidence && $this->allFieldsHaveHighConfidence($identityFields, $cumulativeConfidence, $confidenceThreshold)) {
                 $highConfidenceFields = array_filter($cumulativeConfidence, fn($score) => $score >= $confidenceThreshold);
-                static::logDebug('Skim mode: stopping early - all identity fields have sufficient confidence', [
+                static::logDebug('Stopping early - all identity fields have sufficient confidence', [
                     'batches_processed'      => $batchIndex + 1,
                     'high_confidence_fields' => array_keys($highConfidenceFields),
                     'confidence_scores'      => $cumulativeConfidence,
@@ -683,12 +693,68 @@ class IdentityExtractionService
             }
         }
 
+        // Resolve conflicts if any exist - make a follow-up LLM call with relevant source pages
+        if (!empty($cumulativeConflicts) && $allArtifacts !== null) {
+            static::logDebug('Resolving batch conflicts', [
+                'conflict_count' => count($cumulativeConflicts),
+                'fields'         => array_column($cumulativeConflicts, 'field_name'),
+            ]);
+
+            $resolution = app(ConflictResolutionService::class)->resolveConflicts(
+                $taskRun,
+                $taskProcess,
+                $cumulativeConflicts,
+                $allArtifacts,
+                $schemaDefinition->schema ?? []
+            );
+
+            // Apply resolved values to cumulative data
+            $cumulativeData = $this->applyResolvedValues($cumulativeData, $resolution['resolved_data']);
+
+            // Update page sources for resolved fields
+            $cumulativePageSources = array_merge($cumulativePageSources, $resolution['resolved_page_sources']);
+        }
+
         return [
             'data'         => $cumulativeData,
             'parent_id'    => $resolvedParentId,
             'page_sources' => $cumulativePageSources,
             'search_query' => $cumulativeSearchQuery,
         ];
+    }
+
+    /**
+     * Apply resolved conflict values to the data array.
+     *
+     * Recursively finds and updates fields by name in the nested data structure.
+     */
+    protected function applyResolvedValues(array $data, array $resolvedValues): array
+    {
+        foreach ($resolvedValues as $fieldName => $resolvedValue) {
+            $data = $this->setNestedValue($data, $fieldName, $resolvedValue);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Recursively find and update a field by name in a nested array.
+     */
+    protected function setNestedValue(array $data, string $fieldName, mixed $value): array
+    {
+        foreach ($data as $key => $item) {
+            if ($key === $fieldName) {
+                $data[$key] = $value;
+
+                return $data;
+            }
+
+            if (is_array($item)) {
+                $data[$key] = $this->setNestedValue($item, $fieldName, $value);
+            }
+        }
+
+        return $data;
     }
 
     /**
@@ -877,12 +943,12 @@ class IdentityExtractionService
             ];
         }
 
+        // Load description from external file
+        $description = trim(file_get_contents(resource_path('prompts/extract-data/confidence-rating-instructions.md')));
+
         return [
             'type'        => 'object',
-            'description' => 'Rate your confidence (1-5) for each extracted identity field. ' .
-                             '1=very uncertain/likely incorrect, 2=uncertain/might be wrong, ' .
-                             '3=moderately confident/probably correct, 4=confident/very likely correct, ' .
-                             '5=highly confident/definitely correct.',
+            'description' => $description,
             'properties'  => $properties,
             'required'    => $identityFields,
         ];
@@ -1090,9 +1156,12 @@ class IdentityExtractionService
             $properties[$field] = $this->buildFieldSearchSchema($field, $schema);
         }
 
+        // Load description from external file
+        $description = trim(file_get_contents(resource_path('prompts/extract-data/search-query-instructions.md')));
+
         return [
             'type'        => 'array',
-            'description' => 'MINIMUM 3 search queries ordered from MOST SPECIFIC to LEAST SPECIFIC (exact match first, then progressively broader). Purpose: Find existing records efficiently - we check for exact matches first, then broaden if needed. Query 1: Most specific - use exact extracted values. Query 2: Less specific - key identifying terms. Query 3: Broadest - general concept only. Example for "Dr. John Smith": [{name: ["Dr.", "John", "Smith"]}, {name: ["John", "Smith"]}, {name: ["Smith"]}].',
+            'description' => $description,
             'items'       => [
                 'type'       => 'object',
                 'properties' => $properties,
@@ -1216,8 +1285,11 @@ class IdentityExtractionService
         // Create a temporary in-memory SchemaDefinition for the identity extraction response
         $identitySchema = $this->createIdentityExtractionSchema($responseSchema);
 
+        // Enable null values so LLM can return null instead of placeholder strings like "<null>"
+        $jsonSchemaService = app(JsonSchemaService::class)->includeNullValues();
+
         $threadRun = app(AgentThreadService::class)
-            ->withResponseFormat($identitySchema, null, app(JsonSchemaService::class))
+            ->withResponseFormat($identitySchema, null, $jsonSchemaService)
             ->withTimeout($timeout)
             ->run($thread);
 
@@ -1306,6 +1378,11 @@ class IdentityExtractionService
      *
      * The exact match check is performed inside findCandidates(), which returns
      * an exactMatchId when found. If no exact match, falls back to LLM resolution.
+     *
+     * Returns a ResolutionResult which includes:
+     * - Whether a duplicate was found
+     * - The existing object ID and object
+     * - Updated values to apply to the existing record (when LLM determines better values exist)
      */
     protected function resolveDuplicate(
         TaskRun $taskRun,
@@ -1313,12 +1390,17 @@ class IdentityExtractionService
         array $identityGroup,
         array $extractionResult,
         ?int $parentObjectId
-    ): ?int {
+    ): ResolutionResult {
         $extractedData = $extractionResult['data']         ?? [];
         $searchQuery   = $extractionResult['search_query'] ?? [];
 
         if (empty($extractedData)) {
-            return null;
+            return new ResolutionResult(
+                isDuplicate: false,
+                existingObjectId: null,
+                existingObject: null,
+                explanation: 'No extracted data to compare'
+            );
         }
 
         // The LLM returns an array of queries from most to least restrictive.
@@ -1350,17 +1432,30 @@ class IdentityExtractionService
         );
 
         // If exact match was found during candidate search, return immediately
+        // Exact matches do not include updatedValues since they matched exactly
         if ($result->hasExactMatch()) {
             static::logDebug('Exact match found during candidate search', ['object_id' => $result->exactMatchId]);
 
-            return $result->exactMatchId;
+            return new ResolutionResult(
+                isDuplicate: true,
+                existingObjectId: $result->exactMatchId,
+                existingObject: $result->candidates->first(),
+                explanation: 'Exact match found on identity fields',
+                confidence: 1.0
+            );
         }
 
         if ($result->candidates->isEmpty()) {
-            return null;
+            return new ResolutionResult(
+                isDuplicate: false,
+                existingObjectId: null,
+                existingObject: null,
+                explanation: 'No candidates found'
+            );
         }
 
         // LLM Call #2: Resolve which candidate (if any) matches
+        // This returns the full ResolutionResult including updatedValues
         $resolution = $resolver->resolveDuplicate(
             extractedData: $extractedData,
             candidates: $result->candidates,
@@ -1369,12 +1464,13 @@ class IdentityExtractionService
         );
 
         if ($resolution->hasDuplicate()) {
-            static::logDebug('LLM resolution found match', ['object_id' => $resolution->existingObjectId]);
-
-            return $resolution->existingObjectId;
+            static::logDebug('LLM resolution found match', [
+                'object_id'          => $resolution->existingObjectId,
+                'has_updated_values' => $resolution->hasUpdatedValues(),
+            ]);
         }
 
-        return null;
+        return $resolution;
     }
 
     /**
@@ -1660,8 +1756,7 @@ class IdentityExtractionService
             return '';
         }
 
-        $prompt = "\n\nPARENT OPTIONS:\n";
-        $prompt .= "Choose which parent this data belongs to by setting parent_id in your response.\n\n";
+        $parentOptions = '';
 
         foreach ($parentIds as $parentId) {
             $parent = TeamObject::find($parentId);
@@ -1670,20 +1765,25 @@ class IdentityExtractionService
                 continue;
             }
 
-            $prompt .= "Option - ID {$parentId}: {$parent->name} (Type: {$parent->type})\n";
+            $parentOptions .= "Option - ID {$parentId}: {$parent->name} (Type: {$parent->type})\n";
 
             // Get ancestors from DB
             $ancestors = $this->getAncestorChain($parent);
 
             if (!empty($ancestors)) {
-                $prompt        .= '  Hierarchy: ';
+                $parentOptions .= '  Hierarchy: ';
                 $ancestorNames = array_map(fn($a) => "{$a->type}: {$a->name}", $ancestors);
-                $prompt        .= implode(' -> ', $ancestorNames) . " -> {$parent->name}\n";
+                $parentOptions .= implode(' -> ', $ancestorNames) . " -> {$parent->name}\n";
             }
 
-            $prompt .= "\n";
+            $parentOptions .= "\n";
         }
 
-        return $prompt;
+        // Load template from external file
+        $template = file_get_contents(resource_path('prompts/extract-data/parent-context-selection.md'));
+
+        return "\n\n" . strtr($template, [
+            '{{parent_options}}' => $parentOptions,
+        ]);
     }
 }
