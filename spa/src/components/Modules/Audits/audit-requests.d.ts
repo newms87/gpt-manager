@@ -37,7 +37,7 @@ export interface JobDispatch {
     status: string;
     ran_at: string;
     completed_at: string;
-    timeout_at: string;
+    will_timeout_at: string;
     run_time_ms: string;
     count: string;
     created_at: string;

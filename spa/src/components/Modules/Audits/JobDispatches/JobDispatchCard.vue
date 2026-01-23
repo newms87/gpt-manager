@@ -60,6 +60,16 @@
                 <!-- Spacer to push timer to right -->
                 <div class="flex-1" />
 
+                <!-- Timeout countdown for in-progress jobs -->
+                <LabelPillWidget
+                    v-if="isInProgress && job.will_timeout_at"
+                    :color="isNearTimeout ? 'red' : 'amber'"
+                    size="xs"
+                >
+                    Timeout {{ timeoutDisplay }}
+                    <QTooltip class="text-base">Will timeout at {{ fDateTimeMs(job.will_timeout_at) }}</QTooltip>
+                </LabelPillWidget>
+
                 <!-- Elapsed Timer -->
                 <ElapsedTimer
                     :start-time="job.ran_at"
@@ -149,8 +159,8 @@
                     />
                     <span :class="themeClass('text-slate-500', 'text-slate-400')" class="text-xs font-medium mt-1">Timeout</span>
                     <span :class="themeClass('text-slate-600', 'text-slate-400')" class="text-xs font-mono">
-                        {{ job.timeout_at ? fTime(job.timeout_at) : '-' }}
-                        <QTooltip v-if="job.timeout_at">{{ fDateTimeMs(job.timeout_at) }}</QTooltip>
+                        {{ job.will_timeout_at ? fTime(job.will_timeout_at) : '-' }}
+                        <QTooltip v-if="job.will_timeout_at">{{ fDateTimeMs(job.will_timeout_at) }}</QTooltip>
                     </span>
                 </div>
             </div>
@@ -302,9 +312,9 @@ import {
     FaSolidPlug as ApiIcon,
     FaSolidTriangleExclamation as ErrorIcon
 } from "danx-icon";
-import { ActionButton, fDateTime, fDateTimeMs, fMillisecondsToDuration, ListTransition } from "quasar-ui-danx";
+import { ActionButton, fDateTime, fDateTimeMs, fMillisecondsToDuration, LabelPillWidget, ListTransition } from "quasar-ui-danx";
 import { QSkeleton, QSlideTransition, QTooltip } from "quasar";
-import { computed, ref } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 
 const props = defineProps<{
     job: JobDispatch
@@ -327,15 +337,86 @@ const effectiveEndTime = computed(() => {
     if (props.job.completed_at) {
         return props.job.completed_at;
     }
-    // If timeout_at has passed, use the timeout time to stop the timer
-    if (props.job.timeout_at) {
-        const timeoutTime = new Date(props.job.timeout_at).getTime();
+    // If will_timeout_at has passed, use the timeout time to stop the timer
+    if (props.job.will_timeout_at) {
+        const timeoutTime = new Date(props.job.will_timeout_at).getTime();
         if (timeoutTime <= Date.now()) {
-            return props.job.timeout_at;
+            return props.job.will_timeout_at;
         }
     }
     // Otherwise, truly in progress - no end time
     return undefined;
+});
+
+// Reactive timestamp that updates every second to drive the timeout countdown
+const currentTime = ref(Date.now());
+let timeoutIntervalId: ReturnType<typeof setInterval> | null = null;
+
+// Calculate seconds until timeout based on reactive currentTime
+const secondsUntilTimeout = computed(() => {
+    if (!props.job.will_timeout_at) return null;
+    const timeoutTime = new Date(props.job.will_timeout_at).getTime();
+    return Math.max(0, Math.floor((timeoutTime - currentTime.value) / 1000));
+});
+
+// Determine if timer should be running
+const shouldRunTimer = computed(() => {
+    if (!props.job.will_timeout_at) return false;
+    if (props.job.status !== "Running") return false;
+    if (secondsUntilTimeout.value === 0) return false;
+    return true;
+});
+
+// Start/stop timer based on conditions
+function startTimer() {
+    if (timeoutIntervalId === null && shouldRunTimer.value) {
+        timeoutIntervalId = setInterval(() => {
+            currentTime.value = Date.now();
+        }, 1000);
+    }
+}
+
+function stopTimer() {
+    if (timeoutIntervalId !== null) {
+        clearInterval(timeoutIntervalId);
+        timeoutIntervalId = null;
+    }
+}
+
+// Watch for changes that should start/stop the timer
+watch(shouldRunTimer, (shouldRun) => {
+    if (shouldRun) {
+        startTimer();
+    } else {
+        stopTimer();
+    }
+}, { immediate: true });
+
+// Clean up on unmount
+onUnmounted(() => {
+    stopTimer();
+});
+
+const isNearTimeout = computed(() => {
+    const seconds = secondsUntilTimeout.value;
+    return seconds !== null && seconds <= 30;
+});
+
+const timeoutDisplay = computed(() => {
+    const seconds = secondsUntilTimeout.value;
+    if (seconds === null) return "";
+    if (seconds <= 0) return "now";
+    if (seconds < 60) return `in ${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `in ${minutes}m ${remainingSeconds}s`;
+});
+
+// When countdown reaches 0, trigger the backend safety check that will timeout the job
+watch(secondsUntilTimeout, (seconds) => {
+    if (seconds === 0 && props.job.status === "Running") {
+        jobDispatchRoutes.details(props.job);
+    }
 });
 
 // Format time with seconds (e.g., "10:30:45am")

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict RhqIz5XjA00x8XDqQxdETMAdwts2JkSziMJjNVO2TZ9tF34oXPJU7EjV1GyPbVK
+\restrict FeGbLhwXTrzWMgDDWtL9OcX3qfzgbfJSbxBr9LTHrnNoo1ZrgJ8SdiGCGeJr9Dg
 
 -- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
 -- Dumped by pg_dump version 15.14 (Ubuntu 15.14-1.pgdg22.04+1)
@@ -26,17 +26,24 @@ CREATE SCHEMA gpt_manager;
 
 
 --
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
--- *not* creating schema, since initdb creates it
-
-
---
 -- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: -
 --
 
 COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: citext; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION citext; Type: COMMENT; Schema: -; Owner: -
+--
+
+COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
 
 
 SET default_tablespace = '';
@@ -48,14 +55,14 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE gpt_manager.agent_prompt_directives (
-                                                     id bigint NOT NULL,
-                                                     resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                     prompt_directive_id bigint,
-                                                     agent_id bigint,
-                                                     section text DEFAULT 'top'::character varying,
-                                                     "position" bigint DEFAULT '0'::bigint,
-                                                     created_at timestamp with time zone,
-                                                     updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    prompt_directive_id bigint,
+    agent_id bigint,
+    section text DEFAULT 'top'::character varying,
+    "position" bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -83,12 +90,12 @@ ALTER SEQUENCE gpt_manager.agent_prompt_directives_id_seq OWNED BY gpt_manager.a
 --
 
 CREATE TABLE gpt_manager.agent_thread_messageables (
-                                                       id bigint NOT NULL,
-                                                       agent_thread_message_id bigint,
-                                                       messageable_type text,
-                                                       messageable_id bigint,
-                                                       created_at timestamp with time zone,
-                                                       updated_at timestamp with time zone
+    id bigint NOT NULL,
+    agent_thread_message_id bigint,
+    messageable_type text,
+    messageable_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -116,18 +123,18 @@ ALTER SEQUENCE gpt_manager.agent_thread_messageables_id_seq OWNED BY gpt_manager
 --
 
 CREATE TABLE gpt_manager.agent_thread_messages (
-                                                   id bigint NOT NULL,
-                                                   agent_thread_id bigint,
-                                                   role text,
-                                                   title text,
-                                                   summary text,
-                                                   summarizer_offset integer DEFAULT 0,
-                                                   summarizer_total integer DEFAULT 0,
-                                                   content text,
-                                                   data json,
-                                                   created_at timestamp with time zone,
-                                                   updated_at timestamp with time zone,
-                                                   deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    agent_thread_id bigint,
+    role text,
+    title text,
+    summary text,
+    summarizer_offset integer DEFAULT 0,
+    summarizer_total integer DEFAULT 0,
+    content text,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -155,32 +162,32 @@ ALTER SEQUENCE gpt_manager.agent_thread_messages_id_seq OWNED BY gpt_manager.age
 --
 
 CREATE TABLE gpt_manager.agent_thread_runs (
-                                               id bigint NOT NULL,
-                                               agent_thread_id bigint,
-                                               last_message_id bigint,
-                                               job_dispatch_id bigint,
-                                               status text,
-                                               temperature numeric(5,2) DEFAULT NULL::numeric,
-                                               tools json,
-                                               tool_choice text DEFAULT 'auto'::character varying,
-                                               response_format text DEFAULT 'text'::character varying,
-                                               response_schema_id bigint,
-                                               response_fragment_id bigint,
-                                               json_schema_config json,
-                                               response_json_schema json,
-                                               seed text,
-                                               started_at timestamp with time zone,
-                                               completed_at timestamp with time zone,
-                                               failed_at timestamp with time zone,
-                                               stopped_at timestamp with time zone,
-                                               refreshed_at timestamp with time zone,
-                                               agent_model text,
-                                               total_cost text,
-                                               input_tokens bigint DEFAULT '0'::bigint,
-                                               output_tokens bigint DEFAULT '0'::bigint,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone,
-                                               deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    agent_thread_id bigint,
+    last_message_id bigint,
+    job_dispatch_id bigint,
+    status text,
+    temperature numeric(5,2) DEFAULT NULL::numeric,
+    tools json,
+    tool_choice text DEFAULT 'auto'::character varying,
+    response_format text DEFAULT 'text'::character varying,
+    response_schema_id bigint,
+    response_fragment_id bigint,
+    json_schema_config json,
+    response_json_schema json,
+    seed text,
+    started_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    refreshed_at timestamp with time zone,
+    agent_model text,
+    total_cost text,
+    input_tokens bigint DEFAULT '0'::bigint,
+    output_tokens bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -208,15 +215,15 @@ ALTER SEQUENCE gpt_manager.agent_thread_runs_id_seq OWNED BY gpt_manager.agent_t
 --
 
 CREATE TABLE gpt_manager.agent_threads (
-                                           id bigint NOT NULL,
-                                           team_id bigint,
-                                           user_id bigint,
-                                           agent_id bigint,
-                                           name text,
-                                           summary text DEFAULT ''::character varying,
-                                           created_at timestamp with time zone,
-                                           updated_at timestamp with time zone,
-                                           deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    agent_id bigint,
+    name text,
+    summary text DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -244,21 +251,21 @@ ALTER SEQUENCE gpt_manager.agent_threads_id_seq OWNED BY gpt_manager.agent_threa
 --
 
 CREATE TABLE gpt_manager.agents (
-                                    id bigint NOT NULL,
-                                    resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                    team_id bigint,
-                                    knowledge_id bigint,
-                                    name text,
-                                    description text DEFAULT ''::character varying,
-                                    api text,
-                                    model text,
-                                    temperature numeric(5,2) DEFAULT 0.00,
-                                    tools json,
-                                    retry_count bigint DEFAULT '0'::bigint,
-                                    threads_count bigint DEFAULT '0'::bigint,
-                                    created_at timestamp with time zone,
-                                    updated_at timestamp with time zone,
-                                    deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    knowledge_id bigint,
+    name text,
+    description text DEFAULT ''::character varying,
+    api text,
+    model text,
+    temperature numeric(5,2) DEFAULT 0.00,
+    tools json,
+    retry_count bigint DEFAULT '0'::bigint,
+    threads_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -286,25 +293,25 @@ ALTER SEQUENCE gpt_manager.agents_id_seq OWNED BY gpt_manager.agents.id;
 --
 
 CREATE TABLE gpt_manager.api_logs (
-                                      id bigint NOT NULL,
-                                      audit_request_id bigint,
-                                      user_id bigint,
-                                      api_class text,
-                                      service_name text,
-                                      status_code bigint,
-                                      method text,
-                                      url text,
-                                      full_url text,
-                                      request json,
-                                      response json,
-                                      request_headers json,
-                                      response_headers json,
-                                      stack_trace json,
-                                      started_at timestamp with time zone,
-                                      finished_at timestamp with time zone,
-                                      run_time_ms double precision,
-                                      created_at timestamp with time zone,
-                                      updated_at timestamp with time zone
+    id bigint NOT NULL,
+    audit_request_id bigint,
+    user_id bigint,
+    api_class text,
+    service_name text,
+    status_code bigint,
+    method text,
+    url text,
+    full_url text,
+    request json,
+    response json,
+    request_headers json,
+    response_headers json,
+    stack_trace json,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    run_time_ms double precision,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -332,13 +339,13 @@ ALTER SEQUENCE gpt_manager.api_logs_id_seq OWNED BY gpt_manager.api_logs.id;
 --
 
 CREATE TABLE gpt_manager.artifactables (
-                                           id bigint NOT NULL,
-                                           artifact_id bigint,
-                                           artifactable_id bigint,
-                                           artifactable_type text,
-                                           category text DEFAULT ''::character varying,
-                                           created_at timestamp with time zone,
-                                           updated_at timestamp with time zone
+    id bigint NOT NULL,
+    artifact_id bigint,
+    artifactable_id bigint,
+    artifactable_type text,
+    category text DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -366,24 +373,24 @@ ALTER SEQUENCE gpt_manager.artifactables_id_seq OWNED BY gpt_manager.artifactabl
 --
 
 CREATE TABLE gpt_manager.artifacts (
-                                       id bigint NOT NULL,
-                                       original_artifact_id bigint,
-                                       team_id bigint,
-                                       parent_artifact_id bigint,
-                                       child_artifacts_count bigint DEFAULT '0'::bigint,
-                                       schema_definition_id bigint,
-                                       task_definition_id bigint,
-                                       task_run_id bigint,
-                                       task_process_id bigint,
-                                       name text,
-                                       "position" integer DEFAULT 0,
-                                       model text,
-                                       text_content text,
-                                       json_content json,
-                                       meta json,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone,
-                                       deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    original_artifact_id bigint,
+    team_id bigint,
+    parent_artifact_id bigint,
+    child_artifacts_count bigint DEFAULT '0'::bigint,
+    schema_definition_id bigint,
+    task_definition_id bigint,
+    task_run_id bigint,
+    task_process_id bigint,
+    name text,
+    "position" integer DEFAULT 0,
+    model text,
+    text_content text,
+    json_content json,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -411,18 +418,18 @@ ALTER SEQUENCE gpt_manager.artifacts_id_seq OWNED BY gpt_manager.artifacts.id;
 --
 
 CREATE TABLE gpt_manager.audit_request (
-                                           id bigint NOT NULL,
-                                           session_id text,
-                                           user_id bigint,
-                                           environment text,
-                                           url text,
-                                           request json,
-                                           response json,
-                                           logs text,
-                                           profile text,
-                                           "time" double precision,
-                                           created_at timestamp with time zone,
-                                           updated_at timestamp with time zone
+    id bigint NOT NULL,
+    session_id text,
+    user_id bigint,
+    environment text,
+    url text,
+    request json,
+    response json,
+    logs text,
+    profile text,
+    "time" double precision,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -450,17 +457,17 @@ ALTER SEQUENCE gpt_manager.audit_request_id_seq OWNED BY gpt_manager.audit_reque
 --
 
 CREATE TABLE gpt_manager.audits (
-                                    id bigint NOT NULL,
-                                    audit_request_id bigint,
-                                    user_id bigint,
-                                    event text,
-                                    auditable_type text,
-                                    auditable_id character(191) DEFAULT NULL::bpchar,
-                                    old_values json,
-                                    new_values json,
-                                    tags text,
-                                    created_at timestamp with time zone,
-                                    updated_at timestamp with time zone
+    id bigint NOT NULL,
+    audit_request_id bigint,
+    user_id bigint,
+    event text,
+    auditable_type text,
+    auditable_id character(191) DEFAULT NULL::bpchar,
+    old_values json,
+    new_values json,
+    tags text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -488,9 +495,9 @@ ALTER SEQUENCE gpt_manager.audits_id_seq OWNED BY gpt_manager.audits.id;
 --
 
 CREATE TABLE gpt_manager.cache (
-                                   key text,
-                                   value text,
-                                   expiration integer
+    key text,
+    value text,
+    expiration integer
 );
 
 
@@ -499,9 +506,9 @@ CREATE TABLE gpt_manager.cache (
 --
 
 CREATE TABLE gpt_manager.cache_locks (
-                                         key text,
-                                         owner text,
-                                         expiration integer
+    key text,
+    owner text,
+    expiration integer
 );
 
 
@@ -510,19 +517,19 @@ CREATE TABLE gpt_manager.cache_locks (
 --
 
 CREATE TABLE gpt_manager.content_sources (
-                                             id bigint NOT NULL,
-                                             team_id bigint,
-                                             name text,
-                                             type text,
-                                             url text DEFAULT ''::character varying,
-                                             config json,
-                                             polling_interval bigint DEFAULT '60'::bigint,
-                                             last_checkpoint text,
-                                             fetched_at timestamp with time zone,
-                                             workflow_inputs_count bigint DEFAULT '0'::bigint,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone,
-                                             deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    name text,
+    type text,
+    url text DEFAULT ''::character varying,
+    config json,
+    polling_interval bigint DEFAULT '60'::bigint,
+    last_checkpoint text,
+    fetched_at timestamp with time zone,
+    workflow_inputs_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -550,15 +557,15 @@ ALTER SEQUENCE gpt_manager.content_sources_id_seq OWNED BY gpt_manager.content_s
 --
 
 CREATE TABLE gpt_manager.error_log_entry (
-                                             id bigint NOT NULL,
-                                             error_log_id bigint,
-                                             audit_request_id bigint,
-                                             user_id bigint,
-                                             message text DEFAULT ''::character varying,
-                                             full_message text,
-                                             data json,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone
+    id bigint NOT NULL,
+    error_log_id bigint,
+    audit_request_id bigint,
+    user_id bigint,
+    message text DEFAULT ''::character varying,
+    full_message text,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -586,23 +593,23 @@ ALTER SEQUENCE gpt_manager.error_log_entry_id_seq OWNED BY gpt_manager.error_log
 --
 
 CREATE TABLE gpt_manager.error_logs (
-                                        id bigint NOT NULL,
-                                        root_id bigint,
-                                        parent_id bigint,
-                                        hash text,
-                                        error_class text,
-                                        code text,
-                                        level text,
-                                        message text,
-                                        file text,
-                                        line bigint,
-                                        count bigint,
-                                        last_seen_at timestamp with time zone,
-                                        last_notified_at timestamp with time zone,
-                                        send_notifications boolean DEFAULT true,
-                                        stack_trace json,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone
+    id bigint NOT NULL,
+    root_id bigint,
+    parent_id bigint,
+    hash text,
+    error_class text,
+    code text,
+    level text,
+    message text,
+    file text,
+    line bigint,
+    count bigint,
+    last_seen_at timestamp with time zone,
+    last_notified_at timestamp with time zone,
+    send_notifications boolean DEFAULT true,
+    stack_trace json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -630,17 +637,17 @@ ALTER SEQUENCE gpt_manager.error_logs_id_seq OWNED BY gpt_manager.error_logs.id;
 --
 
 CREATE TABLE gpt_manager.job_batches (
-                                         id bigint NOT NULL,
-                                         name text,
-                                         total_jobs integer,
-                                         pending_jobs integer,
-                                         failed_jobs integer,
-                                         failed_job_ids text,
-                                         options text,
-                                         on_complete text,
-                                         cancelled_at integer,
-                                         created_at timestamp with time zone,
-                                         finished_at integer
+    id bigint NOT NULL,
+    name text,
+    total_jobs integer,
+    pending_jobs integer,
+    failed_jobs integer,
+    failed_job_ids text,
+    options text,
+    on_complete text,
+    cancelled_at integer,
+    created_at timestamp with time zone,
+    finished_at integer
 );
 
 
@@ -668,22 +675,22 @@ ALTER SEQUENCE gpt_manager.job_batches_id_seq OWNED BY gpt_manager.job_batches.i
 --
 
 CREATE TABLE gpt_manager.job_dispatch (
-                                          id bigint NOT NULL,
-                                          user_id bigint,
-                                          name text,
-                                          ref text,
-                                          job_batch_id bigint,
-                                          running_audit_request_id bigint,
-                                          dispatch_audit_request_id bigint,
-                                          status text,
-                                          ran_at timestamp with time zone,
-                                          completed_at timestamp with time zone,
-                                          timeout_at timestamp with time zone,
-                                          run_time integer,
-                                          count bigint,
-                                          data json,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone
+    id bigint NOT NULL,
+    user_id bigint,
+    name text,
+    ref text,
+    job_batch_id bigint,
+    running_audit_request_id bigint,
+    dispatch_audit_request_id bigint,
+    status text,
+    ran_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    timeout_at timestamp with time zone,
+    run_time integer,
+    count bigint,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -711,13 +718,13 @@ ALTER SEQUENCE gpt_manager.job_dispatch_id_seq OWNED BY gpt_manager.job_dispatch
 --
 
 CREATE TABLE gpt_manager.job_dispatchables (
-                                               id bigint NOT NULL,
-                                               category text DEFAULT ''::character varying,
-                                               job_dispatch_id bigint,
-                                               model_type text,
-                                               model_id character(36) DEFAULT NULL::bpchar,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone
+    id bigint NOT NULL,
+    category text DEFAULT ''::character varying,
+    job_dispatch_id bigint,
+    model_type text,
+    model_id character(36) DEFAULT NULL::bpchar,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -745,13 +752,13 @@ ALTER SEQUENCE gpt_manager.job_dispatchables_id_seq OWNED BY gpt_manager.job_dis
 --
 
 CREATE TABLE gpt_manager.knowledge (
-                                       id bigint NOT NULL,
-                                       team_id bigint,
-                                       name text,
-                                       description text,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone,
-                                       deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    name text,
+    description text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -779,9 +786,9 @@ ALTER SEQUENCE gpt_manager.knowledge_id_seq OWNED BY gpt_manager.knowledge.id;
 --
 
 CREATE TABLE gpt_manager.migrations (
-                                        id bigint NOT NULL,
-                                        migration text,
-                                        batch integer
+    id bigint NOT NULL,
+    migration text,
+    batch integer
 );
 
 
@@ -809,11 +816,11 @@ ALTER SEQUENCE gpt_manager.migrations_id_seq OWNED BY gpt_manager.migrations.id;
 --
 
 CREATE TABLE gpt_manager.model_refs (
-                                        id bigint NOT NULL,
-                                        prefix text,
-                                        ref text,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone
+    id bigint NOT NULL,
+    prefix text,
+    ref text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -841,12 +848,12 @@ ALTER SEQUENCE gpt_manager.model_refs_id_seq OWNED BY gpt_manager.model_refs.id;
 --
 
 CREATE TABLE gpt_manager.object_tag_taggables (
-                                                  id bigint NOT NULL,
-                                                  object_tag_id bigint,
-                                                  taggable_type text,
-                                                  taggable_id bigint,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone
+    id bigint NOT NULL,
+    object_tag_id bigint,
+    taggable_type text,
+    taggable_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -874,12 +881,12 @@ ALTER SEQUENCE gpt_manager.object_tag_taggables_id_seq OWNED BY gpt_manager.obje
 --
 
 CREATE TABLE gpt_manager.object_tags (
-                                         id bigint NOT NULL,
-                                         category text,
-                                         name text,
-                                         created_at timestamp with time zone,
-                                         updated_at timestamp with time zone,
-                                         deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    category text,
+    name text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -907,16 +914,16 @@ ALTER SEQUENCE gpt_manager.object_tags_id_seq OWNED BY gpt_manager.object_tags.i
 --
 
 CREATE TABLE gpt_manager.on_demands__object_attribute_sources (
-                                                                  id bigint NOT NULL,
-                                                                  object_attribute_id bigint,
-                                                                  source_type text,
-                                                                  source_id text,
-                                                                  explanation text,
-                                                                  stored_file_id character(36) DEFAULT NULL::bpchar,
-                                                                  agent_thread_message_id bigint,
-                                                                  created_at timestamp with time zone,
-                                                                  updated_at timestamp with time zone,
-                                                                  deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    object_attribute_id bigint,
+    source_type text,
+    source_id text,
+    explanation text,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    agent_thread_message_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -944,18 +951,18 @@ ALTER SEQUENCE gpt_manager.on_demands__object_attribute_sources_id_seq OWNED BY 
 --
 
 CREATE TABLE gpt_manager.on_demands__object_attributes (
-                                                           id bigint NOT NULL,
-                                                           object_id bigint,
-                                                           name text,
-                                                           date timestamp with time zone,
-                                                           text_value text,
-                                                           json_value json,
-                                                           reason text,
-                                                           confidence text,
-                                                           agent_thread_run_id bigint,
-                                                           created_at timestamp with time zone,
-                                                           updated_at timestamp with time zone,
-                                                           deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    object_id bigint,
+    name text,
+    date timestamp with time zone,
+    text_value text,
+    json_value json,
+    reason text,
+    confidence text,
+    agent_thread_run_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -983,13 +990,13 @@ ALTER SEQUENCE gpt_manager.on_demands__object_attributes_id_seq OWNED BY gpt_man
 --
 
 CREATE TABLE gpt_manager.on_demands__object_relationships (
-                                                              id bigint NOT NULL,
-                                                              relationship_name text,
-                                                              object_id bigint,
-                                                              related_object_id bigint,
-                                                              created_at timestamp with time zone,
-                                                              updated_at timestamp with time zone,
-                                                              deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    relationship_name text,
+    object_id bigint,
+    related_object_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1017,18 +1024,18 @@ ALTER SEQUENCE gpt_manager.on_demands__object_relationships_id_seq OWNED BY gpt_
 --
 
 CREATE TABLE gpt_manager.on_demands__objects (
-                                                 id bigint NOT NULL,
-                                                 schema_definition_id bigint,
-                                                 root_object_id bigint,
-                                                 type text,
-                                                 name text,
-                                                 date timestamp with time zone,
-                                                 description text,
-                                                 url text,
-                                                 meta json,
-                                                 created_at timestamp with time zone,
-                                                 updated_at timestamp with time zone,
-                                                 deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    schema_definition_id bigint,
+    root_object_id bigint,
+    type text,
+    name text,
+    date timestamp with time zone,
+    description text,
+    url text,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1056,9 +1063,9 @@ ALTER SEQUENCE gpt_manager.on_demands__objects_id_seq OWNED BY gpt_manager.on_de
 --
 
 CREATE TABLE gpt_manager.password_reset_tokens (
-                                                   email text,
-                                                   token text,
-                                                   created_at timestamp with time zone
+    email text,
+    token text,
+    created_at timestamp with time zone
 );
 
 
@@ -1067,12 +1074,12 @@ CREATE TABLE gpt_manager.password_reset_tokens (
 --
 
 CREATE TABLE gpt_manager.permissions (
-                                         id bigint NOT NULL,
-                                         name text,
-                                         display_name text,
-                                         description text,
-                                         created_at timestamp with time zone,
-                                         updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name text,
+    display_name text,
+    description text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1100,16 +1107,16 @@ ALTER SEQUENCE gpt_manager.permissions_id_seq OWNED BY gpt_manager.permissions.i
 --
 
 CREATE TABLE gpt_manager.personal_access_tokens (
-                                                    id bigint NOT NULL,
-                                                    tokenable_type text,
-                                                    tokenable_id bigint,
-                                                    name text,
-                                                    token text,
-                                                    abilities text,
-                                                    last_used_at timestamp with time zone,
-                                                    expires_at timestamp with time zone,
-                                                    created_at timestamp with time zone,
-                                                    updated_at timestamp with time zone
+    id bigint NOT NULL,
+    tokenable_type text,
+    tokenable_id bigint,
+    name text,
+    token text,
+    abilities text,
+    last_used_at timestamp with time zone,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1137,15 +1144,15 @@ ALTER SEQUENCE gpt_manager.personal_access_tokens_id_seq OWNED BY gpt_manager.pe
 --
 
 CREATE TABLE gpt_manager.prompt_directives (
-                                               id bigint NOT NULL,
-                                               resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                               team_id bigint,
-                                               name text,
-                                               directive_text text,
-                                               agents_count bigint DEFAULT '0'::bigint,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone,
-                                               deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name text,
+    directive_text text,
+    agents_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1173,18 +1180,18 @@ ALTER SEQUENCE gpt_manager.prompt_directives_id_seq OWNED BY gpt_manager.prompt_
 --
 
 CREATE TABLE gpt_manager.resource_package_imports (
-                                                      id character(36) DEFAULT NULL::bpchar,
-                                                      team_uuid character(36) DEFAULT NULL::bpchar,
-                                                      resource_package_id character(36) DEFAULT NULL::bpchar,
-                                                      resource_package_version_id character(36) DEFAULT NULL::bpchar,
-                                                      source_object_id character(36) DEFAULT NULL::bpchar,
-                                                      local_object_id character(36) DEFAULT NULL::bpchar,
-                                                      object_type text,
-                                                      can_view boolean DEFAULT false,
-                                                      can_edit boolean DEFAULT false,
-                                                      created_at timestamp with time zone,
-                                                      updated_at timestamp with time zone,
-                                                      deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar,
+    team_uuid character(36) DEFAULT NULL::bpchar,
+    resource_package_id character(36) DEFAULT NULL::bpchar,
+    resource_package_version_id character(36) DEFAULT NULL::bpchar,
+    source_object_id character(36) DEFAULT NULL::bpchar,
+    local_object_id character(36) DEFAULT NULL::bpchar,
+    object_type text,
+    can_view boolean DEFAULT false,
+    can_edit boolean DEFAULT false,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1193,14 +1200,14 @@ CREATE TABLE gpt_manager.resource_package_imports (
 --
 
 CREATE TABLE gpt_manager.resource_package_versions (
-                                                       id character(36) DEFAULT NULL::bpchar,
-                                                       resource_package_id character(36) DEFAULT NULL::bpchar,
-                                                       version text,
-                                                       version_hash text,
-                                                       definitions json,
-                                                       created_at timestamp with time zone,
-                                                       updated_at timestamp with time zone,
-                                                       deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar,
+    resource_package_id character(36) DEFAULT NULL::bpchar,
+    version text,
+    version_hash text,
+    definitions json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1209,14 +1216,14 @@ CREATE TABLE gpt_manager.resource_package_versions (
 --
 
 CREATE TABLE gpt_manager.resource_packages (
-                                               id character(36) DEFAULT NULL::bpchar,
-                                               team_uuid character(36) DEFAULT NULL::bpchar,
-                                               resource_type text,
-                                               resource_id text,
-                                               name text,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone,
-                                               deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar,
+    team_uuid character(36) DEFAULT NULL::bpchar,
+    resource_type text,
+    resource_id text,
+    name text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1225,11 +1232,11 @@ CREATE TABLE gpt_manager.resource_packages (
 --
 
 CREATE TABLE gpt_manager.role_permission (
-                                             id bigint NOT NULL,
-                                             role_id bigint,
-                                             permission_id bigint,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone
+    id bigint NOT NULL,
+    role_id bigint,
+    permission_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1257,11 +1264,11 @@ ALTER SEQUENCE gpt_manager.role_permission_id_seq OWNED BY gpt_manager.role_perm
 --
 
 CREATE TABLE gpt_manager.role_user (
-                                       id bigint NOT NULL,
-                                       user_id bigint,
-                                       role_id bigint,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone
+    id bigint NOT NULL,
+    user_id bigint,
+    role_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1289,12 +1296,12 @@ ALTER SEQUENCE gpt_manager.role_user_id_seq OWNED BY gpt_manager.role_user.id;
 --
 
 CREATE TABLE gpt_manager.roles (
-                                   id bigint NOT NULL,
-                                   name text,
-                                   display_name text,
-                                   description text,
-                                   created_at timestamp with time zone,
-                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name text,
+    display_name text,
+    description text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1322,15 +1329,15 @@ ALTER SEQUENCE gpt_manager.roles_id_seq OWNED BY gpt_manager.roles.id;
 --
 
 CREATE TABLE gpt_manager.schema_associations (
-                                                 id bigint NOT NULL,
-                                                 resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                 schema_definition_id bigint,
-                                                 schema_fragment_id bigint,
-                                                 object_type text,
-                                                 object_id bigint,
-                                                 category text DEFAULT ''::character varying,
-                                                 created_at timestamp with time zone,
-                                                 updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    schema_definition_id bigint,
+    schema_fragment_id bigint,
+    object_type text,
+    object_id bigint,
+    category text DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1358,20 +1365,20 @@ ALTER SEQUENCE gpt_manager.schema_associations_id_seq OWNED BY gpt_manager.schem
 --
 
 CREATE TABLE gpt_manager.schema_definitions (
-                                                id bigint NOT NULL,
-                                                resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                team_id bigint,
-                                                type text,
-                                                name text,
-                                                description text,
-                                                schema_format text,
-                                                schema json,
-                                                response_example json,
-                                                fragments_count bigint DEFAULT '0'::bigint,
-                                                associations_count bigint DEFAULT '0'::bigint,
-                                                created_at timestamp with time zone,
-                                                updated_at timestamp with time zone,
-                                                deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    type text,
+    name text,
+    description text,
+    schema_format text,
+    schema json,
+    response_example json,
+    fragments_count bigint DEFAULT '0'::bigint,
+    associations_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1399,15 +1406,15 @@ ALTER SEQUENCE gpt_manager.schema_definitions_id_seq OWNED BY gpt_manager.schema
 --
 
 CREATE TABLE gpt_manager.schema_fragments (
-                                              id bigint NOT NULL,
-                                              resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                              schema_definition_id bigint,
-                                              name text,
-                                              fragment_selector json,
-                                              associations_count bigint DEFAULT '0'::bigint,
-                                              created_at timestamp with time zone,
-                                              updated_at timestamp with time zone,
-                                              deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    schema_definition_id bigint,
+    name text,
+    fragment_selector json,
+    associations_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1435,12 +1442,12 @@ ALTER SEQUENCE gpt_manager.schema_fragments_id_seq OWNED BY gpt_manager.schema_f
 --
 
 CREATE TABLE gpt_manager.schema_history (
-                                            id bigint NOT NULL,
-                                            schema_definition_id bigint,
-                                            user_id bigint,
-                                            schema json,
-                                            created_at timestamp with time zone,
-                                            updated_at timestamp with time zone
+    id bigint NOT NULL,
+    schema_definition_id bigint,
+    user_id bigint,
+    schema json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1468,12 +1475,12 @@ ALTER SEQUENCE gpt_manager.schema_history_id_seq OWNED BY gpt_manager.schema_his
 --
 
 CREATE TABLE gpt_manager.sessions (
-                                      id text,
-                                      user_id bigint,
-                                      ip_address text,
-                                      user_agent text,
-                                      payload text,
-                                      last_activity integer
+    id text,
+    user_id bigint,
+    ip_address text,
+    user_agent text,
+    payload text,
+    last_activity integer
 );
 
 
@@ -1482,13 +1489,13 @@ CREATE TABLE gpt_manager.sessions (
 --
 
 CREATE TABLE gpt_manager.stored_file_storables (
-                                                   id bigint NOT NULL,
-                                                   stored_file_id character(36) DEFAULT NULL::bpchar,
-                                                   storable_type text,
-                                                   storable_id bigint,
-                                                   category text,
-                                                   created_at timestamp with time zone,
-                                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    storable_type text,
+    storable_id bigint,
+    category text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1516,23 +1523,23 @@ ALTER SEQUENCE gpt_manager.stored_file_storables_id_seq OWNED BY gpt_manager.sto
 --
 
 CREATE TABLE gpt_manager.stored_files (
-                                          id character(36) DEFAULT NULL::bpchar,
-                                          disk text,
-                                          filepath text,
-                                          filename text,
-                                          url text,
-                                          mime text,
-                                          size bigint DEFAULT '0'::bigint,
-                                          exif json,
-                                          meta json,
-                                          location json,
-                                          page_number bigint,
-                                          transcode_name text,
-                                          is_transcoding boolean DEFAULT false,
-                                          original_stored_file_id character(36) DEFAULT NULL::bpchar,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar,
+    disk text,
+    filepath text,
+    filename text,
+    url text,
+    mime text,
+    size bigint DEFAULT '0'::bigint,
+    exif json,
+    meta json,
+    location json,
+    page_number bigint,
+    transcode_name text,
+    is_transcoding boolean DEFAULT false,
+    original_stored_file_id character(36) DEFAULT NULL::bpchar,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1541,18 +1548,18 @@ CREATE TABLE gpt_manager.stored_files (
 --
 
 CREATE TABLE gpt_manager.task_artifact_filters (
-                                                   id bigint NOT NULL,
-                                                   resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                   source_task_definition_id bigint,
-                                                   target_task_definition_id bigint,
-                                                   include_text boolean DEFAULT true,
-                                                   include_files boolean DEFAULT true,
-                                                   include_json boolean DEFAULT true,
-                                                   include_meta boolean,
-                                                   schema_fragment_id bigint,
-                                                   meta_fragment_selector json,
-                                                   created_at timestamp with time zone,
-                                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    source_task_definition_id bigint,
+    target_task_definition_id bigint,
+    include_text boolean DEFAULT true,
+    include_files boolean DEFAULT true,
+    include_json boolean DEFAULT true,
+    include_meta boolean,
+    schema_fragment_id bigint,
+    meta_fragment_selector json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1580,14 +1587,14 @@ ALTER SEQUENCE gpt_manager.task_artifact_filters_id_seq OWNED BY gpt_manager.tas
 --
 
 CREATE TABLE gpt_manager.task_definition_directives (
-                                                        id bigint NOT NULL,
-                                                        task_definition_id bigint,
-                                                        prompt_directive_id bigint,
-                                                        resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                        section text DEFAULT 'top'::character varying,
-                                                        "position" bigint DEFAULT '0'::bigint,
-                                                        created_at timestamp with time zone,
-                                                        updated_at timestamp with time zone
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    prompt_directive_id bigint,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    section text DEFAULT 'top'::character varying,
+    "position" bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1615,26 +1622,26 @@ ALTER SEQUENCE gpt_manager.task_definition_directives_id_seq OWNED BY gpt_manage
 --
 
 CREATE TABLE gpt_manager.task_definitions (
-                                              id bigint NOT NULL,
-                                              resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                              team_id bigint,
-                                              name text,
-                                              description text,
-                                              task_runner_name text,
-                                              task_runner_config json,
-                                              schema_definition_id bigint,
-                                              agent_id bigint,
-                                              response_format text DEFAULT 'text'::character varying,
-                                              input_artifact_mode text DEFAULT ''::character varying,
-                                              input_artifact_levels json,
-                                              output_artifact_mode text DEFAULT ''::character varying,
-                                              output_artifact_levels json,
-                                              timeout_after_seconds bigint DEFAULT '300'::bigint,
-                                              max_process_retries bigint DEFAULT '3'::bigint,
-                                              task_run_count bigint DEFAULT '0'::bigint,
-                                              created_at timestamp with time zone,
-                                              updated_at timestamp with time zone,
-                                              deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name text,
+    description text,
+    task_runner_name text,
+    task_runner_config json,
+    schema_definition_id bigint,
+    agent_id bigint,
+    response_format text DEFAULT 'text'::character varying,
+    input_artifact_mode text DEFAULT ''::character varying,
+    input_artifact_levels json,
+    output_artifact_mode text DEFAULT ''::character varying,
+    output_artifact_levels json,
+    timeout_after_seconds bigint DEFAULT '300'::bigint,
+    max_process_retries bigint DEFAULT '3'::bigint,
+    task_run_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1662,12 +1669,12 @@ ALTER SEQUENCE gpt_manager.task_definitions_id_seq OWNED BY gpt_manager.task_def
 --
 
 CREATE TABLE gpt_manager.task_inputs (
-                                         id bigint NOT NULL,
-                                         task_definition_id bigint,
-                                         workflow_input_id bigint,
-                                         task_run_count bigint DEFAULT '0'::bigint,
-                                         created_at timestamp with time zone,
-                                         updated_at timestamp with time zone
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    workflow_input_id bigint,
+    task_run_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1695,14 +1702,14 @@ ALTER SEQUENCE gpt_manager.task_inputs_id_seq OWNED BY gpt_manager.task_inputs.i
 --
 
 CREATE TABLE gpt_manager.task_process_listeners (
-                                                    id bigint NOT NULL,
-                                                    task_process_id bigint,
-                                                    event_type text,
-                                                    event_id text,
-                                                    event_fired_at timestamp with time zone,
-                                                    event_handled_at timestamp with time zone,
-                                                    created_at timestamp with time zone,
-                                                    updated_at timestamp with time zone
+    id bigint NOT NULL,
+    task_process_id bigint,
+    event_type text,
+    event_id text,
+    event_fired_at timestamp with time zone,
+    event_handled_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -1730,26 +1737,26 @@ ALTER SEQUENCE gpt_manager.task_process_listeners_id_seq OWNED BY gpt_manager.ta
 --
 
 CREATE TABLE gpt_manager.task_processes (
-                                            id bigint NOT NULL,
-                                            task_run_id bigint,
-                                            agent_thread_id bigint,
-                                            last_job_dispatch_id bigint,
-                                            status text DEFAULT 'Pending'::character varying,
-                                            name text,
-                                            activity text,
-                                            percent_complete numeric(5,2) DEFAULT 0.00,
-                                            started_at timestamp with time zone,
-                                            stopped_at timestamp with time zone,
-                                            completed_at timestamp with time zone,
-                                            failed_at timestamp with time zone,
-                                            timeout_at timestamp with time zone,
-                                            restart_count bigint DEFAULT '0'::bigint,
-                                            job_dispatch_count bigint DEFAULT '0'::bigint,
-                                            input_artifact_count bigint DEFAULT '0'::bigint,
-                                            output_artifact_count bigint DEFAULT '0'::bigint,
-                                            created_at timestamp with time zone,
-                                            updated_at timestamp with time zone,
-                                            deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    task_run_id bigint,
+    agent_thread_id bigint,
+    last_job_dispatch_id bigint,
+    status text DEFAULT 'Pending'::character varying,
+    name text,
+    activity text,
+    percent_complete numeric(5,2) DEFAULT 0.00,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    timeout_at timestamp with time zone,
+    restart_count bigint DEFAULT '0'::bigint,
+    job_dispatch_count bigint DEFAULT '0'::bigint,
+    input_artifact_count bigint DEFAULT '0'::bigint,
+    output_artifact_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1777,26 +1784,26 @@ ALTER SEQUENCE gpt_manager.task_processes_id_seq OWNED BY gpt_manager.task_proce
 --
 
 CREATE TABLE gpt_manager.task_runs (
-                                       id bigint NOT NULL,
-                                       task_definition_id bigint,
-                                       workflow_run_id bigint,
-                                       workflow_node_id bigint,
-                                       status text DEFAULT 'Pending'::character varying,
-                                       name text,
-                                       step text DEFAULT 'Initial'::character varying,
-                                       percent_complete numeric(5,2) DEFAULT 0.00,
-                                       started_at timestamp with time zone,
-                                       stopped_at timestamp with time zone,
-                                       completed_at timestamp with time zone,
-                                       failed_at timestamp with time zone,
-                                       skipped_at timestamp with time zone,
-                                       process_count bigint DEFAULT '0'::bigint,
-                                       input_artifacts_count bigint DEFAULT '0'::bigint,
-                                       output_artifacts_count bigint DEFAULT '0'::bigint,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone,
-                                       deleted_at timestamp with time zone,
-                                       task_input_id bigint
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    workflow_run_id bigint,
+    workflow_node_id bigint,
+    status text DEFAULT 'Pending'::character varying,
+    name text,
+    step text DEFAULT 'Initial'::character varying,
+    percent_complete numeric(5,2) DEFAULT 0.00,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    skipped_at timestamp with time zone,
+    process_count bigint DEFAULT '0'::bigint,
+    input_artifacts_count bigint DEFAULT '0'::bigint,
+    output_artifacts_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    task_input_id bigint
 );
 
 
@@ -1824,16 +1831,16 @@ ALTER SEQUENCE gpt_manager.task_runs_id_seq OWNED BY gpt_manager.task_runs.id;
 --
 
 CREATE TABLE gpt_manager.team_object_attribute_sources (
-                                                           id bigint NOT NULL,
-                                                           team_object_attribute_id bigint,
-                                                           source_type text,
-                                                           source_id text,
-                                                           explanation text,
-                                                           stored_file_id character(36) DEFAULT NULL::bpchar,
-                                                           agent_thread_message_id bigint,
-                                                           created_at timestamp with time zone,
-                                                           updated_at timestamp with time zone,
-                                                           deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_attribute_id bigint,
+    source_type text,
+    source_id text,
+    explanation text,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    agent_thread_message_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1861,17 +1868,17 @@ ALTER SEQUENCE gpt_manager.team_object_attribute_sources_id_seq OWNED BY gpt_man
 --
 
 CREATE TABLE gpt_manager.team_object_attributes (
-                                                    id bigint NOT NULL,
-                                                    team_object_id bigint,
-                                                    name text,
-                                                    text_value text,
-                                                    json_value json,
-                                                    reason text,
-                                                    confidence text,
-                                                    agent_thread_run_id bigint,
-                                                    created_at timestamp with time zone,
-                                                    updated_at timestamp with time zone,
-                                                    deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_id bigint,
+    name text,
+    text_value text,
+    json_value json,
+    reason text,
+    confidence text,
+    agent_thread_run_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1899,13 +1906,13 @@ ALTER SEQUENCE gpt_manager.team_object_attributes_id_seq OWNED BY gpt_manager.te
 --
 
 CREATE TABLE gpt_manager.team_object_relationships (
-                                                       id bigint NOT NULL,
-                                                       team_object_id bigint,
-                                                       related_team_object_id bigint,
-                                                       relationship_name text,
-                                                       created_at timestamp with time zone,
-                                                       updated_at timestamp with time zone,
-                                                       deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_id bigint,
+    related_team_object_id bigint,
+    relationship_name text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1933,19 +1940,19 @@ ALTER SEQUENCE gpt_manager.team_object_relationships_id_seq OWNED BY gpt_manager
 --
 
 CREATE TABLE gpt_manager.team_objects (
-                                          id bigint NOT NULL,
-                                          team_id bigint,
-                                          schema_definition_id bigint,
-                                          root_object_id bigint,
-                                          type text,
-                                          name text,
-                                          date timestamp with time zone,
-                                          description text,
-                                          url text,
-                                          meta json,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    schema_definition_id bigint,
+    root_object_id bigint,
+    type text,
+    name text,
+    date timestamp with time zone,
+    description text,
+    url text,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -1973,11 +1980,11 @@ ALTER SEQUENCE gpt_manager.team_objects_id_seq OWNED BY gpt_manager.team_objects
 --
 
 CREATE TABLE gpt_manager.team_user (
-                                       id bigint NOT NULL,
-                                       team_id bigint,
-                                       user_id bigint,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2005,14 +2012,14 @@ ALTER SEQUENCE gpt_manager.team_user_id_seq OWNED BY gpt_manager.team_user.id;
 --
 
 CREATE TABLE gpt_manager.teams (
-                                   id bigint NOT NULL,
-                                   uuid character(36) DEFAULT NULL::bpchar,
-                                   name text,
-                                   namespace text,
-                                   logo text,
-                                   created_at timestamp with time zone,
-                                   updated_at timestamp with time zone,
-                                   deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    uuid character(36) DEFAULT NULL::bpchar,
+    name text,
+    namespace text,
+    logo text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2040,20 +2047,20 @@ ALTER SEQUENCE gpt_manager.teams_id_seq OWNED BY gpt_manager.teams.id;
 --
 
 CREATE TABLE gpt_manager.tortguard__object_attributes (
-                                                          id bigint NOT NULL,
-                                                          object_id bigint,
-                                                          name text,
-                                                          date timestamp with time zone,
-                                                          text_value text,
-                                                          json_value json,
-                                                          description text,
-                                                          confidence text,
-                                                          message_id bigint,
-                                                          source_stored_file_id character(36) DEFAULT NULL::bpchar,
-                                                          thread_run_id bigint,
-                                                          created_at timestamp with time zone,
-                                                          updated_at timestamp with time zone,
-                                                          deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    object_id bigint,
+    name text,
+    date timestamp with time zone,
+    text_value text,
+    json_value json,
+    description text,
+    confidence text,
+    message_id bigint,
+    source_stored_file_id character(36) DEFAULT NULL::bpchar,
+    thread_run_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2081,13 +2088,13 @@ ALTER SEQUENCE gpt_manager.tortguard__object_attributes_id_seq OWNED BY gpt_mana
 --
 
 CREATE TABLE gpt_manager.tortguard__object_relationships (
-                                                             id bigint NOT NULL,
-                                                             relationship_name text,
-                                                             object_id bigint,
-                                                             related_object_id bigint,
-                                                             created_at timestamp with time zone,
-                                                             updated_at timestamp with time zone,
-                                                             deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    relationship_name text,
+    object_id bigint,
+    related_object_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2115,16 +2122,16 @@ ALTER SEQUENCE gpt_manager.tortguard__object_relationships_id_seq OWNED BY gpt_m
 --
 
 CREATE TABLE gpt_manager.tortguard__objects (
-                                                id bigint NOT NULL,
-                                                ref text,
-                                                type text,
-                                                name text,
-                                                description text,
-                                                url text,
-                                                meta json,
-                                                created_at timestamp with time zone,
-                                                updated_at timestamp with time zone,
-                                                deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    ref text,
+    type text,
+    name text,
+    description text,
+    url text,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2152,20 +2159,20 @@ ALTER SEQUENCE gpt_manager.tortguard__objects_id_seq OWNED BY gpt_manager.tortgu
 --
 
 CREATE TABLE gpt_manager.usage_events (
-                                          id bigint NOT NULL,
-                                          team_id bigint,
-                                          user_id bigint,
-                                          object_type text,
-                                          object_id character(36) DEFAULT NULL::bpchar,
-                                          event_type text,
-                                          run_time_ms bigint DEFAULT '0'::bigint,
-                                          input_tokens bigint DEFAULT '0'::bigint,
-                                          output_tokens bigint DEFAULT '0'::bigint,
-                                          input_cost numeric(12,4) DEFAULT 0.0000,
-                                          output_cost numeric(12,4) DEFAULT 0.0000,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    object_type text,
+    object_id character(36) DEFAULT NULL::bpchar,
+    event_type text,
+    run_time_ms bigint DEFAULT '0'::bigint,
+    input_tokens bigint DEFAULT '0'::bigint,
+    output_tokens bigint DEFAULT '0'::bigint,
+    input_cost numeric(12,4) DEFAULT 0.0000,
+    output_cost numeric(12,4) DEFAULT 0.0000,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2193,18 +2200,18 @@ ALTER SEQUENCE gpt_manager.usage_events_id_seq OWNED BY gpt_manager.usage_events
 --
 
 CREATE TABLE gpt_manager.usage_summaries (
-                                             id bigint NOT NULL,
-                                             object_type text,
-                                             object_id character(36) DEFAULT NULL::bpchar,
-                                             count bigint DEFAULT '1'::bigint,
-                                             run_time_ms bigint DEFAULT '0'::bigint,
-                                             input_tokens bigint DEFAULT '0'::bigint,
-                                             output_tokens bigint DEFAULT '0'::bigint,
-                                             input_cost numeric(12,4) DEFAULT 0.0000,
-                                             output_cost numeric(12,4) DEFAULT 0.0000,
-                                             total_cost numeric(12,4) DEFAULT NULL::numeric,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone
+    id bigint NOT NULL,
+    object_type text,
+    object_id character(36) DEFAULT NULL::bpchar,
+    count bigint DEFAULT '1'::bigint,
+    run_time_ms bigint DEFAULT '0'::bigint,
+    input_tokens bigint DEFAULT '0'::bigint,
+    output_tokens bigint DEFAULT '0'::bigint,
+    input_cost numeric(12,4) DEFAULT 0.0000,
+    output_cost numeric(12,4) DEFAULT 0.0000,
+    total_cost numeric(12,4) DEFAULT NULL::numeric,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2232,14 +2239,14 @@ ALTER SEQUENCE gpt_manager.usage_summaries_id_seq OWNED BY gpt_manager.usage_sum
 --
 
 CREATE TABLE gpt_manager.users (
-                                   id bigint NOT NULL,
-                                   name text,
-                                   email text,
-                                   email_verified_at timestamp with time zone,
-                                   password text,
-                                   remember_token text,
-                                   created_at timestamp with time zone,
-                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name text,
+    email text,
+    email_verified_at timestamp with time zone,
+    password text,
+    remember_token text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2267,14 +2274,14 @@ ALTER SEQUENCE gpt_manager.users_id_seq OWNED BY gpt_manager.users.id;
 --
 
 CREATE TABLE gpt_manager.workflow_api_invocations (
-                                                      id bigint NOT NULL,
-                                                      workflow_run_id bigint,
-                                                      name text,
-                                                      webhook_url text,
-                                                      payload json,
-                                                      created_at timestamp with time zone,
-                                                      updated_at timestamp with time zone,
-                                                      deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    workflow_run_id bigint,
+    name text,
+    webhook_url text,
+    payload json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2302,16 +2309,16 @@ ALTER SEQUENCE gpt_manager.workflow_api_invocations_id_seq OWNED BY gpt_manager.
 --
 
 CREATE TABLE gpt_manager.workflow_connections (
-                                                  id bigint NOT NULL,
-                                                  resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                  workflow_definition_id bigint,
-                                                  source_node_id bigint,
-                                                  target_node_id bigint,
-                                                  source_output_port text,
-                                                  target_input_port text,
-                                                  name text DEFAULT ''::character varying,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    workflow_definition_id bigint,
+    source_node_id bigint,
+    target_node_id bigint,
+    source_output_port text,
+    target_input_port text,
+    name text DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2339,15 +2346,15 @@ ALTER SEQUENCE gpt_manager.workflow_connections_id_seq OWNED BY gpt_manager.work
 --
 
 CREATE TABLE gpt_manager.workflow_definitions (
-                                                  id bigint NOT NULL,
-                                                  resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                  team_id bigint,
-                                                  name text,
-                                                  description text DEFAULT ''::character varying,
-                                                  workflow_runs_count bigint DEFAULT '0'::bigint,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone,
-                                                  deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name text,
+    description text DEFAULT ''::character varying,
+    workflow_runs_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2375,21 +2382,21 @@ ALTER SEQUENCE gpt_manager.workflow_definitions_id_seq OWNED BY gpt_manager.work
 --
 
 CREATE TABLE gpt_manager.workflow_inputs (
-                                             id bigint NOT NULL,
-                                             content_source_id bigint,
-                                             team_id bigint,
-                                             user_id bigint,
-                                             name text,
-                                             description text,
-                                             content text,
-                                             data json,
-                                             tokens bigint DEFAULT '0'::bigint,
-                                             is_url boolean DEFAULT false,
-                                             team_object_id bigint,
-                                             team_object_type text,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone,
-                                             deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    content_source_id bigint,
+    team_id bigint,
+    user_id bigint,
+    name text,
+    description text,
+    content text,
+    data json,
+    tokens bigint DEFAULT '0'::bigint,
+    is_url boolean DEFAULT false,
+    team_object_id bigint,
+    team_object_type text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2417,15 +2424,15 @@ ALTER SEQUENCE gpt_manager.workflow_inputs_id_seq OWNED BY gpt_manager.workflow_
 --
 
 CREATE TABLE gpt_manager.workflow_nodes (
-                                            id bigint NOT NULL,
-                                            resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                            workflow_definition_id bigint,
-                                            task_definition_id bigint,
-                                            name text,
-                                            settings json,
-                                            params json,
-                                            created_at timestamp with time zone,
-                                            updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    workflow_definition_id bigint,
+    task_definition_id bigint,
+    name text,
+    settings json,
+    params json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2453,18 +2460,18 @@ ALTER SEQUENCE gpt_manager.workflow_nodes_id_seq OWNED BY gpt_manager.workflow_n
 --
 
 CREATE TABLE gpt_manager.workflow_runs (
-                                           id bigint NOT NULL,
-                                           workflow_definition_id bigint,
-                                           name text DEFAULT ''::character varying,
-                                           status text DEFAULT 'Pending'::character varying,
-                                           started_at timestamp with time zone,
-                                           stopped_at timestamp with time zone,
-                                           completed_at timestamp with time zone,
-                                           failed_at timestamp with time zone,
-                                           has_run_all_tasks boolean DEFAULT false,
-                                           created_at timestamp with time zone,
-                                           updated_at timestamp with time zone,
-                                           deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    workflow_definition_id bigint,
+    name text DEFAULT ''::character varying,
+    status text DEFAULT 'Pending'::character varying,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    has_run_all_tasks boolean DEFAULT false,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2492,14 +2499,14 @@ ALTER SEQUENCE gpt_manager.workflow_runs_id_seq OWNED BY gpt_manager.workflow_ru
 --
 
 CREATE TABLE public.agent_prompt_directives (
-                                                id bigint NOT NULL,
-                                                resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                prompt_directive_id bigint,
-                                                agent_id bigint,
-                                                section text DEFAULT 'top'::character varying,
-                                                "position" bigint DEFAULT '0'::bigint,
-                                                created_at timestamp with time zone,
-                                                updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    prompt_directive_id bigint,
+    agent_id bigint,
+    section text DEFAULT 'top'::character varying,
+    "position" bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2527,12 +2534,12 @@ ALTER SEQUENCE public.agent_prompt_directives_id_seq OWNED BY public.agent_promp
 --
 
 CREATE TABLE public.agent_thread_messageables (
-                                                  id bigint NOT NULL,
-                                                  agent_thread_message_id bigint,
-                                                  messageable_type text,
-                                                  messageable_id bigint,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone
+    id bigint NOT NULL,
+    agent_thread_message_id bigint,
+    messageable_type text,
+    messageable_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2560,19 +2567,20 @@ ALTER SEQUENCE public.agent_thread_messageables_id_seq OWNED BY public.agent_thr
 --
 
 CREATE TABLE public.agent_thread_messages (
-                                              id bigint NOT NULL,
-                                              agent_thread_id bigint,
-                                              role text,
-                                              title text,
-                                              summary text,
-                                              summarizer_offset integer DEFAULT 0,
-                                              summarizer_total integer DEFAULT 0,
-                                              content text,
-                                              data json,
-                                              created_at timestamp with time zone,
-                                              updated_at timestamp with time zone,
-                                              deleted_at timestamp with time zone,
-                                              api_response_id text
+    id bigint NOT NULL,
+    agent_thread_id bigint,
+    role text,
+    title text,
+    summary text,
+    summarizer_offset integer DEFAULT 0,
+    summarizer_total integer DEFAULT 0,
+    content text,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    api_response_id text,
+    api_log_id bigint
 );
 
 
@@ -2600,29 +2608,29 @@ ALTER SEQUENCE public.agent_thread_messages_id_seq OWNED BY public.agent_thread_
 --
 
 CREATE TABLE public.agent_thread_runs (
-                                          id bigint NOT NULL,
-                                          agent_thread_id bigint,
-                                          last_message_id bigint,
-                                          job_dispatch_id bigint,
-                                          status text,
-                                          response_format text DEFAULT 'text'::character varying,
-                                          response_schema_id bigint,
-                                          response_fragment_id bigint,
-                                          json_schema_config json,
-                                          response_json_schema json,
-                                          seed text,
-                                          started_at timestamp with time zone,
-                                          completed_at timestamp with time zone,
-                                          failed_at timestamp with time zone,
-                                          stopped_at timestamp with time zone,
-                                          refreshed_at timestamp with time zone,
-                                          agent_model text,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone,
-                                          api_options json,
-                                          mcp_server_id bigint,
-                                          timeout integer DEFAULT 60
+    id bigint NOT NULL,
+    agent_thread_id bigint,
+    last_message_id bigint,
+    job_dispatch_id bigint,
+    status public.citext,
+    response_format text DEFAULT 'text'::character varying,
+    response_schema_id bigint,
+    response_fragment_id bigint,
+    json_schema_config json,
+    response_json_schema json,
+    seed text,
+    started_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    refreshed_at timestamp with time zone,
+    agent_model text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    api_options json,
+    mcp_server_id bigint,
+    timeout integer DEFAULT 60
 );
 
 
@@ -2650,15 +2658,17 @@ ALTER SEQUENCE public.agent_thread_runs_id_seq OWNED BY public.agent_thread_runs
 --
 
 CREATE TABLE public.agent_threads (
-                                      id bigint NOT NULL,
-                                      team_id bigint,
-                                      user_id bigint,
-                                      agent_id bigint,
-                                      name text,
-                                      summary text DEFAULT ''::character varying,
-                                      created_at timestamp with time zone,
-                                      updated_at timestamp with time zone,
-                                      deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    agent_id bigint,
+    name public.citext,
+    summary public.citext DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    collaboratable_type character varying(255),
+    collaboratable_id bigint
 );
 
 
@@ -2686,19 +2696,19 @@ ALTER SEQUENCE public.agent_threads_id_seq OWNED BY public.agent_threads.id;
 --
 
 CREATE TABLE public.agents (
-                               id bigint NOT NULL,
-                               resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                               team_id bigint,
-                               knowledge_id bigint,
-                               name text,
-                               description text DEFAULT ''::character varying,
-                               model text,
-                               retry_count bigint DEFAULT '0'::bigint,
-                               threads_count bigint DEFAULT '0'::bigint,
-                               created_at timestamp with time zone,
-                               updated_at timestamp with time zone,
-                               deleted_at timestamp with time zone,
-                               api_options json
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    knowledge_id bigint,
+    name public.citext,
+    description public.citext DEFAULT ''::character varying,
+    model public.citext,
+    retry_count bigint DEFAULT '0'::bigint,
+    threads_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    api_options json
 );
 
 
@@ -2726,25 +2736,26 @@ ALTER SEQUENCE public.agents_id_seq OWNED BY public.agents.id;
 --
 
 CREATE TABLE public.api_logs (
-                                 id bigint NOT NULL,
-                                 audit_request_id bigint,
-                                 user_id bigint,
-                                 api_class text,
-                                 service_name text,
-                                 status_code bigint,
-                                 method text,
-                                 url text,
-                                 full_url text,
-                                 request json,
-                                 response json,
-                                 request_headers json,
-                                 response_headers json,
-                                 stack_trace json,
-                                 started_at timestamp with time zone,
-                                 finished_at timestamp with time zone,
-                                 run_time_ms double precision,
-                                 created_at timestamp with time zone,
-                                 updated_at timestamp with time zone
+    id bigint NOT NULL,
+    audit_request_id bigint,
+    user_id bigint,
+    api_class text,
+    service_name text,
+    status_code integer,
+    method text,
+    url text,
+    full_url text,
+    request json,
+    response json,
+    request_headers json,
+    response_headers json,
+    stack_trace json,
+    started_at timestamp with time zone,
+    finished_at timestamp with time zone,
+    run_time_ms double precision,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    will_timeout_at timestamp(3) without time zone
 );
 
 
@@ -2768,17 +2779,55 @@ ALTER SEQUENCE public.api_logs_id_seq OWNED BY public.api_logs.id;
 
 
 --
+-- Name: artifact_category_definitions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.artifact_category_definitions (
+    id bigint NOT NULL,
+    schema_definition_id bigint NOT NULL,
+    name public.citext NOT NULL,
+    label public.citext NOT NULL,
+    prompt text NOT NULL,
+    fragment_selector jsonb,
+    editable boolean DEFAULT true NOT NULL,
+    deletable boolean DEFAULT true NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    deleted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: artifact_category_definitions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.artifact_category_definitions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: artifact_category_definitions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.artifact_category_definitions_id_seq OWNED BY public.artifact_category_definitions.id;
+
+
+--
 -- Name: artifactables; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.artifactables (
-                                      id bigint NOT NULL,
-                                      artifact_id bigint,
-                                      artifactable_id bigint,
-                                      artifactable_type text,
-                                      category text DEFAULT ''::character varying,
-                                      created_at timestamp with time zone,
-                                      updated_at timestamp with time zone
+    id bigint NOT NULL,
+    artifact_id bigint,
+    artifactable_id bigint,
+    artifactable_type text,
+    category public.citext DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2806,24 +2855,24 @@ ALTER SEQUENCE public.artifactables_id_seq OWNED BY public.artifactables.id;
 --
 
 CREATE TABLE public.artifacts (
-                                  id bigint NOT NULL,
-                                  original_artifact_id bigint,
-                                  team_id bigint,
-                                  parent_artifact_id bigint,
-                                  child_artifacts_count bigint DEFAULT '0'::bigint,
-                                  schema_definition_id bigint,
-                                  task_definition_id bigint,
-                                  task_run_id bigint,
-                                  task_process_id bigint,
-                                  name text,
-                                  "position" integer DEFAULT 0,
-                                  model text,
-                                  text_content text,
-                                  json_content json,
-                                  meta json,
-                                  created_at timestamp with time zone,
-                                  updated_at timestamp with time zone,
-                                  deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    original_artifact_id bigint,
+    team_id bigint,
+    parent_artifact_id bigint,
+    child_artifacts_count bigint DEFAULT '0'::bigint,
+    schema_definition_id bigint,
+    task_definition_id bigint,
+    task_run_id bigint,
+    task_process_id bigint,
+    name public.citext,
+    "position" integer DEFAULT 0,
+    model public.citext,
+    text_content public.citext,
+    json_content json,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -2851,26 +2900,26 @@ ALTER SEQUENCE public.artifacts_id_seq OWNED BY public.artifacts.id;
 --
 
 CREATE TABLE public.assistant_actions (
-                                          id bigint NOT NULL,
-                                          team_id bigint,
-                                          user_id bigint,
-                                          agent_thread_id bigint,
-                                          context text,
-                                          action_type text,
-                                          target_type text,
-                                          target_id text,
-                                          status text DEFAULT 'pending'::character varying,
-                                          title text,
-                                          description text,
-                                          payload json,
-                                          preview_data json,
-                                          result_data json,
-                                          error_message text,
-                                          started_at timestamp without time zone,
-                                          completed_at timestamp without time zone,
-                                          created_at timestamp without time zone,
-                                          updated_at timestamp without time zone,
-                                          duration integer
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    agent_thread_id bigint,
+    context text,
+    action_type text,
+    target_type text,
+    target_id text,
+    status text DEFAULT 'pending'::character varying,
+    title text,
+    description text,
+    payload json,
+    preview_data json,
+    result_data json,
+    error_message text,
+    started_at timestamp without time zone,
+    completed_at timestamp without time zone,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    duration integer
 );
 
 
@@ -2898,18 +2947,22 @@ ALTER SEQUENCE public.assistant_actions_id_seq OWNED BY public.assistant_actions
 --
 
 CREATE TABLE public.audit_request (
-                                      id bigint NOT NULL,
-                                      session_id text,
-                                      user_id bigint,
-                                      environment text,
-                                      url text,
-                                      request json,
-                                      response json,
-                                      logs text,
-                                      profile text,
-                                      "time" double precision,
-                                      created_at timestamp with time zone,
-                                      updated_at timestamp with time zone
+    id bigint NOT NULL,
+    session_id text,
+    user_id bigint,
+    environment text,
+    url text,
+    request json,
+    response json,
+    logs text,
+    profile text,
+    "time" double precision,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    team_id bigint,
+    api_log_count integer DEFAULT 0 NOT NULL,
+    error_log_count integer DEFAULT 0 NOT NULL,
+    log_line_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -2937,17 +2990,17 @@ ALTER SEQUENCE public.audit_request_id_seq OWNED BY public.audit_request.id;
 --
 
 CREATE TABLE public.audits (
-                               id bigint NOT NULL,
-                               audit_request_id bigint,
-                               user_id bigint,
-                               event text,
-                               auditable_type text,
-                               auditable_id character(191) DEFAULT NULL::bpchar,
-                               old_values json,
-                               new_values json,
-                               tags text,
-                               created_at timestamp with time zone,
-                               updated_at timestamp with time zone
+    id bigint NOT NULL,
+    audit_request_id bigint,
+    user_id bigint,
+    event text,
+    auditable_type text,
+    auditable_id character(191) DEFAULT NULL::bpchar,
+    old_values json,
+    new_values json,
+    tags text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -2975,20 +3028,20 @@ ALTER SEQUENCE public.audits_id_seq OWNED BY public.audits.id;
 --
 
 CREATE TABLE public.auth_tokens (
-                                    id bigint NOT NULL,
-                                    team_id bigint,
-                                    service text,
-                                    type text,
-                                    name text,
-                                    access_token text,
-                                    refresh_token text,
-                                    id_token text,
-                                    scopes json,
-                                    expires_at timestamp without time zone,
-                                    metadata json,
-                                    created_at timestamp without time zone,
-                                    updated_at timestamp without time zone,
-                                    deleted_at timestamp without time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    service text,
+    type public.citext,
+    name public.citext,
+    access_token text,
+    refresh_token text,
+    id_token text,
+    scopes json,
+    expires_at timestamp without time zone,
+    metadata json,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone
 );
 
 
@@ -3016,30 +3069,30 @@ ALTER SEQUENCE public.auth_tokens_id_seq OWNED BY public.auth_tokens.id;
 --
 
 CREATE TABLE public.billing_history (
-                                        id bigint NOT NULL,
-                                        team_id bigint,
-                                        subscription_id bigint,
-                                        stripe_invoice_id text,
-                                        stripe_payment_intent_id text,
-                                        type text,
-                                        status text,
-                                        amount numeric(10,2) DEFAULT NULL::numeric,
-                                        tax_amount numeric(10,2) DEFAULT '0'::numeric,
-                                        total_amount numeric(10,2) DEFAULT NULL::numeric,
-                                        currency text DEFAULT 'USD'::character varying,
-                                        description text,
-                                        line_items json,
-                                        period_start timestamp without time zone,
-                                        period_end timestamp without time zone,
-                                        due_date timestamp without time zone,
-                                        paid_at timestamp without time zone,
-                                        invoice_url text,
-                                        billing_date timestamp without time zone,
-                                        metadata json,
-                                        created_at timestamp without time zone,
-                                        updated_at timestamp without time zone,
-                                        deleted_at timestamp without time zone,
-                                        stripe_charge_id text
+    id bigint NOT NULL,
+    team_id bigint,
+    subscription_id bigint,
+    stripe_invoice_id text,
+    stripe_payment_intent_id text,
+    type text,
+    status text,
+    amount numeric(10,2) DEFAULT NULL::numeric,
+    tax_amount numeric(10,2) DEFAULT '0'::numeric,
+    total_amount numeric(10,2) DEFAULT NULL::numeric,
+    currency text DEFAULT 'USD'::character varying,
+    description text,
+    line_items json,
+    period_start timestamp without time zone,
+    period_end timestamp without time zone,
+    due_date timestamp without time zone,
+    paid_at timestamp without time zone,
+    invoice_url text,
+    billing_date timestamp without time zone,
+    metadata json,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone,
+    stripe_charge_id text
 );
 
 
@@ -3067,9 +3120,9 @@ ALTER SEQUENCE public.billing_history_id_seq OWNED BY public.billing_history.id;
 --
 
 CREATE TABLE public.cache (
-                              key text NOT NULL,
-                              value text,
-                              expiration integer
+    key text NOT NULL,
+    value text,
+    expiration integer
 );
 
 
@@ -3078,9 +3131,9 @@ CREATE TABLE public.cache (
 --
 
 CREATE TABLE public.cache_locks (
-                                    key text NOT NULL,
-                                    owner text,
-                                    expiration integer
+    key text NOT NULL,
+    owner text,
+    expiration integer
 );
 
 
@@ -3089,19 +3142,19 @@ CREATE TABLE public.cache_locks (
 --
 
 CREATE TABLE public.content_sources (
-                                        id bigint NOT NULL,
-                                        team_id bigint,
-                                        name text,
-                                        type text,
-                                        url text DEFAULT ''::character varying,
-                                        config json,
-                                        polling_interval bigint DEFAULT '60'::bigint,
-                                        last_checkpoint text,
-                                        fetched_at timestamp with time zone,
-                                        workflow_inputs_count bigint DEFAULT '0'::bigint,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone,
-                                        deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    name public.citext,
+    type public.citext,
+    url text DEFAULT ''::character varying,
+    config json,
+    polling_interval bigint DEFAULT '60'::bigint,
+    last_checkpoint text,
+    fetched_at timestamp with time zone,
+    workflow_inputs_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3125,23 +3178,31 @@ ALTER SEQUENCE public.content_sources_id_seq OWNED BY public.content_sources.id;
 
 
 --
--- Name: demand_templates; Type: TABLE; Schema: public; Owner: -
+-- Name: template_definitions; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.demand_templates (
-                                         id bigint NOT NULL,
-                                         team_id bigint,
-                                         user_id bigint,
-                                         stored_file_id character(36) DEFAULT NULL::bpchar,
-                                         name text,
-                                         description text,
-                                         category text,
-                                         metadata json,
-                                         is_active boolean DEFAULT true,
-                                         created_at timestamp without time zone,
-                                         updated_at timestamp without time zone,
-                                         deleted_at timestamp without time zone,
-                                         template_variables json
+CREATE TABLE public.template_definitions (
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    name public.citext,
+    description public.citext,
+    category public.citext,
+    metadata json,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone,
+    type character varying(255) DEFAULT 'google_docs'::character varying NOT NULL,
+    html_content text,
+    css_content text,
+    preview_stored_file_id character(36),
+    building_job_dispatch_id integer,
+    pending_build_context json,
+    template_variables_count integer DEFAULT 0 NOT NULL,
+    job_dispatches_count integer DEFAULT 0 NOT NULL,
+    schema_definition_id bigint
 );
 
 
@@ -3161,7 +3222,7 @@ CREATE SEQUENCE public.demand_templates_id_seq
 -- Name: demand_templates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.demand_templates_id_seq OWNED BY public.demand_templates.id;
+ALTER SEQUENCE public.demand_templates_id_seq OWNED BY public.template_definitions.id;
 
 
 --
@@ -3169,15 +3230,16 @@ ALTER SEQUENCE public.demand_templates_id_seq OWNED BY public.demand_templates.i
 --
 
 CREATE TABLE public.error_log_entry (
-                                        id bigint NOT NULL,
-                                        error_log_id bigint,
-                                        audit_request_id bigint,
-                                        user_id bigint,
-                                        message text DEFAULT ''::character varying,
-                                        full_message text,
-                                        data json,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone
+    id bigint NOT NULL,
+    error_log_id bigint,
+    audit_request_id bigint,
+    user_id bigint,
+    message text DEFAULT ''::character varying,
+    full_message text,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    is_retryable boolean DEFAULT false NOT NULL
 );
 
 
@@ -3205,23 +3267,23 @@ ALTER SEQUENCE public.error_log_entry_id_seq OWNED BY public.error_log_entry.id;
 --
 
 CREATE TABLE public.error_logs (
-                                   id bigint NOT NULL,
-                                   root_id bigint,
-                                   parent_id bigint,
-                                   hash text,
-                                   error_class text,
-                                   code text,
-                                   level text,
-                                   message text,
-                                   file text,
-                                   line bigint,
-                                   count bigint,
-                                   last_seen_at timestamp with time zone,
-                                   last_notified_at timestamp with time zone,
-                                   send_notifications boolean DEFAULT true,
-                                   stack_trace json,
-                                   created_at timestamp with time zone,
-                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    root_id bigint,
+    parent_id bigint,
+    hash text,
+    error_class text,
+    code text,
+    level text,
+    message text,
+    file text,
+    line bigint,
+    count bigint,
+    last_seen_at timestamp with time zone,
+    last_notified_at timestamp with time zone,
+    send_notifications boolean DEFAULT true,
+    stack_trace json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3249,17 +3311,17 @@ ALTER SEQUENCE public.error_logs_id_seq OWNED BY public.error_logs.id;
 --
 
 CREATE TABLE public.job_batches (
-                                    id bigint NOT NULL,
-                                    name text,
-                                    total_jobs integer,
-                                    pending_jobs integer,
-                                    failed_jobs integer,
-                                    failed_job_ids text,
-                                    options text,
-                                    on_complete text,
-                                    cancelled_at integer,
-                                    created_at timestamp with time zone,
-                                    finished_at integer
+    id bigint NOT NULL,
+    name text,
+    total_jobs integer,
+    pending_jobs integer,
+    failed_jobs integer,
+    failed_job_ids text,
+    options text,
+    on_complete text,
+    cancelled_at integer,
+    created_at timestamp with time zone,
+    finished_at integer
 );
 
 
@@ -3287,22 +3349,23 @@ ALTER SEQUENCE public.job_batches_id_seq OWNED BY public.job_batches.id;
 --
 
 CREATE TABLE public.job_dispatch (
-                                     id bigint NOT NULL,
-                                     user_id bigint,
-                                     name text,
-                                     ref text,
-                                     job_batch_id bigint,
-                                     running_audit_request_id bigint,
-                                     dispatch_audit_request_id bigint,
-                                     status text,
-                                     ran_at timestamp with time zone,
-                                     completed_at timestamp with time zone,
-                                     timeout_at timestamp with time zone,
-                                     count bigint,
-                                     data json,
-                                     created_at timestamp with time zone,
-                                     updated_at timestamp with time zone,
-                                     run_time_ms integer
+    id bigint NOT NULL,
+    user_id bigint,
+    name text,
+    ref text,
+    job_batch_id bigint,
+    running_audit_request_id bigint,
+    dispatch_audit_request_id bigint,
+    status text,
+    ran_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    will_timeout_at timestamp with time zone,
+    count bigint,
+    data json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    run_time_ms integer,
+    team_id bigint
 );
 
 
@@ -3330,13 +3393,13 @@ ALTER SEQUENCE public.job_dispatch_id_seq OWNED BY public.job_dispatch.id;
 --
 
 CREATE TABLE public.job_dispatchables (
-                                          id bigint NOT NULL,
-                                          category text DEFAULT ''::character varying,
-                                          job_dispatch_id bigint,
-                                          model_type text,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          model_id bigint
+    id bigint NOT NULL,
+    category text DEFAULT ''::character varying,
+    job_dispatch_id bigint,
+    model_type text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    model_id bigint
 );
 
 
@@ -3364,13 +3427,13 @@ ALTER SEQUENCE public.job_dispatchables_id_seq OWNED BY public.job_dispatchables
 --
 
 CREATE TABLE public.knowledge (
-                                  id bigint NOT NULL,
-                                  team_id bigint,
-                                  name text,
-                                  description text,
-                                  created_at timestamp with time zone,
-                                  updated_at timestamp with time zone,
-                                  deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    name public.citext,
+    description public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3398,16 +3461,16 @@ ALTER SEQUENCE public.knowledge_id_seq OWNED BY public.knowledge.id;
 --
 
 CREATE TABLE public.mcp_servers (
-                                    id bigint NOT NULL,
-                                    team_id bigint,
-                                    name text,
-                                    description text,
-                                    server_url text,
-                                    headers json,
-                                    allowed_tools json,
-                                    created_at timestamp without time zone,
-                                    updated_at timestamp without time zone,
-                                    deleted_at timestamp without time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    name public.citext,
+    description public.citext,
+    server_url text,
+    headers json,
+    allowed_tools json,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone
 );
 
 
@@ -3435,9 +3498,9 @@ ALTER SEQUENCE public.mcp_servers_id_seq OWNED BY public.mcp_servers.id;
 --
 
 CREATE TABLE public.migrations (
-                                   id bigint NOT NULL,
-                                   migration text,
-                                   batch integer
+    id bigint NOT NULL,
+    migration text,
+    batch integer
 );
 
 
@@ -3465,11 +3528,11 @@ ALTER SEQUENCE public.migrations_id_seq OWNED BY public.migrations.id;
 --
 
 CREATE TABLE public.model_refs (
-                                   id bigint NOT NULL,
-                                   prefix text,
-                                   ref text,
-                                   created_at timestamp with time zone,
-                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    prefix text,
+    ref text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3497,12 +3560,12 @@ ALTER SEQUENCE public.model_refs_id_seq OWNED BY public.model_refs.id;
 --
 
 CREATE TABLE public.object_tag_taggables (
-                                             id bigint NOT NULL,
-                                             object_tag_id bigint,
-                                             taggable_type text,
-                                             taggable_id bigint,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone
+    id bigint NOT NULL,
+    object_tag_id bigint,
+    taggable_type text,
+    taggable_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3530,12 +3593,12 @@ ALTER SEQUENCE public.object_tag_taggables_id_seq OWNED BY public.object_tag_tag
 --
 
 CREATE TABLE public.object_tags (
-                                    id bigint NOT NULL,
-                                    category text,
-                                    name text,
-                                    created_at timestamp with time zone,
-                                    updated_at timestamp with time zone,
-                                    deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    category public.citext,
+    name public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3563,9 +3626,9 @@ ALTER SEQUENCE public.object_tags_id_seq OWNED BY public.object_tags.id;
 --
 
 CREATE TABLE public.password_reset_tokens (
-                                              email text NOT NULL,
-                                              token text,
-                                              created_at timestamp with time zone
+    email public.citext NOT NULL,
+    token text,
+    created_at timestamp with time zone
 );
 
 
@@ -3574,18 +3637,18 @@ CREATE TABLE public.password_reset_tokens (
 --
 
 CREATE TABLE public.payment_methods (
-                                        id bigint NOT NULL,
-                                        team_id bigint,
-                                        stripe_payment_method_id text,
-                                        type text,
-                                        card_brand text,
-                                        card_last_four text,
-                                        card_exp_month integer,
-                                        card_exp_year integer,
-                                        is_default boolean DEFAULT false,
-                                        created_at timestamp without time zone,
-                                        updated_at timestamp without time zone,
-                                        deleted_at timestamp without time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    stripe_payment_method_id text,
+    type text,
+    card_brand text,
+    card_last_four text,
+    card_exp_month integer,
+    card_exp_year integer,
+    is_default boolean DEFAULT false,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone
 );
 
 
@@ -3613,12 +3676,12 @@ ALTER SEQUENCE public.payment_methods_id_seq OWNED BY public.payment_methods.id;
 --
 
 CREATE TABLE public.permissions (
-                                    id bigint NOT NULL,
-                                    name text,
-                                    display_name text,
-                                    description text,
-                                    created_at timestamp with time zone,
-                                    updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name public.citext,
+    display_name public.citext,
+    description public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3646,16 +3709,16 @@ ALTER SEQUENCE public.permissions_id_seq OWNED BY public.permissions.id;
 --
 
 CREATE TABLE public.personal_access_tokens (
-                                               id bigint NOT NULL,
-                                               tokenable_type text,
-                                               tokenable_id bigint,
-                                               name text,
-                                               token text,
-                                               abilities text,
-                                               last_used_at timestamp with time zone,
-                                               expires_at timestamp with time zone,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone
+    id bigint NOT NULL,
+    tokenable_type text,
+    tokenable_id bigint,
+    name public.citext,
+    token text,
+    abilities public.citext,
+    last_used_at timestamp with time zone,
+    expires_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3683,15 +3746,15 @@ ALTER SEQUENCE public.personal_access_tokens_id_seq OWNED BY public.personal_acc
 --
 
 CREATE TABLE public.prompt_directives (
-                                          id bigint NOT NULL,
-                                          resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                          team_id bigint,
-                                          name text,
-                                          directive_text text,
-                                          agents_count bigint DEFAULT '0'::bigint,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name public.citext,
+    directive_text public.citext,
+    agents_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3719,18 +3782,19 @@ ALTER SEQUENCE public.prompt_directives_id_seq OWNED BY public.prompt_directives
 --
 
 CREATE TABLE public.resource_package_imports (
-                                                 id character(36) DEFAULT NULL::bpchar NOT NULL,
-                                                 team_uuid character(36) DEFAULT NULL::bpchar,
-                                                 resource_package_id character(36) DEFAULT NULL::bpchar,
-                                                 resource_package_version_id character(36) DEFAULT NULL::bpchar,
-                                                 source_object_id character(36) DEFAULT NULL::bpchar,
-                                                 local_object_id character(36) DEFAULT NULL::bpchar,
-                                                 object_type text,
-                                                 can_view boolean DEFAULT false,
-                                                 can_edit boolean DEFAULT false,
-                                                 created_at timestamp with time zone,
-                                                 updated_at timestamp with time zone,
-                                                 deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar NOT NULL,
+    creator_team_uuid character(36) DEFAULT NULL::bpchar,
+    resource_package_id character(36) DEFAULT NULL::bpchar,
+    resource_package_version_id character(36) DEFAULT NULL::bpchar,
+    source_object_id character(36) DEFAULT NULL::bpchar,
+    local_object_id character(36) DEFAULT NULL::bpchar,
+    object_type public.citext,
+    can_view boolean DEFAULT false,
+    can_edit boolean DEFAULT false,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    team_id bigint
 );
 
 
@@ -3739,14 +3803,14 @@ CREATE TABLE public.resource_package_imports (
 --
 
 CREATE TABLE public.resource_package_versions (
-                                                  id character(36) DEFAULT NULL::bpchar NOT NULL,
-                                                  resource_package_id character(36) DEFAULT NULL::bpchar,
-                                                  version text,
-                                                  version_hash text,
-                                                  definitions json,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone,
-                                                  deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar NOT NULL,
+    resource_package_id character(36) DEFAULT NULL::bpchar,
+    version public.citext,
+    version_hash text,
+    definitions json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3755,14 +3819,14 @@ CREATE TABLE public.resource_package_versions (
 --
 
 CREATE TABLE public.resource_packages (
-                                          id character(36) DEFAULT NULL::bpchar NOT NULL,
-                                          team_uuid character(36) DEFAULT NULL::bpchar,
-                                          resource_type text,
-                                          resource_id text,
-                                          name text,
-                                          created_at timestamp with time zone,
-                                          updated_at timestamp with time zone,
-                                          deleted_at timestamp with time zone
+    id character(36) DEFAULT NULL::bpchar NOT NULL,
+    creator_team_uuid character(36) DEFAULT NULL::bpchar,
+    resource_type public.citext,
+    resource_id text,
+    name public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3771,11 +3835,11 @@ CREATE TABLE public.resource_packages (
 --
 
 CREATE TABLE public.role_permission (
-                                        id bigint NOT NULL,
-                                        role_id bigint,
-                                        permission_id bigint,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone
+    id bigint NOT NULL,
+    role_id bigint,
+    permission_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3803,11 +3867,11 @@ ALTER SEQUENCE public.role_permission_id_seq OWNED BY public.role_permission.id;
 --
 
 CREATE TABLE public.role_user (
-                                  id bigint NOT NULL,
-                                  user_id bigint,
-                                  role_id bigint,
-                                  created_at timestamp with time zone,
-                                  updated_at timestamp with time zone
+    id bigint NOT NULL,
+    user_id bigint,
+    role_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3835,12 +3899,12 @@ ALTER SEQUENCE public.role_user_id_seq OWNED BY public.role_user.id;
 --
 
 CREATE TABLE public.roles (
-                              id bigint NOT NULL,
-                              name text,
-                              display_name text,
-                              description text,
-                              created_at timestamp with time zone,
-                              updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name public.citext,
+    display_name public.citext,
+    description public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3868,15 +3932,15 @@ ALTER SEQUENCE public.roles_id_seq OWNED BY public.roles.id;
 --
 
 CREATE TABLE public.schema_associations (
-                                            id bigint NOT NULL,
-                                            resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                            schema_definition_id bigint,
-                                            schema_fragment_id bigint,
-                                            object_type text,
-                                            object_id bigint,
-                                            category text DEFAULT ''::character varying,
-                                            created_at timestamp with time zone,
-                                            updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    schema_definition_id bigint,
+    schema_fragment_id bigint,
+    object_type public.citext,
+    object_id bigint,
+    category public.citext DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -3904,21 +3968,21 @@ ALTER SEQUENCE public.schema_associations_id_seq OWNED BY public.schema_associat
 --
 
 CREATE TABLE public.schema_definitions (
-                                           id bigint NOT NULL,
-                                           resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                           team_id bigint,
-                                           type text,
-                                           name text,
-                                           description text,
-                                           schema_format text,
-                                           schema json,
-                                           response_example json,
-                                           fragments_count bigint DEFAULT '0'::bigint,
-                                           associations_count bigint DEFAULT '0'::bigint,
-                                           created_at timestamp with time zone,
-                                           updated_at timestamp with time zone,
-                                           deleted_at timestamp with time zone,
-                                           meta json
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    type public.citext,
+    name public.citext,
+    description public.citext,
+    schema_format public.citext,
+    schema json,
+    response_example json,
+    fragments_count bigint DEFAULT '0'::bigint,
+    associations_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    meta json
 );
 
 
@@ -3946,15 +4010,15 @@ ALTER SEQUENCE public.schema_definitions_id_seq OWNED BY public.schema_definitio
 --
 
 CREATE TABLE public.schema_fragments (
-                                         id bigint NOT NULL,
-                                         resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                         schema_definition_id bigint,
-                                         name text,
-                                         fragment_selector json,
-                                         associations_count bigint DEFAULT '0'::bigint,
-                                         created_at timestamp with time zone,
-                                         updated_at timestamp with time zone,
-                                         deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    schema_definition_id bigint,
+    name public.citext,
+    fragment_selector json,
+    associations_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -3982,12 +4046,12 @@ ALTER SEQUENCE public.schema_fragments_id_seq OWNED BY public.schema_fragments.i
 --
 
 CREATE TABLE public.schema_history (
-                                       id bigint NOT NULL,
-                                       schema_definition_id bigint,
-                                       user_id bigint,
-                                       schema json,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone
+    id bigint NOT NULL,
+    schema_definition_id bigint,
+    user_id bigint,
+    schema json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4015,12 +4079,12 @@ ALTER SEQUENCE public.schema_history_id_seq OWNED BY public.schema_history.id;
 --
 
 CREATE TABLE public.sessions (
-                                 id text NOT NULL,
-                                 user_id bigint,
-                                 ip_address text,
-                                 user_agent text,
-                                 payload text,
-                                 last_activity integer
+    id text NOT NULL,
+    user_id bigint,
+    ip_address text,
+    user_agent text,
+    payload text,
+    last_activity integer
 );
 
 
@@ -4029,13 +4093,13 @@ CREATE TABLE public.sessions (
 --
 
 CREATE TABLE public.stored_file_storables (
-                                              id bigint NOT NULL,
-                                              stored_file_id character(36) DEFAULT NULL::bpchar,
-                                              storable_type text,
-                                              storable_id bigint,
-                                              category text,
-                                              created_at timestamp with time zone,
-                                              updated_at timestamp with time zone
+    id bigint NOT NULL,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    storable_type text,
+    storable_id bigint,
+    category public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4063,25 +4127,25 @@ ALTER SEQUENCE public.stored_file_storables_id_seq OWNED BY public.stored_file_s
 --
 
 CREATE TABLE public.stored_files (
-                                     id character(36) DEFAULT NULL::bpchar NOT NULL,
-                                     disk text,
-                                     filepath text,
-                                     filename text,
-                                     url text,
-                                     mime text,
-                                     size bigint DEFAULT '0'::bigint,
-                                     exif json,
-                                     meta json,
-                                     location json,
-                                     page_number bigint,
-                                     transcode_name text,
-                                     is_transcoding boolean DEFAULT false,
-                                     original_stored_file_id character(36) DEFAULT NULL::bpchar,
-                                     created_at timestamp with time zone,
-                                     updated_at timestamp with time zone,
-                                     deleted_at timestamp with time zone,
-                                     team_id bigint,
-                                     user_id bigint
+    id character(36) DEFAULT NULL::bpchar NOT NULL,
+    disk text,
+    filepath text,
+    filename text,
+    url text,
+    mime public.citext,
+    size bigint DEFAULT '0'::bigint,
+    exif json,
+    meta json,
+    location json,
+    page_number bigint,
+    transcode_name public.citext,
+    is_transcoding boolean DEFAULT false,
+    original_stored_file_id character(36) DEFAULT NULL::bpchar,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    team_id bigint,
+    user_id bigint
 );
 
 
@@ -4090,20 +4154,20 @@ CREATE TABLE public.stored_files (
 --
 
 CREATE TABLE public.subscription_plans (
-                                           id bigint NOT NULL,
-                                           name text,
-                                           slug text,
-                                           description text,
-                                           stripe_price_id text,
-                                           monthly_price numeric(10,2) DEFAULT '0'::numeric,
-                                           yearly_price numeric(10,2) DEFAULT '0'::numeric,
-                                           is_active boolean DEFAULT true,
-                                           features json,
-                                           usage_limits json,
-                                           sort_order integer DEFAULT 0,
-                                           created_at timestamp without time zone,
-                                           updated_at timestamp without time zone,
-                                           deleted_at timestamp without time zone
+    id bigint NOT NULL,
+    name text,
+    slug text,
+    description text,
+    stripe_price_id text,
+    monthly_price numeric(10,2) DEFAULT '0'::numeric,
+    yearly_price numeric(10,2) DEFAULT '0'::numeric,
+    is_active boolean DEFAULT true,
+    features json,
+    usage_limits json,
+    sort_order integer DEFAULT 0,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone
 );
 
 
@@ -4131,25 +4195,25 @@ ALTER SEQUENCE public.subscription_plans_id_seq OWNED BY public.subscription_pla
 --
 
 CREATE TABLE public.subscriptions (
-                                      id bigint NOT NULL,
-                                      team_id bigint,
-                                      subscription_plan_id bigint,
-                                      stripe_customer_id text,
-                                      stripe_subscription_id text,
-                                      status text DEFAULT 'inactive'::character varying,
-                                      billing_cycle text DEFAULT 'monthly'::character varying,
-                                      monthly_amount numeric(10,2) DEFAULT '0'::numeric,
-                                      yearly_amount numeric(10,2) DEFAULT '0'::numeric,
-                                      trial_ends_at timestamp without time zone,
-                                      current_period_start timestamp without time zone,
-                                      current_period_end timestamp without time zone,
-                                      canceled_at timestamp without time zone,
-                                      ends_at timestamp without time zone,
-                                      cancel_at_period_end boolean DEFAULT false,
-                                      metadata json,
-                                      created_at timestamp without time zone,
-                                      updated_at timestamp without time zone,
-                                      deleted_at timestamp without time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    subscription_plan_id bigint,
+    stripe_customer_id text,
+    stripe_subscription_id text,
+    status text DEFAULT 'inactive'::character varying,
+    billing_cycle text DEFAULT 'monthly'::character varying,
+    monthly_amount numeric(10,2) DEFAULT '0'::numeric,
+    yearly_amount numeric(10,2) DEFAULT '0'::numeric,
+    trial_ends_at timestamp without time zone,
+    current_period_start timestamp without time zone,
+    current_period_end timestamp without time zone,
+    canceled_at timestamp without time zone,
+    ends_at timestamp without time zone,
+    cancel_at_period_end boolean DEFAULT false,
+    metadata json,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone
 );
 
 
@@ -4173,22 +4237,66 @@ ALTER SEQUENCE public.subscriptions_id_seq OWNED BY public.subscriptions.id;
 
 
 --
+-- Name: taggables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.taggables (
+    tag_id bigint NOT NULL,
+    taggable_type character varying(255) NOT NULL,
+    taggable_id bigint NOT NULL
+);
+
+
+--
+-- Name: tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tags (
+    id bigint NOT NULL,
+    team_id bigint NOT NULL,
+    name public.citext NOT NULL,
+    type public.citext,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.tags_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: tags_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.tags_id_seq OWNED BY public.tags.id;
+
+
+--
 -- Name: task_artifact_filters; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.task_artifact_filters (
-                                              id bigint NOT NULL,
-                                              resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                              source_task_definition_id bigint,
-                                              target_task_definition_id bigint,
-                                              include_text boolean DEFAULT true,
-                                              include_files boolean DEFAULT true,
-                                              include_json boolean DEFAULT true,
-                                              include_meta boolean,
-                                              schema_fragment_id bigint,
-                                              meta_fragment_selector json,
-                                              created_at timestamp with time zone,
-                                              updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    source_task_definition_id bigint,
+    target_task_definition_id bigint,
+    include_text boolean DEFAULT true,
+    include_files boolean DEFAULT true,
+    include_json boolean DEFAULT true,
+    include_meta boolean,
+    schema_fragment_id bigint,
+    meta_fragment_selector json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4216,14 +4324,14 @@ ALTER SEQUENCE public.task_artifact_filters_id_seq OWNED BY public.task_artifact
 --
 
 CREATE TABLE public.task_definition_directives (
-                                                   id bigint NOT NULL,
-                                                   task_definition_id bigint,
-                                                   prompt_directive_id bigint,
-                                                   resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                                   section text DEFAULT 'top'::character varying,
-                                                   "position" bigint DEFAULT '0'::bigint,
-                                                   created_at timestamp with time zone,
-                                                   updated_at timestamp with time zone
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    prompt_directive_id bigint,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    section text DEFAULT 'top'::character varying,
+    "position" bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4251,27 +4359,29 @@ ALTER SEQUENCE public.task_definition_directives_id_seq OWNED BY public.task_def
 --
 
 CREATE TABLE public.task_definitions (
-                                         id bigint NOT NULL,
-                                         resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                         team_id bigint,
-                                         name text,
-                                         description text,
-                                         task_runner_name text,
-                                         task_runner_config json,
-                                         schema_definition_id bigint,
-                                         agent_id bigint,
-                                         response_format text DEFAULT 'text'::character varying,
-                                         input_artifact_mode text DEFAULT ''::character varying,
-                                         input_artifact_levels json,
-                                         output_artifact_mode text DEFAULT ''::character varying,
-                                         output_artifact_levels json,
-                                         timeout_after_seconds bigint DEFAULT '300'::bigint,
-                                         max_process_retries bigint DEFAULT '3'::bigint,
-                                         task_run_count bigint DEFAULT '0'::bigint,
-                                         created_at timestamp with time zone,
-                                         updated_at timestamp with time zone,
-                                         deleted_at timestamp with time zone,
-                                         task_queue_type_id bigint
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name public.citext,
+    description public.citext,
+    task_runner_name public.citext,
+    task_runner_config json,
+    schema_definition_id bigint,
+    agent_id bigint,
+    response_format public.citext DEFAULT 'text'::character varying,
+    input_artifact_mode public.citext DEFAULT ''::character varying,
+    input_artifact_levels json,
+    output_artifact_mode public.citext DEFAULT ''::character varying,
+    output_artifact_levels json,
+    timeout_after_seconds bigint DEFAULT '300'::bigint,
+    max_process_retries bigint DEFAULT '3'::bigint,
+    task_run_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    task_queue_type_id bigint,
+    prompt text,
+    meta json
 );
 
 
@@ -4299,12 +4409,12 @@ ALTER SEQUENCE public.task_definitions_id_seq OWNED BY public.task_definitions.i
 --
 
 CREATE TABLE public.task_inputs (
-                                    id bigint NOT NULL,
-                                    task_definition_id bigint,
-                                    workflow_input_id bigint,
-                                    task_run_count bigint DEFAULT '0'::bigint,
-                                    created_at timestamp with time zone,
-                                    updated_at timestamp with time zone
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    workflow_input_id bigint,
+    task_run_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4332,14 +4442,14 @@ ALTER SEQUENCE public.task_inputs_id_seq OWNED BY public.task_inputs.id;
 --
 
 CREATE TABLE public.task_process_listeners (
-                                               id bigint NOT NULL,
-                                               task_process_id bigint,
-                                               event_type text,
-                                               event_fired_at timestamp with time zone,
-                                               event_handled_at timestamp with time zone,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone,
-                                               event_id bigint
+    id bigint NOT NULL,
+    task_process_id bigint,
+    event_type text,
+    event_fired_at timestamp with time zone,
+    event_handled_at timestamp with time zone,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    event_id bigint
 );
 
 
@@ -4367,29 +4477,32 @@ ALTER SEQUENCE public.task_process_listeners_id_seq OWNED BY public.task_process
 --
 
 CREATE TABLE public.task_processes (
-                                       id bigint NOT NULL,
-                                       task_run_id bigint,
-                                       agent_thread_id bigint,
-                                       last_job_dispatch_id bigint,
-                                       status text DEFAULT 'Pending'::character varying,
-                                       name text,
-                                       activity text,
-                                       percent_complete numeric(5,2) DEFAULT 0.00,
-                                       started_at timestamp with time zone,
-                                       stopped_at timestamp with time zone,
-                                       completed_at timestamp with time zone,
-                                       failed_at timestamp with time zone,
-                                       timeout_at timestamp with time zone,
-                                       restart_count bigint DEFAULT '0'::bigint,
-                                       job_dispatch_count bigint DEFAULT '0'::bigint,
-                                       input_artifact_count bigint DEFAULT '0'::bigint,
-                                       output_artifact_count bigint DEFAULT '0'::bigint,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone,
-                                       deleted_at timestamp with time zone,
-                                       incomplete_at timestamp without time zone,
-                                       meta json,
-                                       is_ready boolean DEFAULT false
+    id bigint NOT NULL,
+    task_run_id bigint,
+    agent_thread_id bigint,
+    last_job_dispatch_id bigint,
+    status public.citext DEFAULT 'Pending'::character varying,
+    name public.citext,
+    activity public.citext,
+    percent_complete numeric(5,2) DEFAULT 0.00,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    timeout_at timestamp with time zone,
+    restart_count bigint DEFAULT '0'::bigint,
+    job_dispatch_count bigint DEFAULT '0'::bigint,
+    input_artifact_count bigint DEFAULT '0'::bigint,
+    output_artifact_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    incomplete_at timestamp without time zone,
+    meta json,
+    is_ready boolean DEFAULT false,
+    error_count integer DEFAULT 0 NOT NULL,
+    operation character varying(255),
+    parent_task_process_id bigint
 );
 
 
@@ -4417,14 +4530,14 @@ ALTER SEQUENCE public.task_processes_id_seq OWNED BY public.task_processes.id;
 --
 
 CREATE TABLE public.task_queue_types (
-                                         id bigint NOT NULL,
-                                         name text,
-                                         description text,
-                                         max_workers integer DEFAULT 10,
-                                         queue_name text DEFAULT 'default'::character varying,
-                                         is_active boolean DEFAULT true,
-                                         created_at timestamp without time zone,
-                                         updated_at timestamp without time zone
+    id bigint NOT NULL,
+    name text,
+    description text,
+    max_workers integer DEFAULT 10,
+    queue_name text DEFAULT 'default'::character varying,
+    is_active boolean DEFAULT true,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -4452,26 +4565,31 @@ ALTER SEQUENCE public.task_queue_types_id_seq OWNED BY public.task_queue_types.i
 --
 
 CREATE TABLE public.task_runs (
-                                  id bigint NOT NULL,
-                                  task_definition_id bigint,
-                                  workflow_run_id bigint,
-                                  workflow_node_id bigint,
-                                  status text DEFAULT 'Pending'::character varying,
-                                  name text,
-                                  step text DEFAULT 'Initial'::character varying,
-                                  percent_complete numeric(5,2) DEFAULT 0.00,
-                                  started_at timestamp with time zone,
-                                  stopped_at timestamp with time zone,
-                                  completed_at timestamp with time zone,
-                                  failed_at timestamp with time zone,
-                                  skipped_at timestamp with time zone,
-                                  process_count bigint DEFAULT '0'::bigint,
-                                  input_artifacts_count bigint DEFAULT '0'::bigint,
-                                  output_artifacts_count bigint DEFAULT '0'::bigint,
-                                  created_at timestamp with time zone,
-                                  updated_at timestamp with time zone,
-                                  deleted_at timestamp with time zone,
-                                  task_input_id bigint
+    id bigint NOT NULL,
+    task_definition_id bigint,
+    workflow_run_id bigint,
+    workflow_node_id bigint,
+    status public.citext DEFAULT 'Pending'::character varying,
+    name public.citext,
+    step text DEFAULT 'Initial'::character varying,
+    percent_complete numeric(5,2) DEFAULT 0.00,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    skipped_at timestamp with time zone,
+    process_count bigint DEFAULT '0'::bigint,
+    input_artifacts_count bigint DEFAULT '0'::bigint,
+    output_artifacts_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    task_input_id bigint,
+    task_process_error_count integer DEFAULT 0 NOT NULL,
+    meta json,
+    active_task_processes_count integer DEFAULT 0 NOT NULL,
+    parent_task_run_id bigint,
+    restart_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -4499,16 +4617,16 @@ ALTER SEQUENCE public.task_runs_id_seq OWNED BY public.task_runs.id;
 --
 
 CREATE TABLE public.team_object_attribute_sources (
-                                                      id bigint NOT NULL,
-                                                      team_object_attribute_id bigint,
-                                                      source_type text,
-                                                      source_id text,
-                                                      explanation text,
-                                                      stored_file_id character(36) DEFAULT NULL::bpchar,
-                                                      agent_thread_message_id bigint,
-                                                      created_at timestamp with time zone,
-                                                      updated_at timestamp with time zone,
-                                                      deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_attribute_id bigint,
+    source_type public.citext,
+    source_id public.citext,
+    explanation public.citext,
+    stored_file_id character(36) DEFAULT NULL::bpchar,
+    agent_thread_message_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -4536,17 +4654,17 @@ ALTER SEQUENCE public.team_object_attribute_sources_id_seq OWNED BY public.team_
 --
 
 CREATE TABLE public.team_object_attributes (
-                                               id bigint NOT NULL,
-                                               team_object_id bigint,
-                                               name text,
-                                               text_value text,
-                                               json_value json,
-                                               reason text,
-                                               confidence text,
-                                               agent_thread_run_id bigint,
-                                               created_at timestamp with time zone,
-                                               updated_at timestamp with time zone,
-                                               deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_id bigint,
+    name public.citext,
+    text_value public.citext,
+    json_value json,
+    reason public.citext,
+    confidence public.citext,
+    agent_thread_run_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -4574,13 +4692,13 @@ ALTER SEQUENCE public.team_object_attributes_id_seq OWNED BY public.team_object_
 --
 
 CREATE TABLE public.team_object_relationships (
-                                                  id bigint NOT NULL,
-                                                  team_object_id bigint,
-                                                  related_team_object_id bigint,
-                                                  relationship_name text,
-                                                  created_at timestamp with time zone,
-                                                  updated_at timestamp with time zone,
-                                                  deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_object_id bigint,
+    related_team_object_id bigint,
+    relationship_name public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -4608,19 +4726,19 @@ ALTER SEQUENCE public.team_object_relationships_id_seq OWNED BY public.team_obje
 --
 
 CREATE TABLE public.team_objects (
-                                     id bigint NOT NULL,
-                                     team_id bigint,
-                                     schema_definition_id bigint,
-                                     root_object_id bigint,
-                                     type text,
-                                     name text,
-                                     date timestamp with time zone,
-                                     description text,
-                                     url text,
-                                     meta json,
-                                     created_at timestamp with time zone,
-                                     updated_at timestamp with time zone,
-                                     deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    schema_definition_id bigint,
+    root_object_id bigint,
+    type public.citext,
+    name public.citext,
+    date timestamp with time zone,
+    description public.citext,
+    url text,
+    meta json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -4648,11 +4766,11 @@ ALTER SEQUENCE public.team_objects_id_seq OWNED BY public.team_objects.id;
 --
 
 CREATE TABLE public.team_user (
-                                  id bigint NOT NULL,
-                                  team_id bigint,
-                                  user_id bigint,
-                                  created_at timestamp with time zone,
-                                  updated_at timestamp with time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4680,15 +4798,15 @@ ALTER SEQUENCE public.team_user_id_seq OWNED BY public.team_user.id;
 --
 
 CREATE TABLE public.teams (
-                              id bigint NOT NULL,
-                              uuid character(36) DEFAULT NULL::bpchar,
-                              name text,
-                              namespace text,
-                              logo text,
-                              created_at timestamp with time zone,
-                              updated_at timestamp with time zone,
-                              deleted_at timestamp with time zone,
-                              stripe_customer_id text
+    id bigint NOT NULL,
+    uuid character(36) DEFAULT NULL::bpchar,
+    name public.citext,
+    namespace public.citext,
+    logo text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    stripe_customer_id text
 );
 
 
@@ -4712,16 +4830,95 @@ ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
 
 
 --
+-- Name: template_definition_history; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_definition_history (
+    id bigint NOT NULL,
+    template_definition_id bigint NOT NULL,
+    user_id bigint,
+    html_content text NOT NULL,
+    css_content text,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: template_definition_history_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.template_definition_history_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: template_definition_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.template_definition_history_id_seq OWNED BY public.template_definition_history.id;
+
+
+--
+-- Name: template_variables; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.template_variables (
+    id bigint NOT NULL,
+    template_definition_id bigint NOT NULL,
+    name public.citext NOT NULL,
+    description public.citext,
+    mapping_type public.citext NOT NULL,
+    artifact_categories json,
+    artifact_fragment_selector json,
+    team_object_schema_association_id bigint,
+    ai_instructions public.citext,
+    multi_value_strategy public.citext DEFAULT 'join'::character varying,
+    multi_value_separator public.citext DEFAULT ', '::character varying NOT NULL,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    deleted_at timestamp(0) without time zone,
+    value_format_type character varying(255) DEFAULT 'text'::character varying,
+    decimal_places smallint DEFAULT '2'::smallint,
+    currency_code character varying(3) DEFAULT 'USD'::character varying,
+    CONSTRAINT template_variables_mapping_type_check CHECK ((mapping_type OPERATOR(public.=) ANY (ARRAY['ai'::public.citext, 'artifact'::public.citext, 'team_object'::public.citext, 'verbatim'::public.citext])))
+);
+
+
+--
+-- Name: template_variables_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.template_variables_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: template_variables_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.template_variables_id_seq OWNED BY public.template_variables.id;
+
+
+--
 -- Name: ui_demand_workflow_runs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.ui_demand_workflow_runs (
-                                                id bigint NOT NULL,
-                                                ui_demand_id bigint,
-                                                workflow_run_id bigint,
-                                                workflow_type text,
-                                                created_at timestamp without time zone,
-                                                updated_at timestamp without time zone
+    id bigint NOT NULL,
+    ui_demand_id bigint,
+    workflow_run_id bigint,
+    workflow_type text,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -4749,19 +4946,19 @@ ALTER SEQUENCE public.ui_demand_workflow_runs_id_seq OWNED BY public.ui_demand_w
 --
 
 CREATE TABLE public.ui_demands (
-                                   id bigint NOT NULL,
-                                   team_id bigint,
-                                   user_id bigint,
-                                   title text,
-                                   description text,
-                                   status text DEFAULT 'draft'::character varying,
-                                   metadata json,
-                                   completed_at timestamp without time zone,
-                                   created_at timestamp without time zone,
-                                   updated_at timestamp without time zone,
-                                   deleted_at timestamp without time zone,
-                                   team_object_id bigint,
-                                   workflow_run_id bigint
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    title text,
+    description text,
+    status text DEFAULT 'draft'::character varying,
+    metadata json,
+    completed_at timestamp without time zone,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone,
+    deleted_at timestamp without time zone,
+    team_object_id bigint,
+    workflow_run_id bigint
 );
 
 
@@ -4789,14 +4986,14 @@ ALTER SEQUENCE public.ui_demands_id_seq OWNED BY public.ui_demands.id;
 --
 
 CREATE TABLE public.usage_event_subscribers (
-                                                id bigint NOT NULL,
-                                                usage_event_id bigint,
-                                                subscriber_type text,
-                                                subscriber_id text,
-                                                subscriber_id_int bigint,
-                                                subscribed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-                                                created_at timestamp without time zone,
-                                                updated_at timestamp without time zone
+    id bigint NOT NULL,
+    usage_event_id bigint,
+    subscriber_type text,
+    subscriber_id text,
+    subscriber_id_int bigint,
+    subscribed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -4824,25 +5021,25 @@ ALTER SEQUENCE public.usage_event_subscribers_id_seq OWNED BY public.usage_event
 --
 
 CREATE TABLE public.usage_events (
-                                     id bigint NOT NULL,
-                                     team_id bigint,
-                                     user_id bigint,
-                                     object_type text,
-                                     object_id text,
-                                     event_type text,
-                                     run_time_ms bigint DEFAULT '0'::bigint,
-                                     input_tokens bigint DEFAULT '0'::bigint,
-                                     output_tokens bigint DEFAULT '0'::bigint,
-                                     input_cost numeric(12,4) DEFAULT 0.0000,
-                                     output_cost numeric(12,4) DEFAULT 0.0000,
-                                     created_at timestamp with time zone,
-                                     updated_at timestamp with time zone,
-                                     deleted_at timestamp with time zone,
-                                     api_name text,
-                                     request_count bigint DEFAULT '0'::bigint,
-                                     data_volume bigint DEFAULT '0'::bigint,
-                                     metadata json,
-                                     object_id_int bigint
+    id bigint NOT NULL,
+    team_id bigint,
+    user_id bigint,
+    object_type text,
+    object_id text,
+    event_type text,
+    run_time_ms bigint DEFAULT '0'::bigint,
+    input_tokens bigint DEFAULT '0'::bigint,
+    output_tokens bigint DEFAULT '0'::bigint,
+    input_cost numeric(12,4) DEFAULT 0.0000,
+    output_cost numeric(12,4) DEFAULT 0.0000,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    api_name text,
+    request_count bigint DEFAULT '0'::bigint,
+    data_volume bigint DEFAULT '0'::bigint,
+    metadata json,
+    object_id_int bigint
 );
 
 
@@ -4870,21 +5067,21 @@ ALTER SEQUENCE public.usage_events_id_seq OWNED BY public.usage_events.id;
 --
 
 CREATE TABLE public.usage_summaries (
-                                        id bigint NOT NULL,
-                                        object_type text,
-                                        object_id text,
-                                        count bigint DEFAULT '1'::bigint,
-                                        run_time_ms bigint DEFAULT '0'::bigint,
-                                        input_tokens bigint DEFAULT '0'::bigint,
-                                        output_tokens bigint DEFAULT '0'::bigint,
-                                        input_cost numeric(12,4) DEFAULT 0.0000,
-                                        output_cost numeric(12,4) DEFAULT 0.0000,
-                                        total_cost numeric(12,4) DEFAULT NULL::numeric,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone,
-                                        request_count bigint DEFAULT '0'::bigint,
-                                        data_volume bigint DEFAULT '0'::bigint,
-                                        object_id_int bigint
+    id bigint NOT NULL,
+    object_type text,
+    object_id text,
+    count bigint DEFAULT '1'::bigint,
+    run_time_ms bigint DEFAULT '0'::bigint,
+    input_tokens bigint DEFAULT '0'::bigint,
+    output_tokens bigint DEFAULT '0'::bigint,
+    input_cost numeric(12,4) DEFAULT 0.0000,
+    output_cost numeric(12,4) DEFAULT 0.0000,
+    total_cost numeric(12,4) DEFAULT NULL::numeric,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    request_count bigint DEFAULT '0'::bigint,
+    data_volume bigint DEFAULT '0'::bigint,
+    object_id_int bigint
 );
 
 
@@ -4912,14 +5109,14 @@ ALTER SEQUENCE public.usage_summaries_id_seq OWNED BY public.usage_summaries.id;
 --
 
 CREATE TABLE public.users (
-                              id bigint NOT NULL,
-                              name text,
-                              email text,
-                              email_verified_at timestamp with time zone,
-                              password text,
-                              remember_token text,
-                              created_at timestamp with time zone,
-                              updated_at timestamp with time zone
+    id bigint NOT NULL,
+    name public.citext,
+    email public.citext,
+    email_verified_at timestamp with time zone,
+    password text,
+    remember_token text,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -4947,14 +5144,14 @@ ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 --
 
 CREATE TABLE public.workflow_api_invocations (
-                                                 id bigint NOT NULL,
-                                                 workflow_run_id bigint,
-                                                 name text,
-                                                 webhook_url text,
-                                                 payload json,
-                                                 created_at timestamp with time zone,
-                                                 updated_at timestamp with time zone,
-                                                 deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    workflow_run_id bigint,
+    name public.citext,
+    webhook_url text,
+    payload json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -4978,20 +5175,58 @@ ALTER SEQUENCE public.workflow_api_invocations_id_seq OWNED BY public.workflow_a
 
 
 --
+-- Name: workflow_builder_chats; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.workflow_builder_chats (
+    id bigint NOT NULL,
+    team_id bigint,
+    workflow_input_id bigint NOT NULL,
+    workflow_definition_id bigint,
+    agent_thread_id bigint NOT NULL,
+    status character varying(255) DEFAULT 'requirements_gathering'::character varying NOT NULL,
+    meta json,
+    current_workflow_run_id bigint,
+    created_at timestamp(0) without time zone,
+    updated_at timestamp(0) without time zone,
+    deleted_at timestamp(0) without time zone
+);
+
+
+--
+-- Name: workflow_builder_chats_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.workflow_builder_chats_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: workflow_builder_chats_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.workflow_builder_chats_id_seq OWNED BY public.workflow_builder_chats.id;
+
+
+--
 -- Name: workflow_connections; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.workflow_connections (
-                                             id bigint NOT NULL,
-                                             resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                             workflow_definition_id bigint,
-                                             source_node_id bigint,
-                                             target_node_id bigint,
-                                             source_output_port text,
-                                             target_input_port text,
-                                             name text DEFAULT ''::character varying,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    workflow_definition_id bigint,
+    source_node_id bigint,
+    target_node_id bigint,
+    source_output_port public.citext,
+    target_input_port public.citext,
+    name public.citext DEFAULT ''::character varying,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -5019,16 +5254,16 @@ ALTER SEQUENCE public.workflow_connections_id_seq OWNED BY public.workflow_conne
 --
 
 CREATE TABLE public.workflow_definitions (
-                                             id bigint NOT NULL,
-                                             resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                             team_id bigint,
-                                             name text,
-                                             description text DEFAULT ''::character varying,
-                                             workflow_runs_count bigint DEFAULT '0'::bigint,
-                                             created_at timestamp with time zone,
-                                             updated_at timestamp with time zone,
-                                             deleted_at timestamp with time zone,
-                                             max_workers integer DEFAULT 20
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    team_id bigint,
+    name public.citext,
+    description public.citext DEFAULT ''::character varying,
+    workflow_runs_count bigint DEFAULT '0'::bigint,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    max_workers integer DEFAULT 20
 );
 
 
@@ -5056,13 +5291,13 @@ ALTER SEQUENCE public.workflow_definitions_id_seq OWNED BY public.workflow_defin
 --
 
 CREATE TABLE public.workflow_input_associations (
-                                                    id bigint NOT NULL,
-                                                    workflow_input_id bigint,
-                                                    associable_type text,
-                                                    associable_id bigint,
-                                                    category text DEFAULT 'write_demand_instructions'::character varying,
-                                                    created_at timestamp without time zone,
-                                                    updated_at timestamp without time zone
+    id bigint NOT NULL,
+    workflow_input_id bigint,
+    associable_type text,
+    associable_id bigint,
+    category text DEFAULT 'write_demand_instructions'::character varying,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -5090,21 +5325,21 @@ ALTER SEQUENCE public.workflow_input_associations_id_seq OWNED BY public.workflo
 --
 
 CREATE TABLE public.workflow_inputs (
-                                        id bigint NOT NULL,
-                                        content_source_id bigint,
-                                        team_id bigint,
-                                        user_id bigint,
-                                        name text,
-                                        description text,
-                                        content text,
-                                        data json,
-                                        tokens bigint DEFAULT '0'::bigint,
-                                        is_url boolean DEFAULT false,
-                                        team_object_id bigint,
-                                        team_object_type text,
-                                        created_at timestamp with time zone,
-                                        updated_at timestamp with time zone,
-                                        deleted_at timestamp with time zone
+    id bigint NOT NULL,
+    content_source_id bigint,
+    team_id bigint,
+    user_id bigint,
+    name public.citext,
+    description public.citext,
+    content public.citext,
+    data json,
+    tokens bigint DEFAULT '0'::bigint,
+    is_url boolean DEFAULT false,
+    team_object_id bigint,
+    team_object_type public.citext,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 
@@ -5132,19 +5367,19 @@ ALTER SEQUENCE public.workflow_inputs_id_seq OWNED BY public.workflow_inputs.id;
 --
 
 CREATE TABLE public.workflow_listeners (
-                                           id bigint NOT NULL,
-                                           team_id bigint,
-                                           workflow_run_id bigint,
-                                           listener_type text,
-                                           listener_id bigint,
-                                           workflow_type text,
-                                           status text DEFAULT 'pending'::character varying,
-                                           metadata json,
-                                           started_at timestamp without time zone,
-                                           completed_at timestamp without time zone,
-                                           failed_at timestamp without time zone,
-                                           created_at timestamp without time zone,
-                                           updated_at timestamp without time zone
+    id bigint NOT NULL,
+    team_id bigint,
+    workflow_run_id bigint,
+    listener_type text,
+    listener_id bigint,
+    workflow_type text,
+    status text DEFAULT 'pending'::character varying,
+    metadata json,
+    started_at timestamp without time zone,
+    completed_at timestamp without time zone,
+    failed_at timestamp without time zone,
+    created_at timestamp without time zone,
+    updated_at timestamp without time zone
 );
 
 
@@ -5172,15 +5407,15 @@ ALTER SEQUENCE public.workflow_listeners_id_seq OWNED BY public.workflow_listene
 --
 
 CREATE TABLE public.workflow_nodes (
-                                       id bigint NOT NULL,
-                                       resource_package_import_id character(36) DEFAULT NULL::bpchar,
-                                       workflow_definition_id bigint,
-                                       task_definition_id bigint,
-                                       name text,
-                                       settings json,
-                                       params json,
-                                       created_at timestamp with time zone,
-                                       updated_at timestamp with time zone
+    id bigint NOT NULL,
+    resource_package_import_id character(36) DEFAULT NULL::bpchar,
+    workflow_definition_id bigint,
+    task_definition_id bigint,
+    name public.citext,
+    settings json,
+    params json,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone
 );
 
 
@@ -5208,19 +5443,20 @@ ALTER SEQUENCE public.workflow_nodes_id_seq OWNED BY public.workflow_nodes.id;
 --
 
 CREATE TABLE public.workflow_runs (
-                                      id bigint NOT NULL,
-                                      workflow_definition_id bigint,
-                                      name text DEFAULT ''::character varying,
-                                      status text DEFAULT 'Pending'::character varying,
-                                      started_at timestamp with time zone,
-                                      stopped_at timestamp with time zone,
-                                      completed_at timestamp with time zone,
-                                      failed_at timestamp with time zone,
-                                      has_run_all_tasks boolean DEFAULT false,
-                                      created_at timestamp with time zone,
-                                      updated_at timestamp with time zone,
-                                      deleted_at timestamp with time zone,
-                                      active_workers_count integer DEFAULT 0
+    id bigint NOT NULL,
+    workflow_definition_id bigint,
+    name public.citext DEFAULT ''::character varying,
+    status public.citext DEFAULT 'Pending'::character varying,
+    started_at timestamp with time zone,
+    stopped_at timestamp with time zone,
+    completed_at timestamp with time zone,
+    failed_at timestamp with time zone,
+    has_run_all_tasks boolean DEFAULT false,
+    created_at timestamp with time zone,
+    updated_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    active_workers_count integer DEFAULT 0,
+    error_count integer DEFAULT 0 NOT NULL
 );
 
 
@@ -5727,6 +5963,13 @@ ALTER TABLE ONLY public.api_logs ALTER COLUMN id SET DEFAULT nextval('public.api
 
 
 --
+-- Name: artifact_category_definitions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.artifact_category_definitions ALTER COLUMN id SET DEFAULT nextval('public.artifact_category_definitions_id_seq'::regclass);
+
+
+--
 -- Name: artifactables id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -5780,13 +6023,6 @@ ALTER TABLE ONLY public.billing_history ALTER COLUMN id SET DEFAULT nextval('pub
 --
 
 ALTER TABLE ONLY public.content_sources ALTER COLUMN id SET DEFAULT nextval('public.content_sources_id_seq'::regclass);
-
-
---
--- Name: demand_templates id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.demand_templates ALTER COLUMN id SET DEFAULT nextval('public.demand_templates_id_seq'::regclass);
 
 
 --
@@ -5965,6 +6201,13 @@ ALTER TABLE ONLY public.subscriptions ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: tags id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags ALTER COLUMN id SET DEFAULT nextval('public.tags_id_seq'::regclass);
+
+
+--
 -- Name: task_artifact_filters id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6063,6 +6306,27 @@ ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_
 
 
 --
+-- Name: template_definition_history id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history ALTER COLUMN id SET DEFAULT nextval('public.template_definition_history_id_seq'::regclass);
+
+
+--
+-- Name: template_definitions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions ALTER COLUMN id SET DEFAULT nextval('public.demand_templates_id_seq'::regclass);
+
+
+--
+-- Name: template_variables id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables ALTER COLUMN id SET DEFAULT nextval('public.template_variables_id_seq'::regclass);
+
+
+--
 -- Name: ui_demand_workflow_runs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -6109,6 +6373,13 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 --
 
 ALTER TABLE ONLY public.workflow_api_invocations ALTER COLUMN id SET DEFAULT nextval('public.workflow_api_invocations_id_seq'::regclass);
+
+
+--
+-- Name: workflow_builder_chats id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats ALTER COLUMN id SET DEFAULT nextval('public.workflow_builder_chats_id_seq'::regclass);
 
 
 --
@@ -6161,6 +6432,22 @@ ALTER TABLE ONLY public.workflow_runs ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: artifact_category_definitions artifact_category_definitions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.artifact_category_definitions
+    ADD CONSTRAINT artifact_category_definitions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: artifact_category_definitions artifact_category_definitions_schema_definition_id_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.artifact_category_definitions
+    ADD CONSTRAINT artifact_category_definitions_schema_definition_id_name_unique UNIQUE (schema_definition_id, name);
+
+
+--
 -- Name: assistant_actions assistant_actions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6193,10 +6480,10 @@ ALTER TABLE ONLY public.billing_history
 
 
 --
--- Name: demand_templates demand_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_pkey PRIMARY KEY (id);
 
 
@@ -6737,6 +7024,22 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: tags tags_team_id_name_type_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_team_id_name_type_unique UNIQUE (team_id, name, type);
+
+
+--
 -- Name: task_queue_types task_queue_types_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -6750,6 +7053,30 @@ ALTER TABLE ONLY public.task_queue_types
 
 ALTER TABLE ONLY public.task_queue_types
     ADD CONSTRAINT task_queue_types_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_definition_history template_definition_history_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: template_variables template_variables_demand_template_id_name_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_demand_template_id_name_unique UNIQUE (template_definition_id, name);
+
+
+--
+-- Name: template_variables template_variables_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_pkey PRIMARY KEY (id);
 
 
 --
@@ -6790,6 +7117,14 @@ ALTER TABLE ONLY public.usage_event_subscribers
 
 ALTER TABLE ONLY public.usage_event_subscribers
     ADD CONSTRAINT usage_event_subscribers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_pkey PRIMARY KEY (id);
 
 
 --
@@ -6859,6 +7194,13 @@ CREATE INDEX agent_thread_messages_api_response_id_index ON public.agent_thread_
 
 
 --
+-- Name: api_logs_will_timeout_at_status_code_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX api_logs_will_timeout_at_status_code_index ON public.api_logs USING btree (will_timeout_at, status_code);
+
+
+--
 -- Name: assistant_actions_agent_thread_id_status_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -6877,6 +7219,13 @@ CREATE INDEX assistant_actions_target_type_target_id_index ON public.assistant_a
 --
 
 CREATE INDEX assistant_actions_team_id_context_index ON public.assistant_actions USING btree (team_id, context);
+
+
+--
+-- Name: audit_request_team_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX audit_request_team_id_index ON public.audit_request USING btree (team_id);
 
 
 --
@@ -6946,21 +7295,28 @@ CREATE INDEX billing_history_team_id_type_index ON public.billing_history USING 
 -- Name: demand_templates_category_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_category_index ON public.demand_templates USING btree (category);
+CREATE INDEX demand_templates_category_index ON public.template_definitions USING btree (category);
 
 
 --
 -- Name: demand_templates_team_id_is_active_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_team_id_is_active_index ON public.demand_templates USING btree (team_id, is_active);
+CREATE INDEX demand_templates_team_id_is_active_index ON public.template_definitions USING btree (team_id, is_active);
 
 
 --
 -- Name: demand_templates_team_id_user_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX demand_templates_team_id_user_id_index ON public.demand_templates USING btree (team_id, user_id);
+CREATE INDEX demand_templates_team_id_user_id_index ON public.template_definitions USING btree (team_id, user_id);
+
+
+--
+-- Name: error_log_entry_audit_request_id_is_retryable_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX error_log_entry_audit_request_id_is_retryable_index ON public.error_log_entry USING btree (audit_request_id, is_retryable);
 
 
 --
@@ -7401,7 +7757,7 @@ CREATE INDEX idx_27879_resource_package_imports_resource_package_version_id_ ON 
 -- Name: idx_27879_resource_package_imports_team_uuid_foreign; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_27879_resource_package_imports_team_uuid_foreign ON public.resource_package_imports USING btree (team_uuid);
+CREATE INDEX idx_27879_resource_package_imports_team_uuid_foreign ON public.resource_package_imports USING btree (creator_team_uuid);
 
 
 --
@@ -7958,6 +8314,20 @@ CREATE INDEX idx_28149_task_workflow_runs_task_workflow_id_foreign ON public.wor
 
 
 --
+-- Name: idx_agent_threads_collaboratable; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_agent_threads_collaboratable ON public.agent_threads USING btree (collaboratable_type, collaboratable_id);
+
+
+--
+-- Name: job_dispatch_team_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX job_dispatch_team_id_index ON public.job_dispatch USING btree (team_id);
+
+
+--
 -- Name: payment_methods_stripe_payment_method_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8000,6 +8370,34 @@ CREATE INDEX subscriptions_team_id_status_index ON public.subscriptions USING bt
 
 
 --
+-- Name: taggables_tag_id_taggable_type_taggable_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX taggables_tag_id_taggable_type_taggable_id_index ON public.taggables USING btree (tag_id, taggable_type, taggable_id);
+
+
+--
+-- Name: taggables_taggable_type_taggable_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX taggables_taggable_type_taggable_id_index ON public.taggables USING btree (taggable_type, taggable_id);
+
+
+--
+-- Name: tags_team_id_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tags_team_id_name_index ON public.tags USING btree (team_id, name);
+
+
+--
+-- Name: tags_team_id_type_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX tags_team_id_type_index ON public.tags USING btree (team_id, type);
+
+
+--
 -- Name: task_processes_is_ready_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8007,10 +8405,66 @@ CREATE INDEX task_processes_is_ready_index ON public.task_processes USING btree 
 
 
 --
+-- Name: task_processes_operation_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX task_processes_operation_index ON public.task_processes USING btree (operation);
+
+
+--
+-- Name: task_processes_parent_task_process_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX task_processes_parent_task_process_id_index ON public.task_processes USING btree (parent_task_process_id);
+
+
+--
+-- Name: task_runs_parent_task_run_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX task_runs_parent_task_run_id_index ON public.task_runs USING btree (parent_task_run_id);
+
+
+--
 -- Name: teams_stripe_customer_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX teams_stripe_customer_id_index ON public.teams USING btree (stripe_customer_id);
+
+
+--
+-- Name: template_definition_history_template_definition_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_definition_history_template_definition_id_index ON public.template_definition_history USING btree (template_definition_id);
+
+
+--
+-- Name: template_definitions_schema_definition_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_definitions_schema_definition_id_index ON public.template_definitions USING btree (schema_definition_id);
+
+
+--
+-- Name: template_variables_deleted_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_deleted_at_index ON public.template_variables USING btree (deleted_at);
+
+
+--
+-- Name: template_variables_demand_template_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_demand_template_id_index ON public.template_variables USING btree (template_definition_id);
+
+
+--
+-- Name: template_variables_name_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX template_variables_name_index ON public.template_variables USING btree (name);
 
 
 --
@@ -8063,6 +8517,48 @@ CREATE INDEX usage_summaries_object_type_object_id_int_index ON public.usage_sum
 
 
 --
+-- Name: workflow_builder_chats_agent_thread_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_agent_thread_id_index ON public.workflow_builder_chats USING btree (agent_thread_id);
+
+
+--
+-- Name: workflow_builder_chats_created_at_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_created_at_index ON public.workflow_builder_chats USING btree (created_at);
+
+
+--
+-- Name: workflow_builder_chats_current_workflow_run_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_current_workflow_run_id_index ON public.workflow_builder_chats USING btree (current_workflow_run_id);
+
+
+--
+-- Name: workflow_builder_chats_team_id_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_team_id_status_index ON public.workflow_builder_chats USING btree (team_id, status);
+
+
+--
+-- Name: workflow_builder_chats_workflow_definition_id_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_workflow_definition_id_index ON public.workflow_builder_chats USING btree (workflow_definition_id);
+
+
+--
+-- Name: workflow_builder_chats_workflow_input_id_status_index; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX workflow_builder_chats_workflow_input_id_status_index ON public.workflow_builder_chats USING btree (workflow_input_id, status);
+
+
+--
 -- Name: workflow_input_associations_associable_type_associable_id_index; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -8098,11 +8594,27 @@ CREATE INDEX workflow_listeners_type_status_index ON public.workflow_listeners U
 
 
 --
+-- Name: agent_thread_messages agent_thread_messages_api_log_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.agent_thread_messages
+    ADD CONSTRAINT agent_thread_messages_api_log_id_foreign FOREIGN KEY (api_log_id) REFERENCES public.api_logs(id) ON DELETE SET NULL;
+
+
+--
 -- Name: agent_thread_runs agent_thread_runs_mcp_server_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.agent_thread_runs
     ADD CONSTRAINT agent_thread_runs_mcp_server_id_foreign FOREIGN KEY (mcp_server_id) REFERENCES public.mcp_servers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: artifact_category_definitions artifact_category_definitions_schema_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.artifact_category_definitions
+    ADD CONSTRAINT artifact_category_definitions_schema_definition_id_foreign FOREIGN KEY (schema_definition_id) REFERENCES public.schema_definitions(id) ON DELETE CASCADE;
 
 
 --
@@ -8154,26 +8666,26 @@ ALTER TABLE ONLY public.billing_history
 
 
 --
--- Name: demand_templates demand_templates_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_stored_file_id_foreign FOREIGN KEY (stored_file_id) REFERENCES public.stored_files(id) ON DELETE CASCADE;
 
 
 --
--- Name: demand_templates demand_templates_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
 
 
 --
--- Name: demand_templates demand_templates_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: template_definitions demand_templates_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.demand_templates
+ALTER TABLE ONLY public.template_definitions
     ADD CONSTRAINT demand_templates_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
@@ -8194,6 +8706,14 @@ ALTER TABLE ONLY public.payment_methods
 
 
 --
+-- Name: resource_package_imports resource_package_imports_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.resource_package_imports
+    ADD CONSTRAINT resource_package_imports_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
 -- Name: subscriptions subscriptions_subscription_plan_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8210,11 +8730,99 @@ ALTER TABLE ONLY public.subscriptions
 
 
 --
+-- Name: taggables taggables_tag_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.taggables
+    ADD CONSTRAINT taggables_tag_id_foreign FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
+
+
+--
+-- Name: tags tags_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
 -- Name: task_definitions task_definitions_task_queue_type_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.task_definitions
     ADD CONSTRAINT task_definitions_task_queue_type_id_foreign FOREIGN KEY (task_queue_type_id) REFERENCES public.task_queue_types(id) ON DELETE SET NULL;
+
+
+--
+-- Name: task_processes task_processes_parent_task_process_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_processes
+    ADD CONSTRAINT task_processes_parent_task_process_id_foreign FOREIGN KEY (parent_task_process_id) REFERENCES public.task_processes(id) ON DELETE SET NULL;
+
+
+--
+-- Name: task_runs task_runs_parent_task_run_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.task_runs
+    ADD CONSTRAINT task_runs_parent_task_run_id_foreign FOREIGN KEY (parent_task_run_id) REFERENCES public.task_runs(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definition_history template_definition_history_template_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_template_definition_id_foreign FOREIGN KEY (template_definition_id) REFERENCES public.template_definitions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: template_definition_history template_definition_history_user_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definition_history
+    ADD CONSTRAINT template_definition_history_user_id_foreign FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definitions template_definitions_building_job_dispatch_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions
+    ADD CONSTRAINT template_definitions_building_job_dispatch_id_foreign FOREIGN KEY (building_job_dispatch_id) REFERENCES public.job_dispatch(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definitions template_definitions_preview_stored_file_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions
+    ADD CONSTRAINT template_definitions_preview_stored_file_id_foreign FOREIGN KEY (preview_stored_file_id) REFERENCES public.stored_files(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_definitions template_definitions_schema_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_definitions
+    ADD CONSTRAINT template_definitions_schema_definition_id_foreign FOREIGN KEY (schema_definition_id) REFERENCES public.schema_definitions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_variables template_variables_team_object_schema_association_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_team_object_schema_association_id_foreign FOREIGN KEY (team_object_schema_association_id) REFERENCES public.schema_associations(id) ON DELETE SET NULL;
+
+
+--
+-- Name: template_variables template_variables_template_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.template_variables
+    ADD CONSTRAINT template_variables_template_definition_id_foreign FOREIGN KEY (template_definition_id) REFERENCES public.template_definitions(id) ON DELETE CASCADE;
 
 
 --
@@ -8274,6 +8882,46 @@ ALTER TABLE ONLY public.usage_event_subscribers
 
 
 --
+-- Name: workflow_builder_chats workflow_builder_chats_agent_thread_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_agent_thread_id_foreign FOREIGN KEY (agent_thread_id) REFERENCES public.agent_threads(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_current_workflow_run_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_current_workflow_run_id_foreign FOREIGN KEY (current_workflow_run_id) REFERENCES public.workflow_runs(id) ON DELETE SET NULL;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_team_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_team_id_foreign FOREIGN KEY (team_id) REFERENCES public.teams(id) ON DELETE CASCADE;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_workflow_definition_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_workflow_definition_id_foreign FOREIGN KEY (workflow_definition_id) REFERENCES public.workflow_definitions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: workflow_builder_chats workflow_builder_chats_workflow_input_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.workflow_builder_chats
+    ADD CONSTRAINT workflow_builder_chats_workflow_input_id_foreign FOREIGN KEY (workflow_input_id) REFERENCES public.workflow_inputs(id) ON DELETE CASCADE;
+
+
+--
 -- Name: workflow_input_associations workflow_input_associations_workflow_input_id_foreign; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -8301,13 +8949,13 @@ ALTER TABLE ONLY public.workflow_listeners
 -- PostgreSQL database dump complete
 --
 
-\unrestrict RhqIz5XjA00x8XDqQxdETMAdwts2JkSziMJjNVO2TZ9tF34oXPJU7EjV1GyPbVK
+\unrestrict FeGbLhwXTrzWMgDDWtL9OcX3qfzgbfJSbxBr9LTHrnNoo1ZrgJ8SdiGCGeJr9Dg
 
 --
 -- PostgreSQL database dump
 --
 
-\restrict U1ngHLdj8H7JvqwvQqRekuPb3fkfTIfL89r5iUJkmr9FdDlavuKENEwwEbQGmhL
+\restrict wK0VfFGdPblgKRHGtO99DKHlyLghXuITV0jKLJ8xCwMLrxY5f2aiAfwksH5wiva
 
 -- Dumped from database version 15.14 (Debian 15.14-1.pgdg13+1)
 -- Dumped by pg_dump version 15.14 (Ubuntu 15.14-1.pgdg22.04+1)
@@ -8526,6 +9174,47 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 276	2025_08_30_221836_create_usage_event_subscribers_table	61
 283	2025_09_03_004959_add_meta_to_schema_definitions_table	62
 316	2025_09_05_051812_create_workflow_input_associations_table	63
+317	0006_danx_job_dispatch_add_team_id	64
+318	0007_danx_audit_request_add_team_id	64
+319	0008_danx_create_teams_table	64
+320	0009_danx_create_team_user_table	64
+321	0010_danx_audit_request_add_counters	64
+322	0011_danx_api_logs_timeout_tracking	64
+323	0012_danx_job_dispatch_rename_timeout_at	64
+324	2025_09_07_232503_add_prompt_to_task_definitions	64
+325	2025_09_08_033853_create_workflow_builder_chats_table	64
+326	2025_09_16_043454_make_team_id_nullable_in_workflow_builder_chats	64
+327	2025_09_29_150526_add_error_counts_to_task_processes_and_runs	64
+328	2025_10_09_195657_create_template_variables_table	64
+329	2025_10_13_161712_remove_template_variables_json_from_demand_templates	64
+330	2025_10_15_205454_add_error_count_to_workflow_runs_table	64
+331	2025_10_21_032838_add_aggregate_strategies_and_formatting_to_template_variables	64
+332	2025_10_21_070308_add_team_id_to_resource_packages	64
+333	2025_11_22_210147_add_operation_to_task_processes_table	64
+334	2025_12_01_201927_create_tags_table	64
+335	2025_12_01_201952_create_taggables_table	64
+336	2025_12_06_090817_add_meta_to_task_definitions_table	64
+337	2025_12_06_094356_add_meta_to_task_runs_table	64
+338	2025_12_07_204410_add_is_surfaced_to_error_log_entry_table	64
+339	2025_12_07_231614_rename_is_surfaced_to_is_retryable_in_error_log_entry_table	64
+340	2025_12_07_235133_drop_mime_type_from_artifacts_table	64
+341	2025_12_13_230741_add_api_log_id_to_agent_thread_messages_table	64
+342	2026_01_06_174114_update_transcode_names_to_match_constants	64
+343	2026_01_12_194748_rename_demand_templates_to_template_definitions_table	64
+344	2026_01_12_194801_rename_demand_template_id_to_template_definition_id_in_template_variables	64
+345	2026_01_12_200251_add_html_fields_to_template_definitions_table	64
+346	2026_01_12_200353_create_template_definition_history_table	64
+347	2026_01_12_201816_add_collaboratable_to_agent_threads_table	64
+348	2026_01_13_000000_add_building_fields_to_template_definitions	64
+349	2026_01_14_000000_add_active_task_processes_count_to_task_runs	64
+350	2026_01_14_172435_add_relation_counters_to_template_definitions_table	64
+351	2026_01_15_000000_add_citext_extension_and_convert_columns	64
+352	2026_01_16_221559_add_parent_task_process_id_to_task_processes	64
+353	2026_01_17_000000_add_parent_task_run_id_to_task_runs	64
+354	2026_01_21_000001_remove_is_cancelled_from_template_definitions	64
+355	2026_01_21_183801_add_schema_definition_id_to_template_definitions	64
+356	2026_01_21_200000_create_artifact_category_definitions_table	64
+357	2026_01_22_044158_add_verbatim_mapping_type_to_template_variables	64
 \.
 
 
@@ -8533,12 +9222,12 @@ COPY public.migrations (id, migration, batch) FROM stdin;
 -- Name: migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.migrations_id_seq', 316, true);
+SELECT pg_catalog.setval('public.migrations_id_seq', 357, true);
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict U1ngHLdj8H7JvqwvQqRekuPb3fkfTIfL89r5iUJkmr9FdDlavuKENEwwEbQGmhL
+\unrestrict wK0VfFGdPblgKRHGtO99DKHlyLghXuITV0jKLJ8xCwMLrxY5f2aiAfwksH5wiva
 
