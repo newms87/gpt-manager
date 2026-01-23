@@ -8,8 +8,13 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\FileOrganization\FileOrganizationMergeService;
+use App\Services\Task\FileOrganization\MergeProcessService;
+use App\Services\Task\FileOrganization\WindowConfigArtifactService;
+use App\Services\Task\FileOrganization\WindowProcessService;
+use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionMethod;
 use Tests\AuthenticatedTestCase;
 use Tests\Traits\SetUpTeamTrait;
 
@@ -51,7 +56,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function initial_process_completes_without_meta_fields(): void
     {
-        // Given: TaskRun with initial TaskProcess (no meta fields)
+        // Given: TaskRun with initial TaskProcess (Default Task operation, no meta fields)
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
@@ -59,9 +64,10 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $taskProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'name'        => 'Initial Process',
-            'meta'        => [], // Empty meta - no window_files or is_merge_process
+            'operation'   => BaseTaskRunner::OPERATION_DEFAULT,
+            'meta'        => [],
             'is_ready'    => true,
-            'started_at'  => now(), // Process must be started to be completed
+            'started_at'  => now(),
         ]);
 
         // When: Running the initial process (simulating production bug scenario)
@@ -80,45 +86,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function initial_process_creates_window_processes_with_meta(): void
-    {
-        // NOTE: This test verifies window processes have the correct structure
-        // The initial process run() creates window processes which dispatch real jobs
-        // We test the window creation logic through the merge service (tested in FileOrganizationMergeServiceTest)
-        // and verify the structure window processes should have
-
-        // Given: A window process structure that should be created by initial process run()
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create a window process with the expected meta structure
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'name'        => 'Window Process',
-            'meta'        => [
-                'window_files' => [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                ],
-                'window_start' => 0,
-                'window_end'   => 2,
-                'window_index' => 0,
-            ],
-        ]);
-
-        // Then: Verify window process has all required meta fields
-        $this->assertIsArray($windowProcess->meta['window_files'], 'window_files should be an array');
-        $this->assertIsInt($windowProcess->meta['window_start'], 'window_start should be an integer');
-        $this->assertIsInt($windowProcess->meta['window_end'], 'window_end should be an integer');
-        $this->assertCount(3, $windowProcess->meta['window_files'], 'Should have correct number of files');
-
-        // Verify this structure is what run() expects
-        $this->assertNotNull($windowProcess->meta['window_files']);
-    }
-
-    #[Test]
     public function initial_process_validates_window_size_constraints(): void
     {
         // Given: TaskDefinition with invalid window size
@@ -134,6 +101,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         $initialProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
+            'operation'   => BaseTaskRunner::OPERATION_DEFAULT,
             'meta'        => [],
             'started_at'  => now(),
         ]);
@@ -156,6 +124,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         $initialProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
+            'operation'   => BaseTaskRunner::OPERATION_DEFAULT,
             'meta'        => [],
             'started_at'  => now(),
         ]);
@@ -173,63 +142,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
             ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
             ->get();
         $this->assertCount(0, $windowProcesses, 'No window processes should be created');
-    }
-
-    #[Test]
-    public function window_process_runs_with_meta(): void
-    {
-        // Given: TaskProcess WITH window_files meta
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create input artifacts for the window
-        $artifacts = [];
-        for ($i = 0; $i < 3; $i++) {
-            $artifact = Artifact::factory()->create([
-                'team_id'  => $this->user->currentTeam->id,
-                'position' => $i,
-            ]);
-            $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-            $artifacts[] = $artifact;
-        }
-
-        // Create window process with meta
-        $windowFiles = array_map(fn($a) => ['file_id' => $a->id, 'position' => $a->position], $artifacts);
-
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'name'        => 'Window Process',
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => $windowFiles,
-                'window_start' => 0,
-                'window_end'   => 2,
-                'window_index' => 0,
-            ],
-            'is_ready' => true,
-        ]);
-
-        // Associate input artifacts to process
-        foreach ($artifacts as $artifact) {
-            $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-        }
-
-        // This test verifies the structure is correct - actual agent communication would be mocked
-        // We're testing that the meta fields are properly read and the process doesn't error
-
-        // When: Check that window process has correct structure
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
-
-        // Then: Window process has all required meta fields
-        $this->assertIsArray($windowProcess->meta['window_files']);
-        $this->assertEquals(0, $windowProcess->meta['window_start']);
-        $this->assertEquals(2, $windowProcess->meta['window_end']);
-        $this->assertCount(3, $windowProcess->meta['window_files']);
-
-        // Verify input artifacts are accessible
-        $inputArtifacts = $windowProcess->inputArtifacts()->get();
-        $this->assertCount(3, $inputArtifacts);
     }
 
     #[Test]
@@ -471,50 +383,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function run_method_handles_all_three_code_paths(): void
-    {
-        // This test verifies the three code paths in run() method exist and are reachable
-
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Path 1: Initial process (no meta)
-        $initialProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'meta'        => [],
-        ]);
-
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($initialProcess);
-        $this->runner->run();
-
-        $initialProcess->refresh();
-        $this->assertNotNull($initialProcess->completed_at, 'Initial process should complete');
-
-        // Path 2: Window process (has window_files)
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'meta'        => [
-                'window_files' => [['file_id' => 1, 'position' => 0]],
-            ],
-        ]);
-
-        // We can't fully test window process without mocking agent, but we verify the path exists
-        $this->assertNotNull($windowProcess->meta['window_files']);
-
-        // Path 3: Merge process (has merge operation)
-        $mergeProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_MERGE,
-            'meta'        => [],
-        ]);
-
-        // We can't fully test merge without output artifacts, but we verify the path exists
-        $this->assertEquals(FileOrganizationTaskRunner::OPERATION_MERGE, $mergeProcess->operation);
-    }
-
-    #[Test]
-    public function prepareRun_creates_initial_process_with_initialize_operation(): void
+    public function prepareRun_does_not_create_processes(): void
     {
         // Given: A new task run
         $taskRun = TaskRun::factory()->create([
@@ -525,44 +394,37 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $this->runner->setTaskRun($taskRun);
         $this->runner->prepareRun();
 
-        // Then: An initial process is created with operation = 'initialize'
-        $initialProcess = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_INITIALIZE)
-            ->first();
-
-        $this->assertNotNull($initialProcess, 'Initial process should be created');
-        $this->assertEquals(FileOrganizationTaskRunner::OPERATION_INITIALIZE, $initialProcess->operation);
-        $this->assertEquals('Initialize File Organization', $initialProcess->name);
-        $this->assertTrue($initialProcess->is_ready, 'Initial process should be ready to run');
+        // Then: No processes are created (TaskRunnerService::prepareTaskProcesses handles that)
+        $this->assertEquals(0, $taskRun->taskProcesses()->count(), 'prepareRun should not create any processes');
     }
 
     #[Test]
-    public function run_routes_to_createWindowProcesses_when_operation_is_initialize(): void
+    public function run_routes_to_createWindowProcesses_when_operation_is_default(): void
     {
-        // Given: TaskProcess with operation = 'initialize' and NO artifacts
+        // Given: TaskProcess with operation = 'Default Task' and NO artifacts
         // (avoiding agent dispatch which causes test failures)
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
 
-        $initialProcess = TaskProcess::factory()->create([
+        $defaultProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_INITIALIZE,
+            'operation'   => BaseTaskRunner::OPERATION_DEFAULT,
             'meta'        => [],
             'started_at'  => now(),
         ]);
 
-        // When: Running the process with operation = 'initialize'
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($initialProcess);
+        // When: Running the process with operation = 'Default Task'
+        $this->runner->setTaskRun($taskRun)->setTaskProcess($defaultProcess);
 
         // Verify operation field is correctly set for routing
-        $this->assertEquals(FileOrganizationTaskRunner::OPERATION_INITIALIZE, $initialProcess->operation);
+        $this->assertEquals(BaseTaskRunner::OPERATION_DEFAULT, $defaultProcess->operation);
 
         // Run the process (will complete since no artifacts to process)
         $this->runner->run();
 
         // Then: Process completes successfully (operation routing works)
-        $this->assertNotNull($initialProcess->fresh()->completed_at, 'Initial process should complete');
+        $this->assertNotNull($defaultProcess->fresh()->completed_at, 'Default process should complete');
     }
 
     #[Test]
@@ -678,145 +540,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         // Then: Verify the operation field is used for routing to merge
         $this->assertEquals(FileOrganizationTaskRunner::OPERATION_MERGE, $mergeProcess->operation);
-    }
-
-    #[Test]
-    public function database_query_finds_window_processes_by_operation(): void
-    {
-        // Given: TaskRun with mixed process types
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create initial process
-        $initialProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_INITIALIZE,
-            'meta'        => [],
-        ]);
-
-        // Create window processes
-        $window1 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => ['window_files' => []],
-        ]);
-
-        $window2 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => ['window_files' => []],
-        ]);
-
-        // Create merge process
-        $mergeProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_MERGE,
-            'meta'        => [],
-        ]);
-
-        // When: Querying for window processes using operation field
-        $windowProcesses = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
-            ->get();
-
-        // Then: Only window processes are returned
-        $this->assertCount(2, $windowProcesses);
-        $this->assertTrue($windowProcesses->contains($window1));
-        $this->assertTrue($windowProcesses->contains($window2));
-        $this->assertFalse($windowProcesses->contains($initialProcess));
-        $this->assertFalse($windowProcesses->contains($mergeProcess));
-    }
-
-    #[Test]
-    public function database_query_finds_merge_processes_by_operation(): void
-    {
-        // Given: TaskRun with mixed process types
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create window process
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => ['window_files' => []],
-        ]);
-
-        // Create merge processes
-        $mergeProcess1 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_MERGE,
-            'meta'        => [],
-        ]);
-
-        $mergeProcess2 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_MERGE,
-            'meta'        => [],
-        ]);
-
-        // When: Querying for merge processes using operation field
-        $mergeProcesses = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_MERGE)
-            ->get();
-
-        // Then: Only merge processes are returned
-        $this->assertCount(2, $mergeProcesses);
-        $this->assertTrue($mergeProcesses->contains($mergeProcess1));
-        $this->assertTrue($mergeProcesses->contains($mergeProcess2));
-        $this->assertFalse($mergeProcesses->contains($windowProcess));
-    }
-
-    #[Test]
-    public function createWindowProcesses_sets_operation_field_on_created_processes(): void
-    {
-        // This test verifies the operation field is set during window process creation
-        // We test this by examining the existing afterAllProcessesCompleted test which creates window processes
-
-        // Given: TaskRun with completed window processes
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create window processes with the operation field (as would be created by createWindowProcesses)
-        $window1 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => 1, 'position' => 0]],
-                'window_start' => 0,
-                'window_end'   => 2,
-            ],
-        ]);
-
-        $window2 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => 2, 'position' => 1]],
-                'window_start' => 1,
-                'window_end'   => 3,
-            ],
-        ]);
-
-        // Then: Verify window processes have operation = 'comparison_window'
-        $this->assertEquals(FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW, $window1->operation);
-        $this->assertEquals(FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW, $window2->operation);
-
-        // Verify they can be queried by operation
-        $windowProcesses = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
-            ->get();
-
-        $this->assertCount(2, $windowProcesses);
-
-        foreach ($windowProcesses as $process) {
-            $this->assertEquals(FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW, $process->operation);
-            $this->assertIsArray($process->meta['window_files']);
-            $this->assertArrayHasKey('window_start', $process->meta);
-            $this->assertArrayHasKey('window_end', $process->meta);
-        }
     }
 
     #[Test]
@@ -1145,47 +868,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function setupAgentThread_handles_empty_array_page_number_without_error(): void
-    {
-        // This test reproduces the production error: "Undefined array key 0"
-        // Production error occurred at line 451 when page_number was an empty array
-        // The fix ensures we check isset($pageNumber[0]) before accessing it
-
-        // GIVEN: TaskRun with artifact where page_number is an empty array (production bug scenario)
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        $artifact = Artifact::factory()->create([
-            'team_id'  => $this->user->currentTeam->id,
-            'position' => 1,
-            'meta'     => [
-                'page_number' => [], // Empty array - caused "Undefined array key 0" in production
-            ],
-        ]);
-
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => $artifact->id, 'position' => $artifact->position]],
-                'window_start' => 1,
-                'window_end'   => 1,
-            ],
-        ]);
-
-        $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-
-        // WHEN: setupAgentThread is called with empty array page_number
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
-        $agentThread = $this->runner->setupAgentThread([$artifact]);
-
-        // THEN: Agent thread should be created successfully without "Undefined array key 0" error
-        $this->assertNotNull($agentThread);
-        $this->assertEquals($this->agent->id, $agentThread->agent_id);
-    }
-
-    #[Test]
     public function setupAgentThread_never_reuses_existing_thread(): void
     {
         // CRITICAL BUG FIX TEST: Verifies agent threads are NEVER reused
@@ -1273,46 +955,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function validateNoDuplicatePages_throws_error_when_page_appears_in_multiple_groups(): void
     {
-        // GIVEN: TaskRun with a comparison window that will return duplicate pages
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create artifacts with StoredFiles
-        $artifacts = [];
-        for ($i = 61; $i <= 65; $i++) {
-            $artifact = Artifact::factory()->create([
-                'team_id'  => $this->user->currentTeam->id,
-                'position' => $i - 61,
-            ]);
-
-            $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
-                'page_number' => $i,
-                'filename'    => "page-$i.jpg",
-                'filepath'    => "test/page-$i.jpg",
-                'disk'        => 'public',
-                'mime'        => 'image/jpeg',
-            ]);
-
-            $artifact->storedFiles()->attach($storedFile->id);
-            $artifacts[] = $artifact;
-        }
-
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => array_map(fn($a, $i) => ['file_id' => $a->id, 'page_number' => $i + 61], $artifacts, array_keys($artifacts)),
-                'window_start' => 61,
-                'window_end'   => 65,
-            ],
-        ]);
-
-        foreach ($artifacts as $artifact) {
-            $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-        }
-
-        // Create an artifact with JSON content that has page 62 in BOTH groups (like the example)
+        // GIVEN: JSON content that has page 62 in BOTH groups
         $invalidJsonContent = [
             'groups' => [
                 [
@@ -1350,22 +993,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function validateNoDuplicatePages_passes_when_no_duplicates(): void
     {
-        // GIVEN: TaskRun with valid grouping (no duplicate pages)
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [],
-                'window_start' => 1,
-                'window_end'   => 5,
-            ],
-        ]);
-
-        // Valid JSON content - each page appears in exactly one group
+        // GIVEN: Valid JSON content where each page appears in exactly one group
         $validJsonContent = [
             'groups' => [
                 [
@@ -1398,26 +1026,15 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function validateNoDuplicatePages_handles_old_integer_format(): void
+    public function validateNoDuplicatePages_handles_integer_format(): void
     {
-        // GIVEN: JSON content using old integer format (backwards compatibility)
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [],
-        ]);
-
-        // Old format with duplicate page
+        // GIVEN: JSON content using integer format for file references with a duplicate page
         $oldFormatWithDuplicate = [
             'groups' => [
                 [
                     'name'        => 'Group A',
                     'description' => 'First group',
-                    'files'       => [1, 2, 3], // Old integer format
+                    'files'       => [1, 2, 3], // Integer format
                 ],
                 [
                     'name'        => 'Group B',
@@ -1427,12 +1044,120 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
             ],
         ];
 
-        // WHEN/THEN: Should throw error for duplicate even with old format
+        // WHEN/THEN: Should throw error for duplicate with integer format
         $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
         $this->expectExceptionMessage('Page 3 appears in multiple groups');
 
         // Call the ValidationService directly
         app(\App\Services\Task\FileOrganization\ValidationService::class)->validateNoDuplicatePages($oldFormatWithDuplicate);
+    }
+
+    #[Test]
+    public function comparison_window_throws_validation_error_when_config_artifact_missing(): void
+    {
+        // This test verifies that a Comparison Window process created WITHOUT a Window Config artifact
+        // (e.g., old processes created before the artifact pattern was implemented) throws a clear
+        // ValidationError instead of a cryptic TypeError.
+
+        // GIVEN: TaskRun with a Comparison Window process WITHOUT a Window Config artifact
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        // Create input artifacts (simulating pages)
+        $artifacts = [];
+        for ($i = 0; $i < 3; $i++) {
+            $artifact = Artifact::factory()->create([
+                'team_id'  => $this->user->currentTeam->id,
+                'position' => $i,
+            ]);
+            $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+            $artifacts[] = $artifact;
+        }
+
+        // Create a Comparison Window process WITHOUT attaching a Window Config artifact
+        // This simulates old/misconfigured processes
+        $windowProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'name'        => 'Comparison Window 1',
+            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
+            'meta'        => [], // Empty meta
+            'is_ready'    => true,
+            'started_at'  => now(),
+        ]);
+
+        // Attach page artifacts as input (but NOT a Window Config artifact)
+        foreach ($artifacts as $artifact) {
+            $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+        }
+
+        // WHEN/THEN: Running the process should throw a ValidationError, not a TypeError
+        $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
+        $this->expectExceptionMessage('Window Config artifact is required');
+
+        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
+        $this->runner->run();
+    }
+
+    #[Test]
+    public function createWindowProcesses_attaches_config_artifact_retrievable_by_getWindowFiles(): void
+    {
+        // This test verifies the full round-trip: WindowProcessService creates window processes
+        // with config artifacts, and WindowConfigArtifactService can retrieve the config from them.
+        // The bug was that the config artifact was being attached with the wrong category,
+        // making getWindowFiles() unable to find it via inputArtifacts().
+
+        // GIVEN: TaskRun with input artifacts that have page numbers
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $artifacts = [];
+        for ($i = 1; $i <= 4; $i++) {
+            $artifact = Artifact::factory()->create([
+                'team_id'  => $this->user->currentTeam->id,
+                'position' => $i,
+            ]);
+
+            $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+                'page_number' => $i,
+                'filename'    => "page-$i.jpg",
+                'filepath'    => "test/page-$i.jpg",
+                'disk'        => 'public',
+                'mime'        => 'image/jpeg',
+            ]);
+
+            $artifact->storedFiles()->attach($storedFile->id);
+            $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+            $artifacts[] = $artifact;
+        }
+
+        // WHEN: WindowProcessService creates window processes
+        app(WindowProcessService::class)->createWindowProcesses($taskRun, 3);
+
+        // THEN: Window processes should be created
+        $windowProcesses = $taskRun->taskProcesses()
+            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
+            ->get();
+
+        $this->assertGreaterThan(0, $windowProcesses->count(), 'Window processes should be created');
+
+        // AND: Each window process should have a config artifact retrievable by getWindowFiles()
+        $configService = app(WindowConfigArtifactService::class);
+
+        foreach ($windowProcesses as $windowProcess) {
+            $windowFiles = $configService->getWindowFiles($windowProcess);
+
+            $this->assertNotNull($windowFiles, "Window process {$windowProcess->id} should have retrievable window config");
+            $this->assertIsArray($windowFiles, 'window_files should be an array');
+            $this->assertGreaterThanOrEqual(2, count($windowFiles), 'Each window should have at least 2 files');
+
+            // Verify each file entry has the expected structure
+            foreach ($windowFiles as $file) {
+                $this->assertArrayHasKey('file_id', $file, 'Each window file should have file_id');
+                $this->assertArrayHasKey('page_number', $file, 'Each window file should have page_number');
+            }
+        }
     }
 
     #[Test]
@@ -1530,5 +1255,205 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals($inputArtifacts[0]->id, $uncertainArtifacts[0]->id);
         $this->assertEquals($inputArtifacts[1]->id, $uncertainArtifacts[1]->id);
         $this->assertEquals($inputArtifacts[2]->id, $uncertainArtifacts[2]->id);
+    }
+
+    #[Test]
+    public function merge_config_getters_return_defaults_when_not_set(): void
+    {
+        // GIVEN: TaskDefinition with NO merge config keys in task_runner_config
+        // (setUp already creates taskDefinition with only 'comparison_window_size')
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $this->runner->setTaskRun($taskRun);
+
+        // WHEN/THEN: Each getter should return its default value
+        $this->assertProtectedMethodReturns('getGroupConfidenceThreshold', FileOrganizationTaskRunner::DEFAULT_GROUP_CONFIDENCE_THRESHOLD);
+        $this->assertProtectedMethodReturns('getAdjacencyBoundaryThreshold', FileOrganizationTaskRunner::DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD);
+        $this->assertProtectedMethodReturns('getBlankPageHandling', FileOrganizationTaskRunner::DEFAULT_BLANK_PAGE_HANDLING);
+        $this->assertProtectedMethodReturns('getNameSimilarityThreshold', FileOrganizationTaskRunner::DEFAULT_NAME_SIMILARITY_THRESHOLD);
+        $this->assertProtectedMethodReturns('getMaxSlidingIterations', FileOrganizationTaskRunner::DEFAULT_MAX_SLIDING_ITERATIONS);
+    }
+
+    #[Test]
+    public function merge_config_getters_return_custom_values_when_set(): void
+    {
+        // GIVEN: TaskDefinition with ALL merge config keys set to custom values
+        $this->taskDefinition->task_runner_config = [
+            'comparison_window_size'       => 3,
+            'group_confidence_threshold'   => 5,
+            'adjacency_boundary_threshold' => 4,
+            'blank_page_handling'          => 'separate_group',
+            'name_similarity_threshold'    => 0.9,
+            'max_sliding_iterations'       => 10,
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $this->runner->setTaskRun($taskRun);
+
+        // WHEN/THEN: Each getter should return the custom value
+        $this->assertProtectedMethodReturns('getGroupConfidenceThreshold', 5);
+        $this->assertProtectedMethodReturns('getAdjacencyBoundaryThreshold', 4);
+        $this->assertProtectedMethodReturns('getBlankPageHandling', 'separate_group');
+        $this->assertProtectedMethodReturns('getNameSimilarityThreshold', 0.9);
+        $this->assertProtectedMethodReturns('getMaxSlidingIterations', 10);
+    }
+
+    #[Test]
+    public function getMergeConfig_returns_complete_config_with_defaults(): void
+    {
+        // GIVEN: TaskDefinition with NO merge config keys
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $this->runner->setTaskRun($taskRun);
+
+        // WHEN: Calling getMergeConfig
+        $method = new ReflectionMethod($this->runner, 'getMergeConfig');
+        $config = $method->invoke($this->runner);
+
+        // THEN: All 5 keys should be present with default values
+        $this->assertIsArray($config);
+        $this->assertCount(5, $config);
+        $this->assertEquals(FileOrganizationTaskRunner::DEFAULT_GROUP_CONFIDENCE_THRESHOLD, $config['group_confidence_threshold']);
+        $this->assertEquals(FileOrganizationTaskRunner::DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD, $config['adjacency_boundary_threshold']);
+        $this->assertEquals(FileOrganizationTaskRunner::DEFAULT_BLANK_PAGE_HANDLING, $config['blank_page_handling']);
+        $this->assertEquals(FileOrganizationTaskRunner::DEFAULT_NAME_SIMILARITY_THRESHOLD, $config['name_similarity_threshold']);
+        $this->assertEquals(FileOrganizationTaskRunner::DEFAULT_MAX_SLIDING_ITERATIONS, $config['max_sliding_iterations']);
+    }
+
+    #[Test]
+    public function getMergeConfig_returns_complete_config_with_custom_values(): void
+    {
+        // GIVEN: TaskDefinition with custom merge config values
+        $this->taskDefinition->task_runner_config = [
+            'group_confidence_threshold'   => 4,
+            'adjacency_boundary_threshold' => 3,
+            'blank_page_handling'          => 'ignore',
+            'name_similarity_threshold'    => 0.85,
+            'max_sliding_iterations'       => 7,
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $this->runner->setTaskRun($taskRun);
+
+        // WHEN: Calling getMergeConfig
+        $method = new ReflectionMethod($this->runner, 'getMergeConfig');
+        $config = $method->invoke($this->runner);
+
+        // THEN: All 5 keys should be present with custom values
+        $this->assertEquals(4, $config['group_confidence_threshold']);
+        $this->assertEquals(3, $config['adjacency_boundary_threshold']);
+        $this->assertEquals('ignore', $config['blank_page_handling']);
+        $this->assertEquals(0.85, $config['name_similarity_threshold']);
+        $this->assertEquals(7, $config['max_sliding_iterations']);
+    }
+
+    #[Test]
+    public function runMergeProcess_passes_config_to_mergeWindowResults(): void
+    {
+        // GIVEN: TaskDefinition with custom merge config values
+        $this->taskDefinition->task_runner_config = [
+            'group_confidence_threshold'   => 5,
+            'adjacency_boundary_threshold' => 4,
+            'blank_page_handling'          => 'separate_group',
+            'name_similarity_threshold'    => 0.95,
+            'max_sliding_iterations'       => 8,
+        ];
+        $this->taskDefinition->save();
+
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        // Create a completed window process with output artifact
+        $inputArtifact = Artifact::factory()->create([
+            'team_id'  => $this->user->currentTeam->id,
+            'position' => 0,
+        ]);
+        $taskRun->inputArtifacts()->attach($inputArtifact->id, ['category' => 'input']);
+
+        $windowArtifact = Artifact::factory()->create([
+            'team_id'      => $this->user->currentTeam->id,
+            'json_content' => [
+                'files' => [
+                    [
+                        'page_number'           => 0,
+                        'group_name'            => 'test_group',
+                        'group_name_confidence' => 5,
+                        'group_explanation'     => 'Test',
+                        'belongs_to_previous'   => null,
+                    ],
+                ],
+            ],
+            'meta' => [
+                'window_start' => 0,
+                'window_end'   => 0,
+                'window_files' => [['file_id' => $inputArtifact->id, 'page_number' => 0]],
+            ],
+        ]);
+
+        $windowProcess = TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
+            'started_at'   => now()->subMinutes(5),
+            'completed_at' => now(),
+        ]);
+        $windowProcess->outputArtifacts()->attach($windowArtifact->id);
+
+        $mergeProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => FileOrganizationTaskRunner::OPERATION_MERGE,
+            'is_ready'    => true,
+        ]);
+
+        // Mock FileOrganizationMergeService to capture the config argument
+        $capturedConfig = null;
+        $mockMergeService = $this->mock(FileOrganizationMergeService::class, function ($mock) use (&$capturedConfig) {
+            $mock->shouldReceive('mergeWindowResults')
+                ->once()
+                ->withArgs(function ($artifacts, $config) use (&$capturedConfig) {
+                    $capturedConfig = $config;
+
+                    return true;
+                })
+                ->andReturn([
+                    'groups'                => [],
+                    'file_to_group_mapping' => [],
+                ]);
+        });
+
+        // WHEN: Running the merge process
+        $this->runner->setTaskRun($taskRun)->setTaskProcess($mergeProcess);
+        $this->runner->run();
+
+        // THEN: The config should have been passed through to mergeWindowResults
+        $this->assertNotNull($capturedConfig, 'Config should be passed to mergeWindowResults');
+        $this->assertEquals(5, $capturedConfig['group_confidence_threshold']);
+        $this->assertEquals(4, $capturedConfig['adjacency_boundary_threshold']);
+        $this->assertEquals('separate_group', $capturedConfig['blank_page_handling']);
+        $this->assertEquals(0.95, $capturedConfig['name_similarity_threshold']);
+        $this->assertEquals(8, $capturedConfig['max_sliding_iterations']);
+    }
+
+    /**
+     * Helper to invoke a protected method on the runner and assert its return value.
+     */
+    private function assertProtectedMethodReturns(string $methodName, mixed $expected): void
+    {
+        $method = new ReflectionMethod($this->runner, $methodName);
+        $actual = $method->invoke($this->runner);
+        $this->assertEquals($expected, $actual, "Expected $methodName to return " . var_export($expected, true));
     }
 }

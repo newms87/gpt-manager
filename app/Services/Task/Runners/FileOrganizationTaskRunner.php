@@ -9,6 +9,7 @@ use App\Services\Task\FileOrganization\MergeProcessService;
 use App\Services\Task\FileOrganization\PageContextService;
 use App\Services\Task\FileOrganization\ResolutionOrchestrator;
 use App\Services\Task\FileOrganization\ValidationService;
+use App\Services\Task\FileOrganization\WindowConfigArtifactService;
 use App\Services\Task\FileOrganization\WindowProcessService;
 use App\Services\Task\TaskProcessDispatcherService;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -17,73 +18,42 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 {
     public const string RUNNER_NAME = 'File Organization';
 
-    public const string OPERATION_INITIALIZE = 'Initialize',
-        OPERATION_COMPARISON_WINDOW          = 'Comparison Window',
+    public const string OPERATION_COMPARISON_WINDOW = 'Comparison Window',
         OPERATION_MERGE                      = 'Merge',
         OPERATION_LOW_CONFIDENCE_RESOLUTION  = 'Low Confidence Resolution',
         OPERATION_NULL_GROUP_RESOLUTION      = 'Null Group Resolution',
         OPERATION_DUPLICATE_GROUP_RESOLUTION = 'Duplicate Group Resolution';
 
-    // Configuration defaults
-    public const int DEFAULT_COMPARISON_WINDOW_SIZE = 5;
+    public const int DEFAULT_COMPARISON_WINDOW_SIZE = 5,
+        DEFAULT_COMPARISON_WINDOW_OVERLAP           = 2;
 
-    public const int DEFAULT_COMPARISON_WINDOW_OVERLAP = 2;
-
-    public const int DEFAULT_GROUP_CONFIDENCE_THRESHOLD = 3;
-
-    public const int DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD = 2;
-
-    public const int DEFAULT_MAX_SLIDING_ITERATIONS = 3;
-
-    public const float DEFAULT_NAME_SIMILARITY_THRESHOLD = 0.7;
+    public const int DEFAULT_GROUP_CONFIDENCE_THRESHOLD = 3,
+        DEFAULT_ADJACENCY_BOUNDARY_THRESHOLD            = 2,
+        DEFAULT_MAX_SLIDING_ITERATIONS                  = 3;
 
     public const string DEFAULT_BLANK_PAGE_HANDLING = 'join_previous';
 
+    public const float DEFAULT_NAME_SIMILARITY_THRESHOLD = 0.7;
+
     public function run(): void
     {
-        // Check if this is a comparison window process
-        if ($this->taskProcess->operation === self::OPERATION_COMPARISON_WINDOW) {
-            static::logDebug('Running comparison window process');
-            $windowFiles = $this->taskProcess->meta['window_files'] ?? null;
-            $this->runComparisonWindow($windowFiles);
+        match ($this->taskProcess->operation) {
+            BaseTaskRunner::OPERATION_DEFAULT       => $this->runInitializeOperation(),
+            self::OPERATION_COMPARISON_WINDOW       => $this->runComparisonWindow(),
+            self::OPERATION_MERGE                   => $this->runMergeProcess(),
+            self::OPERATION_LOW_CONFIDENCE_RESOLUTION   => $this->runLowConfidenceResolution(),
+            self::OPERATION_NULL_GROUP_RESOLUTION        => $this->runNullGroupResolution(),
+            self::OPERATION_DUPLICATE_GROUP_RESOLUTION   => $this->runDuplicateGroupResolution(),
+        };
+    }
 
-            return;
-        }
-
-        // Check if this is a merge process
-        if ($this->taskProcess->operation === self::OPERATION_MERGE) {
-            static::logDebug('Running merge process');
-            $this->runMergeProcess();
-
-            return;
-        }
-
-        // Check if this is a low confidence resolution process
-        if ($this->taskProcess->operation === self::OPERATION_LOW_CONFIDENCE_RESOLUTION) {
-            static::logDebug('Running low confidence resolution process');
-            $this->runLowConfidenceResolution();
-
-            return;
-        }
-
-        // Check if this is a null group resolution process
-        if ($this->taskProcess->operation === self::OPERATION_NULL_GROUP_RESOLUTION) {
-            static::logDebug('Running null group resolution process');
-            $this->runNullGroupResolution();
-
-            return;
-        }
-
-        // Check if this is a duplicate group resolution process
-        if ($this->taskProcess->operation === self::OPERATION_DUPLICATE_GROUP_RESOLUTION) {
-            static::logDebug('Running duplicate group resolution process');
-            $this->runDuplicateGroupResolution();
-
-            return;
-        }
-
-        // This is the initial process - create window processes
-        static::logDebug('Initial process - creating window processes');
+    /**
+     * Run the initialization operation.
+     * Creates window processes for comparing adjacent files.
+     */
+    protected function runInitializeOperation(): void
+    {
+        static::logDebug('Running initialization - creating window processes');
         $this->createWindowProcesses();
         $this->complete();
     }
@@ -92,8 +62,17 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      * Run a comparison window process.
      * Compares adjacent files in the window and groups them.
      */
-    protected function runComparisonWindow(array $windowFiles): void
+    protected function runComparisonWindow(): void
     {
+        $windowFiles = app(WindowConfigArtifactService::class)->getWindowFiles($this->taskProcess);
+
+        if ($windowFiles === null) {
+            throw new ValidationError(
+                'Window Config artifact is required for Comparison Window process. ' .
+                'The process may have been created before config artifacts were implemented.'
+            );
+        }
+
         $inputArtifacts = $this->taskProcess->inputArtifacts;
 
         // Filter artifacts to only those in the window
@@ -115,11 +94,12 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         // Validate that no page appears in multiple groups
         app(ValidationService::class)->validateNoDuplicatePages($artifact->json_content);
 
-        // Store window metadata in the artifact
+        // Store window metadata in the artifact (retrieved from config artifact)
+        $windowConfig         = app(WindowConfigArtifactService::class)->getWindowConfigFromProcess($this->taskProcess);
         $meta                 = $artifact->meta ?? [];
-        $meta['window_start'] = $this->taskProcess->meta['window_start'];
-        $meta['window_end']   = $this->taskProcess->meta['window_end'];
-        $meta['window_files'] = $this->taskProcess->meta['window_files'];
+        $meta['window_start'] = $windowConfig['window_start'];
+        $meta['window_end']   = $windowConfig['window_end'];
+        $meta['window_files'] = $windowConfig['window_files'];
         $artifact->meta       = $meta;
         $artifact->save();
 
@@ -139,7 +119,7 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     protected function runMergeProcess(): void
     {
         // Use MergeProcessService to handle the merge
-        $result = app(MergeProcessService::class)->runMergeProcess($this->taskRun, $this->taskProcess);
+        $result = app(MergeProcessService::class)->runMergeProcess($this->taskRun, $this->taskProcess, $this->getMergeConfig());
 
         // Store metadata in task process
         if (!empty($result['metadata'])) {
@@ -170,25 +150,13 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Prepare the task run.
-     * Creates an initial process that will create window processes when it runs.
+     * The standard TaskRunnerService::prepareTaskProcesses() creates a Default Task process automatically.
      */
+    #[\Override]
     public function prepareRun(): void
     {
         parent::prepareRun();
         static::logDebug('File organization task run prepared');
-
-        // Create the initial process that will create window processes
-        $initialProcess = $this->taskRun->taskProcesses()->create([
-            'name'      => 'Initialize File Organization',
-            'operation' => self::OPERATION_INITIALIZE,
-            'activity'  => 'Creating window processes for file comparison',
-            'meta'      => [],
-            'is_ready'  => true, // Ready to run immediately
-        ]);
-
-        $this->taskRun->updateRelationCounter('taskProcesses');
-
-        static::logDebug("Created initial process: {$initialProcess->id}");
     }
 
     /**
@@ -423,7 +391,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Get the group confidence threshold from configuration.
-     * Files with group_name_confidence BELOW this are candidates for adjacency-based resolution.
      */
     protected function getGroupConfidenceThreshold(): int
     {
@@ -432,7 +399,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Get the adjacency boundary threshold from configuration.
-     * Files with belongs_to_previous <= this are considered potential boundaries.
      */
     protected function getAdjacencyBoundaryThreshold(): int
     {
@@ -440,8 +406,23 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Get the maximum sliding iterations from configuration.
-     * Maximum agent calls per window (initial + slides).
+     * Get the blank page handling strategy from configuration.
+     */
+    protected function getBlankPageHandling(): string
+    {
+        return $this->config('blank_page_handling', self::DEFAULT_BLANK_PAGE_HANDLING);
+    }
+
+    /**
+     * Get the name similarity threshold from configuration.
+     */
+    protected function getNameSimilarityThreshold(): float
+    {
+        return (float) $this->config('name_similarity_threshold', self::DEFAULT_NAME_SIMILARITY_THRESHOLD);
+    }
+
+    /**
+     * Get the max sliding iterations from configuration.
      */
     protected function getMaxSlidingIterations(): int
     {
@@ -449,20 +430,16 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Get the name similarity threshold from configuration.
-     * How similar group names must be (0.0-1.0) to be considered for auto-merge.
+     * Get the merge configuration array to pass to MergeProcessService.
      */
-    protected function getNameSimilarityThreshold(): float
+    protected function getMergeConfig(): array
     {
-        return $this->config('name_similarity_threshold', self::DEFAULT_NAME_SIMILARITY_THRESHOLD);
-    }
-
-    /**
-     * Get the blank page handling strategy from configuration.
-     * Options: "join_previous", "create_blank_group", "discard"
-     */
-    protected function getBlankPageHandling(): string
-    {
-        return $this->config('blank_page_handling', self::DEFAULT_BLANK_PAGE_HANDLING);
+        return [
+            'group_confidence_threshold'  => $this->getGroupConfidenceThreshold(),
+            'adjacency_boundary_threshold' => $this->getAdjacencyBoundaryThreshold(),
+            'blank_page_handling'          => $this->getBlankPageHandling(),
+            'name_similarity_threshold'    => $this->getNameSimilarityThreshold(),
+            'max_sliding_iterations'       => $this->getMaxSlidingIterations(),
+        ];
     }
 }

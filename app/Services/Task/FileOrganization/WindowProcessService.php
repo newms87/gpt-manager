@@ -90,21 +90,29 @@ class WindowProcessService
         // Get artifacts for this window
         $windowArtifacts = $inputArtifacts->whereIn('id', $windowFileIds);
 
+        // Create window config artifact with all window metadata
+        // This ensures config survives process restarts (meta is not synced on restart, but input artifacts are)
+        $configArtifact = app(WindowConfigArtifactService::class)->createWindowConfigArtifact($taskRun, [
+            'window_files' => $windowFiles, // Contains page_number and file_id
+            'window_start' => $window['window_start'],
+            'window_end'   => $window['window_end'],
+            'window_index' => $window['window_index'],
+        ]);
+
         // Create the process directly (not using TaskProcessRunnerService::prepare to avoid agent setup)
+        // Note: meta is intentionally empty - config is stored in the artifact
         $taskProcess = $taskRun->taskProcesses()->create([
             'name'      => "Compare Files {$window['window_start']}-{$window['window_end']}",
             'operation' => 'Comparison Window',
             'activity'  => 'Comparing adjacent files in window',
-            'meta'      => [
-                'window_files' => $windowFiles, // Contains page_number and file_id
-                'window_start' => $window['window_start'],
-                'window_end'   => $window['window_end'],
-                'window_index' => $window['window_index'],
-            ],
+            'meta'      => [],
             'is_ready'  => true, // Ready to run immediately
         ]);
 
-        // Attach input artifacts to the window process
+        // Attach config artifact as input (will be synced on restart)
+        $taskProcess->inputArtifacts()->attach($configArtifact->id);
+
+        // Attach window artifacts to the window process
         foreach ($windowArtifacts as $artifact) {
             $taskProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
         }
@@ -186,19 +194,6 @@ class WindowProcessService
             static::logDebug('No files to create windows from');
 
             return [];
-        }
-
-        if ($windowSize < 2) {
-            static::logDebug('Window size must be at least 2');
-
-            return [];
-        }
-
-        if ($windowOverlap < 1 || $windowOverlap >= $windowSize) {
-            throw new ValidationError(
-                "Window overlap must be >= 1 and < window size ($windowSize). Got: $windowOverlap",
-                400
-            );
         }
 
         $windows   = [];

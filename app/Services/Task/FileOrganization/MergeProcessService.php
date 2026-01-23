@@ -24,7 +24,7 @@ class MergeProcessService
      * @param  TaskProcess  $taskProcess  The merge process
      * @return array Array containing output artifacts and metadata
      */
-    public function runMergeProcess(TaskRun $taskRun, TaskProcess $taskProcess): array
+    public function runMergeProcess(TaskRun $taskRun, TaskProcess $taskProcess, array $config = []): array
     {
         static::logDebug('Starting merge of window results');
 
@@ -48,7 +48,7 @@ class MergeProcessService
 
         // Merge the windows using the NEW adjacency-based algorithm
         $mergeService = app(FileOrganizationMergeService::class);
-        $mergeResult  = $mergeService->mergeWindowResults($windowArtifacts);
+        $mergeResult  = $mergeService->mergeWindowResults($windowArtifacts, $config);
         $finalGroups  = $mergeResult['groups'];
         $fileToGroup  = $mergeResult['file_to_group_mapping'];
 

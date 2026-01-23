@@ -25,12 +25,11 @@ class TaskRunnerService
     {
         static::logDebug("Prepare $taskDefinition");
 
-        $taskRun = $taskDefinition->taskRuns()->make([
+        $taskRun = $taskDefinition->taskRuns()->create([
             'status' => WorkflowStatesContract::STATUS_PENDING,
         ]);
 
         $taskRun->getRunner()->prepareRun();
-        $taskRun->save();
 
         return $taskRun;
     }
