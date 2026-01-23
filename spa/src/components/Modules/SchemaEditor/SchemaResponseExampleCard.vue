@@ -23,8 +23,8 @@
 	</div>
 </template>
 <script setup lang="ts">
+import { dxSchemaDefinition } from "@/components/Modules/SchemaEditor/config";
 import { CodeViewer } from "quasar-ui-danx";
-import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
 import { SchemaDefinition } from "@/types";
 import { FaSolidRobot as GenerateExampleIcon } from "danx-icon";
 import { ActionButton } from "quasar-ui-danx";

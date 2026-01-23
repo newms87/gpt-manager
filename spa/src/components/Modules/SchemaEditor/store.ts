@@ -1,4 +1,4 @@
-import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions/config";
+import { dxSchemaDefinition } from "@/components/Modules/SchemaEditor/config";
 import { SchemaDefinition } from "@/types";
 import { until } from "@vueuse/core";
 import { ListControlsPagination } from "quasar-ui-danx";

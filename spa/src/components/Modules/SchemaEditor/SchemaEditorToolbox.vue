@@ -112,14 +112,10 @@
     </div>
 </template>
 <script setup lang="ts">
+import { dxSchemaDefinition } from "@/components/Modules/SchemaEditor/config";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
-import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
-import {
-    loadSchemaDefinitions,
-    refreshSchemaDefinitions,
-    schemaDefinitions
-} from "@/components/Modules/Schemas/SchemaDefinitions/store";
+import { loadSchemaDefinitions, refreshSchemaDefinitions, schemaDefinitions } from "@/components/Modules/SchemaEditor/store";
 import { dxSchemaFragment } from "@/components/Modules/Schemas/SchemaFragments";
 import { routes } from "@/components/Modules/Schemas/SchemaFragments/config/routes";
 import { JsonSchema, SchemaDefinition, SchemaFragment } from "@/types";

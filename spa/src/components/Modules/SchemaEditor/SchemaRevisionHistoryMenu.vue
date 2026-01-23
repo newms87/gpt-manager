@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { routes } from "@/components/Modules/Schemas/SchemaDefinitions/config/routes";
+import { routes } from "@/components/Modules/SchemaEditor/config/routes";
 import { SchemaDefinition, SchemaDefinitionRevision } from "@/types";
 import { FaSolidClock as HistoryIcon } from "danx-icon";
 import { fDateTime } from "quasar-ui-danx";

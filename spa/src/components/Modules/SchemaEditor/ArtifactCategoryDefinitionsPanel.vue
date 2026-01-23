@@ -47,7 +47,7 @@
 
 <script setup lang="ts">
 import { apiUrls } from "@/api";
-import ArtifactCategoryDefinitionCard from "@/components/Modules/Schemas/SchemaDefinitions/Panels/ArtifactCategoryDefinitionCard.vue";
+import ArtifactCategoryDefinitionCard from "@/components/Modules/SchemaEditor/ArtifactCategoryDefinitionCard.vue";
 import { ArtifactCategoryDefinition, JsonSchema, SchemaDefinition } from "@/types";
 import { FaSolidLayerGroup as CategoryIcon } from "danx-icon";
 import { ActionButton, FlashMessages, ListTransition, request } from "quasar-ui-danx";

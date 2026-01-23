@@ -28,7 +28,7 @@ import {
 	isLoadingSchemaDefinitions,
 	loadSchemaDefinitions,
 	schemaDefinitions
-} from "@/components/Modules/Schemas/SchemaDefinitions/store";
+} from "@/components/Modules/SchemaEditor/store";
 import { SchemaDefinition, TaskDefinition } from "@/types";
 import { FaSolidDatabase as SchemaIcon } from "danx-icon";
 import { SelectionMenuField } from "quasar-ui-danx";

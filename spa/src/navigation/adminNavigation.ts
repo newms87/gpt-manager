@@ -4,7 +4,6 @@ import {
 	FaRegularFileLines as PromptsIcon,
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidCode as DeveloperToolsIcon,
-	FaSolidDatabase as SchemaDefinitionsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
 	FaSolidPallet as WorkflowDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
@@ -27,11 +26,6 @@ export default [
 		label: "Workflow Definitions",
 		icon: WorkflowDefinitionsIcon,
 		route: { name: "workflow-definitions" }
-	},
-	{
-		label: "Schema Definitions",
-		icon: SchemaDefinitionsIcon,
-		route: { name: "schema-definitions" }
 	},
 	{
 		label: "Prompt Directives",

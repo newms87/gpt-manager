@@ -18,8 +18,7 @@
 </template>
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
-import { dxSchemaDefinition } from "@/components/Modules/Schemas/SchemaDefinitions";
-import { schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
+import { dxSchemaDefinition, schemaDefinitions } from "@/components/Modules/SchemaEditor";
 import TeamObjectsList from "@/components/Modules/TeamObjects/TeamObjectsList";
 import { until } from "@vueuse/core";
 import { getItem, setItem } from "quasar-ui-danx";

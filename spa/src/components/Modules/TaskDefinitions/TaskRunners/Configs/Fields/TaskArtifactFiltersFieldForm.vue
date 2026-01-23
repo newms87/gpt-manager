@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
 
-import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/Schemas/SchemaDefinitions/store";
+import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/SchemaEditor/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { dxTaskArtifactFilter } from "@/components/Modules/TaskDefinitions/TaskArtifactFilters/config";
 import { TaskRunnerClasses } from "@/components/Modules/TaskDefinitions/TaskRunners";

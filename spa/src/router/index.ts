@@ -10,7 +10,6 @@ import {
 	LoginView,
 	PageNotFoundView,
 	PlaygroundView,
-	SchemaDefinitionsView,
 	TeamObjectsDemoView,
 	WorkflowDefinitionsView,
 	WorkflowInputsView
@@ -54,12 +53,6 @@ const router = createRouter({
 					name: "workflow-definitions",
 					component: WorkflowDefinitionsView,
 					meta: { title: "Workflow Definitions", type: "WorkflowDefinitionResource" }
-				},
-				{
-					path: "/schemas/definitions/:id?/:panel?",
-					name: "schema-definitions",
-					component: SchemaDefinitionsView,
-					meta: { title: "Schema Definitions", type: "SchemaDefinitionResource" }
 				},
 				{
 					path: "directives/:id?/:panel?",
