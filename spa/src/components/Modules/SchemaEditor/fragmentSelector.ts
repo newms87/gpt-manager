@@ -186,3 +186,15 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 		allowUpdate
 	};
 }
+
+/**
+ * Create a FragmentSelector for a model node without selecting any children.
+ * Used in "model-only" selection mode where the header checkbox adds the model
+ * to the selection but individual properties must be manually checked.
+ */
+export function selectModelOnly(schema: JsonSchema): FragmentSelector {
+	return {
+		type: schema.type,
+		children: {}
+	};
+}

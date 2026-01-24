@@ -32,26 +32,28 @@
 			/>
 		</div>
 
-		<!-- Fragment Selector Toggle -->
+		<!-- Fragment Selector -->
 		<div class="mb-3">
 			<div class="flex items-center space-x-2">
-				<ShowHideButton
-					v-model="isShowingSelector"
-					class="bg-slate-700"
-					tooltip="Select schema properties for this artifact category"
-				/>
 				<span class="text-sm text-slate-300">Fragment Selector</span>
-				<span v-if="selectedSummary" class="text-xs text-sky-400 ml-2">{{ selectedSummary }}</span>
-			</div>
-			<div v-if="isShowingSelector && schemaDefinition?.schema" class="mt-2 border border-slate-600 rounded p-2 max-h-64 overflow-y-auto">
-				<SchemaObject
-					:model-value="schemaDefinition.schema"
-					v-model:fragment-selector="localFragmentSelector"
-					readonly
-					selectable
-					class="min-w-48"
+				<span v-if="selectedSummary" class="text-xs text-sky-400">{{ selectedSummary }}</span>
+				<ActionButton
+					v-if="schemaDefinition?.schema"
+					type="edit"
+					label="Edit Selection"
+					color="sky"
+					size="xs"
+					class="ml-auto"
+					@click="isShowingSelector = true"
 				/>
 			</div>
+			<FragmentSelectorDialog
+				v-if="schemaDefinition?.schema"
+				:schema="schemaDefinition.schema"
+				v-model="localFragmentSelector"
+				v-model:showing="isShowingSelector"
+				selection-mode="recursive"
+			/>
 		</div>
 
 		<!-- Prompt -->
@@ -80,9 +82,9 @@
 </template>
 
 <script setup lang="ts">
-import SchemaObject from "@/components/Modules/SchemaEditor/SchemaObject";
+import FragmentSelectorDialog from "@/components/Modules/SchemaEditor/FragmentSelector/FragmentSelectorDialog.vue";
 import { ArtifactCategoryDefinition, FragmentSelector, SchemaDefinition } from "@/types";
-import { ActionButton, BooleanField, MarkdownEditor, ShowHideButton, TextField } from "quasar-ui-danx";
+import { ActionButton, BooleanField, MarkdownEditor, TextField } from "quasar-ui-danx";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useFragmentSelector } from "@/components/Modules/SchemaEditor/fragmentSelector";
 
