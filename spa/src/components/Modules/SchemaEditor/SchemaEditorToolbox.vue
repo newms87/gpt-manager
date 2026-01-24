@@ -5,7 +5,7 @@
                 :dialog="dialog"
                 :fragment-selector="activeFragment?.fragment_selector"
                 :readonly="!activeSchema || !isEditingSchema"
-                :hide-content="!isPreviewing && !isEditingSchema && !isEditingFragment"
+                :hide-content="(!isPreviewing && !isEditingSchema && !isEditingFragment) || activeToolboxTab === 'categories'"
                 :hide-actions="!activeSchema"
                 :schema-definition="activeSchema"
                 :loading="loading"
@@ -104,6 +104,23 @@
                         tooltip="Show Example Response"
                     />
                 </template>
+                <QTabs
+                    v-if="showArtifactCategories && activeSchema && isEditingSchema"
+                    v-model="activeToolboxTab"
+                    dense
+                    active-color="sky-300"
+                    indicator-color="sky-400"
+                    class="text-slate-300 mb-2"
+                >
+                    <QTab name="schema" label="Schema" />
+                    <QTab name="categories" label="Artifact Categories" />
+                </QTabs>
+
+                <ArtifactCategoryDefinitionsPanel
+                    v-if="activeToolboxTab === 'categories' && showArtifactCategories && activeSchema"
+                    :schema-definition="activeSchema"
+                />
+
                 <slot />
             </JSONSchemaEditor>
 
@@ -112,6 +129,7 @@
     </div>
 </template>
 <script setup lang="ts">
+import ArtifactCategoryDefinitionsPanel from "@/components/Modules/SchemaEditor/ArtifactCategoryDefinitionsPanel.vue";
 import { dxSchemaDefinition } from "@/components/Modules/SchemaEditor/config";
 import JSONSchemaEditor from "@/components/Modules/SchemaEditor/JSONSchemaEditor";
 import SchemaResponseExampleCard from "@/components/Modules/SchemaEditor/SchemaResponseExampleCard";
@@ -125,6 +143,7 @@ import {
     FaSolidPuzzlePiece as FragmentIcon
 } from "danx-icon";
 import { FlashMessages, SelectField, SelectionMenuField, ShowHideButton } from "quasar-ui-danx";
+import { QTab, QTabs } from "quasar";
 import { computed, onMounted, ref, shallowRef, watch } from "vue";
 
 const instanceId = Math.random().toString(36).substring(7);
@@ -138,6 +157,7 @@ const props = withDefaults(defineProps<{
     example?: boolean;
     loading?: boolean;
     toggleRawJson?: boolean;
+    showArtifactCategories?: boolean;
     buttonColor?: string;
     excludeSchemaIds?: string[] | number[];
     dialog?: boolean;
@@ -172,6 +192,7 @@ const isEditingSchema = defineModel<boolean>("editing");
 const isEditingFragment = defineModel<boolean>("selectingFragment");
 const isPreviewing = defineModel<boolean>("previewing");
 const isShowingExample = ref(false);
+const activeToolboxTab = ref("schema");
 
 const schemaFormatOptions = [
     { label: "JSON", value: "json" },

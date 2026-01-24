@@ -32,7 +32,7 @@ export interface ArtifactCategoryDefinition extends ActionTargetItem {
 	name: string;
 	label: string;
 	prompt: string;
-	fragment_selector: string[] | null;
+	fragment_selector: FragmentSelector | null;
 	editable: boolean;
 	deletable: boolean;
 }

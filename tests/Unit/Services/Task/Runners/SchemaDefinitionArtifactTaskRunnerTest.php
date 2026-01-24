@@ -165,13 +165,22 @@ class SchemaDefinitionArtifactTaskRunnerTest extends AuthenticatedTestCase
 
         $this->taskRun->inputArtifacts()->attach($inputArtifact->id);
 
-        // Create artifact category definition with fragment_selector pointing to providers
+        // Create artifact category definition with fragment_selector tree pointing to providers
         ArtifactCategoryDefinition::create([
             'schema_definition_id' => $this->schemaDefinition->id,
             'name'                 => 'provider-summary',
             'label'                => 'Provider Summary',
             'prompt'               => 'Generate a provider summary',
-            'fragment_selector'    => ['providers'],
+            'fragment_selector'    => [
+                'children' => [
+                    'providers' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         // Run prepareRun
@@ -469,13 +478,27 @@ class SchemaDefinitionArtifactTaskRunnerTest extends AuthenticatedTestCase
 
         $this->taskRun->inputArtifacts()->attach($inputArtifact->id);
 
-        // Create artifact category definition with nested fragment_selector
+        // Create artifact category definition with nested fragment_selector tree
         ArtifactCategoryDefinition::create([
             'schema_definition_id' => $this->schemaDefinition->id,
             'name'                 => 'contact-info',
             'label'                => 'Contact Info',
             'prompt'               => 'Generate contact information',
-            'fragment_selector'    => ['providers', 'contacts'],
+            'fragment_selector'    => [
+                'children' => [
+                    'providers' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'contacts' => [
+                                'type'     => 'array',
+                                'children' => [
+                                    'name' => ['type' => 'string'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         // Run prepareRun
@@ -507,13 +530,22 @@ class SchemaDefinitionArtifactTaskRunnerTest extends AuthenticatedTestCase
 
         $this->taskRun->inputArtifacts()->attach($inputArtifact->id);
 
-        // Create artifact category definition with fragment_selector pointing to non-existent relationship
+        // Create artifact category definition with fragment_selector tree pointing to non-existent relationship
         ArtifactCategoryDefinition::create([
             'schema_definition_id' => $this->schemaDefinition->id,
             'name'                 => 'provider-summary',
             'label'                => 'Provider Summary',
             'prompt'               => 'Generate a provider summary',
-            'fragment_selector'    => ['providers'],
+            'fragment_selector'    => [
+                'children' => [
+                    'providers' => [
+                        'type'     => 'array',
+                        'children' => [
+                            'name' => ['type' => 'string'],
+                        ],
+                    ],
+                ],
+            ],
         ]);
 
         // Run prepareRun

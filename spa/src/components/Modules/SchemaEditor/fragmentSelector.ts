@@ -139,6 +139,7 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 		if (!selection) return 0;
 
 		let count = 1;
+		if (!selection.children) return count;
 		for (const key of Object.keys(selection.children)) {
 			const childSchema = selection.children[key];
 
@@ -156,6 +157,7 @@ export function useFragmentSelector(fragmentSelector: Ref<FragmentSelector>, sch
 		if (!selection) return 0;
 
 		let count = 0;
+		if (!selection.children) return count;
 		for (const key of Object.keys(selection.children)) {
 			const childSchema = selection.children[key];
 

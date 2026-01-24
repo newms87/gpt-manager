@@ -36,7 +36,6 @@
 				<ArtifactCategoryDefinitionCard
 					:category="category"
 					:schema-definition="schemaDefinition"
-					:relationship-options="relationshipOptions"
 					@update="updateCategory"
 					@delete="deleteCategory"
 				/>
@@ -48,10 +47,10 @@
 <script setup lang="ts">
 import { apiUrls } from "@/api";
 import ArtifactCategoryDefinitionCard from "@/components/Modules/SchemaEditor/ArtifactCategoryDefinitionCard.vue";
-import { ArtifactCategoryDefinition, JsonSchema, SchemaDefinition } from "@/types";
+import { ArtifactCategoryDefinition, SchemaDefinition } from "@/types";
 import { FaSolidLayerGroup as CategoryIcon } from "danx-icon";
 import { ActionButton, FlashMessages, ListTransition, request } from "quasar-ui-danx";
-import { computed, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 
 const props = defineProps<{
 	schemaDefinition: SchemaDefinition;
@@ -62,49 +61,12 @@ const isLoading = ref(false);
 const isCreating = ref(false);
 
 /**
- * Extract relationship paths from the schema
- * Returns an array of options like [{ label: "providers", value: ["providers"] }]
- */
-const relationshipOptions = computed(() => {
-	const options: { label: string; value: string[] | null }[] = [
-		{ label: "(Root - TeamObject)", value: null }
-	];
-
-	const schema = props.schemaDefinition?.schema;
-	if (!schema?.properties) return options;
-
-	// Find array properties (relationships) in the schema
-	function findRelationships(obj: JsonSchema, path: string[] = []) {
-		if (!obj?.properties) return;
-
-		for (const [key, value] of Object.entries(obj.properties)) {
-			const currentPath = [...path, key];
-			if (value.type === "array") {
-				options.push({
-					label: currentPath.join(" > "),
-					value: currentPath
-				});
-				// Recurse into array items if they have properties
-				if (value.items?.properties) {
-					findRelationships(value.items, currentPath);
-				}
-			} else if (value.type === "object" && value.properties) {
-				findRelationships(value, currentPath);
-			}
-		}
-	}
-
-	findRelationships(schema);
-	return options;
-});
-
-/**
  * Load artifact category definitions for this schema
  */
 async function loadCategories() {
 	isLoading.value = true;
 	try {
-		const response = await request.get(apiUrls.schemas.artifactCategoryDefinitions, {
+		const response = await request.post(apiUrls.schemas.artifactCategoryDefinitions + "/list", {
 			filter: { schema_definition_id: props.schemaDefinition.id }
 		});
 		categories.value = response.data || [];
@@ -121,13 +83,16 @@ async function loadCategories() {
 async function createCategory() {
 	isCreating.value = true;
 	try {
-		const response = await request.post(apiUrls.schemas.artifactCategoryDefinitions, {
-			schema_definition_id: props.schemaDefinition.id,
-			name: "new_category",
-			label: "New Category",
-			prompt: "Describe how to generate this artifact...",
-			editable: true,
-			deletable: true
+		const response = await request.post(apiUrls.schemas.artifactCategoryDefinitions + "/apply-action", {
+			action: "create",
+			data: {
+				schema_definition_id: props.schemaDefinition.id,
+				name: "new_category",
+				label: "New Category",
+				prompt: "Describe how to generate this artifact...",
+				editable: true,
+				deletable: true
+			}
 		});
 		if (response.item) {
 			categories.value.push(response.item);
@@ -144,11 +109,14 @@ async function createCategory() {
  */
 async function updateCategory(category: ArtifactCategoryDefinition, data: Partial<ArtifactCategoryDefinition>) {
 	try {
-		await request.patch(`${apiUrls.schemas.artifactCategoryDefinitions}/${category.id}`, data);
-		// Update local state
+		const response = await request.post(`${apiUrls.schemas.artifactCategoryDefinitions}/${category.id}/apply-action`, {
+			action: "update",
+			data
+		});
+		// Update local state from response
 		const index = categories.value.findIndex(c => c.id === category.id);
 		if (index !== -1) {
-			categories.value[index] = { ...categories.value[index], ...data };
+			categories.value[index] = response.item || { ...categories.value[index], ...data };
 		}
 	} catch (e) {
 		FlashMessages.error("Failed to update artifact category");
@@ -160,7 +128,9 @@ async function updateCategory(category: ArtifactCategoryDefinition, data: Partia
  */
 async function deleteCategory(category: ArtifactCategoryDefinition) {
 	try {
-		await request.delete(`${apiUrls.schemas.artifactCategoryDefinitions}/${category.id}`);
+		await request.post(`${apiUrls.schemas.artifactCategoryDefinitions}/${category.id}/apply-action`, {
+			action: "delete"
+		});
 		categories.value = categories.value.filter(c => c.id !== category.id);
 	} catch (e) {
 		FlashMessages.error("Failed to delete artifact category");

@@ -8,6 +8,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Models\TeamObject\TeamObject;
 use App\Repositories\ThreadRepository;
+use App\Services\Task\DataExtraction\FragmentSelectorService;
 use App\Services\Task\TaskProcessDispatcherService;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
@@ -218,7 +219,8 @@ class SchemaDefinitionArtifactTaskRunner extends AgentThreadTaskRunner
     /**
      * Resolve target TeamObjects based on the fragment_selector.
      * If fragment_selector is null, returns the root TeamObject.
-     * Otherwise, traverses the relationship path to find related TeamObjects.
+     * Otherwise, uses FragmentSelectorService to extract the nesting path from the tree
+     * and traverses the relationship path to find related TeamObjects.
      */
     protected function resolveTargetTeamObjects(ArtifactCategoryDefinition $categoryDefinition, TeamObject $rootTeamObject): Collection
     {
@@ -229,9 +231,16 @@ class SchemaDefinitionArtifactTaskRunner extends AgentThreadTaskRunner
             return collect([$rootTeamObject]);
         }
 
-        // The fragment_selector is a path array like ["providers"] that points to a relationship
-        // Traverse the path to get related TeamObjects
-        return $this->traverseRelationshipPath($rootTeamObject, $fragmentSelector);
+        // Extract the relationship path from the fragment_selector tree structure
+        $path = app(FragmentSelectorService::class)->getNestingKeys($fragmentSelector);
+
+        // If the tree has no nesting keys, target is the root TeamObject
+        if (empty($path)) {
+            return collect([$rootTeamObject]);
+        }
+
+        // Traverse the relationship path to find related TeamObjects
+        return $this->traverseRelationshipPath($rootTeamObject, $path);
     }
 
     /**

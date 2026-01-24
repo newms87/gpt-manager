@@ -8,6 +8,7 @@
 			can-select
 			previewable
 			toggle-raw-json
+			show-artifact-categories
 			@update:model-value="onSelectSchemaDefinition"
 		/>
 
