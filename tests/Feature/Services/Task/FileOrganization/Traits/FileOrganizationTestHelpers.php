@@ -96,23 +96,10 @@ trait FileOrganizationTestHelpers
      */
     protected function createWindowArtifact(int $windowStart, int $windowEnd, array $files): Artifact
     {
-        // Create window_files metadata
-        $windowFiles = array_map(function ($file) {
-            return [
-                'file_id'     => $file['page_number'], // Use page_number as file_id for simplicity
-                'page_number' => $file['page_number'],
-            ];
-        }, $files);
-
         return Artifact::factory()->create([
             'team_id'      => $this->user->currentTeam->id,
             'json_content' => [
-                'files' => $files, // NEW flat format: files array directly
-            ],
-            'meta' => [
-                'window_start' => $windowStart,
-                'window_end'   => $windowEnd,
-                'window_files' => $windowFiles,
+                'files' => $files, // Flat format: files array directly
             ],
         ]);
     }

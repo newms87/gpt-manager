@@ -8,8 +8,6 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\FileOrganization\FileOrganizationMergeService;
-use App\Services\Task\FileOrganization\MergeProcessService;
-use App\Services\Task\FileOrganization\WindowConfigArtifactService;
 use App\Services\Task\FileOrganization\WindowProcessService;
 use App\Services\Task\Runners\BaseTaskRunner;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
@@ -192,15 +190,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
                     ],
                 ],
             ],
-            'meta' => [
-                'window_start' => 0,
-                'window_end'   => 2,
-                'window_files' => [
-                    ['file_id' => $inputArtifacts[0]->id, 'page_number' => 0],
-                    ['file_id' => $inputArtifacts[1]->id, 'page_number' => 1],
-                    ['file_id' => $inputArtifacts[2]->id, 'page_number' => 2],
-                ],
-            ],
         ]);
 
         $windowArtifact2 = Artifact::factory()->create([
@@ -223,19 +212,24 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
                     ],
                 ],
             ],
-            'meta' => [
-                'window_start' => 3,
-                'window_end'   => 4,
-                'window_files' => [
-                    ['file_id' => $inputArtifacts[3]->id, 'page_number' => 3],
-                    ['file_id' => $inputArtifacts[4]->id, 'page_number' => 4],
-                ],
-            ],
         ]);
 
-        // Associate as output artifacts
-        $taskRun->outputArtifacts()->attach($windowArtifact1->id, ['category' => 'output']);
-        $taskRun->outputArtifacts()->attach($windowArtifact2->id, ['category' => 'output']);
+        // Create window processes and attach artifacts as outputs (simulating completed processes)
+        $windowProcess1 = TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
+            'started_at'   => now()->subMinutes(5),
+            'completed_at' => now(),
+        ]);
+        $windowProcess1->outputArtifacts()->attach($windowArtifact1->id);
+
+        $windowProcess2 = TaskProcess::factory()->create([
+            'task_run_id'  => $taskRun->id,
+            'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
+            'started_at'   => now()->subMinutes(5),
+            'completed_at' => now(),
+        ]);
+        $windowProcess2->outputArtifacts()->attach($windowArtifact2->id);
 
         // Create merge process with meta
         $mergeProcess = TaskProcess::factory()->create([
@@ -252,11 +246,15 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         // Then: Merge process has required operation field
         $this->assertEquals(FileOrganizationTaskRunner::OPERATION_MERGE, $mergeProcess->operation);
 
-        // Verify window artifacts exist for merging
-        $windowArtifacts = $taskRun->outputArtifacts()
-            ->whereNotNull('meta->window_start')
-            ->whereNotNull('meta->window_end')
+        // Verify window artifacts exist for merging (via window processes)
+        $windowProcesses = $taskRun->taskProcesses()
+            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
             ->get();
+
+        $windowArtifacts = collect();
+        foreach ($windowProcesses as $wp) {
+            $windowArtifacts = $windowArtifacts->merge($wp->outputArtifacts);
+        }
 
         $this->assertCount(2, $windowArtifacts);
 
@@ -282,11 +280,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $window1 = TaskProcess::factory()->create([
             'task_run_id'  => $taskRun->id,
             'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'         => [
-                'window_files' => [['file_id' => 1, 'position' => 0]],
-                'window_start' => 0,
-                'window_end'   => 1,
-            ],
+            'meta'         => [],
             'started_at'   => now()->subMinutes(5),
             'completed_at' => now(),
         ]);
@@ -295,11 +289,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $window2 = TaskProcess::factory()->create([
             'task_run_id'  => $taskRun->id,
             'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'         => [
-                'window_files' => [['file_id' => 2, 'position' => 1]],
-                'window_start' => 1,
-                'window_end'   => 2,
-            ],
+            'meta'         => [],
             'started_at'   => now()->subMinutes(5),
             'completed_at' => now(),
         ]);
@@ -364,7 +354,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $initialProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'status'      => 'Completed',
-            'meta'        => [], // No window_files or is_merge_process meta
+            'meta'        => [],
         ]);
 
         // WHEN: afterAllProcessesCompleted is called
@@ -446,17 +436,10 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
             $artifacts[] = $artifact;
         }
 
-        $windowFiles = array_map(fn($a) => ['file_id' => $a->id, 'position' => $a->position], $artifacts);
-
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => $windowFiles,
-                'window_start' => 0,
-                'window_end'   => 2,
-                'window_index' => 0,
-            ],
+            'meta'        => [],
         ]);
 
         foreach ($artifacts as $artifact) {
@@ -468,7 +451,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         // Then: Verify the operation field is used for routing
         $this->assertEquals(FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW, $windowProcess->operation);
-        $this->assertIsArray($windowProcess->meta['window_files']);
+        $this->assertGreaterThan(0, $windowProcess->inputArtifacts->count());
     }
 
     #[Test]
@@ -502,26 +485,13 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
                     ],
                 ],
             ],
-            'meta' => [
-                'window_start' => 0,
-                'window_end'   => 1,
-                'window_files' => [
-                    ['file_id' => $inputArtifacts[0]->id, 'position' => 0],
-                    ['file_id' => $inputArtifacts[1]->id, 'position' => 1],
-                ],
-            ],
         ]);
 
         // Create window process and attach the artifact
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id'  => $taskRun->id,
             'operation'    => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'         => [
-                'window_files' => [
-                    ['file_id' => $inputArtifacts[0]->id, 'position' => 0],
-                    ['file_id' => $inputArtifacts[1]->id, 'position' => 1],
-                ],
-            ],
+            'meta'         => [],
             'started_at'   => now()->subMinutes(5),
             'completed_at' => now(),
         ]);
@@ -545,51 +515,48 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
     #[Test]
     public function overlapping_windows_are_created_correctly(): void
     {
-        // NOTE: This test verifies overlapping window structure
+        // NOTE: This test verifies overlapping window structure via WindowProcessService
         // Actual window creation is tested in FileOrganizationMergeServiceTest::creates_overlapping_windows_from_file_list
-        // Here we verify the run() method handles overlapping windows correctly
 
-        // Given: Multiple window processes with overlapping ranges
+        // Given: TaskRun with artifacts that have stored files with page numbers
         $taskRun = TaskRun::factory()->create([
             'task_definition_id' => $this->taskDefinition->id,
         ]);
 
-        // Window 1: files 0-2
-        $window1 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'meta'        => [
-                'window_files' => [
-                    ['file_id' => 1, 'position' => 0],
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                ],
-                'window_start' => 0,
-                'window_end'   => 2,
-            ],
-        ]);
+        $artifacts = [];
+        for ($i = 0; $i <= 3; $i++) {
+            $artifact = Artifact::factory()->create([
+                'team_id'  => $this->user->currentTeam->id,
+                'position' => $i,
+            ]);
 
-        // Window 2: files 1-3 (overlaps with window 1 at position 1-2)
-        $window2 = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'meta'        => [
-                'window_files' => [
-                    ['file_id' => 2, 'position' => 1],
-                    ['file_id' => 3, 'position' => 2],
-                    ['file_id' => 4, 'position' => 3],
-                ],
-                'window_start' => 1,
-                'window_end'   => 3,
-            ],
-        ]);
+            $storedFile = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+                'page_number' => $i,
+                'filename'    => "page-$i.jpg",
+                'filepath'    => "test/page-$i.jpg",
+                'disk'        => 'public',
+                'mime'        => 'image/jpeg',
+            ]);
 
-        // Then: Verify windows overlap correctly
-        $this->assertLessThan($window1->meta['window_end'], $window2->meta['window_start']);
-        $this->assertEquals(1, $window2->meta['window_start']);
-        $this->assertEquals(2, $window1->meta['window_end']);
+            $artifact->storedFiles()->attach($storedFile->id);
+            $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+            $artifacts[] = $artifact;
+        }
 
-        // Verify both windows can be processed by run() method
-        $this->assertNotNull($window1->meta['window_files']);
-        $this->assertNotNull($window2->meta['window_files']);
+        // When: Creating window processes with size 3 and overlap 1
+        app(WindowProcessService::class)->createWindowProcesses($taskRun, 3);
+
+        // Then: Window processes should be created with overlapping ranges
+        $windowProcesses = $taskRun->taskProcesses()
+            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
+            ->get();
+
+        $this->assertGreaterThan(1, $windowProcesses->count(), 'Multiple windows should be created');
+
+        // Verify each window has input artifacts
+        foreach ($windowProcesses as $wp) {
+            $this->assertGreaterThan(0, $wp->inputArtifacts->count(), 'Window process should have input artifacts');
+        }
     }
 
     #[Test]
@@ -626,11 +593,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => array_map(fn($a) => ['file_id' => $a->id, 'position' => $a->position], $artifacts),
-                'window_start' => 1,
-                'window_end'   => 3,
-            ],
+            'meta'        => [],
         ]);
 
         foreach ($artifacts as $artifact) {
@@ -701,11 +664,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => $artifact->id, 'position' => $artifact->position]],
-                'window_start' => 1,
-                'window_end'   => 1,
-            ],
+            'meta'        => [],
         ]);
 
         $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
@@ -750,11 +709,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => $artifact->id, 'page_number' => 5]],
-                'window_start' => 5,
-                'window_end'   => 5,
-            ],
+            'meta'        => [],
         ]);
 
         $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
@@ -805,11 +760,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => $artifact->id, 'position' => $artifact->position]],
-                'window_start' => 1,
-                'window_end'   => 1,
-            ],
+            'meta'        => [],
         ]);
 
         $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
@@ -847,11 +798,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => [['file_id' => $artifact->id, 'position' => $artifact->position]],
-                'window_start' => 1,
-                'window_end'   => 1,
-            ],
+            'meta'        => [],
         ]);
 
         $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
@@ -902,11 +849,7 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $windowProcess = TaskProcess::factory()->create([
             'task_run_id' => $taskRun->id,
             'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [
-                'window_files' => array_map(fn($a) => ['file_id' => $a->id, 'position' => $a->position], $artifacts),
-                'window_start' => 1,
-                'window_end'   => 3,
-            ],
+            'meta'        => [],
         ]);
 
         foreach ($artifacts as $artifact) {
@@ -1052,60 +995,12 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         app(\App\Services\Task\FileOrganization\ValidationService::class)->validateNoDuplicatePages($oldFormatWithDuplicate);
     }
 
-    #[Test]
-    public function comparison_window_throws_validation_error_when_config_artifact_missing(): void
-    {
-        // This test verifies that a Comparison Window process created WITHOUT a Window Config artifact
-        // (e.g., old processes created before the artifact pattern was implemented) throws a clear
-        // ValidationError instead of a cryptic TypeError.
-
-        // GIVEN: TaskRun with a Comparison Window process WITHOUT a Window Config artifact
-        $taskRun = TaskRun::factory()->create([
-            'task_definition_id' => $this->taskDefinition->id,
-        ]);
-
-        // Create input artifacts (simulating pages)
-        $artifacts = [];
-        for ($i = 0; $i < 3; $i++) {
-            $artifact = Artifact::factory()->create([
-                'team_id'  => $this->user->currentTeam->id,
-                'position' => $i,
-            ]);
-            $taskRun->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-            $artifacts[] = $artifact;
-        }
-
-        // Create a Comparison Window process WITHOUT attaching a Window Config artifact
-        // This simulates old/misconfigured processes
-        $windowProcess = TaskProcess::factory()->create([
-            'task_run_id' => $taskRun->id,
-            'name'        => 'Comparison Window 1',
-            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
-            'meta'        => [], // Empty meta
-            'is_ready'    => true,
-            'started_at'  => now(),
-        ]);
-
-        // Attach page artifacts as input (but NOT a Window Config artifact)
-        foreach ($artifacts as $artifact) {
-            $windowProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-        }
-
-        // WHEN/THEN: Running the process should throw a ValidationError, not a TypeError
-        $this->expectException(\Newms87\Danx\Exceptions\ValidationError::class);
-        $this->expectExceptionMessage('Window Config artifact is required');
-
-        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
-        $this->runner->run();
-    }
 
     #[Test]
-    public function createWindowProcesses_attaches_config_artifact_retrievable_by_getWindowFiles(): void
+    public function createWindowProcesses_attaches_input_artifacts_with_stored_files(): void
     {
-        // This test verifies the full round-trip: WindowProcessService creates window processes
-        // with config artifacts, and WindowConfigArtifactService can retrieve the config from them.
-        // The bug was that the config artifact was being attached with the wrong category,
-        // making getWindowFiles() unable to find it via inputArtifacts().
+        // This test verifies that WindowProcessService creates window processes
+        // with input artifacts that have stored files attached.
 
         // GIVEN: TaskRun with input artifacts that have page numbers
         $taskRun = TaskRun::factory()->create([
@@ -1142,21 +1037,14 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
 
         $this->assertGreaterThan(0, $windowProcesses->count(), 'Window processes should be created');
 
-        // AND: Each window process should have a config artifact retrievable by getWindowFiles()
-        $configService = app(WindowConfigArtifactService::class);
-
+        // AND: Each window process should have input artifacts with stored files
         foreach ($windowProcesses as $windowProcess) {
-            $windowFiles = $configService->getWindowFiles($windowProcess);
+            $inputArtifacts = $windowProcess->inputArtifacts;
+            $this->assertGreaterThanOrEqual(1, $inputArtifacts->count(), 'Window process should have input artifacts');
 
-            $this->assertNotNull($windowFiles, "Window process {$windowProcess->id} should have retrievable window config");
-            $this->assertIsArray($windowFiles, 'window_files should be an array');
-            $this->assertGreaterThanOrEqual(2, count($windowFiles), 'Each window should have at least 2 files');
-
-            // Verify each file entry has the expected structure
-            foreach ($windowFiles as $file) {
-                $this->assertArrayHasKey('file_id', $file, 'Each window file should have file_id');
-                $this->assertArrayHasKey('page_number', $file, 'Each window file should have page_number');
-            }
+            // Verify at least one input artifact has stored files
+            $totalStoredFiles = $inputArtifacts->sum(fn($a) => $a->storedFiles->count());
+            $this->assertGreaterThanOrEqual(2, $totalStoredFiles, 'Each window should have at least 2 stored files');
         }
     }
 
@@ -1397,11 +1285,6 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
                     ],
                 ],
             ],
-            'meta' => [
-                'window_start' => 0,
-                'window_end'   => 0,
-                'window_files' => [['file_id' => $inputArtifact->id, 'page_number' => 0]],
-            ],
         ]);
 
         $windowProcess = TaskProcess::factory()->create([
@@ -1445,6 +1328,86 @@ class FileOrganizationTaskRunnerTest extends AuthenticatedTestCase
         $this->assertEquals('separate_group', $capturedConfig['blank_page_handling']);
         $this->assertEquals(0.95, $capturedConfig['name_similarity_threshold']);
         $this->assertEquals(8, $capturedConfig['max_sliding_iterations']);
+    }
+
+    #[Test]
+    public function run_routes_to_transcode_operation(): void
+    {
+        // Given: A task process with operation "Transcode"
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $transcodeProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => \App\Services\Task\TranscodePrerequisiteService::OPERATION_TRANSCODE,
+            'meta'        => [],
+            'started_at'  => now(),
+        ]);
+
+        // When: Checking operation routing
+        $this->runner->setTaskRun($taskRun)->setTaskProcess($transcodeProcess);
+
+        // Then: Verify operation field matches and routing works (no exception for wrong operation)
+        $this->assertEquals(
+            \App\Services\Task\TranscodePrerequisiteService::OPERATION_TRANSCODE,
+            $transcodeProcess->operation
+        );
+    }
+
+    #[Test]
+    public function window_process_uses_window_pages_artifact(): void
+    {
+        // Given: A window process with a "Window Pages 1-3" artifact
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        // Create stored files for the window pages
+        $storedFiles = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $storedFiles[] = \Newms87\Danx\Models\Utilities\StoredFile::factory()->create([
+                'page_number' => $i,
+                'filename'    => "page-$i.jpg",
+                'filepath'    => "test/page-$i.jpg",
+                'disk'        => 'public',
+                'mime'        => 'image/jpeg',
+            ]);
+        }
+
+        // Create window pages artifact with stored files
+        $windowPagesArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Window Pages 1-3',
+        ]);
+        foreach ($storedFiles as $sf) {
+            $windowPagesArtifact->storedFiles()->attach($sf->id);
+        }
+
+        // Create window process and attach the pages artifact
+        $windowProcess = TaskProcess::factory()->create([
+            'task_run_id' => $taskRun->id,
+            'operation'   => FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW,
+            'meta'        => [],
+            'is_ready'    => true,
+            'started_at'  => now(),
+        ]);
+
+        $windowProcess->inputArtifacts()->attach($windowPagesArtifact->id, ['category' => 'input']);
+
+        // When: The runner uses the first input artifact for comparison
+        $this->runner->setTaskRun($taskRun)->setTaskProcess($windowProcess);
+
+        // Verify the process has the correct input artifact
+        $inputArtifacts = $windowProcess->inputArtifacts;
+        $this->assertCount(1, $inputArtifacts);
+
+        $windowPages = $inputArtifacts->first();
+        $this->assertNotNull($windowPages, 'Window pages artifact should be found');
+        $this->assertEquals('Window Pages 1-3', $windowPages->name);
+
+        // Verify the window pages artifact has the correct stored files
+        $this->assertCount(3, $windowPages->storedFiles);
     }
 
     /**

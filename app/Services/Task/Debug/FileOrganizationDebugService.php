@@ -6,7 +6,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Services\Task\Debug\Concerns\DebugOutputHelper;
-use App\Services\Task\FileOrganization\ResolutionOrchestrator;
+use App\Services\Task\FileOrganization\FileOrganizationStateOrchestrator;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
 use Illuminate\Console\Command;
@@ -89,13 +89,14 @@ class FileOrganizationDebugService
         $start = (int)$matches[1];
         $end   = (int)$matches[2];
 
-        // Find window process with matching meta data
+        // Find window process with matching page range from input artifact stored files
         $windowProcess = $taskRun->taskProcesses()
             ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
             ->get()
             ->first(function ($process) use ($start, $end) {
-                return ($process->meta['window_start'] ?? null) === $start
-                    && ($process->meta['window_end'] ?? null)   === $end;
+                $range = $this->getWindowRange($process);
+
+                return $range['start'] === $start && $range['end'] === $end;
             });
 
         if (!$windowProcess) {
@@ -170,8 +171,9 @@ class FileOrganizationDebugService
         $assignments     = [];
 
         foreach ($windowProcesses as $window) {
-            $start    = $window->meta['window_start'] ?? '?';
-            $end      = $window->meta['window_end']   ?? '?';
+            $range    = $this->getWindowRange($window);
+            $start    = $range['start'];
+            $end      = $range['end'];
             $artifact = $window->outputArtifacts->first();
 
             if ($artifact && $artifact->json_content) {
@@ -237,8 +239,9 @@ class FileOrganizationDebugService
         $allPages        = [];
 
         foreach ($windowProcesses as $window) {
-            $start    = $window->meta['window_start'] ?? '?';
-            $end      = $window->meta['window_end']   ?? '?';
+            $range    = $this->getWindowRange($window);
+            $start    = $range['start'];
+            $end      = $range['end'];
             $artifact = $window->outputArtifacts->first();
 
             if ($artifact && $artifact->json_content) {
@@ -297,8 +300,9 @@ class FileOrganizationDebugService
         $pageAssignments = [];
 
         foreach ($windowProcesses as $window) {
-            $start    = $window->meta['window_start'] ?? '?';
-            $end      = $window->meta['window_end']   ?? '?';
+            $range    = $this->getWindowRange($window);
+            $start    = $range['start'];
+            $end      = $range['end'];
             $artifact = $window->outputArtifacts->first();
 
             if ($artifact && $artifact->json_content) {
@@ -518,8 +522,8 @@ class FileOrganizationDebugService
 
         $command->info('Reset complete. Creating merge process...');
 
-        // Use ResolutionOrchestrator to create the merge process
-        $orchestrator = app(ResolutionOrchestrator::class);
+        // Use FileOrganizationStateOrchestrator to create the merge process
+        $orchestrator = app(FileOrganizationStateOrchestrator::class);
         $mergeCreated = $orchestrator->createMergeProcessIfReady($taskRun);
 
         if ($mergeCreated) {
@@ -536,6 +540,21 @@ class FileOrganizationDebugService
         }
 
         return 0;
+    }
+
+    /**
+     * Get window range (start, end) derived from the process's input artifact stored files.
+     *
+     * @return array{start: int|string, end: int|string}
+     */
+    protected function getWindowRange(TaskProcess $process): array
+    {
+        $inputArtifact = $process->inputArtifacts->first();
+        $storedFiles   = $inputArtifact?->storedFiles;
+        $start         = $storedFiles?->min('page_number') ?? '?';
+        $end           = $storedFiles?->max('page_number') ?? '?';
+
+        return ['start' => $start, 'end' => $end];
     }
 
     /**
@@ -595,8 +614,9 @@ class FileOrganizationDebugService
         $command->line("Total windows: {$windowProcesses->count()}");
 
         foreach ($windowProcesses as $window) {
-            $start    = $window->meta['window_start'] ?? '?';
-            $end      = $window->meta['window_end']   ?? '?';
+            $range    = $this->getWindowRange($window);
+            $start    = $range['start'];
+            $end      = $range['end'];
             $artifact = $window->outputArtifacts->first();
 
             if ($artifact && $artifact->json_content) {
@@ -882,7 +902,8 @@ class FileOrganizationDebugService
         $firstWindow = $windowProcesses->first();
         if ($firstWindow && $firstWindow->agentThread) {
             $thread = $firstWindow->agentThread;
-            $command->line("Window {$firstWindow->meta['window_start']}-{$firstWindow->meta['window_end']} thread:");
+            $range = $this->getWindowRange($firstWindow);
+            $command->line("Window {$range['start']}-{$range['end']} thread:");
             $command->newLine();
 
             foreach ($thread->messages()->orderBy('created_at')->get() as $message) {

@@ -159,9 +159,11 @@ class TestFileOrganizationCommand extends Command
         $windowProcesses = $taskRun->taskProcesses()->get();
         $this->line("Window processes created: {$windowProcesses->count()}");
         foreach ($windowProcesses as $process) {
-            $windowStart = $process->meta['window_start'] ?? 'N/A';
-            $windowEnd   = $process->meta['window_end']   ?? 'N/A';
-            $fileCount   = count($process->meta['window_files'] ?? []);
+            $inputArtifact = $process->inputArtifacts->first();
+            $storedFiles   = $inputArtifact?->storedFiles;
+            $windowStart   = $storedFiles?->min('page_number') ?? 'N/A';
+            $windowEnd     = $storedFiles?->max('page_number') ?? 'N/A';
+            $fileCount     = $storedFiles?->count() ?? 0;
             $this->line("  - Window {$windowStart}-{$windowEnd}: {$fileCount} files");
         }
         $this->newLine();
@@ -175,18 +177,21 @@ class TestFileOrganizationCommand extends Command
         $this->waitForProcesses($taskRun, 'window');
         $this->newLine();
 
-        // Display window results
+        // Display window results from window process output artifacts
         $this->info('=== WINDOW COMPARISON RESULTS ===');
-        $windowArtifacts = $taskRun->outputArtifacts()
-            ->whereNotNull('meta->window_start')
-            ->whereNotNull('meta->window_end')
+        $windowProcesses = $taskRun->taskProcesses()
+            ->where('operation', FileOrganizationTaskRunner::OPERATION_COMPARISON_WINDOW)
             ->get();
 
-        $this->line("Window artifacts created: {$windowArtifacts->count()}");
-        foreach ($windowArtifacts as $windowArtifact) {
-            $windowStart = $windowArtifact->meta['window_start'];
-            $windowEnd   = $windowArtifact->meta['window_end'];
-            $groups      = $windowArtifact->json_content['groups'] ?? [];
+        $this->line("Window processes: {$windowProcesses->count()}");
+        foreach ($windowProcesses as $windowProcess) {
+            $inputArtifact = $windowProcess->inputArtifacts->first();
+            $storedFiles   = $inputArtifact?->storedFiles;
+            $windowStart   = $storedFiles?->min('page_number') ?? '?';
+            $windowEnd     = $storedFiles?->max('page_number') ?? '?';
+
+            $outputArtifact = $windowProcess->outputArtifacts->first();
+            $groups         = $outputArtifact?->json_content['groups'] ?? [];
             $this->line("  Window {$windowStart}-{$windowEnd}: " . count($groups) . ' groups found');
             foreach ($groups as $group) {
                 $groupName = $group['name'] ?? $group['group_id'] ?? 'Unknown';

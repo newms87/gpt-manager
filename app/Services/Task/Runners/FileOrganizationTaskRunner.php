@@ -5,17 +5,19 @@ namespace App\Services\Task\Runners;
 use App\Models\Agent\AgentThread;
 use App\Services\Task\FileOrganization\AgentThreadService;
 use App\Services\Task\FileOrganization\ArtifactResolutionService;
+use App\Services\Task\FileOrganization\FileOrganizationStateOrchestrator;
 use App\Services\Task\FileOrganization\MergeProcessService;
 use App\Services\Task\FileOrganization\PageContextService;
-use App\Services\Task\FileOrganization\ResolutionOrchestrator;
 use App\Services\Task\FileOrganization\ValidationService;
-use App\Services\Task\FileOrganization\WindowConfigArtifactService;
 use App\Services\Task\FileOrganization\WindowProcessService;
-use App\Services\Task\TaskProcessDispatcherService;
+use App\Services\Task\Traits\HasTranscodePrerequisite;
+use App\Services\Task\TranscodePrerequisiteService;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 {
+    use HasTranscodePrerequisite;
+
     public const string RUNNER_NAME = 'File Organization';
 
     public const string OPERATION_COMPARISON_WINDOW = 'Comparison Window',
@@ -38,23 +40,24 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     public function run(): void
     {
         match ($this->taskProcess->operation) {
-            BaseTaskRunner::OPERATION_DEFAULT       => $this->runInitializeOperation(),
-            self::OPERATION_COMPARISON_WINDOW       => $this->runComparisonWindow(),
-            self::OPERATION_MERGE                   => $this->runMergeProcess(),
-            self::OPERATION_LOW_CONFIDENCE_RESOLUTION   => $this->runLowConfidenceResolution(),
-            self::OPERATION_NULL_GROUP_RESOLUTION        => $this->runNullGroupResolution(),
-            self::OPERATION_DUPLICATE_GROUP_RESOLUTION   => $this->runDuplicateGroupResolution(),
+            BaseTaskRunner::OPERATION_DEFAULT                => $this->runInitializeOperation(),
+            TranscodePrerequisiteService::OPERATION_TRANSCODE => $this->runTranscodeOperation(),
+            self::OPERATION_COMPARISON_WINDOW                => $this->runComparisonWindow(),
+            self::OPERATION_MERGE                            => $this->runMergeProcess(),
+            self::OPERATION_LOW_CONFIDENCE_RESOLUTION        => $this->runLowConfidenceResolution(),
+            self::OPERATION_NULL_GROUP_RESOLUTION             => $this->runNullGroupResolution(),
+            self::OPERATION_DUPLICATE_GROUP_RESOLUTION        => $this->runDuplicateGroupResolution(),
         };
     }
 
     /**
      * Run the initialization operation.
-     * Creates window processes for comparing adjacent files.
+     * Advances to the next phase via the state orchestrator.
      */
     protected function runInitializeOperation(): void
     {
-        static::logDebug('Running initialization - creating window processes');
-        $this->createWindowProcesses();
+        static::logDebug('Running initialization - advancing to next phase');
+        app(FileOrganizationStateOrchestrator::class)->advanceToNextPhase($this->taskRun);
         $this->complete();
     }
 
@@ -64,25 +67,16 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
      */
     protected function runComparisonWindow(): void
     {
-        $windowFiles = app(WindowConfigArtifactService::class)->getWindowFiles($this->taskProcess);
+        $inputArtifact = $this->taskProcess->inputArtifacts->first();
 
-        if ($windowFiles === null) {
-            throw new ValidationError(
-                'Window Config artifact is required for Comparison Window process. ' .
-                'The process may have been created before config artifacts were implemented.'
-            );
+        if (!$inputArtifact) {
+            throw new ValidationError('No input artifact found for Comparison Window process.');
         }
 
-        $inputArtifacts = $this->taskProcess->inputArtifacts;
+        static::logDebug('Window artifact: ' . $inputArtifact->name);
 
-        // Filter artifacts to only those in the window
-        $windowFileIds     = array_column($windowFiles, 'file_id');
-        $artifactsInWindow = $inputArtifacts->whereIn('id', $windowFileIds);
-
-        static::logDebug('Window contains ' . $artifactsInWindow->count() . ' artifacts');
-
-        // Setup agent thread
-        $agentThread = $this->setupAgentThread($artifactsInWindow);
+        // Setup agent thread with the window pages artifact
+        $agentThread = $this->setupAgentThread(collect([$inputArtifact]));
 
         // Run the agent thread
         $artifact = $this->runAgentThread($agentThread);
@@ -93,15 +87,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
         // Validate that no page appears in multiple groups
         app(ValidationService::class)->validateNoDuplicatePages($artifact->json_content);
-
-        // Store window metadata in the artifact (retrieved from config artifact)
-        $windowConfig         = app(WindowConfigArtifactService::class)->getWindowConfigFromProcess($this->taskProcess);
-        $meta                 = $artifact->meta ?? [];
-        $meta['window_start'] = $windowConfig['window_start'];
-        $meta['window_end']   = $windowConfig['window_end'];
-        $meta['window_files'] = $windowConfig['window_files'];
-        $artifact->meta       = $meta;
-        $artifact->save();
 
         static::logDebug('Window comparison completed successfully');
 
@@ -132,23 +117,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     }
 
     /**
-     * Create window processes for comparing adjacent files.
-     * Called from the initial process run.
-     */
-    protected function createWindowProcesses(): void
-    {
-        // Use WindowProcessService to create window processes
-        app(WindowProcessService::class)->createWindowProcesses(
-            $this->taskRun,
-            $this->getComparisonWindowSize(),
-            $this->getComparisonWindowOverlap()
-        );
-
-        // Dispatch the window processes
-        TaskProcessDispatcherService::dispatchForTaskRun($this->taskRun);
-    }
-
-    /**
      * Prepare the task run.
      * The standard TaskRunnerService::prepareTaskProcesses() creates a Default Task process automatically.
      */
@@ -161,21 +129,12 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
 
     /**
      * Called after all parallel processes have completed.
-     * Creates a merge process to combine all window results, or resolution processes as needed.
+     * Advances to the next phase via the state orchestrator.
      */
     public function afterAllProcessesCompleted(): void
     {
         parent::afterAllProcessesCompleted();
-
-        $orchestrator = app(ResolutionOrchestrator::class);
-
-        // First, try to create merge process if windows are done
-        $mergeCreated = $orchestrator->createMergeProcessIfReady($this->taskRun);
-
-        // Then create resolution processes if merge has identified issues
-        if (!$mergeCreated) {
-            $orchestrator->createResolutionProcesses($this->taskRun);
-        }
+        app(FileOrganizationStateOrchestrator::class)->advanceToNextPhase($this->taskRun);
     }
 
     /**
@@ -371,22 +330,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $artifact->delete();
 
         $this->complete();
-    }
-
-    /**
-     * Get the comparison window size from configuration.
-     */
-    protected function getComparisonWindowSize(): int
-    {
-        return $this->config('comparison_window_size', self::DEFAULT_COMPARISON_WINDOW_SIZE);
-    }
-
-    /**
-     * Get the comparison window overlap from configuration.
-     */
-    protected function getComparisonWindowOverlap(): int
-    {
-        return $this->config('comparison_window_overlap', self::DEFAULT_COMPARISON_WINDOW_OVERLAP);
     }
 
     /**

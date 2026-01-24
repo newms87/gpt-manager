@@ -149,10 +149,15 @@ class InvestigateTaskProcess extends Command
             ->get();
 
         foreach ($windows as $w) {
+            $inputArtifact = $w->inputArtifacts->first();
+            $storedFiles   = $inputArtifact?->storedFiles;
+            $windowStart   = $storedFiles?->min('page_number') ?? 'n/a';
+            $windowEnd     = $storedFiles?->max('page_number') ?? 'n/a';
+
             $this->info("\nWindow Process {$w->id}:");
             $this->line("  Status: {$w->status}");
-            $this->line('  Window Start: ' . ($w->meta['window_start'] ?? 'n/a'));
-            $this->line('  Window End: ' . ($w->meta['window_end'] ?? 'n/a'));
+            $this->line("  Window Start: $windowStart");
+            $this->line("  Window End: $windowEnd");
 
             // Show output artifact
             $artifacts = $w->outputArtifacts;
@@ -262,11 +267,18 @@ class InvestigateTaskProcess extends Command
                         if ($pageNum == $targetPage) {
                             $conf = is_array($f) ? ($f['confidence'] ?? 'n/a') : 'n/a';
                             $expl = is_array($f) ? ($f['explanation'] ?? '') : '';
+
+                            // Derive window range from process input artifact stored files
+                            $pInputArtifact = $p->inputArtifacts->first();
+                            $pStoredFiles   = $pInputArtifact?->storedFiles;
+                            $rangeStart     = $pStoredFiles?->min('page_number') ?? 'n/a';
+                            $rangeEnd       = $pStoredFiles?->max('page_number') ?? 'n/a';
+
                             $this->info("\nWindow {$p->id} (Artifact {$a->id}):");
                             $this->line("  Group: {$groupName}");
                             $this->line("  Confidence: {$conf}");
                             $this->line('  Explanation: ' . substr($expl, 0, 200));
-                            $this->line('  Window Range: ' . ($a->meta['window_start'] ?? 'n/a') . '-' . ($a->meta['window_end'] ?? 'n/a'));
+                            $this->line("  Window Range: {$rangeStart}-{$rangeEnd}");
                         }
                     }
                 }
@@ -317,38 +329,38 @@ class InvestigateTaskProcess extends Command
             ->where('operation', 'Comparison Window')
             ->get();
 
-        $windowArtifacts = collect();
-        foreach ($windowProcesses as $process) {
-            $windowArtifacts = $windowArtifacts->merge($process->outputArtifacts);
-        }
-
-        // Extract windows
+        // Extract windows from process output artifacts, deriving page mapping from input artifact stored files
         $windows = [];
-        foreach ($windowArtifacts as $artifact) {
-            $jsonContent = $artifact->json_content;
+        foreach ($windowProcesses as $process) {
+            $outputArtifact = $process->outputArtifacts->first();
+            if (!$outputArtifact) {
+                continue;
+            }
+
+            $jsonContent = $outputArtifact->json_content;
             if (!$jsonContent || !isset($jsonContent['groups'])) {
                 continue;
             }
 
-            $windowStart = $artifact->meta['window_start'] ?? null;
-            $windowEnd   = $artifact->meta['window_end']   ?? null;
-            $windowFiles = $artifact->meta['window_files'] ?? null;
+            // Derive page-number-to-file-id map from input artifact stored files
+            $inputArtifact       = $process->inputArtifacts->first();
+            $storedFiles         = $inputArtifact?->storedFiles ?? collect();
+            $pageNumberToFileMap = [];
+            foreach ($storedFiles as $storedFile) {
+                if ($storedFile->page_number !== null) {
+                    $pageNumberToFileMap[$storedFile->page_number] = $storedFile->id;
+                }
+            }
+
+            $windowStart = $storedFiles->min('page_number');
+            $windowEnd   = $storedFiles->max('page_number');
 
             if ($windowStart === null || $windowEnd === null) {
                 continue;
             }
 
-            $pageNumberToFileMap = [];
-            if ($windowFiles && is_array($windowFiles)) {
-                foreach ($windowFiles as $file) {
-                    if (isset($file['page_number']) && isset($file['file_id'])) {
-                        $pageNumberToFileMap[$file['page_number']] = $file['file_id'];
-                    }
-                }
-            }
-
             $windows[] = [
-                'artifact_id'             => $artifact->id,
+                'artifact_id'             => $outputArtifact->id,
                 'window_start'            => $windowStart,
                 'window_end'              => $windowEnd,
                 'groups'                  => $jsonContent['groups'],

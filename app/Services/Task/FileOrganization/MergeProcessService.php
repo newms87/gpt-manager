@@ -5,7 +5,6 @@ namespace App\Services\Task\FileOrganization;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Services\Task\ArtifactsMergeService;
 use App\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -102,6 +101,8 @@ class MergeProcessService
 
     /**
      * Create output artifacts for each final group.
+     * Gets all page StoredFiles from the task run's input artifacts, then creates
+     * a new artifact per group with the matching stored files attached.
      *
      * @param  array  $finalGroups  Final groups from merge
      * @param  TaskRun  $taskRun  The task run
@@ -112,62 +113,54 @@ class MergeProcessService
     {
         $outputArtifacts = [];
 
+        // Get all page stored files from the task run's input artifacts, keyed by page_number
+        $allPageFiles = $taskRun->inputArtifacts()
+            ->with('storedFiles')
+            ->get()
+            ->flatMap(fn($artifact) => $artifact->storedFiles)
+            ->keyBy('page_number');
+
         foreach ($finalGroups as $group) {
             $groupName   = $group['name'];
             $description = $group['description'] ?? '';
-            $pageNumbers = $group['files']; // These are page numbers, not artifact IDs
+            $pageNumbers = $group['files']; // These are page numbers
 
-            // Get the artifacts for this group by looking up stored files by page_number
-            // Use distinct artifact IDs to avoid duplicates, then fetch the artifacts
-            $artifactIds = $taskRun->inputArtifacts()
-                ->join('stored_file_storables', function ($join) {
-                    $join->on('artifacts.id', '=', 'stored_file_storables.storable_id')
-                        ->where('stored_file_storables.storable_type', '=', Artifact::class);
-                })
-                ->join('stored_files', 'stored_file_storables.stored_file_id', '=', 'stored_files.id')
-                ->whereIn('stored_files.page_number', $pageNumbers)
-                ->pluck('artifacts.id')
-                ->unique();
-
-            if ($artifactIds->isEmpty()) {
-                static::logDebug("Group '$groupName': no artifacts found, skipping");
+            if (empty($pageNumbers)) {
+                static::logDebug("Group '$groupName': no page numbers, skipping");
 
                 continue;
             }
 
-            // Fetch the full artifacts by ID and order them by their stored files' page numbers
-            $groupArtifacts = Artifact::whereIn('id', $artifactIds)
-                ->with(['storedFiles' => function ($query) use ($pageNumbers) {
-                    $query->whereIn('page_number', $pageNumbers)
-                        ->orderBy('page_number');
-                }])
-                ->get()
-                ->sortBy(function ($artifact) {
-                    return $artifact->storedFiles->min('page_number');
-                })
-                ->values();
+            // Get stored files for this group's pages
+            $groupFiles = collect($pageNumbers)
+                ->map(fn($pageNum) => $allPageFiles->get($pageNum))
+                ->filter();
 
-            // Create copies of input artifacts to preserve originals
-            $artifactCopies = [];
-            foreach ($groupArtifacts as $artifact) {
-                $artifactCopies[] = $artifact->copy();
+            if ($groupFiles->isEmpty()) {
+                static::logDebug("Group '$groupName': no stored files found for pages, skipping");
+
+                continue;
             }
 
-            // Create merged artifact for this group
-            $mergedArtifact = app(ArtifactsMergeService::class)->merge($artifactCopies);
-
-            // Always use the group name directly
-            $mergedArtifact->name = $groupName;
-            $mergedArtifact->meta = array_merge($mergedArtifact->meta ?? [], [
-                'group_name'  => $groupName,
-                'description' => $description,
-                'file_count'  => count($pageNumbers),
+            // Create output artifact for this group
+            $mergedArtifact = Artifact::create([
+                'team_id' => $taskRun->taskDefinition->team_id,
+                'name'    => $groupName,
+                'meta'    => [
+                    'group_name'  => $groupName,
+                    'description' => $description,
+                    'file_count'  => count($pageNumbers),
+                ],
             ]);
-            $mergedArtifact->save();
+
+            // Attach stored files to the artifact, ordered by page_number
+            foreach ($groupFiles->sortBy('page_number') as $storedFile) {
+                $mergedArtifact->storedFiles()->attach($storedFile->id);
+            }
 
             $outputArtifacts[] = $mergedArtifact;
 
-            static::logDebug("Created merged artifact for group '$groupName' with " . count($pageNumbers) . ' files');
+            static::logDebug("Created artifact for group '$groupName' with " . $groupFiles->count() . ' files');
         }
 
         return $outputArtifacts;

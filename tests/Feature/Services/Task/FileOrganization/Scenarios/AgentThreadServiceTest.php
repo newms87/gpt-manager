@@ -244,4 +244,71 @@ class AgentThreadServiceTest extends AuthenticatedTestCase
             );
         }
     }
+
+    #[Test]
+    public function adds_one_message_per_stored_file_in_multi_file_artifact(): void
+    {
+        // GIVEN: An artifact with 3 stored files (page_numbers 1,2,3)
+        $taskRun = TaskRun::factory()->create([
+            'task_definition_id' => $this->taskDefinition->id,
+        ]);
+
+        $multiFileArtifact = Artifact::factory()->create([
+            'team_id' => $this->user->currentTeam->id,
+            'name'    => 'Multi-Page Document',
+        ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $storedFile = StoredFile::factory()->create([
+                'page_number' => $i,
+                'filename'    => "page-$i.jpg",
+                'filepath'    => "test/page-$i.jpg",
+                'disk'        => 'public',
+                'mime'        => 'image/jpeg',
+            ]);
+            $multiFileArtifact->storedFiles()->attach($storedFile->id, ['category' => 'input']);
+        }
+
+        // WHEN: setupComparisonWindowThread is called with the multi-file artifact
+        $agentThread = $this->agentThreadService->setupComparisonWindowThread(
+            $this->taskDefinition,
+            $taskRun,
+            collect([$multiFileArtifact])
+        );
+
+        // THEN: 3 messages are added to the thread, one per page
+        $messagesWithFiles = $agentThread->messages()
+            ->whereHas('storedFiles')
+            ->with('storedFiles')
+            ->get();
+
+        $this->assertEquals(
+            3,
+            $messagesWithFiles->count(),
+            'Expected 3 messages with attached files (one per stored file in the artifact). ' .
+            "Found {$messagesWithFiles->count()} messages."
+        );
+
+        // Verify each message has exactly one stored file
+        foreach ($messagesWithFiles as $message) {
+            $this->assertEquals(
+                1,
+                $message->storedFiles->count(),
+                'Each message should have exactly 1 stored file attached'
+            );
+        }
+
+        // Verify the page numbers match
+        $attachedPageNumbers = $messagesWithFiles
+            ->flatMap(fn($msg) => $msg->storedFiles->pluck('page_number'))
+            ->sort()
+            ->values()
+            ->toArray();
+
+        $this->assertEquals([1, 2, 3], $attachedPageNumbers, 'Messages should have files for pages 1, 2, and 3');
+
+        // Verify message content has "Page X" format
+        $pageMessages = $messagesWithFiles->filter(fn($msg) => preg_match('/^Page \d+$/', trim($msg->content ?? '')));
+        $this->assertCount(3, $pageMessages, 'Each message should have "Page X" content format');
+    }
 }

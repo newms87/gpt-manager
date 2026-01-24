@@ -200,7 +200,8 @@ class AgentThreadService
 
     /**
      * Add artifact messages to thread.
-     * Each message contains page number and attached file.
+     * Iterates all stored files within each artifact, adding 1 message per stored file.
+     * This handles both old (1 file per artifact) and new (N files per artifact) patterns.
      *
      * @param  AgentThread  $agentThread  The agent thread
      * @param  Collection  $artifacts  Artifacts to add
@@ -208,22 +209,25 @@ class AgentThreadService
     protected function addArtifactMessages(AgentThread $agentThread, Collection $artifacts): void
     {
         foreach ($artifacts as $artifact) {
-            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
-            $pageNumber = $storedFile?->page_number ?? null;
-            $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
+            // Get all stored files for this artifact, ordered by page_number
+            $storedFiles = $artifact->storedFiles ? $artifact->storedFiles->sortBy('page_number') : collect();
 
-            if ($pageNumber !== null) {
-                app(ThreadRepository::class)->addMessageToThread(
-                    $agentThread,
-                    "Page $pageNumber",
-                    $fileIds
-                );
-            } else {
-                app(ThreadRepository::class)->addMessageToThread(
-                    $agentThread,
-                    '',
-                    $fileIds
-                );
+            foreach ($storedFiles as $storedFile) {
+                $pageNumber = $storedFile->page_number ?? null;
+
+                if ($pageNumber !== null) {
+                    app(ThreadRepository::class)->addMessageToThread(
+                        $agentThread,
+                        "Page $pageNumber",
+                        [$storedFile->id]
+                    );
+                } else {
+                    app(ThreadRepository::class)->addMessageToThread(
+                        $agentThread,
+                        '',
+                        [$storedFile->id]
+                    );
+                }
             }
         }
     }

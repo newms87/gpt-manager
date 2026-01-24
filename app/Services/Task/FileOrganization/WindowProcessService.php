@@ -2,6 +2,7 @@
 
 namespace App\Services\Task\FileOrganization;
 
+use App\Models\Task\Artifact;
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Traits\HasDebugLogging;
@@ -21,8 +22,9 @@ class WindowProcessService
      * @param  TaskRun  $taskRun  The task run to create windows for
      * @param  int  $windowSize  Size of each comparison window
      * @param  int  $overlap  Number of files to overlap between windows (default: 1)
+     * @param  Collection|null  $pages  Optional collection of StoredFile objects (new pattern: all pages on single artifact)
      */
-    public function createWindowProcesses(TaskRun $taskRun, int $windowSize, int $overlap = 1): void
+    public function createWindowProcesses(TaskRun $taskRun, int $windowSize, int $overlap = 1, ?Collection $pages = null): void
     {
         static::logDebug('Creating file organization window processes');
 
@@ -38,21 +40,28 @@ class WindowProcessService
 
         static::logDebug("Using comparison window size: $windowSize, overlap: $overlap");
 
-        // Get all input artifacts
-        $inputArtifacts = $taskRun->inputArtifacts()
-            ->orderBy('position')
-            ->get();
+        $inputArtifacts = collect();
 
-        static::logDebug('Found ' . $inputArtifacts->count() . ' input artifacts');
+        if ($pages) {
+            // New pattern: pages are StoredFiles on a single artifact
+            static::logDebug('Using pages collection with ' . $pages->count() . ' stored files');
+            $files = $this->getFileListFromPages($pages);
+        } else {
+            // Old pattern: one file per artifact
+            $inputArtifacts = $taskRun->inputArtifacts()
+                ->orderBy('position')
+                ->get();
 
-        if ($inputArtifacts->isEmpty()) {
-            static::logDebug('No input artifacts, skipping window creation');
+            static::logDebug('Found ' . $inputArtifacts->count() . ' input artifacts');
 
-            return;
+            if ($inputArtifacts->isEmpty()) {
+                static::logDebug('No input artifacts, skipping window creation');
+
+                return;
+            }
+
+            $files = $this->getFileListFromArtifacts($inputArtifacts);
         }
-
-        // Create file list from artifacts (using page_number from StoredFile)
-        $files = $this->getFileListFromArtifacts($inputArtifacts);
 
         // Create overlapping windows with configured overlap
         $windows = $this->createOverlappingWindows($files, $windowSize, $overlap);
@@ -67,7 +76,7 @@ class WindowProcessService
 
         // Create a TaskProcess for each window
         foreach ($windows as $window) {
-            $this->createSingleWindowProcess($taskRun, $window, $inputArtifacts);
+            $this->createSingleWindowProcess($taskRun, $window, $inputArtifacts, $pages);
         }
 
         $taskRun->updateRelationCounter('taskProcesses');
@@ -80,27 +89,14 @@ class WindowProcessService
      *
      * @param  TaskRun  $taskRun  The task run
      * @param  array  $window  Window data from createOverlappingWindows
-     * @param  Collection  $inputArtifacts  All input artifacts
+     * @param  Collection  $inputArtifacts  All input artifacts (used for old pattern)
+     * @param  Collection|null  $pages  Optional collection of StoredFile objects (new pattern)
      */
-    protected function createSingleWindowProcess(TaskRun $taskRun, array $window, Collection $inputArtifacts): void
+    protected function createSingleWindowProcess(TaskRun $taskRun, array $window, Collection $inputArtifacts, ?Collection $pages = null): void
     {
-        $windowFiles   = $window['files'];
-        $windowFileIds = array_column($windowFiles, 'file_id');
-
-        // Get artifacts for this window
-        $windowArtifacts = $inputArtifacts->whereIn('id', $windowFileIds);
-
-        // Create window config artifact with all window metadata
-        // This ensures config survives process restarts (meta is not synced on restart, but input artifacts are)
-        $configArtifact = app(WindowConfigArtifactService::class)->createWindowConfigArtifact($taskRun, [
-            'window_files' => $windowFiles, // Contains page_number and file_id
-            'window_start' => $window['window_start'],
-            'window_end'   => $window['window_end'],
-            'window_index' => $window['window_index'],
-        ]);
+        $windowFiles = $window['files'];
 
         // Create the process directly (not using TaskProcessRunnerService::prepare to avoid agent setup)
-        // Note: meta is intentionally empty - config is stored in the artifact
         $taskProcess = $taskRun->taskProcesses()->create([
             'name'      => "Compare Files {$window['window_start']}-{$window['window_end']}",
             'operation' => 'Comparison Window',
@@ -109,13 +105,34 @@ class WindowProcessService
             'is_ready'  => true, // Ready to run immediately
         ]);
 
-        // Attach config artifact as input (will be synced on restart)
-        $taskProcess->inputArtifacts()->attach($configArtifact->id);
+        if ($pages) {
+            // New pattern: create a window pages artifact containing the window's StoredFiles
+            $windowPagesArtifact = Artifact::create([
+                'team_id' => $taskRun->taskDefinition->team_id,
+                'name'    => "Window Pages {$window['window_start']}-{$window['window_end']}",
+            ]);
 
-        // Attach window artifacts to the window process
-        foreach ($windowArtifacts as $artifact) {
-            $taskProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+            // Get the StoredFiles for this window by matching file_id (stored_file_id in new pattern)
+            $windowFileIds     = array_column($windowFiles, 'file_id');
+            $windowStoredFiles = $pages->whereIn('id', $windowFileIds);
+
+            // Attach stored files to the window pages artifact
+            foreach ($windowStoredFiles as $storedFile) {
+                $windowPagesArtifact->storedFiles()->attach($storedFile->id);
+            }
+
+            // Attach window pages artifact to the process
+            $taskProcess->inputArtifacts()->attach($windowPagesArtifact->id, ['category' => 'input']);
+        } else {
+            // Old pattern: attach input artifacts by ID
+            $windowFileIds   = array_column($windowFiles, 'file_id');
+            $windowArtifacts = $inputArtifacts->whereIn('id', $windowFileIds);
+
+            foreach ($windowArtifacts as $artifact) {
+                $taskProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
+            }
         }
+
         $taskProcess->updateRelationCounter('inputArtifacts');
 
         static::logDebug("Created window process {$taskProcess->id}: page numbers {$window['window_start']}-{$window['window_end']}");
@@ -168,6 +185,25 @@ class WindowProcessService
         usort($files, fn($a, $b) => $a['page_number'] <=> $b['page_number']);
 
         static::logDebug('Extracted ' . count($files) . ' files from artifacts');
+
+        return $files;
+    }
+
+    /**
+     * Get file list from StoredFile pages collection.
+     * Maps each StoredFile to file_id and page_number, sorted by page_number.
+     *
+     * @param  Collection  $pages  Collection of StoredFile objects
+     * @return array Array of ['file_id' => stored_file_id, 'page_number' => int]
+     */
+    protected function getFileListFromPages(Collection $pages): array
+    {
+        $files = $pages->map(fn($storedFile) => [
+            'file_id'     => $storedFile->id,
+            'page_number' => $storedFile->page_number,
+        ])->sortBy('page_number')->values()->toArray();
+
+        static::logDebug('Extracted ' . count($files) . ' files from pages collection');
 
         return $files;
     }
