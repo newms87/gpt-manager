@@ -522,4 +522,132 @@ HTML;
         $this->assertTrue($result['success']);
         $this->assertEquals('<span>new</span>', $result['content']);
     }
+
+    // ==========================================
+    // CSS WHITESPACE AROUND DELIMITERS TESTS
+    // ==========================================
+
+    public function test_matches_css_with_spaces_after_commas_when_needle_has_none(): void
+    {
+        // Given - Content has spaces after commas but needle does not
+        $content = '.box { background: rgba(0, 0, 0, .08); }';
+        $edits = [
+            ['old_string' => '.box { background: rgba(0,0,0,.08); }', 'new_string' => '.box { background: rgba(0, 0, 0, .2); }'],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match CSS with spaces after commas when needle has none. Errors: ' . json_encode($result['errors']));
+        $this->assertEquals('.box { background: rgba(0, 0, 0, .2); }', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
+
+    public function test_matches_css_without_spaces_after_commas_when_needle_has_them(): void
+    {
+        // Given - Content has no spaces after commas but needle does
+        $content = '.box { background: rgba(0,0,0,.08); }';
+        $edits = [
+            ['old_string' => '.box { background: rgba(0, 0, 0, .08); }', 'new_string' => '.box { background: rgba(0, 0, 0, .2); }'],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match CSS without spaces after commas when needle has them. Errors: ' . json_encode($result['errors']));
+        $this->assertEquals('.box { background: rgba(0, 0, 0, .2); }', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
+
+    public function test_matches_css_with_different_spacing_around_colons(): void
+    {
+        // Given - Content has no space after colons but needle does
+        $content = '.box { color:#333; padding:10px; }';
+        $edits = [
+            ['old_string' => '.box { color: #333; padding: 10px; }', 'new_string' => '.box { color: #fff; padding: 20px; }'],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match CSS with different spacing around colons. Errors: ' . json_encode($result['errors']));
+        $this->assertEquals('.box { color: #fff; padding: 20px; }', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
+
+    public function test_matches_multiline_css_block_with_spacing_differences(): void
+    {
+        // Given - Actual production scenario: multi-line CSS block with spaces after commas
+        $content = <<<'CSS'
+.email-template header {
+  background: linear-gradient(135deg, #6ec1ff 0%, #8a5fff 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, .08);
+  padding: 20px 24px;
+}
+CSS;
+        // LLM omitted spaces after commas in its old_string
+        $oldString = <<<'CSS'
+.email-template header {
+  background: linear-gradient(135deg,#6ec1ff 0%,#8a5fff 100%);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  padding: 20px 24px;
+}
+CSS;
+        $newString = <<<'CSS'
+.email-template header {
+  background: linear-gradient(135deg, #4a9eff 0%, #6b3fff 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, .12);
+  padding: 24px 32px;
+}
+CSS;
+        $edits = [
+            ['old_string' => $oldString, 'new_string' => $newString],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match multiline CSS block with spacing differences around commas. Errors: ' . json_encode($result['errors']));
+        $this->assertStringContainsString('#4a9eff', $result['content']);
+        $this->assertStringContainsString('.12)', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
+
+    public function test_matches_css_with_different_spacing_around_braces(): void
+    {
+        // Given - Content has no spaces around braces but needle does
+        $content = '.box{color: red;}';
+        $edits = [
+            ['old_string' => '.box { color: red; }', 'new_string' => '.container { color: blue; }'],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match CSS with different spacing around braces. Errors: ' . json_encode($result['errors']));
+        $this->assertEquals('.container { color: blue; }', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
+
+    public function test_matches_css_with_different_spacing_around_parentheses(): void
+    {
+        // Given - Content has no spaces inside parentheses but needle does
+        $content = '.box { width: calc(100% - 20px); }';
+        $edits = [
+            ['old_string' => '.box { width: calc( 100% - 20px ); }', 'new_string' => '.box { width: calc(50% - 10px); }'],
+        ];
+
+        // When
+        $result = $this->service->applyEdits($content, $edits);
+
+        // Then
+        $this->assertTrue($result['success'], 'Should match CSS with different spacing around parentheses. Errors: ' . json_encode($result['errors']));
+        $this->assertEquals('.box { width: calc(50% - 10px); }', $result['content']);
+        $this->assertEquals(1, $result['applied_count']);
+    }
 }

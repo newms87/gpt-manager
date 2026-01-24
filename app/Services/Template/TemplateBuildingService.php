@@ -436,15 +436,9 @@ class TemplateBuildingService
         $htmlResult = $editService->applyEdits($template->html_content ?? '', $htmlEdits);
         $cssResult  = $editService->applyEdits($template->css_content ?? '', $cssEdits);
 
-        // Collect recoverable errors
-        $htmlErrors = array_filter($htmlResult['errors'], fn($e) => $e['recoverable'] ?? false);
-        $cssErrors  = array_filter($cssResult['errors'], fn($e) => $e['recoverable'] ?? false);
+        $appliedCount = $htmlResult['applied_count'] + $cssResult['applied_count'];
 
-        if (!empty($htmlErrors) || !empty($cssErrors)) {
-            return $this->handleRecoverableErrors($template, $htmlErrors, $cssErrors);
-        }
-
-        // Apply successful edits
+        // Save successfully-applied edits BEFORE checking for errors
         $updated = false;
         if ($htmlResult['content'] !== $template->html_content) {
             $template->html_content = $htmlResult['content'];
@@ -464,17 +458,25 @@ class TemplateBuildingService
             ]);
         }
 
+        // Collect recoverable errors
+        $htmlErrors = array_filter($htmlResult['errors'], fn($e) => $e['recoverable'] ?? false);
+        $cssErrors  = array_filter($cssResult['errors'], fn($e) => $e['recoverable'] ?? false);
+
+        if (!empty($htmlErrors) || !empty($cssErrors)) {
+            return $this->handleRecoverableErrors($template, $htmlErrors, $cssErrors, $appliedCount);
+        }
+
         // Sync variables (extracted from HTML)
         $variablesSynced = $this->syncVariables($template, []);
 
         static::logDebug('Partial response processed', [
-            'applied_count'    => $htmlResult['applied_count'] + $cssResult['applied_count'],
+            'applied_count'    => $appliedCount,
             'variables_synced' => $variablesSynced,
         ]);
 
         return [
             'status'           => 'success',
-            'applied_count'    => $htmlResult['applied_count'] + $cssResult['applied_count'],
+            'applied_count'    => $appliedCount,
             'variables_synced' => $variablesSynced,
         ];
     }
@@ -487,12 +489,14 @@ class TemplateBuildingService
     protected function handleRecoverableErrors(
         TemplateDefinition $template,
         array $htmlErrors,
-        array $cssErrors
+        array $cssErrors,
+        int $appliedCount
     ): array {
         static::logDebug('Recoverable edit errors detected', [
             'template_id'      => $template->id,
             'html_error_count' => count($htmlErrors),
             'css_error_count'  => count($cssErrors),
+            'applied_count'    => $appliedCount,
         ]);
 
         // Build error feedback for potential LLM correction
@@ -507,16 +511,18 @@ class TemplateBuildingService
             $this->dispatchBuild($template, $correctionContext, effort: 'low');
 
             return [
-                'status' => 'correcting',
-                'errors' => $allErrors,
+                'status'        => 'correcting',
+                'errors'        => $allErrors,
+                'applied_count' => $appliedCount,
             ];
         }
 
-        // Otherwise, log and continue (partial edits already applied)
+        // Otherwise, log and continue (successful edits already saved above)
         return [
-            'status'  => 'partial_failure',
-            'errors'  => $allErrors,
-            'message' => 'Some edits could not be applied. Applied edits have been saved.',
+            'status'        => 'partial_failure',
+            'errors'        => $allErrors,
+            'applied_count' => $appliedCount,
+            'message'       => 'Some edits could not be applied. Applied edits have been saved.',
         ];
     }
 

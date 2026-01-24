@@ -150,17 +150,22 @@ class TemplateEditService
      *
      * This converts a string into a pattern where any whitespace sequence
      * in the needle matches any whitespace sequence in the content.
+     * Also allows optional whitespace around CSS/HTML delimiters (commas, colons,
+     * semicolons, braces, parentheses).
      */
     protected function buildWhitespaceFlexiblePattern(string $needle): string
     {
         // Split on whitespace while keeping track of where splits occurred
         $parts = preg_split('/\s+/', $needle, -1, PREG_SPLIT_NO_EMPTY);
 
-        // Escape each part for regex
-        $escapedParts = array_map(fn($part) => preg_quote($part, '/'), $parts);
+        // Escape each part for regex and add delimiter flexibility
+        $escapedParts = array_map(
+            fn($part) => $this->addDelimiterFlexibility(preg_quote($part, '/')),
+            $parts
+        );
 
-        // Join with flexible whitespace pattern (\s+ matches 1 or more whitespace chars)
-        $pattern = implode('\s+', $escapedParts);
+        // Join with flexible whitespace pattern (\s* matches 0 or more whitespace chars)
+        $pattern = implode('\s*', $escapedParts);
 
         // Handle leading/trailing whitespace in original needle
         $hasLeadingWhitespace  = preg_match('/^\s/', $needle);
@@ -174,6 +179,30 @@ class TemplateEditService
         }
 
         return '/' . $pattern . '/s';
+    }
+
+    /**
+     * Add optional whitespace around CSS/HTML delimiters in a preg_quoted string.
+     *
+     * Inserts \s* after opening delimiters (, :, ;, \(, \{) and before
+     * closing delimiters (\), \}).
+     */
+    protected function addDelimiterFlexibility(string $escapedPart): string
+    {
+        // Insert \s* after commas, colons, and semicolons
+        $escapedPart = str_replace(',', ',\s*', $escapedPart);
+        $escapedPart = str_replace(':', ':\s*', $escapedPart);
+        $escapedPart = str_replace(';', ';\s*', $escapedPart);
+
+        // Insert \s* after opening parens/braces (escaped by preg_quote)
+        $escapedPart = str_replace('\(', '\(\s*', $escapedPart);
+        $escapedPart = str_replace('\{', '\{\s*', $escapedPart);
+
+        // Insert \s* before closing parens/braces (escaped by preg_quote)
+        $escapedPart = str_replace('\)', '\s*\)', $escapedPart);
+        $escapedPart = str_replace('\}', '\s*\}', $escapedPart);
+
+        return $escapedPart;
     }
 
     /**
