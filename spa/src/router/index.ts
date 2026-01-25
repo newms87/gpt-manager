@@ -14,7 +14,7 @@ import {
 	WorkflowDefinitionsView,
 	WorkflowInputsView
 } from "@/views";
-import { AuditCardsPlayground, CodeViewerPlayground, MarkdownEditorPlayground } from "@/views/playground";
+import { AuditCardsPlayground, CodeViewerPlayground, MarkdownEditorPlayground, SchemaDefinitionPlayground } from "@/views/playground";
 import { FlashMessages } from "quasar-ui-danx";
 import { createRouter, createWebHistory } from "vue-router";
 import { uiRoutes } from "./uiRoutes";
@@ -102,6 +102,12 @@ const router = createRouter({
 							name: "playground.audit-cards",
 							component: AuditCardsPlayground,
 							meta: { title: "Audit Cards Playground" }
+						},
+						{
+							path: "schema-definition",
+							name: "playground.schema-definition",
+							component: SchemaDefinitionPlayground,
+							meta: { title: "Schema Definition Playground" }
 						}
 					]
 				}

@@ -3,6 +3,13 @@ import { LayoutDirection } from "./useFragmentSelectorGraph";
 import { Edge, Node, useVueFlow } from "@vue-flow/core";
 import { ComputedRef, nextTick, Ref, ref } from "vue";
 
+export interface CanvasLayoutResult {
+	layoutApplied: Ref<boolean>;
+	layoutDirection: Ref<LayoutDirection>;
+	nodePositions: Ref<Map<string, { x: number; y: number }>>;
+	triggerRelayout: () => void;
+}
+
 /**
  * Composable that handles measuring VueFlow nodes after initialization,
  * determining optimal layout direction, and applying tree layout positions.
@@ -12,13 +19,17 @@ export function useCanvasLayout(
 	canvasContainer: Ref<HTMLElement | null>,
 	filteredNodes: ComputedRef<Node[]>,
 	filteredEdges: ComputedRef<Edge[]>
-): { layoutApplied: Ref<boolean>; layoutDirection: Ref<LayoutDirection>; nodePositions: Ref<Map<string, { x: number; y: number }>> } {
+): CanvasLayoutResult {
 	const { onNodesInitialized, fitView, getNodes, updateNodeInternals } = useVueFlow(flowId);
 	const layoutApplied = ref(false);
 	const layoutDirection = ref<LayoutDirection>("LR");
 	const nodePositions = ref<Map<string, { x: number; y: number }>>(new Map());
 
-	onNodesInitialized(() => {
+	/**
+	 * Apply layout based on current node dimensions and container size.
+	 * Called initially on nodes initialized, and can be called again to re-layout.
+	 */
+	function applyLayout(): void {
 		// Gather real dimensions from VueFlow's measured nodes
 		const dimensions = new Map<string, { width: number; height: number }>();
 		for (const node of getNodes.value) {
@@ -60,7 +71,26 @@ export function useCanvasLayout(
 			updateNodeInternals(getNodes.value.map(n => n.id));
 			nextTick(() => fitView());
 		}, 500);
+	}
+
+	/**
+	 * Trigger a re-layout after node dimensions change (e.g., showing/hiding properties).
+	 * Waits for DOM update then re-measures and applies new layout.
+	 */
+	function triggerRelayout(): void {
+		// Brief timeout to allow DOM to update with new node heights
+		setTimeout(() => {
+			updateNodeInternals(getNodes.value.map(n => n.id));
+			// Wait for VueFlow to re-measure nodes
+			setTimeout(() => {
+				applyLayout();
+			}, 100);
+		}, 50);
+	}
+
+	onNodesInitialized(() => {
+		applyLayout();
 	});
 
-	return { layoutApplied, layoutDirection, nodePositions };
+	return { layoutApplied, layoutDirection, nodePositions, triggerRelayout };
 }

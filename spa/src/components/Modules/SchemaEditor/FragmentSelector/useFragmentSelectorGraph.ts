@@ -13,6 +13,8 @@ export interface PropertyInfo {
 	isModel: boolean;
 }
 
+export type SelectionMode = "recursive" | "single-node" | "structure-only";
+
 export interface FragmentModelNodeData {
 	name: string;
 	path: string;
@@ -20,6 +22,9 @@ export interface FragmentModelNodeData {
 	properties: PropertyInfo[];
 	selectedProperties: string[];
 	direction: LayoutDirection;
+	selectionMode: SelectionMode;
+	isIncluded: boolean;
+	showProperties: boolean;
 }
 
 /**

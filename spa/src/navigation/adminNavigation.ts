@@ -5,6 +5,7 @@ import {
 	FaSolidCloudBolt as DashboardIcon,
 	FaSolidCode as DeveloperToolsIcon,
 	FaSolidDownload as WorkflowInputsIcon,
+	FaSolidFlask as PlaygroundIcon,
 	FaSolidPallet as WorkflowDefinitionsIcon,
 	FaSolidRobot as AgentsIcon,
 	FaSolidToiletPaperSlash as AuditsIcon
@@ -41,6 +42,11 @@ export default [
 		label: "Audits",
 		icon: AuditsIcon,
 		route: { name: "audit-requests" }
+	},
+	{
+		label: "Playground",
+		icon: PlaygroundIcon,
+		route: { name: "playground" }
 	},
 	{
 		label: "Developer Tools",

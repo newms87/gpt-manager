@@ -12,7 +12,7 @@ type RefOrGetter<T> = { value: T } | (() => T);
  */
 export function useFragmentSelection(
 	schema: RefOrGetter<JsonSchema>,
-	selectionMode: RefOrGetter<"recursive" | "model-only">
+	selectionMode: RefOrGetter<"recursive" | "single-node" | "structure-only">
 ) {
 	// Internal selection state: path -> Set of selected property names
 	const selectionMap = reactive(new Map<string, Set<string>>());
@@ -37,6 +37,28 @@ export function useFragmentSelection(
 	}
 
 	/**
+	 * Ensure all ancestor paths have the appropriate property selected.
+	 * For path "root.providers.certifications", this ensures:
+	 * - "root" has "providers" selected
+	 * - "root.providers" has "certifications" selected
+	 */
+	function ensureParentChainSelected(path: string): void {
+		if (path === "root") return;
+
+		const parts = path.split(".");
+		// Start from root and work down to parent of current path
+		for (let i = 1; i < parts.length; i++) {
+			const parentPath = parts.slice(0, i).join(".");
+			const childName = parts[i];
+
+			if (!selectionMap.has(parentPath)) {
+				selectionMap.set(parentPath, new Set());
+			}
+			selectionMap.get(parentPath)!.add(childName);
+		}
+	}
+
+	/**
 	 * Toggle a single property's selection state at the given path.
 	 */
 	function onToggleProperty(payload: { path: string; propertyName: string }): void {
@@ -55,6 +77,8 @@ export function useFragmentSelection(
 			}
 		} else {
 			selected.add(propertyName);
+			// Ensure parent chain is selected when adding
+			ensureParentChainSelected(path);
 		}
 	}
 
@@ -107,11 +131,46 @@ export function useFragmentSelection(
 		const { path, selectAll } = payload;
 		const mode = toValue(selectionMode);
 
-		if (selectAll) {
+		if (mode === "structure-only") {
+			// structure-only mode: toggle this node's inclusion
+			if (path === "root") {
+				// For root, toggle by adding/removing from selectionMap
+				if (selectAll) {
+					// Mark root as selected (empty Set means selected with no children)
+					// Always set to ensure reactivity triggers
+					selectionMap.set("root", new Set());
+				} else {
+					// Deselect root and clear all selections
+					selectionMap.clear();
+				}
+				return;
+			}
+
+			const parts = path.split(".");
+			const parentPath = parts.slice(0, -1).join(".");
+			const nodeName = parts[parts.length - 1];
+
+			if (selectAll) {
+				// Add this node to parent's selection and ensure parent chain
+				ensureParentChainSelected(path);
+			} else {
+				// Remove this node from parent's selection
+				const parentSelection = selectionMap.get(parentPath);
+				if (parentSelection) {
+					parentSelection.delete(nodeName);
+					if (parentSelection.size === 0 && parentPath !== "root") {
+						selectionMap.delete(parentPath);
+					}
+				}
+			}
+		} else if (selectAll) {
+			// Always ensure parent chain is selected first
+			ensureParentChainSelected(path);
+
 			if (mode === "recursive") {
 				selectAllRecursive(path, getSchemaAtPath(path));
 			} else {
-				// model-only mode: select just this node's properties
+				// single-node mode: select just this node's properties (not recursive)
 				const nodeSchema = getSchemaAtPath(path);
 				const properties = getModelProperties(nodeSchema);
 				selectionMap.set(path, new Set(properties.map(p => p.name)));
@@ -130,10 +189,16 @@ export function useFragmentSelection(
 	 */
 	function buildSelectorForPath(path: string, nodeSchema: JsonSchema): FragmentSelector | null {
 		const selected = selectionMap.get(path);
-		if (!selected || selected.size === 0) return null;
+		// If path is not in selectionMap at all, return null
+		if (!selected) return null;
+
+		// If selected is empty but path is in map (e.g., root with no children), return just the type
+		if (selected.size === 0) {
+			return { type: nodeSchema.type };
+		}
 
 		const properties = getSchemaProperties(nodeSchema);
-		if (!properties) return null;
+		if (!properties) return { type: nodeSchema.type };
 
 		const children: Record<string, FragmentSelector> = {};
 
@@ -158,16 +223,26 @@ export function useFragmentSelection(
 
 	/**
 	 * Computed FragmentSelector built from the current selection state.
+	 * Returns {} when nothing is selected, {type: "object"} when root is selected.
 	 */
-	const fragmentSelector = computed<FragmentSelector | null>(() => {
-		return buildSelectorForPath("root", toValue(schema));
+	const fragmentSelector = computed<FragmentSelector>(() => {
+		return buildSelectorForPath("root", toValue(schema)) || {};
 	});
 
 	/**
 	 * Parse a FragmentSelector into the internal selection map.
 	 */
 	function parseFragmentSelector(selector: FragmentSelector | null, path: string): void {
-		if (!selector || !selector.children) return;
+		if (!selector) return;
+
+		// If selector has a type but no children, mark this path as selected with empty set
+		// This handles structure-only mode where root is selected with no children
+		if (selector.type && !selector.children) {
+			selectionMap.set(path, new Set());
+			return;
+		}
+
+		if (!selector.children) return;
 
 		const selectedNames = new Set<string>();
 
