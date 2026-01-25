@@ -7,10 +7,9 @@ use App\Models\Billing\PaymentMethod;
 use App\Models\Billing\Subscription;
 use App\Models\Billing\SubscriptionPlan;
 use App\Models\Team\Team;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class BillingService
@@ -412,7 +411,7 @@ class BillingService
      */
     public function processSuccessfulPayment(array $paymentIntent): void
     {
-        Log::info('Processing successful payment', ['payment_intent' => $paymentIntent['id']]);
+        static::logInfo('Processing successful payment', ['payment_intent' => $paymentIntent['id']]);
 
         // TODO: Update billing history record
     }

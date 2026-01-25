@@ -10,7 +10,7 @@ use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use App\Traits\SchemaFieldHelper;
 use Carbon\Carbon;
 use Exception;

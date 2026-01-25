@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Billing\UsageBillingService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Console\Command;
 
 class ProcessDailyUsageBilling extends Command

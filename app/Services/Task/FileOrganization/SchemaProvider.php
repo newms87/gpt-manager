@@ -4,7 +4,7 @@ namespace App\Services\Task\FileOrganization;
 
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\TaskDefinition;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Provides JSON Schema definitions for file organization task responses.

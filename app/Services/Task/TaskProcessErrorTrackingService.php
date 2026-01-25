@@ -4,7 +4,7 @@ namespace App\Services\Task;
 
 use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Models\Job\JobDispatch;
 
 class TaskProcessErrorTrackingService

@@ -5,7 +5,7 @@ namespace App\Services\Template;
 use App\Models\TeamObject\TeamObject;
 use App\Models\Template\TemplateDefinition;
 use App\Services\Demand\TemplateVariableResolutionService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Collection;
 

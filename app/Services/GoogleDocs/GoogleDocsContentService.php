@@ -3,7 +3,7 @@
 namespace App\Services\GoogleDocs;
 
 use App\Api\GoogleDocs\GoogleDocsApi;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Exceptions\ApiException;
 
 class GoogleDocsContentService

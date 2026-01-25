@@ -10,7 +10,7 @@ use App\Models\Task\TaskProcessListener;
 use App\Models\Task\TaskRun;
 use App\Models\Team\Team;
 use App\Services\Task\Runners\BaseTaskRunner;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as EloquentCollection;
 use Newms87\Danx\Exceptions\ValidationError;

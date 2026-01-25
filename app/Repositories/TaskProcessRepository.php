@@ -6,7 +6,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Workflow\WorkflowStatesContract;
 use App\Resources\TaskDefinition\TaskProcessResource;
 use App\Services\Task\TaskProcessRunnerService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Builder;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;

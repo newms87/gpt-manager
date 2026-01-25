@@ -8,11 +8,10 @@ use App\Models\Team\Team;
 use App\Models\Usage\UsageEvent;
 use App\Repositories\Billing\BillingHistoryRepository;
 use App\Repositories\Billing\SubscriptionRepository;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class UsageBillingService
 {
@@ -31,7 +30,7 @@ class UsageBillingService
      */
     public function processDailyBilling(): void
     {
-        Log::info('Starting daily usage billing process');
+        static::logInfo('Starting daily usage billing process');
 
         $teams = $this->getTeamsForBilling();
 
@@ -46,7 +45,7 @@ class UsageBillingService
             }
         }
 
-        Log::info('Completed daily usage billing process');
+        static::logInfo('Completed daily usage billing process');
     }
 
     /**
@@ -61,7 +60,7 @@ class UsageBillingService
         $usage = $this->calculateDailyUsage($team);
 
         if ($usage['total_cost'] <= 0) {
-            Log::info('No usage charges for team', ['team_id' => $team->id]);
+            static::logInfo('No usage charges for team', ['team_id' => $team->id]);
 
             return;
         }
@@ -246,7 +245,7 @@ class UsageBillingService
 
         $billingHistory->save();
 
-        Log::info('Successfully charged team for usage', [
+        static::logInfo('Successfully charged team for usage', [
             'team_id' => $team->id,
             'amount'  => $usage['total_cost'],
             'date'    => $usage['date'],

@@ -3,7 +3,7 @@
 namespace App\Services\WorkflowBuilder;
 
 use App\Models\Workflow\WorkflowDefinition;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\File;
 use Newms87\Danx\Exceptions\ValidationError;
 

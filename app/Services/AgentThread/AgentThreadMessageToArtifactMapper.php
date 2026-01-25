@@ -6,7 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThreadMessage;
 use App\Models\Agent\AgentThreadRun;
 use App\Models\Task\Artifact;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Helpers\DateHelper;
 use Newms87\Danx\Helpers\StringHelper;
 

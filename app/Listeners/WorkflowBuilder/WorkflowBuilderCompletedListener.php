@@ -5,7 +5,7 @@ namespace App\Listeners\WorkflowBuilder;
 use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Workflow\WorkflowBuilderChat;
 use App\Services\WorkflowBuilder\WorkflowBuilderService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;

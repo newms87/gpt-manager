@@ -6,12 +6,14 @@ use App\Models\Agent\Agent;
 use App\Models\Agent\AgentThread;
 use App\Models\Agent\McpServer;
 use App\Services\AgentThread\AgentThreadService;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Log;
 
 abstract class BasePromptTest
 {
+    use HasDebugLogging;
+
     protected ?Agent $agent = null;
 
     protected ?McpServer $mcpServer = null;
@@ -169,7 +171,7 @@ abstract class BasePromptTest
             $this->console->line($message);
         }
 
-        Log::info("[PromptTest] {$message}");
+        static::logInfo($message);
     }
 
     protected function getTestResults(): array

@@ -3,7 +3,7 @@
 namespace App\Api\OpenAi\Classes;
 
 use App\Api\AgentApiContracts\AgentMessageFormatterContract;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Newms87\Danx\Models\Utilities\StoredFile;
 use Newms87\Danx\Services\TranscodeFileService;

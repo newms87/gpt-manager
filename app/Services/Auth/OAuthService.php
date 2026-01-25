@@ -10,7 +10,7 @@ use App\Http\Resources\Auth\AuthTokenResource;
 use App\Models\Auth\AuthToken;
 use App\Models\Team\Team;
 use App\Repositories\Auth\AuthTokenRepository;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\Http;
 use Newms87\Danx\Exceptions\ValidationError;
 

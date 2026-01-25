@@ -8,7 +8,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\Task\Runners\ClassifierTaskRunner;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Helpers\LockHelper;
 

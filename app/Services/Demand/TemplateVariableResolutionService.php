@@ -14,7 +14,7 @@ use App\Services\AgentThread\ArtifactFilterService;
 use App\Services\ArrayAggregationService;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\ValueFormattingService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 

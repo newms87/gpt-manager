@@ -7,7 +7,7 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TranscodePrerequisiteService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 

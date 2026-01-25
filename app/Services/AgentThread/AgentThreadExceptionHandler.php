@@ -2,7 +2,7 @@
 
 namespace App\Services\AgentThread;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use GuzzleHttp\Exception\ConnectException;
 use Newms87\Danx\Exceptions\ApiRequestException;
 use Newms87\Danx\Services\Error\RetryableErrorChecker;

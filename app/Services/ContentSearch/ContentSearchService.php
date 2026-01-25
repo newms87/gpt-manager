@@ -7,7 +7,7 @@ use App\Models\Task\Artifact;
 use App\Repositories\ContentSearch\ContentSearchRepository;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\ContentSearch\Exceptions\InvalidSearchParametersException;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Arr;
 

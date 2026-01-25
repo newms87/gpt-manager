@@ -8,7 +8,7 @@ use App\Api\OpenAi\Classes\OpenAiResponsesResponse;
 use App\Api\Options\ResponsesApiOptions;
 use App\Events\AgentThreadMessageStreamEvent;
 use App\Models\Agent\AgentThreadMessage;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Api\BearerTokenApi;
 use Newms87\Danx\Exceptions\ApiException;
 
@@ -70,6 +70,9 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Regular request (no streaming in this method)
         $response = $this->post('responses', $requestBody)->json();
 
+        if ($response === null) {
+            static::logDebug('Responses API json() result is null - possible silent failure');
+        }
         static::logDebug('OpenAI Responses API response received: ' . strlen(json_encode($response)) . ' bytes');
 
         return OpenAiResponsesResponse::make($response);

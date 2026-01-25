@@ -36,7 +36,7 @@ class DebugTaskRunService
         }
 
         // Try to find as TaskProcess
-        $taskProcess = TaskProcess::find($id);
+        $taskProcess = TaskProcess::withTrashed()->find($id);
 
         if ($taskProcess) {
             return [
@@ -57,7 +57,7 @@ class DebugTaskRunService
                 ->first();
 
             if ($pivotRecord) {
-                $taskProcess = TaskProcess::find($pivotRecord->model_id);
+                $taskProcess = TaskProcess::withTrashed()->find($pivotRecord->model_id);
 
                 if ($taskProcess) {
                     return [

@@ -6,7 +6,7 @@ use App\Events\WorkflowRunUpdatedEvent;
 use App\Models\Demand\UiDemand;
 use App\Models\Workflow\WorkflowListener;
 use App\Services\UiDemand\UiDemandWorkflowService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Newms87\Danx\Helpers\LockHelper;

@@ -13,7 +13,7 @@ use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
 use App\Services\JsonSchema\JSONSchemaDataToDatabaseMapper;
 use App\Services\JsonSchema\JsonSchemaService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use App\Traits\MergesExtractionResults;
 use App\Traits\SchemaFieldHelper;
 use App\Traits\TeamObjectRelationshipHelper;

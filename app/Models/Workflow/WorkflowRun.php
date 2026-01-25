@@ -13,7 +13,7 @@ use App\Models\Usage\UsageEvent;
 use App\Services\Task\TaskProcessRunnerService;
 use App\Services\Usage\UsageTrackingService;
 use App\Services\Workflow\WorkflowRunnerService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use App\Traits\HasWorkflowStatesTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;

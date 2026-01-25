@@ -5,7 +5,7 @@ namespace App\Resources\TeamObject;
 use App\Models\TeamObject\TeamObject;
 use App\Models\TeamObject\TeamObjectAttribute;
 use App\Models\TeamObject\TeamObjectRelationship;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 class TeamObjectForAgentsResource
 {

@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Agent\AgentThreadRun;
 use App\Services\AgentThread\AgentThreadService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Jobs\Job;
 
 class ExecuteThreadRunJob extends Job

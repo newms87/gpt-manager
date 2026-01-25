@@ -5,7 +5,7 @@ namespace App\Jobs;
 use App\Models\Agent\AgentThread;
 use App\Models\Template\TemplateDefinition;
 use App\Services\Template\TemplatePlanningService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Jobs\Job;
 
 class TemplatePlanningJob extends Job

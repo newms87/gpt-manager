@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Agent\AgentThread;
 use App\Services\Template\TemplateCollaborationService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Helpers\LockHelper;
 use Newms87\Danx\Jobs\Job;
 use Newms87\Danx\Models\Utilities\StoredFile;

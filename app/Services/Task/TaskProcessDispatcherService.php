@@ -5,7 +5,7 @@ namespace App\Services\Task;
 use App\Jobs\TaskProcessJob;
 use App\Models\Task\TaskRun;
 use App\Models\Workflow\WorkflowRun;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Helpers\LockHelper;
 
 class TaskProcessDispatcherService

@@ -8,7 +8,7 @@ use App\Models\Task\TaskRun;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\AgentThread\ArtifactFilter;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Symfony\Component\Yaml\Yaml;
 

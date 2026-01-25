@@ -3,7 +3,7 @@
 namespace App\Services\Task\DataExtraction;
 
 use App\Models\Task\TaskDefinition;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Service for caching extraction plans.

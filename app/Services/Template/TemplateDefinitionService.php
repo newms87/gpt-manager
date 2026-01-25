@@ -10,7 +10,7 @@ use App\Models\Template\TemplateDefinition;
 use App\Models\Template\TemplateDefinitionHistory;
 use App\Services\Demand\TemplateVariableService;
 use App\Services\GoogleDocs\GoogleDocsFileService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Newms87\Danx\Exceptions\ValidationError;

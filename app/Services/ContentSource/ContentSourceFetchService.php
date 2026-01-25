@@ -5,7 +5,7 @@ namespace App\Services\ContentSource;
 use App\Api\ConfigurableApi\ConfigurableApi;
 use App\Api\ConfigurableApi\ConfigurableApiConfig;
 use App\Models\ContentSource\ContentSource;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Arr;
 
 class ContentSourceFetchService

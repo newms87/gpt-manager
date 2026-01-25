@@ -6,7 +6,7 @@ use App\Models\Agent\Agent;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Task\Artifact;
 use App\Services\AgentThread\AgentThreadBuilderService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
 class ArtifactBatchNamingService

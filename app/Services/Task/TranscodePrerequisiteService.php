@@ -8,7 +8,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ImageToTextTranscoderTaskRunner;
 use App\Services\Usage\UsageTrackingService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Aws\S3\Exception\S3Exception;
 use Exception;
 use GuzzleHttp\Exception\ClientException;

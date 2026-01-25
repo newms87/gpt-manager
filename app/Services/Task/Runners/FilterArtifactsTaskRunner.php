@@ -4,7 +4,7 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Task\Artifact;
 use App\Services\FilterService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 

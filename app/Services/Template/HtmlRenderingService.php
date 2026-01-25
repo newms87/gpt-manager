@@ -3,7 +3,7 @@
 namespace App\Services\Template;
 
 use App\Models\Template\TemplateDefinition;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use DOMDocument;
 use DOMXPath;
 

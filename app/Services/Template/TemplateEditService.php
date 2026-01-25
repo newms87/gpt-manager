@@ -2,7 +2,7 @@
 
 namespace App\Services\Template;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Service for applying anchored replacement edits to HTML/CSS content.

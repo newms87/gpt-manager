@@ -4,7 +4,7 @@ namespace App\Services\Workflow;
 
 use App\Models\Task\Artifact;
 use App\Models\Workflow\WorkflowInput;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 class WorkflowInputToArtifactMapper
 {

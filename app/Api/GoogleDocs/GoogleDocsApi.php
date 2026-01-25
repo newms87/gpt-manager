@@ -9,7 +9,7 @@ use App\Services\Auth\OAuthService;
 use App\Services\GoogleDocs\GoogleDocsContentService;
 use App\Services\GoogleDocs\GoogleDocsFormattingService;
 use App\Services\GoogleDocs\GoogleDocsTemplateService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Newms87\Danx\Api\Api;

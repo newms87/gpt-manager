@@ -13,7 +13,7 @@ use App\Models\Schema\SchemaDefinition;
 use App\Models\Schema\SchemaFragment;
 use App\Services\JsonSchema\JsonSchemaService;
 use App\Services\Usage\UsageTrackingService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Helpers\LockHelper;
@@ -207,6 +207,8 @@ class AgentThreadService
 
             $retries = $agent->retry_count ?: 0;
 
+            static::logDebug("executeThreadRun start - retries={$retries} threadRun={$agentThreadRun->id}");
+
             // Create exception handler for this thread run
             $exceptionHandler = new AgentThreadExceptionHandler();
 
@@ -232,8 +234,11 @@ class AgentThreadService
 
                     throw new Exception('Response from AI model is not finished: ' . json_encode($response->getContent()), 581);
                 } catch (Throwable $exception) {
+                    $shouldRetry = $exceptionHandler->shouldRetry($exception);
+                    static::logDebug("Exception caught - class=" . get_class($exception) . " code={$exception->getCode()} message=\"{$exception->getMessage()}\" shouldRetry=" . ($shouldRetry ? 'true' : 'false') . " threadRun={$agentThreadRun->id}");
+
                     // Handle all exceptions through centralized retry logic
-                    if ($exceptionHandler->shouldRetry($exception)) {
+                    if ($shouldRetry) {
                         continue;
                     }
 
@@ -241,6 +246,8 @@ class AgentThreadService
                     throw $exception;
                 }
             } while ($retries-- >= 0);
+
+            static::logDebug("Thread run loop exited - retries exhausted. threadRun={$agentThreadRun->id}");
         } catch (Throwable $throwable) {
             $agentThreadRun->failed_at = now();
             $agentThreadRun->save();

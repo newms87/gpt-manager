@@ -4,10 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\Billing\BillingService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class StripeWebhookController extends Controller
 {
@@ -48,7 +47,7 @@ class StripeWebhookController extends Controller
      */
     protected function processWebhookEvent(array $event): void
     {
-        Log::info('Processing Stripe webhook', [
+        static::logInfo('Processing Stripe webhook', [
             'type' => $event['type'],
             'id'   => $event['id'],
         ]);
@@ -91,7 +90,7 @@ class StripeWebhookController extends Controller
                 break;
 
             default:
-                Log::info('Unhandled webhook event type: ' . $event['type']);
+                static::logInfo('Unhandled webhook event type: ' . $event['type']);
         }
     }
 

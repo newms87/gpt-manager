@@ -5,7 +5,7 @@ namespace App\Services\Task\FileOrganization;
 use App\Api\AgentApiContracts\AgentApiContract;
 use App\Api\Options\ResponsesApiOptions;
 use App\Models\Task\TaskDefinition;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Newms87\Danx\Exceptions\LockException;

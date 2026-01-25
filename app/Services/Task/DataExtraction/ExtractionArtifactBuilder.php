@@ -7,7 +7,7 @@ use App\Models\Task\TaskProcess;
 use App\Models\Task\TaskRun;
 use App\Models\TeamObject\TeamObject;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use App\Traits\TeamObjectRelationshipHelper;
 use Illuminate\Support\Str;
 

@@ -5,7 +5,7 @@ namespace App\Services\Template;
 use App\Api\GoogleDocs\GoogleDocsApi;
 use App\Models\Template\TemplateDefinition;
 use App\Services\GoogleDocs\GoogleDriveFolderService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 use Newms87\Danx\Models\Utilities\StoredFile;
 

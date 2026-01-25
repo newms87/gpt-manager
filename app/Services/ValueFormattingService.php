@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Unified value formatting service

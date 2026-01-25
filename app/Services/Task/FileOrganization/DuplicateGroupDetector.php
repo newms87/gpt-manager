@@ -2,7 +2,7 @@
 
 namespace App\Services\Task\FileOrganization;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Detects potential duplicate groups with similar names that should be merged.

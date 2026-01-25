@@ -4,7 +4,7 @@ namespace App\Services\Task\DataExtraction;
 
 use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\ExtractDataTaskRunner;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
 /**

@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Facades\Cache;
 use Newms87\Danx\Exceptions\ValidationError;
 

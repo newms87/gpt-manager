@@ -2,7 +2,7 @@
 
 namespace App\Services\Database;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
 
 class DatabaseRecordMapper

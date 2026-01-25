@@ -15,9 +15,8 @@ use App\Models\Workflow\WorkflowRun;
 use App\Repositories\WorkflowInputRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Workflow\WorkflowRunnerService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Exception;
-use Illuminate\Support\Facades\Log;
 use Newms87\Danx\Exceptions\ValidationError;
 
 class WorkflowBuilderService
@@ -599,7 +598,7 @@ class WorkflowBuilderService
         }
 
         // Log successful validation
-        Log::info('Workflow plan validation passed', [
+        static::logInfo('Workflow plan validation passed', [
             'workflow_name'    => $plan['workflow_name'],
             'task_count'       => count($plan['tasks']),
             'connection_count' => count($plan['connections'] ?? []),

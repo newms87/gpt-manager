@@ -9,7 +9,7 @@ use App\Models\Template\TemplateDefinition;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Newms87\Danx\Models\Job\JobDispatch;
 
 /**

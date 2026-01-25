@@ -456,7 +456,7 @@ class WorkflowBuilderCompletedListenerTest extends AuthenticatedTestCase
         // Then
         $this->assertInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class, $this->listener);
         $this->assertContains(\Illuminate\Queue\InteractsWithQueue::class, class_uses($this->listener));
-        $this->assertContains(\App\Traits\HasDebugLogging::class, class_uses($this->listener));
+        $this->assertContains(\Newms87\Danx\Traits\HasDebugLogging::class, class_uses($this->listener));
     }
 
     public function test_systemWorkflowAccessControl_allowsAnyTeamAccess(): void

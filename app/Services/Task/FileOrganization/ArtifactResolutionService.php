@@ -5,7 +5,7 @@ namespace App\Services\Task\FileOrganization;
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
 use App\Services\Task\ArtifactsMergeService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Applies resolution decisions to existing merged artifacts.

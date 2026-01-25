@@ -7,7 +7,7 @@ use App\Models\Task\TaskProcess;
 use App\Services\AgentThread\AgentThreadBuilderService;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\JsonSchema\JsonSchemaService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use App\Traits\SchemaFieldHelper;
 use Symfony\Component\Yaml\Yaml;
 

@@ -8,7 +8,7 @@ use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
 use App\Services\Task\TaskAgentThreadBuilderService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
 /**

@@ -2,7 +2,7 @@
 
 namespace App\Services\Task\FileOrganization;
 
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Manages page context gathering for resolution processes.

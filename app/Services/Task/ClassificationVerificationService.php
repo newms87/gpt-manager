@@ -10,7 +10,7 @@ use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
 use App\Services\AgentThread\AgentThreadService;
 use App\Services\Task\Runners\ClassifierTaskRunner;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
 class ClassificationVerificationService

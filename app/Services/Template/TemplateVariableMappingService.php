@@ -7,7 +7,7 @@ use App\Models\Agent\AgentThreadMessage;
 use App\Models\Schema\SchemaDefinition;
 use App\Models\Template\TemplateDefinition;
 use App\Services\AgentThread\AgentThreadBuilderService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Database\Eloquent\Collection;
 use Newms87\Danx\Exceptions\ValidationError;
 use Symfony\Component\Yaml\Yaml;
