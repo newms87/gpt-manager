@@ -1,5 +1,8 @@
 <template>
-	<QBtn class="bg-sky-800 rounded-lg">
+	<QBtn
+		class="rounded-lg"
+		:class="readonly ? 'bg-slate-700 cursor-default' : 'bg-sky-800 cursor-pointer'"
+	>
 		<Component :is="selectedTypeOption?.icon" class="w-3" />
 		<QMenu v-if="!readonly" auto-close>
 			<div

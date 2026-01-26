@@ -2,6 +2,28 @@
   <div class="flex flex-col h-full">
     <!-- Controls Bar -->
     <div class="flex items-center gap-6 mb-4 p-4 bg-slate-800 rounded-lg border border-slate-600 flex-shrink-0">
+      <!-- Mode Toggles -->
+      <div class="flex items-center gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="selectionEnabled"
+            type="checkbox"
+            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-sky-600 focus:ring-sky-500 focus:ring-offset-0"
+          />
+          <span class="text-sm text-slate-400">Enable Selection</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="editEnabled"
+            type="checkbox"
+            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-sky-600 focus:ring-sky-500 focus:ring-offset-0"
+          />
+          <span class="text-sm text-slate-400">Enable Edit</span>
+        </label>
+      </div>
+
+      <div class="w-px h-6 bg-slate-600" />
+
       <!-- Selection Mode -->
       <div class="flex items-center gap-3">
         <span class="text-sm text-slate-400">Selection Mode:</span>
@@ -57,11 +79,14 @@
       <div class="flex-1 min-w-0 bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
         <FragmentSelectorCanvas
           :key="`${selectionMode}-${recursive}`"
-          :schema="medicalRecordSchema"
+          :schema="schema"
           v-model="selection"
+          :selection-enabled="selectionEnabled"
+          :edit-enabled="editEnabled"
           :selection-mode="selectionMode"
           :recursive="recursive"
           :type-filter="typeFilter"
+          @update:schema="schema = $event"
         />
       </div>
 
@@ -108,12 +133,19 @@
 <script setup lang="ts">
 import FragmentSelectorCanvas from "@/components/Modules/SchemaEditor/FragmentSelector/FragmentSelectorCanvas.vue";
 import { medicalRecordSchema } from "@/constants/demoSchemas";
-import { FragmentSelector, JsonSchemaType } from "@/types";
+import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { CodeViewer, getItem, setItem } from "quasar-ui-danx";
 import { computed, ref } from "vue";
 
 // Selection state for the FragmentSelectorCanvas
 const selection = ref<FragmentSelector | null>(null);
+
+// Schema state (reactive copy for editing)
+const schema = ref<JsonSchema>(JSON.parse(JSON.stringify(medicalRecordSchema)));
+
+// Mode toggles
+const selectionEnabled = ref(true);
+const editEnabled = ref(false);
 
 // Control options
 const selectionMode = ref<"by-model" | "by-property">("by-property");

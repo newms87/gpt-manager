@@ -1,8 +1,7 @@
+import { RefOrGetter } from "./useFragmentSchemaEditor";
 import { getModelProperties, getSchemaProperties, isModelType, PropertyInfo } from "./useFragmentSelectorGraph";
 import { FragmentSelector, JsonSchema } from "@/types";
 import { computed, reactive, toValue } from "vue";
-
-type RefOrGetter<T> = { value: T } | (() => T);
 
 /**
  * Selection rollup state for a node, considering all descendants.

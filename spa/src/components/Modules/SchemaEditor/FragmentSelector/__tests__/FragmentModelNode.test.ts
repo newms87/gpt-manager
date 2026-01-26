@@ -94,6 +94,7 @@ function createNodeData(overrides: Partial<FragmentModelNodeData> = {}): Fragmen
 		isFullySelected: false,
 		isIncluded: false,
 		selectionMode: "by-property",
+		selectionEnabled: true, // Enable selection to show header checkbox
 		direction: "LR",
 		showProperties: false,
 		...overrides

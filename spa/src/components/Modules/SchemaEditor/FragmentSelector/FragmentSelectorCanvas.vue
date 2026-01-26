@@ -16,20 +16,42 @@
 					:data="nodeProps.data"
 					@toggle-property="handleToggleProperty"
 					@toggle-all="handleToggleAll"
+					@add-property="handleAddProperty"
+					@update-property="handleUpdateProperty"
+					@remove-property="handleRemoveProperty"
+					@add-child-model="handleAddChildModel"
+					@update-model="handleUpdateModel"
+					@remove-model="handleRemoveModel"
 				/>
 			</template>
 
-			<!-- Show Properties Toggle (only in by-model mode) -->
-			<Panel v-if="props.selectionMode === 'by-model'" position="top-right">
-				<div
-					class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors"
-					:class="showPropertiesInternal
-						? 'bg-sky-900/90 border-sky-600 text-sky-300'
-						: 'bg-slate-800/90 border-slate-600 text-slate-400'"
-					@click="toggleShowProperties"
-				>
-					<PropertiesIcon class="w-4" />
-					<span class="text-xs">{{ showPropertiesInternal ? 'Hide Props' : 'Show Props' }}</span>
+			<!-- Top-right panel with mode toggle and Show Props button -->
+			<Panel position="top-right">
+				<div class="flex items-center gap-2">
+					<!-- Edit/Select Mode Toggle (only when both modes are enabled) -->
+					<button
+						v-if="props.selectionEnabled && props.editEnabled"
+						class="px-3 py-1.5 text-xs rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+						:class="isEditModeActive
+							? 'bg-blue-600/90 border-blue-500 text-white'
+							: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+						@click="isEditModeActive = !isEditModeActive"
+					>
+						{{ isEditModeActive ? 'Edit Mode' : 'Select Mode' }}
+					</button>
+
+					<!-- Show Properties Toggle (only in by-model mode) -->
+					<div
+						v-if="props.selectionMode === 'by-model'"
+						class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors"
+						:class="showPropertiesInternal
+							? 'bg-sky-900/90 border-sky-600 text-sky-300'
+							: 'bg-slate-800/90 border-slate-600 text-slate-400'"
+						@click="toggleShowProperties"
+					>
+						<PropertiesIcon class="w-4" />
+						<span class="text-xs">{{ showPropertiesInternal ? 'Hide Props' : 'Show Props' }}</span>
+					</div>
 				</div>
 			</Panel>
 		</VueFlow>
@@ -39,8 +61,9 @@
 <script setup lang="ts">
 import FragmentModelNode from "./FragmentModelNode.vue";
 import { useCanvasLayout } from "./useCanvasLayout";
+import { useFragmentSchemaEditor } from "./useFragmentSchemaEditor";
 import { useFragmentSelection } from "./useFragmentSelection";
-import { buildFragmentGraph } from "./useFragmentSelectorGraph";
+import { buildFragmentGraph, SelectionMode } from "./useFragmentSelectorGraph";
 import { getHandlesByDirection } from "./useFragmentSelectorLayout";
 import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { FaSolidListUl as PropertiesIcon } from "danx-icon";
@@ -49,15 +72,20 @@ import { Edge, Node, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
 import { getItem, setItem } from "quasar-ui-danx";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 const props = withDefaults(defineProps<{
 	schema: JsonSchema;
-	modelValue: FragmentSelector | null;
-	selectionMode?: "by-model" | "by-property";
+	modelValue?: FragmentSelector | null;
+	selectionEnabled?: boolean;
+	editEnabled?: boolean;
+	selectionMode?: SelectionMode;
 	recursive?: boolean;
 	typeFilter?: JsonSchemaType | null;
 }>(), {
+	modelValue: null,
+	selectionEnabled: false,
+	editEnabled: false,
 	selectionMode: "by-property",
 	recursive: true,
 	typeFilter: null
@@ -66,9 +94,41 @@ const props = withDefaults(defineProps<{
 // Internal state for showProperties with localStorage persistence
 const showPropertiesInternal = ref<boolean>(getItem("fragmentSelector.showProperties") ?? false);
 
+// Internal state for edit mode toggle (only used when both selectionEnabled and editEnabled are true)
+const isEditModeActive = ref(false);
+
+// Track which node should receive focus (for newly created models)
+const focusedNodePath = ref<string | null>(null);
+
+// Computed for determining effective modes when both are enabled
+const effectiveSelectionEnabled = computed(() => {
+	if (props.selectionEnabled && props.editEnabled) {
+		return !isEditModeActive.value; // Selection when NOT in edit mode
+	}
+	return props.selectionEnabled;
+});
+
+const effectiveEditEnabled = computed(() => {
+	if (props.selectionEnabled && props.editEnabled) {
+		return isEditModeActive.value; // Edit when toggle is on
+	}
+	return props.editEnabled;
+});
+
 const emit = defineEmits<{
 	"update:modelValue": [value: FragmentSelector | null];
+	"update:schema": [schema: JsonSchema];
 }>();
+
+// Schema editing composable
+const {
+	addProperty,
+	updateProperty,
+	removeProperty,
+	addChildModel,
+	updateModel,
+	removeModel
+} = useFragmentSchemaEditor(() => props.schema);
 
 // Selection logic extracted into composable
 const { selectionMap, onToggleProperty, onToggleAll, fragmentSelector, syncFromExternal, getSelectionRollupState } = useFragmentSelection(
@@ -83,7 +143,7 @@ const canvasContainer = ref<HTMLElement | null>(null);
 // Build the graph from the schema
 const graph = computed(() => buildFragmentGraph(props.schema));
 
-// Apply selection state and type filter to nodes
+// Apply selection state, edit state, and type filter to nodes
 const filteredNodes = computed<Node[]>(() => {
 	return graph.value.nodes
 		.map(node => {
@@ -115,12 +175,15 @@ const filteredNodes = computed<Node[]>(() => {
 					...node.data,
 					direction: layoutDirection.value,
 					selectionMode: props.selectionMode,
+					selectionEnabled: effectiveSelectionEnabled.value,
+					editEnabled: effectiveEditEnabled.value,
 					isIncluded,
 					properties,
 					selectedProperties: selectedProperties ? Array.from(selectedProperties) : [],
 					showProperties: showPropertiesInternal.value,
 					hasAnySelection: rollupState.hasAnySelection,
-					isFullySelected: rollupState.isFullySelected
+					isFullySelected: rollupState.isFullySelected,
+					shouldFocus: focusedNodePath.value === node.data.path
 				}
 			};
 		})
@@ -140,7 +203,7 @@ const filteredEdges = computed<Edge[]>(() => {
 });
 
 // Layout: measure nodes then apply tree positions
-const { layoutApplied, layoutDirection, nodePositions, triggerRelayout } = useCanvasLayout(
+const { layoutApplied, layoutDirection, nodePositions, triggerRelayout, centerOnNode } = useCanvasLayout(
 	"fragment-selector", canvasContainer, filteredNodes, filteredEdges
 );
 
@@ -163,10 +226,68 @@ function handleToggleAll(payload: { path: string; selectAll: boolean }): void {
 	emit("update:modelValue", fragmentSelector.value);
 }
 
+// Edit mode handlers
+function handleAddProperty(payload: { path: string; type: string; baseName: string }): void {
+	if (!effectiveEditEnabled.value) return;
+	const newSchema = addProperty(payload.path, payload.type as JsonSchemaType, payload.baseName);
+	emit("update:schema", newSchema);
+	nextTick(() => triggerRelayout());
+}
+
+function handleUpdateProperty(payload: { path: string; originalName: string; newName: string; updates: object }): void {
+	if (!effectiveEditEnabled.value) return;
+	const newSchema = updateProperty(payload.path, payload.originalName, payload.newName, payload.updates as Partial<JsonSchema>);
+	emit("update:schema", newSchema);
+}
+
+function handleRemoveProperty(payload: { path: string; name: string }): void {
+	if (!effectiveEditEnabled.value) return;
+	const newSchema = removeProperty(payload.path, payload.name);
+	emit("update:schema", newSchema);
+	nextTick(() => triggerRelayout());
+}
+
+async function handleAddChildModel(payload: { path: string; type: "object" | "array"; baseName: string }): Promise<void> {
+	if (!effectiveEditEnabled.value) return;
+	const { schema: newSchema, name } = addChildModel(payload.path, payload.type, payload.baseName);
+	const newNodePath = `${payload.path}.${name}`;
+	emit("update:schema", newSchema);
+	await nextTick();
+	await triggerRelayout();
+	// Smoothly pan to the new model after layout is complete
+	centerOnNode(newNodePath, 400);
+	// Set focus on the new node's name input after centering animation completes
+	setTimeout(() => {
+		focusedNodePath.value = newNodePath;
+		// Clear the focus trigger after a brief delay to allow the node to react
+		setTimeout(() => {
+			focusedNodePath.value = null;
+		}, 100);
+	}, 400);
+}
+
+function handleUpdateModel(payload: { path: string; updates: object }): void {
+	if (!effectiveEditEnabled.value) return;
+	const newSchema = updateModel(payload.path, payload.updates as Partial<JsonSchema>);
+	emit("update:schema", newSchema);
+}
+
+function handleRemoveModel(payload: { path: string }): void {
+	if (!effectiveEditEnabled.value) return;
+	const newSchema = removeModel(payload.path);
+	emit("update:schema", newSchema);
+	nextTick(() => triggerRelayout());
+}
+
 // Watch for external modelValue changes and sync to internal state
 watch(() => props.modelValue, (newVal) => {
 	syncFromExternal(newVal);
 }, { immediate: true });
+
+// Recalculate layout when switching between edit and select modes
+watch(isEditModeActive, () => {
+	nextTick(() => triggerRelayout());
+});
 </script>
 
 <style lang="scss" scoped>

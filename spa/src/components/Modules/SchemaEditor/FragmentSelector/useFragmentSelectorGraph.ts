@@ -23,12 +23,16 @@ export interface FragmentModelNodeData {
 	selectedProperties: string[];
 	direction: LayoutDirection;
 	selectionMode: SelectionMode;
+	selectionEnabled?: boolean;
+	editEnabled?: boolean;
 	isIncluded: boolean;
 	showProperties: boolean;
 	/** Whether this node or any descendant has any selection */
 	hasAnySelection: boolean;
 	/** Whether this node and all descendants are fully selected */
 	isFullySelected: boolean;
+	/** Whether this node's name input should receive focus */
+	shouldFocus?: boolean;
 }
 
 /**
