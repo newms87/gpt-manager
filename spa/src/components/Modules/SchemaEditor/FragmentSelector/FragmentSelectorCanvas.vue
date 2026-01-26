@@ -19,8 +19,8 @@
 				/>
 			</template>
 
-			<!-- Show Properties Toggle (only in structure-only mode) -->
-			<Panel v-if="props.selectionMode === 'structure-only'" position="top-right">
+			<!-- Show Properties Toggle (only in model-only mode) -->
+			<Panel v-if="props.selectionMode === 'model-only'" position="top-right">
 				<div
 					class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors"
 					:class="showPropertiesInternal
@@ -41,6 +41,7 @@ import FragmentModelNode from "./FragmentModelNode.vue";
 import { useCanvasLayout } from "./useCanvasLayout";
 import { useFragmentSelection } from "./useFragmentSelection";
 import { buildFragmentGraph } from "./useFragmentSelectorGraph";
+import { getHandlesByDirection } from "./useFragmentSelectorLayout";
 import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { FaSolidListUl as PropertiesIcon } from "danx-icon";
 import { Background, BackgroundVariant } from "@vue-flow/background";
@@ -53,7 +54,7 @@ import { computed, ref, watch } from "vue";
 const props = withDefaults(defineProps<{
 	schema: JsonSchema;
 	modelValue: FragmentSelector | null;
-	selectionMode?: "recursive" | "single-node" | "structure-only";
+	selectionMode?: "recursive" | "single-node" | "model-only";
 	typeFilter?: JsonSchemaType | null;
 }>(), {
 	selectionMode: "recursive",
@@ -88,7 +89,7 @@ const filteredNodes = computed<Node[]>(() => {
 				? node.data.properties.filter(p => p.type === props.typeFilter || p.isModel)
 				: node.data.properties;
 
-			// Check if node is included (for structure-only mode)
+			// Check if node is included (for model-only mode)
 			// For root, check if fragmentSelector has a type (meaning root is selected)
 			let isIncluded = false;
 			if (node.data.path === "root") {
@@ -124,8 +125,7 @@ const filteredNodes = computed<Node[]>(() => {
 // Filter edges to only include those connecting visible nodes, with direction-aware handles
 const filteredEdges = computed<Edge[]>(() => {
 	const visibleNodeIds = new Set(filteredNodes.value.map(n => n.id));
-	const sourceHandle = layoutDirection.value === "LR" ? "source-right" : "source-bottom";
-	const targetHandle = layoutDirection.value === "LR" ? "target-left" : "target-top";
+	const { sourceHandle, targetHandle } = getHandlesByDirection(layoutDirection.value);
 	return graph.value.edges
 		.filter(edge => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target))
 		.map(edge => ({ ...edge, sourceHandle, targetHandle }));

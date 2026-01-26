@@ -13,7 +13,7 @@ export interface PropertyInfo {
 	isModel: boolean;
 }
 
-export type SelectionMode = "recursive" | "single-node" | "structure-only";
+export type SelectionMode = "recursive" | "single-node" | "model-only";
 
 export interface FragmentModelNodeData {
 	name: string;

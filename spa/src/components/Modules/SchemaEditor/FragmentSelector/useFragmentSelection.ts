@@ -12,7 +12,7 @@ type RefOrGetter<T> = { value: T } | (() => T);
  */
 export function useFragmentSelection(
 	schema: RefOrGetter<JsonSchema>,
-	selectionMode: RefOrGetter<"recursive" | "single-node" | "structure-only">
+	selectionMode: RefOrGetter<"recursive" | "single-node" | "model-only">
 ) {
 	// Internal selection state: path -> Set of selected property names
 	const selectionMap = reactive(new Map<string, Set<string>>());
@@ -83,13 +83,17 @@ export function useFragmentSelection(
 	}
 
 	/**
-	 * Recursively select all properties of a node and all descendant nodes.
+	 * Recursively select or deselect all properties of a node and all descendant nodes.
 	 */
-	function selectAllRecursive(path: string, nodeSchema: JsonSchema): void {
+	function toggleAllRecursive(path: string, nodeSchema: JsonSchema, shouldSelect: boolean): void {
 		const properties = getModelProperties(nodeSchema);
-		if (properties.length === 0) return;
 
-		selectionMap.set(path, new Set(properties.map(p => p.name)));
+		if (shouldSelect) {
+			if (properties.length === 0) return;
+			selectionMap.set(path, new Set(properties.map(p => p.name)));
+		} else {
+			selectionMap.delete(path);
+		}
 
 		const schemaProperties = getSchemaProperties(nodeSchema);
 		if (!schemaProperties) return;
@@ -98,89 +102,84 @@ export function useFragmentSelection(
 			if (prop.isModel) {
 				const childSchema = schemaProperties[prop.name];
 				if (childSchema) {
-					selectAllRecursive(`${path}.${prop.name}`, childSchema);
+					toggleAllRecursive(`${path}.${prop.name}`, childSchema, shouldSelect);
 				}
 			}
 		}
 	}
 
 	/**
-	 * Recursively deselect all properties of a node and all descendant nodes.
+	 * Handle toggle all in model-only mode: toggle node inclusion without properties.
 	 */
-	function deselectAllRecursive(path: string, nodeSchema: JsonSchema): void {
-		selectionMap.delete(path);
+	function onToggleModelOnly(path: string, selectAll: boolean): void {
+		if (path === "root") {
+			if (selectAll) {
+				selectionMap.set("root", new Set());
+			} else {
+				selectionMap.clear();
+			}
+			return;
+		}
 
-		const properties = getModelProperties(nodeSchema);
-		const schemaProperties = getSchemaProperties(nodeSchema);
-		if (!schemaProperties) return;
+		const parts = path.split(".");
+		const parentPath = parts.slice(0, -1).join(".");
+		const nodeName = parts[parts.length - 1];
 
-		for (const prop of properties) {
-			if (prop.isModel) {
-				const childSchema = schemaProperties[prop.name];
-				if (childSchema) {
-					deselectAllRecursive(`${path}.${prop.name}`, childSchema);
+		if (selectAll) {
+			ensureParentChainSelected(path);
+		} else {
+			const parentSelection = selectionMap.get(parentPath);
+			if (parentSelection) {
+				parentSelection.delete(nodeName);
+				if (parentSelection.size === 0 && parentPath !== "root") {
+					selectionMap.delete(parentPath);
 				}
 			}
+		}
+	}
+
+	/**
+	 * Handle toggle all in recursive mode: select/deselect node and all descendants.
+	 */
+	function onToggleRecursive(path: string, selectAll: boolean): void {
+		if (selectAll) {
+			ensureParentChainSelected(path);
+		}
+		toggleAllRecursive(path, getSchemaAtPath(path), selectAll);
+	}
+
+	/**
+	 * Handle toggle all in single-node mode: select/deselect only this node's properties.
+	 */
+	function onToggleSingleNode(path: string, selectAll: boolean): void {
+		if (selectAll) {
+			ensureParentChainSelected(path);
+			const nodeSchema = getSchemaAtPath(path);
+			const properties = getModelProperties(nodeSchema);
+			selectionMap.set(path, new Set(properties.map(p => p.name)));
+		} else {
+			selectionMap.delete(path);
 		}
 	}
 
 	/**
 	 * Toggle all properties for a node, respecting the current selection mode.
+	 * Dispatches to mode-specific handlers.
 	 */
 	function onToggleAll(payload: { path: string; selectAll: boolean }): void {
 		const { path, selectAll } = payload;
 		const mode = toValue(selectionMode);
 
-		if (mode === "structure-only") {
-			// structure-only mode: toggle this node's inclusion
-			if (path === "root") {
-				// For root, toggle by adding/removing from selectionMap
-				if (selectAll) {
-					// Mark root as selected (empty Set means selected with no children)
-					// Always set to ensure reactivity triggers
-					selectionMap.set("root", new Set());
-				} else {
-					// Deselect root and clear all selections
-					selectionMap.clear();
-				}
-				return;
-			}
-
-			const parts = path.split(".");
-			const parentPath = parts.slice(0, -1).join(".");
-			const nodeName = parts[parts.length - 1];
-
-			if (selectAll) {
-				// Add this node to parent's selection and ensure parent chain
-				ensureParentChainSelected(path);
-			} else {
-				// Remove this node from parent's selection
-				const parentSelection = selectionMap.get(parentPath);
-				if (parentSelection) {
-					parentSelection.delete(nodeName);
-					if (parentSelection.size === 0 && parentPath !== "root") {
-						selectionMap.delete(parentPath);
-					}
-				}
-			}
-		} else if (selectAll) {
-			// Always ensure parent chain is selected first
-			ensureParentChainSelected(path);
-
-			if (mode === "recursive") {
-				selectAllRecursive(path, getSchemaAtPath(path));
-			} else {
-				// single-node mode: select just this node's properties (not recursive)
-				const nodeSchema = getSchemaAtPath(path);
-				const properties = getModelProperties(nodeSchema);
-				selectionMap.set(path, new Set(properties.map(p => p.name)));
-			}
-		} else {
-			if (mode === "recursive") {
-				deselectAllRecursive(path, getSchemaAtPath(path));
-			} else {
-				selectionMap.delete(path);
-			}
+		switch (mode) {
+			case "model-only":
+				onToggleModelOnly(path, selectAll);
+				break;
+			case "recursive":
+				onToggleRecursive(path, selectAll);
+				break;
+			case "single-node":
+				onToggleSingleNode(path, selectAll);
+				break;
 		}
 	}
 
@@ -236,7 +235,7 @@ export function useFragmentSelection(
 		if (!selector) return;
 
 		// If selector has a type but no children, mark this path as selected with empty set
-		// This handles structure-only mode where root is selected with no children
+		// This handles model-only mode where root is selected with no children
 		if (selector.type && !selector.children) {
 			selectionMap.set(path, new Set());
 			return;

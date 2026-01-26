@@ -11,13 +11,8 @@
 				{ '!opacity-0': data.path === 'root' || data.direction !== 'LR' }
 			]"
         >
-            <!-- Triple dot for array, single dot for object -->
-            <div v-if="isArray" class="relative w-4 h-4 -mt-[.3rem] -ml-2">
-                <div class="absolute top-0 right-0 w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <div class="absolute top-[.35rem] left-0 w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <div class="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full bg-amber-400" />
-            </div>
-            <div v-else class="w-2.5 h-2.5 -mt-[0.15rem] -ml-[.1rem] rounded-full bg-sky-400" />
+            <ArrayIndicatorDots v-if="isArray" :direction="data.direction" />
+            <ObjectIndicatorDot v-else :direction="data.direction" />
         </Handle>
         <!-- Top handle for TB layout -->
         <Handle
@@ -29,13 +24,8 @@
 				{ '!opacity-0': data.path === 'root' || data.direction !== 'TB' }
 			]"
         >
-            <!-- Triple dot for array, single dot for object -->
-            <div v-if="isArray" class="relative w-4 h-4 -mt-2 -ml-[.33rem]">
-                <div class="absolute top-0 left-[50%] -ml-[.1875rem] w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <div class="absolute bottom-0 left-0 w-1.5 h-1.5 rounded-full bg-amber-400" />
-                <div class="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full bg-amber-400" />
-            </div>
-            <div v-else class="w-2.5 h-2.5 -mt-0.5 -ml-[.1rem] rounded-full bg-sky-400" />
+            <ArrayIndicatorDots v-if="isArray" :direction="data.direction" />
+            <ObjectIndicatorDot v-else :direction="data.direction" />
         </Handle>
 
         <!-- Header -->
@@ -76,17 +66,17 @@
         </div>
 
         <!-- Properties List (non-model properties only, sorted by position) -->
-        <!-- In structure-only mode, only shown when showProperties is true (view-only, no checkboxes) -->
-        <div v-if="!isStructureOnlyMode || data.showProperties" class="properties-list">
+        <!-- In model-only mode, only shown when showProperties is true (view-only, no checkboxes) -->
+        <div v-if="!isModelOnlyMode || data.showProperties" class="properties-list">
             <div
                 v-for="prop in displayProperties"
                 :key="prop.name"
                 class="flex items-center gap-2 px-3 py-1 hover:bg-slate-700/50 transition-colors"
-                :class="{ 'bg-sky-900/30': !isStructureOnlyMode && isPropertySelected(prop.name) }"
+                :class="{ 'bg-sky-900/30': !isModelOnlyMode && isPropertySelected(prop.name) }"
             >
-                <!-- Checkbox only shown in non-structure-only mode -->
+                <!-- Checkbox only shown in non-model-only mode -->
                 <QCheckbox
-                    v-if="!isStructureOnlyMode"
+                    v-if="!isModelOnlyMode"
                     :model-value="isPropertySelected(prop.name)"
                     size="sm"
                     color="sky"
@@ -126,18 +116,8 @@
         </div>
 
         <!-- Source Handles (always in DOM, hidden via opacity per VueFlow docs) -->
-        <Handle
-            id="source-right"
-            type="source"
-            :position="Position.Right"
-            :class="['!bg-green-500 !w-2.5 !h-2.5 !border-green-300 !rounded-full', { '!opacity-0': !hasModelChildren || data.direction !== 'LR' }]"
-        />
-        <Handle
-            id="source-bottom"
-            type="source"
-            :position="Position.Bottom"
-            :class="['!bg-green-500 !w-2.5 !h-2.5 !border-green-300 !rounded-full', { '!opacity-0': !hasModelChildren || data.direction !== 'TB' }]"
-        />
+        <SourceHandleDot position="right" :visible="hasModelChildren && data.direction === 'LR'" />
+        <SourceHandleDot position="bottom" :visible="hasModelChildren && data.direction === 'TB'" />
     </div>
 </template>
 
@@ -154,6 +134,9 @@ import {
 import { QCheckbox } from "quasar";
 import { InfoDialog, MarkdownEditor, ShowHideButton } from "quasar-ui-danx";
 import { computed, reactive, ref } from "vue";
+import ArrayIndicatorDots from "./ArrayIndicatorDots.vue";
+import ObjectIndicatorDot from "./ObjectIndicatorDot.vue";
+import SourceHandleDot from "./SourceHandleDot.vue";
 import { FragmentModelNodeData, PropertyInfo } from "./useFragmentSelectorGraph";
 
 const props = defineProps<{
@@ -180,8 +163,8 @@ const hasModelChildren = computed(() => {
     return props.data.properties.some(p => p.isModel);
 });
 
-const isStructureOnlyMode = computed(() => {
-    return props.data.selectionMode === "structure-only";
+const isModelOnlyMode = computed(() => {
+    return props.data.selectionMode === "model-only";
 });
 
 const displayProperties = computed(() => {
@@ -195,17 +178,17 @@ const displayProperties = computed(() => {
         });
 });
 
-// In structure-only mode, we check model properties; otherwise scalar properties
+// In model-only mode, we check model properties; otherwise scalar properties
 const selectableProperties = computed(() => {
-    if (isStructureOnlyMode.value) {
+    if (isModelOnlyMode.value) {
         return props.data.properties.filter(p => p.isModel);
     }
     return displayProperties.value;
 });
 
 const isAllSelected = computed(() => {
-    // In structure-only mode, check if this node is included in selection
-    if (isStructureOnlyMode.value) {
+    // In model-only mode, check if this node is included in selection
+    if (isModelOnlyMode.value) {
         return props.data.isIncluded;
     }
     if (selectableProperties.value.length === 0) return false;
@@ -215,8 +198,8 @@ const isAllSelected = computed(() => {
 });
 
 const isIndeterminate = computed(() => {
-    // In structure-only mode, no indeterminate state
-    if (isStructureOnlyMode.value) {
+    // In model-only mode, no indeterminate state
+    if (isModelOnlyMode.value) {
         return false;
     }
     const selectableNames = selectableProperties.value.map(p => p.name);
