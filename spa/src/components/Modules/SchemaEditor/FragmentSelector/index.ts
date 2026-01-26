@@ -32,15 +32,5 @@ export type {
 	RefOrGetter
 } from "./types";
 
-// Constants (for external configuration if needed)
-export {
-	DOM_UPDATE_DELAY_MS,
-	NODE_MEASURE_DELAY_MS,
-	HANDLE_UPDATE_DELAY_MS,
-	NODE_SEPARATION,
-	NODE_WIDTH,
-	COLUMN_GAP
-} from "./constants";
-
 // Statistics helpers
 export { countModels, countProperties } from "./fragmentSelectorStats";

@@ -1,5 +1,6 @@
 import { JsonSchema } from "@/types";
 import { Edge, Node } from "@vue-flow/core";
+import { EDGE_BORDER_RADIUS, EDGE_STROKE_COLOR, EDGE_STROKE_WIDTH } from "./constants";
 import { FragmentModelNodeData, PropertyInfo } from "./types";
 import { getSchemaProperties, isModelType } from "./useSchemaNavigation";
 
@@ -84,8 +85,8 @@ function buildNodesRecursive(
 			source: path,
 			target: childPath,
 			type: "smoothstep",
-			style: { stroke: "#64748b", strokeWidth: 1.5 },
-			pathOptions: { borderRadius: 12 }
+			style: { stroke: EDGE_STROKE_COLOR, strokeWidth: EDGE_STROKE_WIDTH },
+			pathOptions: { borderRadius: EDGE_BORDER_RADIUS }
 		});
 
 		buildNodesRecursive(childSchema, childPath, child.title || child.name, nodes, edges);

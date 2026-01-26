@@ -36,13 +36,13 @@ These principles MUST appear in EVERY plan and as the FIRST item in EVERY todo l
 
 When the user asks you to **refactor**, this is what they mean:
 
-| Refactoring IS                                      | Refactoring is NOT                          |
-|-----------------------------------------------------|---------------------------------------------|
-| Breaking large components into small, focused ones  | Removing a few console.logs and calling it done |
-| Ensuring EVERY file meets SOLID principles          | Marking SOLID violations as "future work"   |
-| Fixing ALL DRY violations immediately               | Listing issues without fixing them          |
-| Removing ALL dead code, debug logs, tech debt       | A partial cleanup pass                      |
-| Making complex code simple and maintainable         | Cosmetic changes while ignoring architecture |
+| Refactoring IS                                     | Refactoring is NOT                              |
+|----------------------------------------------------|-------------------------------------------------|
+| Breaking large components into small, focused ones | Removing a few console.logs and calling it done |
+| Ensuring EVERY file meets SOLID principles         | Marking SOLID violations as "future work"       |
+| Fixing ALL DRY violations immediately              | Listing issues without fixing them              |
+| Removing ALL dead code, debug logs, tech debt      | A partial cleanup pass                          |
+| Making complex code simple and maintainable        | Cosmetic changes while ignoring architecture    |
 
 **⛔ NEVER mark ANY issue as "out of scope" or "future work" during refactoring ⛔**
 
@@ -50,11 +50,17 @@ Refactoring means fixing EVERYTHING. NOW. Not later. Not in a future PR. Not "wh
 
 **Component/File Splitting is MANDATORY:**
 
-If a component has multiple distinct sections with their own logic (header, footer, buttons with complex behavior, dialogs, etc.), each MUST become its own sub-component. A 300+ line SFC with 5 responsibilities is a BLOCKING issue that must be resolved during refactoring.
+If a component has multiple distinct sections with their own logic (header, footer, buttons with complex behavior,
+dialogs, etc.), each MUST become its own sub-component. A 300+ line SFC with 5 responsibilities is a BLOCKING issue that
+must be resolved during refactoring.
 
-- **Large files → Small, organized files**: Break apart large files into focused, single-purpose files. Each file should do ONE thing well. Organize related files into logical directories.
-- **Large methods → Small, focused methods**: Break complex methods into smaller, well-named helper methods. Each method should be easy to read at a glance. Small methods are easier to test, maintain, and reuse.
-- **Duplicated code → Shared utilities**: When you see the same logic in multiple places, extract it into a shared utility, composable, or service. Duplication is a maintenance nightmare - fix it immediately by creating reusable code.
+- **Large files → Small, organized files**: Break apart large files into focused, single-purpose files. Each file should
+  do ONE thing well. Organize related files into logical directories.
+- **Large methods → Small, focused methods**: Break complex methods into smaller, well-named helper methods. Each method
+  should be easy to read at a glance. Small methods are easier to test, maintain, and reuse.
+- **Duplicated code → Shared utilities**: When you see the same logic in multiple places, extract it into a shared
+  utility, composable, or service. Duplication is a maintenance nightmare - fix it immediately by creating reusable
+  code.
 
 **Priority Order for Refactoring:**
 
@@ -68,7 +74,34 @@ Items 1-4 are REQUIRED. Item 5 is the minimum baseline. You do ALL of them, not 
 
 **The Zero Tech Debt Policy Applies to Refactoring:**
 
-You cannot "partially refactor." If you identify a SOLID violation during refactoring, you fix it. Period. The zero tech debt policy means we never leave known issues unfixed. "I'll do it later" is not acceptable.
+You cannot "partially refactor." If you identify a SOLID violation during refactoring, you fix it. Period. The zero tech
+debt policy means we never leave known issues unfixed. "I'll do it later" is not acceptable.
+
+**📋 MANDATORY REFACTORING TODO LIST**
+
+**ALWAYS create this todo list when the user asks you to refactor.** Use the TaskCreate tool to create these tasks
+BEFORE starting any refactoring work. This ensures nothing is missed.
+
+```
+Standard Refactoring Todo List:
+──────────────────────────────────────────────────────────────────
+□ 1. ANALYZE: Read all files in scope, identify line counts
+□ 2. SPLIT LARGE FILES: Break apart any file >300 lines (components) or >500 lines (composables)
+□ 3. SPLIT LARGE METHODS: Break apart any method >30 lines into smaller focused methods
+□ 4. EXTRACT COMPONENTS: Identify distinct UI sections that should be sub-components
+□ 5. FIX DRY / SOLID VIOLATIONS: Extract duplicated code into shared utilities, enforce coding standards, magic numbers/strings => named constants
+□ 6. REMOVE DEAD / DEBUG CODE: Delete unused imports, exports, functions, variables, console log, dump, erroneous echo, etc.
+□ 7. RUN / FIX TESTS: Ensure all existing tests pass (both front and backend)
+──────────────────────────────────────────────────────────────────
+```
+
+**How to use this list:**
+
+1. When user says "refactor", IMMEDIATELY create these tasks using TaskCreate
+2. Mark each task in_progress when starting, completed when done
+3. Do NOT skip any task - every item must be checked
+4. If a task doesn't apply (e.g., no dead code found), mark it complete with a note
+5. Only consider refactoring DONE when ALL tasks are completed
 
 **📝 PLAN WRITING RULES - NO CODE IN PLANS**
 

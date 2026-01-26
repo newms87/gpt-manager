@@ -25,3 +25,45 @@ export const NODE_WIDTH = 256;
 
 /** Gap between columns/levels in the tree */
 export const COLUMN_GAP = 80;
+
+/**
+ * Layout Defaults
+ * Fallback values when dimensions or containers are not measured.
+ */
+
+/** Default node height when not measured */
+export const DEFAULT_NODE_HEIGHT = 100;
+
+/** Default container width fallback */
+export const DEFAULT_CONTAINER_WIDTH = 800;
+
+/** Default container height fallback */
+export const DEFAULT_CONTAINER_HEIGHT = 600;
+
+/**
+ * Animation Timing Constants
+ * Control the duration of various UI animations and delays.
+ */
+
+/** Duration for centering on a node */
+export const CENTER_ON_NODE_DURATION_MS = 400;
+
+/** Default animation duration for view transitions */
+export const VIEW_ANIMATION_DURATION_MS = 500;
+
+/** Short delay for UI updates after adding nodes */
+export const NODE_ADD_DELAY_MS = 100;
+
+/**
+ * Edge Styling Constants
+ * Control the appearance of edges connecting nodes.
+ */
+
+/** Default edge stroke color */
+export const EDGE_STROKE_COLOR = "#64748b";
+
+/** Default edge stroke width */
+export const EDGE_STROKE_WIDTH = 1.5;
+
+/** Border radius for edge paths */
+export const EDGE_BORDER_RADIUS = 12;

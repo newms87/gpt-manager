@@ -1,3 +1,5 @@
+import { getNodeName, getParentPath } from "./useSchemaNavigation";
+
 /**
  * Composable that manages parent chain selection for fragment selection.
  * Ensures proper hierarchy maintenance when selecting/deselecting nodes.
@@ -39,9 +41,8 @@ export function useSelectionParentChain(selectionMap: Map<string, Set<string>>) 
 	function removeFromParentSelection(path: string): void {
 		if (path === "root") return;
 
-		const parts = path.split(".");
-		const nodeName = parts.pop()!;
-		const parentPath = parts.join(".") || "root";
+		const nodeName = getNodeName(path);
+		const parentPath = getParentPath(path);
 
 		const parentSelection = selectionMap.get(parentPath);
 		if (parentSelection) {
@@ -59,9 +60,8 @@ export function useSelectionParentChain(selectionMap: Map<string, Set<string>>) 
 	function isSelectedByParent(path: string): boolean {
 		if (path === "root") return false;
 
-		const parts = path.split(".");
-		const nodeName = parts.pop()!;
-		const parentPath = parts.join(".") || "root";
+		const nodeName = getNodeName(path);
+		const parentPath = getParentPath(path);
 
 		const parentSelection = selectionMap.get(parentPath);
 		return parentSelection?.has(nodeName) ?? false;

@@ -90,6 +90,7 @@ import FragmentModelNode from "./FragmentModelNode.vue";
 import FragmentSelectorControlPanel from "./FragmentSelectorControlPanel.vue";
 import { LayoutDirection, SelectionMode } from "./types";
 import { useCanvasLayout } from "./useCanvasLayout";
+import { countSchemaItems, countSelectionItems } from "./useFragmentSelectorCounts";
 import { useFragmentSchemaEditor } from "./useFragmentSchemaEditor";
 import { useFragmentSelection } from "./useFragmentSelection";
 import { useFragmentSelectorEventHandlers } from "./useFragmentSelectorEventHandlers";
@@ -221,70 +222,6 @@ watch(() => props.modelValue, (newVal) => {
 watch(modes.isEditModeActive, () => {
 	nextTick(() => triggerRelayout());
 });
-
-// Helper function to count models and properties in a FragmentSelector tree
-function countSelectionItems(selector: FragmentSelector | null): { models: number; properties: number } {
-	if (!selector) return { models: 0, properties: 0 };
-
-	let models = 0;
-	let properties = 0;
-
-	if (selector.type === "object" || selector.type === "array") {
-		models++;
-	} else {
-		properties++;
-	}
-
-	if (selector.children) {
-		for (const child of Object.values(selector.children)) {
-			const childCounts = countSelectionItems(child);
-			models += childCounts.models;
-			properties += childCounts.properties;
-		}
-	}
-
-	return { models, properties };
-}
-
-// Helper function to count models and properties in a JsonSchema
-function countSchemaItems(schemaNode: JsonSchema | null, defs?: Record<string, JsonSchema>): { models: number; properties: number } {
-	if (!schemaNode) return { models: 0, properties: 0 };
-
-	let models = 0;
-	let properties = 0;
-
-	if (schemaNode.$ref && defs) {
-		const refName = schemaNode.$ref.replace("#/$defs/", "");
-		const refSchema = defs[refName];
-		if (refSchema) {
-			return countSchemaItems(refSchema, defs);
-		}
-	}
-
-	const schemaType = schemaNode.type;
-
-	if (schemaType === "object") {
-		models++;
-		if (schemaNode.properties) {
-			for (const propSchema of Object.values(schemaNode.properties)) {
-				const propCounts = countSchemaItems(propSchema, defs);
-				models += propCounts.models;
-				properties += propCounts.properties;
-			}
-		}
-	} else if (schemaType === "array") {
-		models++;
-		if (schemaNode.items) {
-			const itemCounts = countSchemaItems(schemaNode.items, defs);
-			models += itemCounts.models;
-			properties += itemCounts.properties;
-		}
-	} else {
-		properties++;
-	}
-
-	return { models, properties };
-}
 
 // Computed for sidebar counts (depends on which mode is active)
 const sidebarCounts = computed(() => {

@@ -1,6 +1,6 @@
 import { Edge, Node, useVueFlow } from "@vue-flow/core";
 import { ComputedRef, nextTick, Ref, ref } from "vue";
-import { DOM_UPDATE_DELAY_MS, HANDLE_UPDATE_DELAY_MS, NODE_MEASURE_DELAY_MS } from "./constants";
+import { DEFAULT_CONTAINER_HEIGHT, DEFAULT_CONTAINER_WIDTH, DOM_UPDATE_DELAY_MS, HANDLE_UPDATE_DELAY_MS, NODE_MEASURE_DELAY_MS, VIEW_ANIMATION_DURATION_MS } from "./constants";
 import { LayoutDirection } from "./types";
 import { determineLayoutDirection, layoutTree } from "./useFragmentSelectorLayout";
 
@@ -46,8 +46,8 @@ export function useCanvasLayout(
 
 			// Determine best layout direction based on container and graph shape
 			const container = canvasContainer.value;
-			const containerWidth = container?.clientWidth || 800;
-			const containerHeight = container?.clientHeight || 600;
+			const containerWidth = container?.clientWidth || DEFAULT_CONTAINER_WIDTH;
+			const containerHeight = container?.clientHeight || DEFAULT_CONTAINER_HEIGHT;
 			const direction = determineLayoutDirection(containerWidth, containerHeight, filteredEdges.value, dimensions);
 			layoutDirection.value = direction;
 
@@ -113,9 +113,9 @@ export function useCanvasLayout(
 	/**
 	 * Smoothly pan the viewport to center on a specific node.
 	 * @param nodeId - The ID of the node to center on
-	 * @param duration - Animation duration in ms (default 500)
+	 * @param duration - Animation duration in ms (default VIEW_ANIMATION_DURATION_MS)
 	 */
-	function centerOnNode(nodeId: string, duration: number = 500): void {
+	function centerOnNode(nodeId: string, duration: number = VIEW_ANIMATION_DURATION_MS): void {
 		const node = getNodes.value.find(n => n.id === nodeId);
 		if (!node || !node.dimensions) {
 			return;

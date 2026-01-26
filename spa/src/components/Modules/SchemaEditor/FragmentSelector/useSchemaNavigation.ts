@@ -9,6 +9,35 @@ export function getSchemaProperties(schema: JsonSchema): Record<string, JsonSche
 }
 
 /**
+ * Set the properties record on a schema, handling both object and array types.
+ * Returns a new schema with the properties updated (does not mutate original).
+ */
+export function setSchemaProperties(schema: JsonSchema, properties: Record<string, JsonSchema>): JsonSchema {
+	if (schema.items?.properties) {
+		return { ...schema, items: { ...schema.items, properties } };
+	}
+	return { ...schema, properties };
+}
+
+/**
+ * Get the parent path from a dot-separated path.
+ * Returns "root" if the path has no parent.
+ */
+export function getParentPath(path: string): string {
+	const parts = path.split(".");
+	parts.pop();
+	return parts.length > 0 ? parts.join(".") : "root";
+}
+
+/**
+ * Get the node name (last segment) from a dot-separated path.
+ */
+export function getNodeName(path: string): string {
+	const parts = path.split(".");
+	return parts.pop() || "";
+}
+
+/**
  * Check whether a JSON schema type represents a model (object or array).
  */
 export function isModelType(type: JsonSchemaType): boolean {

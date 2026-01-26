@@ -1,5 +1,5 @@
 import { Edge, Node } from "@vue-flow/core";
-import { COLUMN_GAP, NODE_SEPARATION, NODE_WIDTH } from "./constants";
+import { COLUMN_GAP, DEFAULT_NODE_HEIGHT, NODE_SEPARATION, NODE_WIDTH } from "./constants";
 import { LayoutDirection } from "./types";
 
 /**
@@ -66,7 +66,7 @@ function getPrimarySize(
 	direction: LayoutDirection
 ): number {
 	const dim = dimensions.get(nodeId);
-	return direction === "LR" ? (dim?.width || NODE_WIDTH) : (dim?.height || 100);
+	return direction === "LR" ? (dim?.width || NODE_WIDTH) : (dim?.height || DEFAULT_NODE_HEIGHT);
 }
 
 /**
@@ -253,6 +253,43 @@ function buildChildrenMap(edges: Edge[]): Map<string, string[]> {
 }
 
 /**
+ * Compute the maximum depth of a tree starting from a given node.
+ */
+function getMaxDepth(nodeId: string, childrenMap: Map<string, string[]>, depth: number = 1): number {
+	const children = childrenMap.get(nodeId) || [];
+	if (children.length === 0) return depth;
+	return Math.max(...children.map(c => getMaxDepth(c, childrenMap, depth + 1)));
+}
+
+/**
+ * Count the number of leaf nodes in a subtree.
+ */
+function countLeaves(nodeId: string, childrenMap: Map<string, string[]>): number {
+	const children = childrenMap.get(nodeId) || [];
+	if (children.length === 0) return 1;
+	return children.reduce((sum, c) => sum + countLeaves(c, childrenMap), 0);
+}
+
+/**
+ * Find the root node ID from a set of edges (node that is never a target).
+ */
+function findRootNode(edges: Edge[]): string {
+	const targetNodes = new Set<string>();
+	const allNodes = new Set<string>();
+	for (const edge of edges) {
+		targetNodes.add(edge.target);
+		allNodes.add(edge.source);
+		allNodes.add(edge.target);
+	}
+	for (const nodeId of allNodes) {
+		if (!targetNodes.has(nodeId)) {
+			return nodeId;
+		}
+	}
+	return "root";
+}
+
+/**
  * Determine the best layout direction (LR or TB) based on the container's
  * aspect ratio and the graph's shape (depth vs breadth).
  */
@@ -263,44 +300,10 @@ export function determineLayoutDirection(
 	dimensions: Map<string, { width: number; height: number }>
 ): LayoutDirection {
 	const childrenMap = buildChildrenMap(edges);
+	const rootId = findRootNode(edges);
 
-	// Build target set to find root node
-	const targetNodes = new Set<string>();
-	for (const edge of edges) {
-		targetNodes.add(edge.target);
-	}
-
-	// Find root node (node that's never a target)
-	const allNodes = new Set<string>();
-	for (const edge of edges) {
-		allNodes.add(edge.source);
-		allNodes.add(edge.target);
-	}
-	let rootId = "root";
-	for (const nodeId of allNodes) {
-		if (!targetNodes.has(nodeId)) {
-			rootId = nodeId;
-			break;
-		}
-	}
-
-	// Compute max depth of tree
-	function getMaxDepth(nodeId: string, depth: number): number {
-		const children = childrenMap.get(nodeId) || [];
-		if (children.length === 0) return depth;
-		return Math.max(...children.map(c => getMaxDepth(c, depth + 1)));
-	}
-
-	const depth = getMaxDepth(rootId, 1);
-
-	// Compute leaf count (nodes with no children)
-	function countLeaves(nodeId: string): number {
-		const children = childrenMap.get(nodeId) || [];
-		if (children.length === 0) return 1;
-		return children.reduce((sum, c) => sum + countLeaves(c), 0);
-	}
-
-	const leafCount = countLeaves(rootId);
+	const depth = getMaxDepth(rootId, childrenMap);
+	const leafCount = countLeaves(rootId, childrenMap);
 
 	// Compute average and max height from dimensions
 	const heights = Array.from(dimensions.values()).map(d => d.height);

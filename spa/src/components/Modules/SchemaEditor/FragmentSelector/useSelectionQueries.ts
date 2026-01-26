@@ -1,7 +1,7 @@
 import { JsonSchema } from "@/types";
 import { PropertyInfo, SelectionRollupState } from "./types";
 import { getModelProperties } from "./useFragmentSelectorGraph";
-import { getSchemaProperties } from "./useSchemaNavigation";
+import { getSchemaAtPath } from "./useSchemaNavigation";
 
 interface ParentChainUtils {
 	isSelectedByParent: (path: string) => boolean;
@@ -19,22 +19,10 @@ export function useSelectionQueries(
 	const { isSelectedByParent } = parentChain;
 
 	/**
-	 * Resolve the schema at a given dot-path (e.g., "root.items.subItems").
+	 * Get the schema at a path, with fallback to root schema.
 	 */
-	function getSchemaAtPath(path: string): JsonSchema {
-		const rootSchema = schemaGetter();
-		if (path === "root") return rootSchema;
-
-		const parts = path.split(".");
-		let current = rootSchema;
-
-		for (let i = 1; i < parts.length; i++) {
-			const properties = getSchemaProperties(current);
-			if (!properties || !properties[parts[i]]) return current;
-			current = properties[parts[i]];
-		}
-
-		return current;
+	function getSchemaAtPathOrRoot(path: string): JsonSchema {
+		return getSchemaAtPath(schemaGetter(), path) || schemaGetter();
 	}
 
 	/**
@@ -120,7 +108,7 @@ export function useSelectionQueries(
 
 			// Get the child schema to check its properties
 			const childPath = `${path}.${prop.name}`;
-			const childSchema = getSchemaAtPath(childPath);
+			const childSchema = getSchemaAtPathOrRoot(childPath);
 			const childProperties = getModelProperties(childSchema);
 
 			// Recursively check if child is fully selected
@@ -146,8 +134,6 @@ export function useSelectionQueries(
 	}
 
 	return {
-		hasAnySelection,
-		isFullySelected,
 		getSelectionRollupState
 	};
 }

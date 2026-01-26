@@ -2,7 +2,7 @@ import { JsonSchema } from "@/types";
 import { toValue } from "vue";
 import { RefOrGetter } from "./types";
 import { getModelProperties } from "./useFragmentSelectorGraph";
-import { getSchemaProperties } from "./useSchemaNavigation";
+import { getSchemaAtPath, getSchemaProperties } from "./useSchemaNavigation";
 
 interface ParentChainUtils {
 	ensureParentChainSelected: (path: string) => void;
@@ -23,22 +23,10 @@ export function useToggleHandlers(
 	const { ensureParentChainSelected, removeFromParentSelection } = parentChain;
 
 	/**
-	 * Resolve the schema at a given dot-path (e.g., "root.items.subItems").
+	 * Get the schema at a path, with fallback to root schema.
 	 */
-	function getSchemaAtPath(path: string): JsonSchema {
-		const rootSchema = schemaGetter();
-		if (path === "root") return rootSchema;
-
-		const parts = path.split(".");
-		let current = rootSchema;
-
-		for (let i = 1; i < parts.length; i++) {
-			const properties = getSchemaProperties(current);
-			if (!properties || !properties[parts[i]]) return current;
-			current = properties[parts[i]];
-		}
-
-		return current;
+	function getSchemaAtPathOrRoot(path: string): JsonSchema {
+		return getSchemaAtPath(schemaGetter(), path) || schemaGetter();
 	}
 
 	/**
@@ -114,39 +102,34 @@ export function useToggleHandlers(
 	}
 
 	/**
-	 * Recursively toggle all models (without properties) for a node and all descendant nodes.
-	 *
-	 * For by-model + recursive mode, this creates a nested fragment structure by:
-	 * - Adding model child names to parent selection sets
-	 * - Only leaf models (models with no model children) have empty sets
+	 * Recursively deselect all models for a node and all descendant nodes.
 	 */
-	function toggleAllModelsRecursive(path: string, nodeSchema: JsonSchema, shouldSelect: boolean): void {
-		if (!shouldSelect) {
-			selectionMap.delete(path);
-			// Recurse into model children to delete them too
-			const properties = getModelProperties(nodeSchema);
-			const schemaProperties = getSchemaProperties(nodeSchema);
-			if (schemaProperties) {
-				for (const prop of properties) {
-					if (prop.isModel) {
-						const childPath = `${path}.${prop.name}`;
-						const childSchema = schemaProperties[prop.name];
-						if (childSchema) {
-							toggleAllModelsRecursive(childPath, childSchema, shouldSelect);
-						}
-					}
+	function deselectModelsRecursive(path: string, nodeSchema: JsonSchema): void {
+		selectionMap.delete(path);
+		const properties = getModelProperties(nodeSchema);
+		const schemaProperties = getSchemaProperties(nodeSchema);
+		if (!schemaProperties) return;
+
+		for (const prop of properties) {
+			if (prop.isModel) {
+				const childPath = `${path}.${prop.name}`;
+				const childSchema = schemaProperties[prop.name];
+				if (childSchema) {
+					deselectModelsRecursive(childPath, childSchema);
 				}
 			}
-			return;
 		}
+	}
 
-		// Get model children
+	/**
+	 * Recursively select all models for a node and all descendant nodes.
+	 * Adds model child names to parent selection sets; leaf models have empty sets.
+	 */
+	function selectModelsRecursive(path: string, nodeSchema: JsonSchema): void {
 		const properties = getModelProperties(nodeSchema);
 		const schemaProperties = getSchemaProperties(nodeSchema);
 		const modelChildren = properties.filter(p => p.isModel);
 
-		// If this node has model children, add their names to the selection set
-		// and recurse into them
 		if (modelChildren.length > 0 && schemaProperties) {
 			const modelChildNames = new Set(modelChildren.map(p => p.name));
 			selectionMap.set(path, modelChildNames);
@@ -155,12 +138,23 @@ export function useToggleHandlers(
 				const childPath = `${path}.${prop.name}`;
 				const childSchema = schemaProperties[prop.name];
 				if (childSchema) {
-					toggleAllModelsRecursive(childPath, childSchema, shouldSelect);
+					selectModelsRecursive(childPath, childSchema);
 				}
 			}
 		} else {
-			// Leaf model: no model children, just add with empty set
 			selectionMap.set(path, new Set());
+		}
+	}
+
+	/**
+	 * Recursively toggle all models (without properties) for a node and all descendant nodes.
+	 * Dispatches to select or deselect helper based on shouldSelect.
+	 */
+	function toggleAllModelsRecursive(path: string, nodeSchema: JsonSchema, shouldSelect: boolean): void {
+		if (shouldSelect) {
+			selectModelsRecursive(path, nodeSchema);
+		} else {
+			deselectModelsRecursive(path, nodeSchema);
 		}
 	}
 
@@ -170,10 +164,10 @@ export function useToggleHandlers(
 	function onToggleModelRecursive(path: string, selectAll: boolean): void {
 		if (selectAll) {
 			ensureParentChainSelected(path);
-			toggleAllModelsRecursive(path, getSchemaAtPath(path), selectAll);
+			toggleAllModelsRecursive(path, getSchemaAtPathOrRoot(path), selectAll);
 		} else {
 			removeFromParentSelection(path);
-			toggleAllModelsRecursive(path, getSchemaAtPath(path), selectAll);
+			toggleAllModelsRecursive(path, getSchemaAtPathOrRoot(path), selectAll);
 		}
 	}
 
@@ -186,7 +180,7 @@ export function useToggleHandlers(
 		} else {
 			removeFromParentSelection(path);
 		}
-		toggleAllRecursive(path, getSchemaAtPath(path), selectAll);
+		toggleAllRecursive(path, getSchemaAtPathOrRoot(path), selectAll);
 	}
 
 	/**
@@ -196,7 +190,7 @@ export function useToggleHandlers(
 	function onToggleSingleNode(path: string, selectAll: boolean): void {
 		if (selectAll) {
 			ensureParentChainSelected(path);
-			const nodeSchema = getSchemaAtPath(path);
+			const nodeSchema = getSchemaAtPathOrRoot(path);
 			const properties = getModelProperties(nodeSchema);
 			// Filter to only scalar properties (not model properties)
 			const scalarProperties = properties.filter(p => !p.isModel);

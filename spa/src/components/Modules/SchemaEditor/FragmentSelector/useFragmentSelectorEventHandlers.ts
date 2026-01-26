@@ -1,5 +1,6 @@
 import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { nextTick, Ref } from "vue";
+import { CENTER_ON_NODE_DURATION_MS, NODE_ADD_DELAY_MS } from "./constants";
 
 export interface FragmentSelectorEmit {
 	(event: "update:modelValue", value: FragmentSelector | null): void;
@@ -97,15 +98,15 @@ export function useFragmentSelectorEventHandlers(params: EventHandlersParams): F
 		await nextTick();
 		await triggerRelayout();
 		// Smoothly pan to the new model after layout is complete
-		centerOnNode(newNodePath, 400);
+		centerOnNode(newNodePath, CENTER_ON_NODE_DURATION_MS);
 		// Set focus on the new node's name input after centering animation completes
 		setTimeout(() => {
 			focusedNodePath.value = newNodePath;
 			// Clear the focus trigger after a brief delay to allow the node to react
 			setTimeout(() => {
 				focusedNodePath.value = null;
-			}, 100);
-		}, 400);
+			}, NODE_ADD_DELAY_MS);
+		}, CENTER_ON_NODE_DURATION_MS);
 	}
 
 	function handleUpdateModel(payload: { path: string; updates: object }): void {

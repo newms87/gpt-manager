@@ -1,7 +1,7 @@
 import { JsonSchema, JsonSchemaType } from "@/types";
 import { toValue } from "vue";
 import { RefOrGetter } from "./types";
-import { cloneSchema, getSchemaAtPath, getSchemaProperties, updateSchemaAtPath } from "./useSchemaNavigation";
+import { cloneSchema, getNodeName, getParentPath, getSchemaAtPath, getSchemaProperties, setSchemaProperties, updateSchemaAtPath } from "./useSchemaNavigation";
 import { generateUniqueName, getNextPosition } from "./useSchemaNameGeneration";
 
 /**
@@ -20,7 +20,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	function addProperty(path: string, type: JsonSchemaType, baseName: string): JsonSchema {
 		const schema = getSchema();
 		return updateSchemaAtPath(schema, path, (target) => {
-			const properties = target.items?.properties || target.properties || {};
+			const properties = getSchemaProperties(target) || {};
 			const existingNames = Object.keys(properties);
 			const name = generateUniqueName(baseName, existingNames);
 			const position = getNextPosition(properties);
@@ -28,14 +28,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 			const newProperty: JsonSchema = { type, position };
 			const updatedProperties = { ...properties, [name]: newProperty };
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 	}
 
@@ -51,7 +44,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	): JsonSchema {
 		const schema = getSchema();
 		return updateSchemaAtPath(schema, path, (target) => {
-			const properties = target.items?.properties || target.properties;
+			const properties = getSchemaProperties(target);
 			if (!properties || !properties[originalName]) {
 				return target;
 			}
@@ -70,14 +63,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 				updatedProperties[originalName] = updatedProperty;
 			}
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 	}
 
@@ -87,7 +73,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	function removeProperty(path: string, name: string): JsonSchema {
 		const schema = getSchema();
 		return updateSchemaAtPath(schema, path, (target) => {
-			const properties = target.items?.properties || target.properties;
+			const properties = getSchemaProperties(target);
 			if (!properties || !properties[name]) {
 				return target;
 			}
@@ -95,14 +81,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 			const updatedProperties = { ...properties };
 			delete updatedProperties[name];
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 	}
 
@@ -115,12 +94,12 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 
 		// First, determine what name will be generated
 		const targetSchema = getSchemaAtPath(schema, path);
-		const properties = targetSchema?.items?.properties || targetSchema?.properties || {};
+		const properties = getSchemaProperties(targetSchema) || {};
 		const existingNames = Object.keys(properties);
 		const generatedName = generateUniqueName(baseName, existingNames);
 
 		const newSchema = updateSchemaAtPath(schema, path, (target) => {
-			const props = target.items?.properties || target.properties || {};
+			const props = getSchemaProperties(target) || {};
 			const position = getNextPosition(props);
 
 			const newModel: JsonSchema = {
@@ -133,14 +112,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 
 			const updatedProperties = { ...props, [generatedName]: newModel };
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 
 		return { schema: newSchema, name: generatedName };
@@ -174,7 +146,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	function reorderProperties(path: string, propertyNames: string[]): JsonSchema {
 		const schema = getSchema();
 		return updateSchemaAtPath(schema, path, (target) => {
-			const properties = target.items?.properties || target.properties;
+			const properties = getSchemaProperties(target);
 			if (!properties) {
 				return target;
 			}
@@ -188,14 +160,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 				}
 			});
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 	}
 
@@ -205,19 +170,18 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	 */
 	function removeModel(path: string): JsonSchema {
 		const schema = getSchema();
-		const parts = path.split(".");
 
 		// Cannot remove root
-		if (parts.length === 1 && parts[0] === "root") {
+		if (path === "root") {
 			return schema;
 		}
 
 		// Get the parent path and the model name to remove
-		const modelName = parts[parts.length - 1];
-		const parentPath = parts.slice(0, -1).join(".");
+		const modelName = getNodeName(path);
+		const parentPath = getParentPath(path);
 
 		return updateSchemaAtPath(schema, parentPath, (target) => {
-			const properties = target.items?.properties || target.properties;
+			const properties = getSchemaProperties(target);
 			if (!properties || !properties[modelName]) {
 				return target;
 			}
@@ -225,14 +189,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 			const updatedProperties = { ...properties };
 			delete updatedProperties[modelName];
 
-			if (target.items?.properties) {
-				return {
-					...target,
-					items: { ...target.items, properties: updatedProperties }
-				};
-			}
-
-			return { ...target, properties: updatedProperties };
+			return setSchemaProperties(target, updatedProperties);
 		});
 	}
 
