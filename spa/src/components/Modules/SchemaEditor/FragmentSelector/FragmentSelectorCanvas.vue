@@ -164,6 +164,7 @@ const handlers = useFragmentSelectorEventHandlers({
 		fragmentSelector: selection.fragmentSelector
 	},
 	emit,
+	effectiveSelectionEnabled: modes.effectiveSelectionEnabled,
 	effectiveEditEnabled: modes.effectiveEditEnabled,
 	focusedNodePath,
 	triggerRelayout,

@@ -1,7 +1,7 @@
 <template>
 	<div
 		class="relative flex items-center gap-2 px-3 py-2 rounded-t-lg group nodrag nopan"
-		:class="isSelected ? 'bg-sky-800/40' : 'bg-slate-700'"
+		:class="isSelected ? 'bg-sky-900' : 'bg-slate-700'"
 	>
 		<!-- DELETE BUTTON: Container extends from header edge to button, no gap -->
 		<div
@@ -17,7 +17,7 @@
 		</div>
 
 		<!-- LEFT ELEMENT: Checkbox (select) / Spacer (edit & readonly) -->
-		<div class="w-5 flex-shrink-0 flex items-center justify-center">
+		<div class="w-5 h-5 flex-shrink-0 flex items-center justify-center">
 			<Transition name="fade" mode="out-in">
 				<QCheckbox
 					v-if="selectionEnabled"
@@ -29,7 +29,7 @@
 					dark
 					@update:model-value="emit('toggle-all')"
 				/>
-				<div v-else key="spacer" class="w-4 h-4" />
+				<div v-else key="spacer" class="w-5 h-5" />
 			</Transition>
 		</div>
 

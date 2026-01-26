@@ -27,6 +27,7 @@ export interface EventHandlersParams {
 	editor: SchemaEditor;
 	selection: SelectionHandlers;
 	emit: FragmentSelectorEmit;
+	effectiveSelectionEnabled: Ref<boolean>;
 	effectiveEditEnabled: Ref<boolean>;
 	focusedNodePath: Ref<string | null>;
 	triggerRelayout: () => Promise<void>;
@@ -50,15 +51,17 @@ export interface FragmentSelectorEventHandlers {
  * Bridges schema editing, selection, and layout operations.
  */
 export function useFragmentSelectorEventHandlers(params: EventHandlersParams): FragmentSelectorEventHandlers {
-	const { editor, selection, emit, effectiveEditEnabled, focusedNodePath, triggerRelayout, centerOnNode } = params;
+	const { editor, selection, emit, effectiveSelectionEnabled, effectiveEditEnabled, focusedNodePath, triggerRelayout, centerOnNode } = params;
 
 	// Toggle handlers that also emit the updated selector
 	function handleToggleProperty(payload: { path: string; propertyName: string }): void {
+		if (!effectiveSelectionEnabled.value) return;
 		selection.onToggleProperty(payload);
 		emit("update:modelValue", selection.fragmentSelector.value);
 	}
 
 	function handleToggleAll(payload: { path: string; selectAll: boolean }): void {
+		if (!effectiveSelectionEnabled.value) return;
 		selection.onToggleAll(payload);
 		emit("update:modelValue", selection.fragmentSelector.value);
 	}

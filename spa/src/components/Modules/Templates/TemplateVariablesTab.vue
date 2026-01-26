@@ -16,9 +16,9 @@
 					@click="handleSuggestMappings"
 				/>
 			</div>
-			<SchemaEditorToolbox
+			<SchemaAndFragmentSelector
 				v-model="selectedSchema"
-				:can-select="true"
+				:can-select-schema="true"
 				:can-select-fragment="false"
 				:previewable="true"
 				:clearable="true"
@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox.vue";
+import SchemaAndFragmentSelector from "@/components/Modules/SchemaEditor/SchemaAndFragmentSelector.vue";
 import AiMappingSuggestionsDialog, { MappingSuggestion } from "@/components/Modules/Templates/AiMappingSuggestionsDialog.vue";
 import TemplateVariableListItem from "@/components/Modules/Templates/TemplateVariableListItem.vue";
 import TemplateVariableEditor from "@/ui/templates/components/TemplateVariableEditor.vue";

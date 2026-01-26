@@ -12,13 +12,13 @@
             <label class="text-sm font-medium text-slate-700 mb-2 block">
                 Schema Definition <span class="text-red-500">*</span>
             </label>
-            <SchemaEditorToolbox
+            <SchemaAndFragmentSelector
                 v-model="localSchema"
                 v-model:fragment="localFragment"
-                :can-select="true"
+                :can-select-schema="true"
                 :can-select-fragment="true"
                 :previewable="false"
-                editable
+                can-edit-schema
                 dialog
                 :clearable="true"
                 button-color="bg-green-700"
@@ -67,7 +67,7 @@ import {
     FaSolidChevronRight
 } from "danx-icon";
 import { ref, watch } from "vue";
-import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox.vue";
+import SchemaAndFragmentSelector from "@/components/Modules/SchemaEditor/SchemaAndFragmentSelector.vue";
 import TemplateVariableFormattingFields from "./TemplateVariableFormattingFields.vue";
 import type { TemplateVariable } from "../types";
 import type { SchemaDefinition, SchemaFragment } from "@/types";

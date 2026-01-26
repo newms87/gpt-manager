@@ -2,7 +2,7 @@
 	<div class="fragment-model-node min-w-56 relative">
 		<div
 			class="border rounded-lg shadow-lg transition-colors"
-			:class="isNodeSelected ? 'bg-sky-900/30 border-sky-500/40' : 'bg-slate-800 border-slate-600'"
+			:class="isNodeSelected ? 'bg-sky-950 border-sky-600' : 'bg-slate-800 border-slate-600'"
 		>
 			<!-- Target Handles -->
 			<FragmentModelNodeHandles
@@ -50,6 +50,7 @@
 								:edit-active="Boolean(data.editEnabled)"
 								:selection-active="Boolean(data.selectionEnabled) && !isByModelMode"
 								:is-selected="isPropertySelected(prop.name)"
+								:is-last="!data.editEnabled && prop.name === displayProperties[displayProperties.length - 1]?.name"
 								:show-description="true"
 								@toggle="onToggleProperty(prop.name)"
 								@update-name="newName => emit('update-property', { path: data.path, originalName: prop.name, newName, updates: {} })"
@@ -134,11 +135,12 @@ const isByModelMode = computed(() => {
 });
 
 const isNodeSelected = computed(() => {
-	if (!props.data.selectionEnabled) return false;
+	// Show selection highlights whenever there's ANY selection data
+	// This includes partial selections - the node should appear selected if any of its properties are selected
 	if (isByModelMode.value) {
 		return props.data.isIncluded;
 	}
-	return props.data.isFullySelected;
+	return props.data.hasAnySelection;
 });
 
 const displayProperties = computed(() => {

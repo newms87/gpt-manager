@@ -3,10 +3,13 @@
 		<!-- Main row container -->
 		<div
 			class="flex items-center gap-2 px-3 py-1 transition-colors flex-1 nodrag nopan"
-			:class="isSelected ? 'bg-sky-900/30' : 'hover:bg-slate-700/50'"
+			:class="[
+				isSelected ? 'bg-sky-900' : 'bg-slate-800 hover:bg-slate-700',
+				isLast ? 'rounded-b-lg' : ''
+			]"
 		>
 			<!-- LEFT ELEMENT: Checkbox (select) / Drag Handle (edit) / Spacer (readonly) -->
-			<div class="w-5 flex-shrink-0 flex items-center justify-center">
+			<div class="w-5 h-5 flex-shrink-0 flex items-center justify-center">
 				<Transition name="fade" mode="out-in">
 					<QCheckbox
 						v-if="selectionActive"
@@ -25,7 +28,7 @@
 						class="w-3 h-3 text-slate-500 cursor-grab"
 						alt="drag-handle"
 					/>
-					<div v-else key="spacer" class="w-3 h-3" />
+					<div v-else key="spacer" class="w-5 h-5" />
 				</Transition>
 			</div>
 
@@ -105,6 +108,7 @@ const props = defineProps<{
 	editActive: boolean;
 	selectionActive: boolean;
 	isSelected: boolean;
+	isLast?: boolean;
 	showDescription: boolean;
 }>();
 

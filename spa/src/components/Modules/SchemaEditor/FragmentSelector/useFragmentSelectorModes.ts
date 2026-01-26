@@ -8,7 +8,7 @@ export interface FragmentSelectorModesResult {
 	editEnabled: ComputedRef<boolean>;
 	selectionMode: ComputedRef<SelectionMode>;
 	// Internal state
-	isEditModeActive: Ref<boolean>;
+	isEditModeActive: Ref<boolean | null>;
 	effectiveSelectionEnabled: ComputedRef<boolean>;
 	effectiveEditEnabled: ComputedRef<boolean>;
 	showPropertiesInternal: Ref<boolean>;
@@ -35,25 +35,26 @@ export function useFragmentSelectorModes(
 	const showCodeSidebar = ref<boolean>(getItem("fragmentSelector.showCode") ?? false);
 
 	// Internal state for edit mode toggle (only used when both selectionEnabled and editEnabled are true)
-	const isEditModeActive = ref(false);
+	// null = neither mode active (readonly), true = edit mode, false = select mode
+	const isEditModeActive = ref<boolean | null>(null);
 
 	// Computed for determining effective modes when both are enabled
 	const effectiveSelectionEnabled = computed(() => {
 		const selEnabled = toValue(selectionEnabled);
 		const edEnabled = toValue(editEnabled);
 		if (selEnabled && edEnabled) {
-			return !isEditModeActive.value; // Selection when NOT in edit mode
+			return isEditModeActive.value === false; // Selection only when explicitly in select mode
 		}
-		return selEnabled;
+		return selEnabled && isEditModeActive.value !== false;
 	});
 
 	const effectiveEditEnabled = computed(() => {
 		const selEnabled = toValue(selectionEnabled);
 		const edEnabled = toValue(editEnabled);
 		if (selEnabled && edEnabled) {
-			return isEditModeActive.value; // Edit when toggle is on
+			return isEditModeActive.value === true; // Edit only when explicitly in edit mode
 		}
-		return edEnabled;
+		return edEnabled && isEditModeActive.value !== false;
 	});
 
 	// Toggle show properties with persistence

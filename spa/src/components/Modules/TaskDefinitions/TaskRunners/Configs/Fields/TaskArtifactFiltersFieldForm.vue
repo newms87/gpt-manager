@@ -26,12 +26,12 @@
 
         <!-- Filter configuration (only shown when active) -->
         <div v-if="props.taskArtifactFilter" class="w-full transition-all duration-300 mt-4">
-            <SchemaEditorToolbox
+            <SchemaAndFragmentSelector
                 v-model="selectedSchemaDefinition"
                 v-model:fragment="editableTaskArtifactFilter.schemaFragment"
-                can-select
+                can-select-schema
                 hide-save-state
-                editable
+                can-edit-schema
                 can-select-fragment
                 clearable
                 :hide-default-header="!editableTaskArtifactFilter.include_json"
@@ -68,21 +68,22 @@
                         />
                     </div>
                 </template>
-                <div v-if="editableTaskArtifactFilter.include_meta" class="px-6 mt-4">
-                    <div class="font-medium mb-2">Meta fragment selector</div>
-                    <FragmentSelectorConfigField
-                        v-model="editableTaskArtifactFilter.meta_fragment_selector"
-                        :delay="500"
-                        @update:model-value="onUpdate"
-                    />
-                </div>
-            </SchemaEditorToolbox>
+            </SchemaAndFragmentSelector>
+
+            <div v-if="editableTaskArtifactFilter.include_meta" class="px-6 mt-4">
+                <div class="font-medium mb-2">Meta fragment selector</div>
+                <FragmentSelectorConfigField
+                    v-model="editableTaskArtifactFilter.meta_fragment_selector"
+                    :delay="500"
+                    @update:model-value="onUpdate"
+                />
+            </div>
         </div>
     </div>
 </template>
 
 <script setup lang="ts">
-import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
+import SchemaAndFragmentSelector from "@/components/Modules/SchemaEditor/SchemaAndFragmentSelector.vue";
 
 import { loadSchemaDefinitions, schemaDefinitions } from "@/components/Modules/SchemaEditor/store";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";

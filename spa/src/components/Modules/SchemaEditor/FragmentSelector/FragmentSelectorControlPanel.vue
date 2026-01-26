@@ -1,14 +1,59 @@
 <template>
 	<div class="flex items-center gap-1">
-		<!-- Edit/Select Mode Toggle (only when both modes are enabled) -->
-		<button
-			v-if="props.modes.selectionEnabled.value && props.modes.editEnabled.value"
-			class="flex items-center justify-center w-8 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700"
-			:title="props.modes.isEditModeActive.value ? 'Switch to Select Mode' : 'Switch to Edit Mode'"
-			@click="props.modes.isEditModeActive.value = !props.modes.isEditModeActive.value"
-		>
-			<component :is="props.modes.isEditModeActive.value ? SelectIcon : EditIcon" class="w-4" />
-		</button>
+		<!-- Mode Toggle Buttons -->
+		<div v-if="props.modes.editEnabled.value || props.modes.selectionEnabled.value" class="flex">
+			<!-- When both modes available: radio button group -->
+			<template v-if="props.modes.editEnabled.value && props.modes.selectionEnabled.value">
+				<!-- Edit Button (left side of group) -->
+				<button
+					class="flex items-center justify-center w-8 h-8 rounded-l-lg border-y border-l shadow-lg cursor-pointer transition-colors nodrag nopan"
+					:class="props.modes.isEditModeActive.value === true
+						? 'bg-sky-900 border-sky-600 text-sky-300'
+						: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+					title="Edit Mode"
+					@click="props.modes.isEditModeActive.value = props.modes.isEditModeActive.value === true ? null : true"
+				>
+					<EditIcon class="w-4" />
+				</button>
+				<!-- Select Button (right side of group) -->
+				<button
+					class="flex items-center justify-center w-8 h-8 rounded-r-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+					:class="props.modes.isEditModeActive.value === false
+						? 'bg-sky-900 border-sky-600 text-sky-300'
+						: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+					title="Select Mode"
+					@click="props.modes.isEditModeActive.value = props.modes.isEditModeActive.value === false ? null : false"
+				>
+					<SelectIcon class="w-4" />
+				</button>
+			</template>
+
+			<!-- When only edit enabled: single toggle button -->
+			<button
+				v-else-if="props.modes.editEnabled.value"
+				class="flex items-center justify-center w-8 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+				:class="props.modes.effectiveEditEnabled.value
+					? 'bg-sky-900 border-sky-600 text-sky-300'
+					: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+				title="Toggle Edit Mode"
+				@click="props.modes.isEditModeActive.value = !props.modes.isEditModeActive.value"
+			>
+				<EditIcon class="w-4" />
+			</button>
+
+			<!-- When only select enabled: single toggle button -->
+			<button
+				v-else-if="props.modes.selectionEnabled.value"
+				class="flex items-center justify-center w-8 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+				:class="props.modes.effectiveSelectionEnabled.value
+					? 'bg-sky-900 border-sky-600 text-sky-300'
+					: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+				title="Toggle Select Mode"
+				@click="props.modes.isEditModeActive.value = !props.modes.isEditModeActive.value"
+			>
+				<SelectIcon class="w-4" />
+			</button>
+		</div>
 
 		<!-- Code Sidebar Toggle (only when selection or edit mode is active) -->
 		<button

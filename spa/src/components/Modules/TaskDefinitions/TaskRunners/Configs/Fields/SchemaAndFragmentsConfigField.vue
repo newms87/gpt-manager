@@ -1,15 +1,14 @@
 <template>
     <div class="schema-and-fragments-config">
-        <SchemaEditorToolbox
-            can-select
+        <SchemaAndFragmentSelector
+            can-select-schema
             :can-select-fragment="maxFragments === 1"
             previewable
-            editable
+            can-edit-schema
             hide-save-state
             button-color="bg-green-900 text-sky-200"
             :model-value="taskDefinition.schemaDefinition"
             :fragment="(maxFragments === 1 && taskDefinition.schemaAssociations?.length > 0) ? taskDefinition.schemaAssociations[0].fragment : null"
-            :loading="taskDefinition.isSaving"
             :hide-default-header="!forceSchema && isTextResponse"
             @update:model-value="onChangeSchema"
             @update:fragment="fragment => onUpdateFragment(fragment)"
@@ -27,7 +26,7 @@
                     <QTab name="json_schema" label="JSON Schema" />
                 </QTabs>
             </template>
-        </SchemaEditorToolbox>
+        </SchemaAndFragmentSelector>
 
         <ListTransition v-if="maxFragments > 1 && !isTextResponse" class="space-y-4 mt-4">
             <div
@@ -44,15 +43,14 @@
                     tooltip="Remove Fragment"
                 />
 
-                <SchemaEditorToolbox
+                <SchemaAndFragmentSelector
                     can-select-fragment
                     previewable
-                    editable
+                    can-edit-schema
                     hide-save-state
                     button-color="bg-green-900 text-sky-200"
                     :model-value="taskDefinition.schemaDefinition"
                     :fragment="schemaAssociation.fragment"
-                    :loading="schemaAssociation.isSaving"
                     @update:fragment="fragment => onUpdateFragment(fragment, schemaAssociation)"
                 />
             </div>
@@ -71,7 +69,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import SchemaEditorToolbox from "@/components/Modules/SchemaEditor/SchemaEditorToolbox";
+import SchemaAndFragmentSelector from "@/components/Modules/SchemaEditor/SchemaAndFragmentSelector.vue";
 import { dxSchemaAssociation } from "@/components/Modules/Schemas/SchemaAssociations";
 import { dxTaskDefinition } from "@/components/Modules/TaskDefinitions";
 import { SchemaAssociation, SchemaDefinition, SchemaFragment, TaskDefinition } from "@/types";
