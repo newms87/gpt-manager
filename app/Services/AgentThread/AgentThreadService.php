@@ -67,6 +67,7 @@ class AgentThreadService
     public function withTimeout(?int $timeout = null): static
     {
         $this->timeout = $timeout;
+        static::logDebug("AgentThreadService::withTimeout({$timeout}s) called");
 
         return $this;
     }
@@ -96,6 +97,8 @@ class AgentThreadService
                 'mcp_server_id'        => $this->mcpServer?->id,
                 'timeout'              => $this->timeout,
             ]);
+
+            static::logDebug("AgentThreadRun created with timeout={$agentThreadRun->timeout}s for thread {$agentThread->id}");
 
             // Save a snapshot of the resolved JSON Schema to use as the agent's response schema,
             // and so we can clearly see what the schema was at the time of running the request
@@ -433,6 +436,9 @@ STR;
         // Set timeout from the thread run for HTTP API calls
         if ($agentThreadRun->timeout) {
             $apiOptions->setTimeout($agentThreadRun->timeout);
+            static::logDebug("executeResponsesApi: timeout={$agentThreadRun->timeout}s applied to ResponsesApiOptions for run {$agentThreadRun->id}");
+        } else {
+            static::logDebug("executeResponsesApi: NO timeout set on AgentThreadRun {$agentThreadRun->id} - will use default");
         }
 
         // Build system instructions and always prepend them
@@ -468,8 +474,9 @@ STR;
             $response = $this->executeStreamingResponsesApi($agentThread, $messages, $apiOptions);
         } else {
             // Regular non-streaming Responses API call
-            $agent    = $agentThread->agent;
-            $api      = $agent->getModelApi();
+            $agent = $agentThread->agent;
+            $api   = $agent->getModelApi();
+
             $response = $api->responses(
                 $agent->model,
                 $messages,

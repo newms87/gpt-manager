@@ -15,17 +15,17 @@ return [
     ],
 
     'audit'               => [
-        'enabled' => env('AUDIT_ENABLED', env('AUDITING_ENABLED', false)),
+        'enabled'   => env('AUDIT_ENABLED', env('AUDITING_ENABLED', false)),
 
         /**
          * Enables debugging for the audit log (normally only enabled when trying to figure out what went wrong w/ auditing)
          */
-        'debug'   => env('AUDIT_DEBUG', false),
+        'debug'     => env('AUDIT_DEBUG', false),
 
         /**
          * Enable auditing / logging for any Api implementations using the Api class
          */
-        'api'     => [
+        'api'       => [
             'enabled'         => env('AUDIT_API_ENABLED', false),
             // Default to 10MB
             'max_body_length' => env('AUDIT_API_MAX_BODY_LENGTH', 1024 * 1024 * 10),
@@ -34,9 +34,19 @@ return [
         /**
          * Enable auditing / logging for any Jobs implementations using the Job class
          */
-        'jobs'    => [
+        'jobs'      => [
             'enabled' => env('AUDIT_JOBS_ENABLED', false),
             'debug'   => env('AUDIT_JOBS_DEBUG', false),
+        ],
+
+        /**
+         * Heartbeat logging for long-running API requests.
+         * Forks a child process that logs to audit_request.logs every N seconds.
+         * If the parent process dies (even SIGKILL), the child detects and logs it.
+         */
+        'heartbeat' => [
+            'enabled'  => env('JOB_HEARTBEAT_ENABLED', false),
+            'interval' => env('JOB_HEARTBEAT_INTERVAL', 10), // seconds between heartbeats
         ],
     ],
 

@@ -30,6 +30,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Signal handling is now in danx library (SignalHandler::register())
     }
 }
