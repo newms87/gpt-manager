@@ -13,7 +13,7 @@ export interface PropertyInfo {
 	isModel: boolean;
 }
 
-export type SelectionMode = "recursive" | "single-node" | "model-only";
+export type SelectionMode = "by-model" | "by-property";
 
 export interface FragmentModelNodeData {
 	name: string;
@@ -25,6 +25,10 @@ export interface FragmentModelNodeData {
 	selectionMode: SelectionMode;
 	isIncluded: boolean;
 	showProperties: boolean;
+	/** Whether this node or any descendant has any selection */
+	hasAnySelection: boolean;
+	/** Whether this node and all descendants are fully selected */
+	isFullySelected: boolean;
 }
 
 /**

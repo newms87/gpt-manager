@@ -19,8 +19,8 @@
 				/>
 			</template>
 
-			<!-- Show Properties Toggle (only in model-only mode) -->
-			<Panel v-if="props.selectionMode === 'model-only'" position="top-right">
+			<!-- Show Properties Toggle (only in by-model mode) -->
+			<Panel v-if="props.selectionMode === 'by-model'" position="top-right">
 				<div
 					class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors"
 					:class="showPropertiesInternal
@@ -54,10 +54,12 @@ import { computed, ref, watch } from "vue";
 const props = withDefaults(defineProps<{
 	schema: JsonSchema;
 	modelValue: FragmentSelector | null;
-	selectionMode?: "recursive" | "single-node" | "model-only";
+	selectionMode?: "by-model" | "by-property";
+	recursive?: boolean;
 	typeFilter?: JsonSchemaType | null;
 }>(), {
-	selectionMode: "recursive",
+	selectionMode: "by-property",
+	recursive: true,
 	typeFilter: null
 });
 
@@ -69,9 +71,10 @@ const emit = defineEmits<{
 }>();
 
 // Selection logic extracted into composable
-const { selectionMap, onToggleProperty, onToggleAll, fragmentSelector, syncFromExternal } = useFragmentSelection(
+const { selectionMap, onToggleProperty, onToggleAll, fragmentSelector, syncFromExternal, getSelectionRollupState } = useFragmentSelection(
 	() => props.schema,
-	() => props.selectionMode
+	() => props.selectionMode,
+	() => props.recursive
 );
 
 // Container ref for measuring available space
@@ -102,6 +105,9 @@ const filteredNodes = computed<Node[]>(() => {
 				isIncluded = parentSelection?.has(nodeName) ?? false;
 			}
 
+			// Compute rollup selection state for ternary checkbox display
+			const rollupState = getSelectionRollupState(node.data.path, properties, props.recursive);
+
 			return {
 				...node,
 				position: nodePositions.value.get(node.id) || node.position,
@@ -112,7 +118,9 @@ const filteredNodes = computed<Node[]>(() => {
 					isIncluded,
 					properties,
 					selectedProperties: selectedProperties ? Array.from(selectedProperties) : [],
-					showProperties: showPropertiesInternal.value
+					showProperties: showPropertiesInternal.value,
+					hasAnySelection: rollupState.hasAnySelection,
+					isFullySelected: rollupState.isFullySelected
 				}
 			};
 		})

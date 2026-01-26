@@ -20,6 +20,7 @@
 						:schema="schema"
 						:model-value="localSelector"
 						:selection-mode="selectionMode"
+						:recursive="recursive"
 						:type-filter="typeFilter"
 						@update:model-value="localSelector = $event"
 					/>
@@ -64,10 +65,12 @@ import { computed, ref, watch } from "vue";
 const props = withDefaults(defineProps<{
 	schema: JsonSchema;
 	modelValue: FragmentSelector | null;
-	selectionMode?: "recursive" | "model-only";
+	selectionMode?: "by-model" | "by-property";
+	recursive?: boolean;
 	typeFilter?: JsonSchemaType | null;
 }>(), {
-	selectionMode: "recursive",
+	selectionMode: "by-property",
+	recursive: true,
 	typeFilter: null
 });
 

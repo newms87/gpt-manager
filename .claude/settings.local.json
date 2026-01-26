@@ -115,7 +115,8 @@
       "Bash(yarn test:*)",
       "Bash(xxd:*)",
       "Bash(yarn tsc:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(yarn test:run:*)"
     ],
     "deny": [],
     "additionalDirectories": [

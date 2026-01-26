@@ -20,6 +20,18 @@
         </div>
       </div>
 
+      <!-- Recursive Toggle -->
+      <div class="flex items-center gap-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="recursive"
+            type="checkbox"
+            class="w-4 h-4 rounded border-slate-500 bg-slate-700 text-sky-600 focus:ring-sky-500 focus:ring-offset-0"
+          />
+          <span class="text-sm text-slate-400">Recursive</span>
+        </label>
+      </div>
+
       <!-- Type Filter -->
       <div class="flex items-center gap-3">
         <span class="text-sm text-slate-400">Type Filter:</span>
@@ -44,10 +56,11 @@
       <!-- Diagram Canvas -->
       <div class="flex-1 min-w-0 bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
         <FragmentSelectorCanvas
-          :key="selectionMode"
+          :key="`${selectionMode}-${recursive}`"
           :schema="medicalRecordSchema"
           v-model="selection"
           :selection-mode="selectionMode"
+          :recursive="recursive"
           :type-filter="typeFilter"
         />
       </div>
@@ -103,7 +116,8 @@ import { computed, ref } from "vue";
 const selection = ref<FragmentSelector | null>(null);
 
 // Control options
-const selectionMode = ref<"recursive" | "single-node" | "model-only">("recursive");
+const selectionMode = ref<"by-model" | "by-property">("by-property");
+const recursive = ref<boolean>(true);
 const typeFilter = ref<JsonSchemaType | null>(null);
 
 // Output format for sidebar (JSON or YAML)
@@ -116,9 +130,8 @@ function setOutputFormat(format: "json" | "yaml") {
 }
 
 const selectionModes = [
-  { value: "recursive" as const, label: "Recursive" },
-  { value: "single-node" as const, label: "Single Node" },
-  { value: "model-only" as const, label: "Model Only" }
+  { value: "by-property" as const, label: "By Property" },
+  { value: "by-model" as const, label: "By Model" }
 ];
 
 const typeFilters = [

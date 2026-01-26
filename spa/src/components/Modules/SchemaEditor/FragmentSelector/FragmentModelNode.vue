@@ -31,8 +31,8 @@
         <!-- Header -->
         <div class="flex items-center gap-2 bg-slate-700 px-3 py-2 rounded-t-lg">
             <QCheckbox
-                :model-value="isAllSelected"
-                :indeterminate-value="isIndeterminate ? true : undefined"
+                :model-value="checkboxValue"
+                :indeterminate-value="null"
                 size="sm"
                 color="sky"
                 dark
@@ -67,16 +67,16 @@
 
         <!-- Properties List (non-model properties only, sorted by position) -->
         <!-- In model-only mode, only shown when showProperties is true (view-only, no checkboxes) -->
-        <div v-if="!isModelOnlyMode || data.showProperties" class="properties-list">
+        <div v-if="!isByModelMode || data.showProperties" class="properties-list">
             <div
                 v-for="prop in displayProperties"
                 :key="prop.name"
                 class="flex items-center gap-2 px-3 py-1 hover:bg-slate-700/50 transition-colors"
-                :class="{ 'bg-sky-900/30': !isModelOnlyMode && isPropertySelected(prop.name) }"
+                :class="{ 'bg-sky-900/30': !isByModelMode && isPropertySelected(prop.name) }"
             >
                 <!-- Checkbox only shown in non-model-only mode -->
                 <QCheckbox
-                    v-if="!isModelOnlyMode"
+                    v-if="!isByModelMode"
                     :model-value="isPropertySelected(prop.name)"
                     size="sm"
                     color="sky"
@@ -163,8 +163,8 @@ const hasModelChildren = computed(() => {
     return props.data.properties.some(p => p.isModel);
 });
 
-const isModelOnlyMode = computed(() => {
-    return props.data.selectionMode === "model-only";
+const isByModelMode = computed(() => {
+    return props.data.selectionMode === "by-model";
 });
 
 const displayProperties = computed(() => {
@@ -180,7 +180,7 @@ const displayProperties = computed(() => {
 
 // In model-only mode, we check model properties; otherwise scalar properties
 const selectableProperties = computed(() => {
-    if (isModelOnlyMode.value) {
+    if (isByModelMode.value) {
         return props.data.properties.filter(p => p.isModel);
     }
     return displayProperties.value;
@@ -188,23 +188,31 @@ const selectableProperties = computed(() => {
 
 const isAllSelected = computed(() => {
     // In model-only mode, check if this node is included in selection
-    if (isModelOnlyMode.value) {
+    if (isByModelMode.value) {
         return props.data.isIncluded;
     }
-    if (selectableProperties.value.length === 0) return false;
-    const selectableNames = selectableProperties.value.map(p => p.name);
-    const selectedSelectable = props.data.selectedProperties.filter(name => selectableNames.includes(name));
-    return selectedSelectable.length === selectableNames.length;
+    // Use the rollup state which considers all descendants
+    return props.data.isFullySelected;
 });
 
 const isIndeterminate = computed(() => {
     // In model-only mode, no indeterminate state
-    if (isModelOnlyMode.value) {
+    if (isByModelMode.value) {
         return false;
     }
-    const selectableNames = selectableProperties.value.map(p => p.name);
-    const selectedSelectable = props.data.selectedProperties.filter(name => selectableNames.includes(name));
-    return selectedSelectable.length > 0 && selectedSelectable.length < selectableNames.length;
+    // Has some selection but not fully selected (ternary: partial state)
+    return props.data.hasAnySelection && !props.data.isFullySelected;
+});
+
+// Computed value for QCheckbox that returns null for indeterminate state
+const checkboxValue = computed(() => {
+    if (isByModelMode.value) {
+        return props.data.isIncluded;
+    }
+    if (isIndeterminate.value) {
+        return null; // Indeterminate state
+    }
+    return props.data.isFullySelected;
 });
 
 function isPropertySelected(name: string): boolean {
@@ -216,6 +224,7 @@ function onToggleProperty(propertyName: string) {
 }
 
 function onToggleAll() {
+    // If fully selected, deselect; otherwise select all (fills in remaining)
     emit("toggle-all", { path: props.data.path, selectAll: !isAllSelected.value });
 }
 
