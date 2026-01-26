@@ -685,7 +685,244 @@ const modelValue = defineModel<string>();
 const agent = defineModel<Agent | null>();
 ```
 
-## 12. Direct Modification vs Emits Pattern
+## 12. Vue State Management - The Hierarchy of State
+
+Understanding where state belongs is critical to writing clean, maintainable Vue components. State management follows a clear hierarchy from most preferred to least preferred.
+
+### The State Hierarchy (Best to Worst)
+
+| Priority | Location | When to Use |
+|----------|----------|-------------|
+| 1st | **Internal State** | Default. State that only this component needs |
+| 2nd | **Composables** | State shared across multiple components |
+| 3rd | **Props + Events** | Cross-domain communication where component doesn't know what to do |
+
+### 1. Internal State (The Ideal)
+
+**The perfect component manages 100% of its own state internally.**
+
+A component that owns all its state is self-contained, testable, and easy to reason about. This should always be your default approach.
+
+```vue
+<script setup lang="ts">
+// GOOD: Component owns its own UI state
+const isExpanded = ref(false);
+const searchQuery = ref('');
+const selectedTab = ref('details');
+
+// Toggle functions operate on internal state
+function toggleExpanded() {
+    isExpanded.value = !isExpanded.value;
+}
+</script>
+```
+
+**Ask yourself:** Does anything outside this component need to read or write this state?
+- **No** → Keep it internal
+- **Yes** → Move to a composable (not props/events!)
+
+### 2. Composables (Shared State)
+
+**When multiple components need the same state, use a composable. Import it everywhere it's needed.**
+
+Composables provide a single source of truth that any component can read from or write to. No prop drilling. No event bubbling. Direct access.
+
+```typescript
+// useFragmentSelectorModes.ts
+export function useFragmentSelectorModes() {
+    const isEditModeActive = ref(false);
+    const showProperties = ref(true);
+    const showCodeSidebar = ref(false);
+
+    function toggleShowProperties() {
+        showProperties.value = !showProperties.value;
+    }
+
+    function toggleShowCode() {
+        showCodeSidebar.value = !showCodeSidebar.value;
+    }
+
+    return {
+        isEditModeActive,
+        showProperties,
+        showCodeSidebar,
+        toggleShowProperties,
+        toggleShowCode
+    };
+}
+```
+
+**Components import and use directly:**
+
+```vue
+<script setup lang="ts">
+// Any component that needs this state just imports the composable
+const modes = useFragmentSelectorModes();
+
+// Direct access - no props, no events
+function handleToggle() {
+    modes.toggleShowCode();  // Updates everywhere automatically
+}
+</script>
+```
+
+**Benefits:**
+- Single source of truth
+- Any component can read/write
+- Changes reflect everywhere instantly
+- No prop drilling through intermediate components
+- No event bubbling up chains
+
+### 3. Props + Events (Cross-Domain Only)
+
+**Events are for when a component genuinely doesn't know what to do.**
+
+A generic `<Button>` component emits `click` because it has no idea what clicking it should accomplish - that's the parent's domain. The button's responsibility ends at "I was clicked."
+
+```vue
+<!-- GOOD: Generic button doesn't know what click means -->
+<template>
+    <button @click="emit('click')">
+        <slot />
+    </button>
+</template>
+```
+
+**But domain-specific components DO know what to do:**
+
+A `FragmentSelectorProperty` component with a delete button knows exactly what deleting means - remove this property from the schema. It should NOT emit an event and wait for a parent to do the work.
+
+```vue
+<!-- BAD: Emitting when we know exactly what to do -->
+<template>
+    <button @click="emit('delete', property.name)">Delete</button>
+</template>
+
+<!-- GOOD: Component handles its own domain logic -->
+<script setup lang="ts">
+const editor = useFragmentSchemaEditor();
+
+function handleDelete() {
+    editor.removeProperty(props.modelPath, props.property.name);
+}
+</script>
+
+<template>
+    <button @click="handleDelete">Delete</button>
+</template>
+```
+
+### Decision Framework
+
+Use this flowchart to determine where state belongs:
+
+```
+Does this state need to be accessed outside this component?
+│
+├─ NO → Internal State (ref/reactive in setup)
+│
+└─ YES → Do multiple components need to read/write it?
+         │
+         ├─ YES → Composable (shared state)
+         │
+         └─ NO → Does this component know what to do with the data?
+                  │
+                  ├─ YES → Composable (component calls method directly)
+                  │
+                  └─ NO → Props/Events (cross-domain communication)
+```
+
+### Anti-Patterns to Avoid
+
+#### Anti-Pattern 1: Prop Drilling
+
+**BAD:** Passing state through multiple component layers
+
+```vue
+<!-- Parent passes to Child1, Child1 passes to Child2, Child2 passes to Child3... -->
+<Child1 :mode="mode" @update:mode="mode = $event" />
+```
+
+**GOOD:** Child components import the composable directly
+
+```vue
+<!-- Each component that needs mode just imports it -->
+<script setup>
+const { mode } = useAppMode();
+</script>
+```
+
+#### Anti-Pattern 2: Event Bubbling
+
+**BAD:** Events bubbling up through multiple layers
+
+```vue
+<!-- GrandChild emits to Child, Child re-emits to Parent, Parent re-emits to GrandParent... -->
+<GrandChild @delete="emit('delete', $event)" />
+```
+
+**GOOD:** GrandChild calls the composable method directly
+
+```vue
+<script setup>
+const editor = useSchemaEditor();
+const handleDelete = () => editor.deleteItem(props.item);
+</script>
+```
+
+#### Anti-Pattern 3: Two-Way Binding for Shared State
+
+**BAD:** Using v-model for state that should be in a composable
+
+```vue
+<ControlPanel
+    v-model:is-edit-mode="isEditMode"
+    v-model:show-properties="showProperties"
+    v-model:show-code="showCode"
+/>
+```
+
+**GOOD:** Pass the composable, let child access/modify directly
+
+```vue
+<ControlPanel :modes="modes" />
+
+<!-- Inside ControlPanel -->
+<script setup>
+const props = defineProps<{ modes: FragmentSelectorModesResult }>();
+// Direct access: props.modes.toggleShowCode()
+</script>
+```
+
+### When Events ARE Appropriate
+
+Events are the right choice for:
+
+1. **Generic/reusable components** - Buttons, inputs, dialogs that don't know their context
+2. **Navigation requests** - "Open this panel", "Navigate to this route"
+3. **Cross-boundary communication** - Between unrelated feature domains
+4. **Library components** - Components designed for reuse across projects
+
+```vue
+<!-- Generic ActionButton - doesn't know what action means -->
+<ActionButton type="delete" @click="handleDelete" />
+
+<!-- Generic Dialog - doesn't know what confirm means -->
+<ConfirmDialog @confirm="doSomething" @cancel="close" />
+```
+
+### Summary
+
+| State Type | Location | Example |
+|------------|----------|---------|
+| UI state (expanded, selected tab) | Internal `ref()` | `const isExpanded = ref(false)` |
+| Shared feature state | Composable | `const modes = useFragmentSelectorModes()` |
+| Domain actions | Composable methods | `editor.deleteProperty(path, name)` |
+| Generic component callbacks | Events | `<Button @click="...">` |
+
+**The goal:** Components that know their domain should act on it directly. Only truly generic components should defer to their parents via events.
+
+## 13. Direct Modification vs Emits Pattern
 
 **Use `dxController.getAction()` for direct resource modifications when the component has the resource object available.**
 

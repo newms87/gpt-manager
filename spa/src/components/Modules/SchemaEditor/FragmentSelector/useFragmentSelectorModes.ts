@@ -1,13 +1,19 @@
 import { getItem, setItem } from "quasar-ui-danx";
-import { computed, ref, Ref, toValue } from "vue";
+import { computed, ComputedRef, ref, Ref, toValue } from "vue";
 import { RefOrGetter, SelectionMode } from "./types";
 
 export interface FragmentSelectorModesResult {
+	// Input parameters (exposed for child components)
+	selectionEnabled: ComputedRef<boolean>;
+	editEnabled: ComputedRef<boolean>;
+	selectionMode: ComputedRef<SelectionMode>;
+	// Internal state
 	isEditModeActive: Ref<boolean>;
-	effectiveSelectionEnabled: Ref<boolean>;
-	effectiveEditEnabled: Ref<boolean>;
+	effectiveSelectionEnabled: ComputedRef<boolean>;
+	effectiveEditEnabled: ComputedRef<boolean>;
 	showPropertiesInternal: Ref<boolean>;
 	showCodeSidebar: Ref<boolean>;
+	// Methods
 	toggleShowProperties: () => void;
 	toggleShowCode: () => void;
 }
@@ -64,12 +70,23 @@ export function useFragmentSelectorModes(
 		setItem("fragmentSelector.showCode", showCodeSidebar.value);
 	}
 
+	// Expose input parameters as computed properties for child components
+	const selectionEnabledComputed = computed(() => toValue(selectionEnabled));
+	const editEnabledComputed = computed(() => toValue(editEnabled));
+	const selectionModeComputed = computed(() => toValue(selectionMode));
+
 	return {
+		// Input parameters (exposed for child components)
+		selectionEnabled: selectionEnabledComputed,
+		editEnabled: editEnabledComputed,
+		selectionMode: selectionModeComputed,
+		// Internal state
 		isEditModeActive,
 		effectiveSelectionEnabled,
 		effectiveEditEnabled,
 		showPropertiesInternal,
 		showCodeSidebar,
+		// Methods
 		toggleShowProperties,
 		toggleShowCode
 	};

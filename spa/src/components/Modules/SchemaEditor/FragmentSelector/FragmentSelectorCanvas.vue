@@ -28,65 +28,23 @@
 
 			<!-- Top-right panel with mode toggle and Show Props button (only when sidebar is hidden) -->
 			<Panel v-if="!modes.showCodeSidebar.value" position="top-right">
-				<FragmentSelectorControlPanel
-					:selection-enabled="props.selectionEnabled"
-					:edit-enabled="props.editEnabled"
-					:is-edit-mode-active="modes.isEditModeActive.value"
-					:show-properties="modes.showPropertiesInternal.value"
-					:show-code="modes.showCodeSidebar.value"
-					:selection-mode="props.selectionMode"
-					@update:is-edit-mode-active="modes.isEditModeActive.value = $event"
-					@update:show-properties="modes.toggleShowProperties()"
-					@update:show-code="modes.toggleShowCode()"
-				/>
+				<FragmentSelectorControlPanel :modes="modes" />
 			</Panel>
 		</VueFlow>
 
-		<!-- Sidebar Container (includes toggle buttons and code sidebar) -->
-		<div
+		<!-- Code Sidebar with Control Panel -->
+		<FragmentSelectorCodeSidebar
 			v-if="modes.showCodeSidebar.value && (modes.effectiveSelectionEnabled.value || modes.effectiveEditEnabled.value)"
-			class="absolute right-0 top-0 bottom-0 flex z-10"
-		>
-			<!-- Toggle Buttons (positioned to left of sidebar) -->
-			<div class="py-3 pr-2">
-				<FragmentSelectorControlPanel
-					:selection-enabled="props.selectionEnabled"
-					:edit-enabled="props.editEnabled"
-					:is-edit-mode-active="modes.isEditModeActive.value"
-					:show-properties="modes.showPropertiesInternal.value"
-					:show-code="modes.showCodeSidebar.value"
-					:selection-mode="props.selectionMode"
-					@update:is-edit-mode-active="modes.isEditModeActive.value = $event"
-					@update:show-properties="modes.toggleShowProperties()"
-					@update:show-code="modes.toggleShowCode()"
-				/>
-			</div>
-
-			<!-- Code Sidebar -->
-			<div class="w-80 flex flex-col bg-slate-800/95 border-l border-slate-600 overflow-hidden">
-				<div class="flex items-center justify-between px-4 py-3 bg-slate-700/90 border-b border-slate-600">
-					<span class="text-sm font-medium text-slate-200">
-						{{ modes.effectiveSelectionEnabled.value ? 'Selection' : 'Schema' }}
-					</span>
-					<div class="flex items-center gap-3 text-xs text-slate-400">
-						<span>Models: {{ sidebarCounts.models }}</span>
-						<span>Props: {{ sidebarCounts.properties }}</span>
-					</div>
-				</div>
-				<div class="flex-1 min-h-0 overflow-auto">
-					<CodeViewer
-						:model-value="modes.effectiveSelectionEnabled.value ? selection.fragmentSelector.value : props.schema"
-						editor-class="p-3"
-						hide-footer
-					/>
-				</div>
-			</div>
-		</div>
+			:modes="modes"
+			:data="modes.effectiveSelectionEnabled.value ? selection.fragmentSelector.value : props.schema"
+			:counts="sidebarCounts"
+		/>
 	</div>
 </template>
 
 <script setup lang="ts">
 import FragmentModelNode from "./FragmentModelNode.vue";
+import FragmentSelectorCodeSidebar from "./FragmentSelectorCodeSidebar.vue";
 import FragmentSelectorControlPanel from "./FragmentSelectorControlPanel.vue";
 import { LayoutDirection, SelectionMode } from "./types";
 import { useCanvasLayout } from "./useCanvasLayout";
@@ -103,7 +61,6 @@ import { Background, BackgroundVariant } from "@vue-flow/background";
 import { Edge, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
 import "@vue-flow/core/dist/theme-default.css";
-import { CodeViewer } from "quasar-ui-danx";
 import { computed, nextTick, ref, watch } from "vue";
 
 const props = withDefaults(defineProps<{
