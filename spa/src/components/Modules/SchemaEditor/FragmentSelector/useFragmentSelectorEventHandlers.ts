@@ -10,6 +10,7 @@ export interface SchemaEditor {
 	addProperty: (path: string, type: JsonSchemaType, baseName: string) => JsonSchema;
 	updateProperty: (path: string, originalName: string, newName: string, updates: Partial<JsonSchema>) => JsonSchema;
 	removeProperty: (path: string, name: string) => JsonSchema;
+	reorderProperties: (path: string, propertyNames: string[]) => JsonSchema;
 	addChildModel: (path: string, type: "object" | "array", baseName: string) => { schema: JsonSchema; name: string };
 	updateModel: (path: string, updates: Partial<JsonSchema>) => JsonSchema;
 	removeModel: (path: string) => JsonSchema;
@@ -37,6 +38,7 @@ export interface FragmentSelectorEventHandlers {
 	handleAddProperty: (payload: { path: string; type: string; baseName: string }) => void;
 	handleUpdateProperty: (payload: { path: string; originalName: string; newName: string; updates: object }) => void;
 	handleRemoveProperty: (payload: { path: string; name: string }) => void;
+	handleReorderProperties: (payload: { path: string; propertyNames: string[] }) => void;
 	handleAddChildModel: (payload: { path: string; type: "object" | "array"; baseName: string }) => Promise<void>;
 	handleUpdateModel: (payload: { path: string; updates: object }) => void;
 	handleRemoveModel: (payload: { path: string }) => void;
@@ -81,6 +83,12 @@ export function useFragmentSelectorEventHandlers(params: EventHandlersParams): F
 		nextTick(() => triggerRelayout());
 	}
 
+	function handleReorderProperties(payload: { path: string; propertyNames: string[] }): void {
+		if (!effectiveEditEnabled.value) return;
+		const newSchema = editor.reorderProperties(payload.path, payload.propertyNames);
+		emit("update:schema", newSchema);
+	}
+
 	async function handleAddChildModel(payload: { path: string; type: "object" | "array"; baseName: string }): Promise<void> {
 		if (!effectiveEditEnabled.value) return;
 		const { schema: newSchema, name } = editor.addChildModel(payload.path, payload.type, payload.baseName);
@@ -119,6 +127,7 @@ export function useFragmentSelectorEventHandlers(params: EventHandlersParams): F
 		handleAddProperty,
 		handleUpdateProperty,
 		handleRemoveProperty,
+		handleReorderProperties,
 		handleAddChildModel,
 		handleUpdateModel,
 		handleRemoveModel

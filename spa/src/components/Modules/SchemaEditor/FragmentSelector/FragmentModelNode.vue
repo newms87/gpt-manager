@@ -27,20 +27,34 @@
 
 			<!-- Properties List (non-model properties only, sorted by position) -->
 			<div v-if="data.editEnabled || !isByModelMode || data.showProperties" class="properties-list">
-				<FragmentPropertyRow
-					v-for="prop in displayProperties"
-					:key="prop.name"
-					:name="prop.name"
-					:property="getPropertySchema(prop.name)"
-					:edit-active="Boolean(data.editEnabled)"
-					:selection-active="Boolean(data.selectionEnabled) && !isByModelMode"
-					:is-selected="isPropertySelected(prop.name)"
-					:show-description="true"
-					@toggle="onToggleProperty(prop.name)"
-					@update-name="newName => emit('update-property', { path: data.path, originalName: prop.name, newName, updates: {} })"
-					@update-type="typeUpdate => emit('update-property', { path: data.path, originalName: prop.name, newName: prop.name, updates: typeUpdate })"
-					@remove="emit('remove-property', { path: data.path, name: prop.name })"
-				/>
+				<ListTransition
+					name="fade-down-list"
+					:data-drop-zone="`props-${data.path}-dz`"
+				>
+					<template v-for="prop in displayProperties" :key="prop.name">
+						<ListItemDraggable
+							:list-items="displayPropertyNames"
+							:drop-zone="`props-${data.path}-dz`"
+							:show-handle="false"
+							:disabled="!editEnabled"
+							content-class="flex flex-nowrap items-start"
+							@update:list-items="onReorderProperties"
+						>
+							<FragmentPropertyRow
+								:name="prop.name"
+								:property="getPropertySchema(prop.name)"
+								:edit-active="Boolean(data.editEnabled)"
+								:selection-active="Boolean(data.selectionEnabled) && !isByModelMode"
+								:is-selected="isPropertySelected(prop.name)"
+								:show-description="true"
+								@toggle="onToggleProperty(prop.name)"
+								@update-name="newName => emit('update-property', { path: data.path, originalName: prop.name, newName, updates: {} })"
+								@update-type="typeUpdate => emit('update-property', { path: data.path, originalName: prop.name, newName: prop.name, updates: typeUpdate })"
+								@remove="emit('remove-property', { path: data.path, name: prop.name })"
+							/>
+						</ListItemDraggable>
+					</template>
+				</ListTransition>
 			</div>
 
 			<!-- Footer: Add new property -->
@@ -71,6 +85,7 @@
 
 <script setup lang="ts">
 import { JsonSchema } from "@/types";
+import { ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed } from "vue";
 import FragmentModelNodeAddButton from "./FragmentModelNodeAddButton.vue";
 import FragmentModelNodeFooter from "./FragmentModelNodeFooter.vue";
@@ -90,10 +105,13 @@ const emit = defineEmits<{
 	"add-property": [payload: { path: string; type: string; baseName: string }];
 	"update-property": [payload: { path: string; originalName: string; newName: string; updates: object }];
 	"remove-property": [payload: { path: string; name: string }];
+	"reorder-properties": [payload: { path: string; propertyNames: string[] }];
 	"add-child-model": [payload: { path: string; type: "object" | "array"; baseName: string }];
 	"update-model": [payload: { path: string; updates: object }];
 	"remove-model": [payload: { path: string }];
 }>();
+
+const editEnabled = computed(() => Boolean(props.data.editEnabled));
 
 const modelDescription = computed(() => {
 	return props.data.schema?.items?.description || props.data.schema?.description;
@@ -115,12 +133,13 @@ const displayProperties = computed(() => {
 	return props.data.properties
 		.filter(p => !p.isModel)
 		.sort((a, b) => {
-			if (a.position === undefined && b.position === undefined) return 0;
-			if (a.position === undefined) return 1;
-			if (b.position === undefined) return -1;
-			return a.position - b.position;
+			const posA = a.position ?? 0;
+			const posB = b.position ?? 0;
+			return posA - posB;
 		});
 });
+
+const displayPropertyNames = computed(() => displayProperties.value.map(p => p.name));
 
 const isAllSelected = computed(() => {
 	if (isByModelMode.value) {
@@ -161,5 +180,9 @@ function onToggleProperty(propertyName: string) {
 
 function onToggleAll() {
 	emit("toggle-all", { path: props.data.path, selectAll: !isAllSelected.value });
+}
+
+function onReorderProperties(propertyNames: string[]) {
+	emit("reorder-properties", { path: props.data.path, propertyNames });
 }
 </script>

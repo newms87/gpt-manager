@@ -168,6 +168,38 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 	}
 
 	/**
+	 * Reorder properties at the specified path.
+	 * Updates the position values to match the new order of property names.
+	 */
+	function reorderProperties(path: string, propertyNames: string[]): JsonSchema {
+		const schema = getSchema();
+		return updateSchemaAtPath(schema, path, (target) => {
+			const properties = target.items?.properties || target.properties;
+			if (!properties) {
+				return target;
+			}
+
+			const updatedProperties = { ...properties };
+
+			// Update positions based on new order
+			propertyNames.forEach((name, index) => {
+				if (updatedProperties[name]) {
+					updatedProperties[name] = { ...updatedProperties[name], position: index };
+				}
+			});
+
+			if (target.items?.properties) {
+				return {
+					...target,
+					items: { ...target.items, properties: updatedProperties }
+				};
+			}
+
+			return { ...target, properties: updatedProperties };
+		});
+	}
+
+	/**
 	 * Remove a model (object/array) at the specified path.
 	 * Cannot remove the root model.
 	 */
@@ -208,6 +240,7 @@ export function useFragmentSchemaEditor(schemaRef: RefOrGetter<JsonSchema>) {
 		addProperty,
 		updateProperty,
 		removeProperty,
+		reorderProperties,
 		addChildModel,
 		updateModel,
 		removeModel

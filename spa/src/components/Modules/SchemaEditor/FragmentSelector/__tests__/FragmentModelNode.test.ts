@@ -78,6 +78,25 @@ const MockFragmentPropertyRow = defineComponent({
 	}
 });
 
+// Mock ListTransition - renders slot content directly
+const MockListTransition = defineComponent({
+	name: "ListTransition",
+	props: ["name", "dataDropZone"],
+	setup(_, { slots }) {
+		return () => h("div", { class: "mock-list-transition" }, slots.default?.());
+	}
+});
+
+// Mock ListItemDraggable - renders slot content directly
+const MockListItemDraggable = defineComponent({
+	name: "ListItemDraggable",
+	props: ["listItems", "dropZone", "showHandle", "disabled", "contentClass", "handleClass"],
+	emits: ["update:listItems"],
+	setup(_, { slots }) {
+		return () => h("div", { class: "mock-list-item-draggable" }, slots.default?.());
+	}
+});
+
 /**
  * Helper to create FragmentModelNodeData for testing
  */
@@ -111,7 +130,9 @@ function mountComponent(data: FragmentModelNodeData) {
 				FragmentModelNodeHandles: MockFragmentModelNodeHandles,
 				FragmentModelNodeFooter: MockFragmentModelNodeFooter,
 				FragmentModelNodeAddButton: MockFragmentModelNodeAddButton,
-				FragmentPropertyRow: MockFragmentPropertyRow
+				FragmentPropertyRow: MockFragmentPropertyRow,
+				ListTransition: MockListTransition,
+				ListItemDraggable: MockListItemDraggable
 			}
 		}
 	});

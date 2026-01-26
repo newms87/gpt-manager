@@ -1,5 +1,5 @@
 <template>
-	<div ref="canvasContainer" class="fragment-selector-canvas w-full h-full">
+	<div ref="canvasContainer" class="fragment-selector-canvas w-full h-full" :class="{ 'layout-ready': layoutApplied }">
 		<VueFlow
 			id="fragment-selector"
 			:nodes="enrichedNodes"
@@ -19,6 +19,7 @@
 					@add-property="handlers.handleAddProperty"
 					@update-property="handlers.handleUpdateProperty"
 					@remove-property="handlers.handleRemoveProperty"
+					@reorder-properties="handlers.handleReorderProperties"
 					@add-child-model="handlers.handleAddChildModel"
 					@update-model="handlers.handleUpdateModel"
 					@remove-model="handlers.handleRemoveModel"
@@ -189,6 +190,11 @@ watch(modes.isEditModeActive, () => {
 		border: none;
 		border-radius: 0;
 		background: transparent;
+	}
+
+	// Only animate after initial layout to prevent nodes flying in from origin
+	&.layout-ready :deep(.vue-flow__node) {
+		transition: transform 0.3s ease-out;
 	}
 }
 </style>
