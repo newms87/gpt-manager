@@ -32,6 +32,44 @@ These principles MUST appear in EVERY plan and as the FIRST item in EVERY todo l
 | **Test-First**     | Bug fixes: failing test → fix → verify                          |
 | **Delegate**       | Orchestrator → Architect → Engineer → QA (never skip)           |
 
+**🔧 WHAT "REFACTORING" MEANS - READ THIS CAREFULLY**
+
+When the user asks you to **refactor**, this is what they mean:
+
+| Refactoring IS                                      | Refactoring is NOT                          |
+|-----------------------------------------------------|---------------------------------------------|
+| Breaking large components into small, focused ones  | Removing a few console.logs and calling it done |
+| Ensuring EVERY file meets SOLID principles          | Marking SOLID violations as "future work"   |
+| Fixing ALL DRY violations immediately               | Listing issues without fixing them          |
+| Removing ALL dead code, debug logs, tech debt       | A partial cleanup pass                      |
+| Making complex code simple and maintainable         | Cosmetic changes while ignoring architecture |
+
+**⛔ NEVER mark ANY issue as "out of scope" or "future work" during refactoring ⛔**
+
+Refactoring means fixing EVERYTHING. NOW. Not later. Not in a future PR. Not "when we have time."
+
+**Component/File Splitting is MANDATORY:**
+
+If a component has multiple distinct sections with their own logic (header, footer, buttons with complex behavior, dialogs, etc.), each MUST become its own sub-component. A 300+ line SFC with 5 responsibilities is a BLOCKING issue that must be resolved during refactoring.
+
+- **Large files → Small, organized files**: Break apart large files into focused, single-purpose files. Each file should do ONE thing well. Organize related files into logical directories.
+- **Large methods → Small, focused methods**: Break complex methods into smaller, well-named helper methods. Each method should be easy to read at a glance. Small methods are easier to test, maintain, and reuse.
+- **Duplicated code → Shared utilities**: When you see the same logic in multiple places, extract it into a shared utility, composable, or service. Duplication is a maintenance nightmare - fix it immediately by creating reusable code.
+
+**Priority Order for Refactoring:**
+
+1. **Component/class splitting** - Break apart large files into focused, single-responsibility units
+2. **SOLID violations** - Every file must have one clear responsibility
+3. **DRY violations** - Extract duplicated code immediately
+4. **Dead code removal** - Delete unused exports, imports, functions, variables
+5. **Cleanup** - Remove debug logs, fix naming, add documentation
+
+Items 1-4 are REQUIRED. Item 5 is the minimum baseline. You do ALL of them, not just item 5.
+
+**The Zero Tech Debt Policy Applies to Refactoring:**
+
+You cannot "partially refactor." If you identify a SOLID violation during refactoring, you fix it. Period. The zero tech debt policy means we never leave known issues unfixed. "I'll do it later" is not acceptable.
+
 **📝 PLAN WRITING RULES - NO CODE IN PLANS**
 
 When writing plans (in plan mode or plan files):

@@ -1,66 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
-import { mount, VueWrapper } from "@vue/test-utils";
-import { ref, h, defineComponent } from "vue";
+import { describe, it, expect } from "vitest";
+import { mount } from "@vue/test-utils";
+import { h, defineComponent } from "vue";
 import FragmentModelNode from "../FragmentModelNode.vue";
-import { FragmentModelNodeData } from "../useFragmentSelectorGraph";
-
-// Mock the VueFlow Handle component
-const MockHandle = defineComponent({
-	name: "Handle",
-	props: ["id", "type", "position"],
-	setup(props, { slots }) {
-		return () => h("div", { class: "mock-handle", "data-id": props.id }, slots.default?.());
-	}
-});
-
-// Mock the indicator components
-const MockArrayIndicatorDots = defineComponent({
-	name: "ArrayIndicatorDots",
-	props: ["direction"],
-	setup() {
-		return () => h("div", { class: "mock-array-indicator" });
-	}
-});
-
-const MockObjectIndicatorDot = defineComponent({
-	name: "ObjectIndicatorDot",
-	props: ["direction"],
-	setup() {
-		return () => h("div", { class: "mock-object-indicator" });
-	}
-});
-
-const MockSourceHandleDot = defineComponent({
-	name: "SourceHandleDot",
-	props: ["position", "visible"],
-	setup() {
-		return () => h("div", { class: "mock-source-handle" });
-	}
-});
-
-// Mock quasar-ui-danx components
-const MockShowHideButton = defineComponent({
-	name: "ShowHideButton",
-	props: ["modelValue", "showIcon", "hideIcon", "size"],
-	setup() {
-		return () => h("button", { class: "mock-show-hide-button" });
-	}
-});
-
-const MockInfoDialog = defineComponent({
-	name: "InfoDialog",
-	setup(_, { slots }) {
-		return () => h("div", { class: "mock-info-dialog" }, slots.default?.());
-	}
-});
-
-const MockMarkdownEditor = defineComponent({
-	name: "MarkdownEditor",
-	props: ["modelValue", "readonly", "hideFooter", "minHeight"],
-	setup() {
-		return () => h("div", { class: "mock-markdown-editor" });
-	}
-});
+import { FragmentModelNodeData } from "../types";
 
 // Create mock QCheckbox that behaves like the real one
 const MockQCheckbox = defineComponent({
@@ -77,6 +19,62 @@ const MockQCheckbox = defineComponent({
 				"data-value": String(props.modelValue),
 				onClick: () => emit("update:modelValue", !props.modelValue)
 			});
+	}
+});
+
+// Mock the FragmentModelNodeHeader component to expose the checkbox for testing
+const MockFragmentModelNodeHeader = defineComponent({
+	name: "FragmentModelNodeHeader",
+	props: ["title", "description", "editEnabled", "selectionEnabled", "isRoot", "checkboxValue", "shouldFocus"],
+	emits: ["toggle-all", "update-model", "remove-model"],
+	setup(props, { emit }) {
+		return () =>
+			h("div", { class: "mock-header" }, [
+				props.selectionEnabled
+					? h(MockQCheckbox, {
+							modelValue: props.checkboxValue,
+							indeterminateValue: null,
+							"onUpdate:modelValue": () => emit("toggle-all")
+						})
+					: null,
+				h("span", { class: "mock-title" }, props.title)
+			]);
+	}
+});
+
+// Mock the other sub-components
+const MockFragmentModelNodeHandles = defineComponent({
+	name: "FragmentModelNodeHandles",
+	props: ["type", "direction", "isArray", "hasModelChildren", "editEnabled", "isRoot"],
+	setup() {
+		return () => h("div", { class: "mock-handles" });
+	}
+});
+
+const MockFragmentModelNodeFooter = defineComponent({
+	name: "FragmentModelNodeFooter",
+	props: ["editEnabled"],
+	emits: ["add-property"],
+	setup() {
+		return () => h("div", { class: "mock-footer" });
+	}
+});
+
+const MockFragmentModelNodeAddButton = defineComponent({
+	name: "FragmentModelNodeAddButton",
+	props: ["editEnabled", "direction"],
+	emits: ["add-child-model"],
+	setup() {
+		return () => h("div", { class: "mock-add-button" });
+	}
+});
+
+const MockFragmentPropertyRow = defineComponent({
+	name: "FragmentPropertyRow",
+	props: ["name", "property", "editActive", "selectionActive", "isSelected", "showDescription"],
+	emits: ["toggle", "update-name", "update-type", "remove"],
+	setup(props) {
+		return () => h("div", { class: "mock-property-row" }, props.name);
 	}
 });
 
@@ -109,14 +107,11 @@ function mountComponent(data: FragmentModelNodeData) {
 		props: { data },
 		global: {
 			stubs: {
-				Handle: MockHandle,
-				ArrayIndicatorDots: MockArrayIndicatorDots,
-				ObjectIndicatorDot: MockObjectIndicatorDot,
-				SourceHandleDot: MockSourceHandleDot,
-				ShowHideButton: MockShowHideButton,
-				InfoDialog: MockInfoDialog,
-				MarkdownEditor: MockMarkdownEditor,
-				QCheckbox: MockQCheckbox
+				FragmentModelNodeHeader: MockFragmentModelNodeHeader,
+				FragmentModelNodeHandles: MockFragmentModelNodeHandles,
+				FragmentModelNodeFooter: MockFragmentModelNodeFooter,
+				FragmentModelNodeAddButton: MockFragmentModelNodeAddButton,
+				FragmentPropertyRow: MockFragmentPropertyRow
 			}
 		}
 	});

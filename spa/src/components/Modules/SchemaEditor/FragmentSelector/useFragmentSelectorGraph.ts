@@ -1,54 +1,7 @@
-import { JsonSchema, JsonSchemaType } from "@/types";
+import { JsonSchema } from "@/types";
 import { Edge, Node } from "@vue-flow/core";
-
-export type LayoutDirection = "LR" | "TB";
-
-export interface PropertyInfo {
-	name: string;
-	type: JsonSchemaType;
-	format?: string;
-	title?: string;
-	description?: string;
-	position?: number;
-	isModel: boolean;
-}
-
-export type SelectionMode = "by-model" | "by-property";
-
-export interface FragmentModelNodeData {
-	name: string;
-	path: string;
-	schema: JsonSchema;
-	properties: PropertyInfo[];
-	selectedProperties: string[];
-	direction: LayoutDirection;
-	selectionMode: SelectionMode;
-	selectionEnabled?: boolean;
-	editEnabled?: boolean;
-	isIncluded: boolean;
-	showProperties: boolean;
-	/** Whether this node or any descendant has any selection */
-	hasAnySelection: boolean;
-	/** Whether this node and all descendants are fully selected */
-	isFullySelected: boolean;
-	/** Whether this node's name input should receive focus */
-	shouldFocus?: boolean;
-}
-
-/**
- * Get the properties record from a schema, handling both object properties
- * and array items properties.
- */
-export function getSchemaProperties(schema: JsonSchema): Record<string, JsonSchema> | undefined {
-	return schema.items?.properties || schema.properties;
-}
-
-/**
- * Check whether a JSON schema type represents a model (object or array).
- */
-export function isModelType(type: JsonSchemaType): boolean {
-	return type === "object" || type === "array";
-}
+import { FragmentModelNodeData, PropertyInfo } from "./types";
+import { getSchemaProperties, isModelType } from "./useSchemaNavigation";
 
 /**
  * Extract the properties from a schema as PropertyInfo[], handling both

@@ -1,16 +1,8 @@
-import { determineLayoutDirection, layoutTree } from "./useFragmentSelectorLayout";
-import { LayoutDirection } from "./useFragmentSelectorGraph";
 import { Edge, Node, useVueFlow } from "@vue-flow/core";
 import { ComputedRef, nextTick, Ref, ref } from "vue";
-
-/** Time for DOM to update with new node content */
-const DOM_UPDATE_DELAY_MS = 20;
-
-/** Time for VueFlow to re-measure node dimensions */
-const NODE_MEASURE_DELAY_MS = 30;
-
-/** Time for VueFlow to update handle bounds after position changes */
-const HANDLE_UPDATE_DELAY_MS = 150;
+import { DOM_UPDATE_DELAY_MS, HANDLE_UPDATE_DELAY_MS, NODE_MEASURE_DELAY_MS } from "./constants";
+import { LayoutDirection } from "./types";
+import { determineLayoutDirection, layoutTree } from "./useFragmentSelectorLayout";
 
 export interface CanvasLayoutResult {
 	layoutApplied: Ref<boolean>;

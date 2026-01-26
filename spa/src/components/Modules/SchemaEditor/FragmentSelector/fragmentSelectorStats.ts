@@ -1,4 +1,4 @@
-import { isModelType } from "./useFragmentSelectorGraph";
+import { isModelType } from "./useSchemaNavigation";
 import { FragmentSelector } from "@/types";
 
 /**

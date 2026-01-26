@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { ref } from "vue";
+import { SelectionMode } from "../types";
 import { useFragmentSelection } from "../useFragmentSelection";
-import { getModelProperties, SelectionMode } from "../useFragmentSelectorGraph";
+import { getModelProperties } from "../useFragmentSelectorGraph";
 import {
 	simpleSchema,
 	nestedSchema,

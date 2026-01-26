@@ -1,5 +1,6 @@
-import { LayoutDirection } from "./useFragmentSelectorGraph";
 import { Edge, Node } from "@vue-flow/core";
+import { COLUMN_GAP, NODE_SEPARATION, NODE_WIDTH } from "./constants";
+import { LayoutDirection } from "./types";
 
 /**
  * Get the appropriate source and target handle IDs based on layout direction.
@@ -12,10 +13,6 @@ export function getHandlesByDirection(direction: LayoutDirection): { sourceHandl
 		targetHandle: direction === "LR" ? "target-left" : "target-top"
 	};
 }
-
-const NODE_SEPARATION = 40;
-const NODE_WIDTH = 256;
-const COLUMN_GAP = 80;
 
 /**
  * Context object passed to layout helper functions containing all shared state
