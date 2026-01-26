@@ -73,59 +73,19 @@
       </div>
     </div>
 
-    <!-- Main Content: Diagram + Sidebar -->
-    <div class="flex flex-1 min-h-0 gap-4">
-      <!-- Diagram Canvas -->
-      <div class="flex-1 min-w-0 bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
-        <FragmentSelectorCanvas
-          :key="`${selectionMode}-${recursive}`"
-          :schema="schema"
-          v-model="selection"
-          :selection-enabled="selectionEnabled"
-          :edit-enabled="editEnabled"
-          :selection-mode="selectionMode"
-          :recursive="recursive"
-          :type-filter="typeFilter"
-          @update:schema="schema = $event"
-        />
-      </div>
-
-      <!-- Selection Sidebar -->
-      <div class="w-80 flex-shrink-0 flex flex-col bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
-        <!-- Sidebar Header with counts -->
-        <div class="flex items-center justify-between px-4 py-3 bg-slate-700 border-b border-slate-600">
-          <span class="text-sm font-medium text-slate-200">Selection</span>
-          <div class="flex items-center gap-3 text-xs text-slate-400">
-            <span>Models: {{ modelCount }}</span>
-            <span>Props: {{ propertyCount }}</span>
-          </div>
-        </div>
-
-        <!-- Format Toggle -->
-        <div class="flex items-center gap-2 px-4 py-2 border-b border-slate-600">
-          <button
-            v-for="fmt in outputFormats"
-            :key="fmt"
-            class="px-2 py-1 text-xs rounded transition-colors"
-            :class="outputFormat === fmt
-              ? 'bg-sky-600 text-white'
-              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'"
-            @click="setOutputFormat(fmt)"
-          >
-            {{ fmt.toUpperCase() }}
-          </button>
-        </div>
-
-        <!-- Code Viewer -->
-        <div class="flex-1 min-h-0 overflow-auto">
-          <CodeViewer
-            :model-value="selection"
-            :format="outputFormat"
-            editor-class="p-3"
-            hide-footer
-          />
-        </div>
-      </div>
+    <!-- Diagram Canvas -->
+    <div class="flex-1 min-h-0 bg-slate-800 rounded-lg border border-slate-600 overflow-hidden">
+      <FragmentSelectorCanvas
+        :key="`${selectionMode}-${recursive}`"
+        :schema="schema"
+        v-model="selection"
+        :selection-enabled="selectionEnabled"
+        :edit-enabled="editEnabled"
+        :selection-mode="selectionMode"
+        :recursive="recursive"
+        :type-filter="typeFilter"
+        @update:schema="schema = $event"
+      />
     </div>
   </div>
 </template>
@@ -134,8 +94,7 @@
 import FragmentSelectorCanvas from "@/components/Modules/SchemaEditor/FragmentSelector/FragmentSelectorCanvas.vue";
 import { medicalRecordSchema } from "@/constants/demoSchemas";
 import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
-import { CodeViewer, getItem, setItem } from "quasar-ui-danx";
-import { computed, ref } from "vue";
+import { ref } from "vue";
 
 // Selection state for the FragmentSelectorCanvas
 const selection = ref<FragmentSelector | null>(null);
@@ -152,15 +111,6 @@ const selectionMode = ref<"by-model" | "by-property">("by-property");
 const recursive = ref<boolean>(true);
 const typeFilter = ref<JsonSchemaType | null>(null);
 
-// Output format for sidebar (JSON or YAML)
-const outputFormat = ref<"json" | "yaml">((getItem("fragmentSelector.outputFormat") as "json" | "yaml") ?? "json");
-const outputFormats: ("json" | "yaml")[] = ["json", "yaml"];
-
-function setOutputFormat(format: "json" | "yaml") {
-  outputFormat.value = format;
-  setItem("fragmentSelector.outputFormat", format);
-}
-
 const selectionModes = [
   { value: "by-property" as const, label: "By Property" },
   { value: "by-model" as const, label: "By Model" }
@@ -172,34 +122,4 @@ const typeFilters = [
   { value: "number" as JsonSchemaType, label: "Number" },
   { value: "boolean" as JsonSchemaType, label: "Boolean" }
 ];
-
-// Helper function to count models and properties in a FragmentSelector tree
-function countSelectionItems(selector: FragmentSelector | null): { models: number; properties: number } {
-  if (!selector) return { models: 0, properties: 0 };
-
-  let models = 0;
-  let properties = 0;
-
-  // Count self if it's a model type
-  if (selector.type === "object" || selector.type === "array") {
-    models++;
-  } else {
-    properties++;
-  }
-
-  // Recursively count children
-  if (selector.children) {
-    for (const child of Object.values(selector.children)) {
-      const childCounts = countSelectionItems(child);
-      models += childCounts.models;
-      properties += childCounts.properties;
-    }
-  }
-
-  return { models, properties };
-}
-
-// Simple computed properties for counts
-const modelCount = computed(() => countSelectionItems(selection.value).models);
-const propertyCount = computed(() => countSelectionItems(selection.value).properties);
 </script>

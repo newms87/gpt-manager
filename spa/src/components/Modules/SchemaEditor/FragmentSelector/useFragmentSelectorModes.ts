@@ -7,7 +7,9 @@ export interface FragmentSelectorModesResult {
 	effectiveSelectionEnabled: Ref<boolean>;
 	effectiveEditEnabled: Ref<boolean>;
 	showPropertiesInternal: Ref<boolean>;
+	showCodeSidebar: Ref<boolean>;
 	toggleShowProperties: () => void;
+	toggleShowCode: () => void;
 }
 
 /**
@@ -22,6 +24,9 @@ export function useFragmentSelectorModes(
 ): FragmentSelectorModesResult {
 	// Internal state for showProperties with localStorage persistence
 	const showPropertiesInternal = ref<boolean>(getItem("fragmentSelector.showProperties") ?? false);
+
+	// Internal state for showCode sidebar with localStorage persistence
+	const showCodeSidebar = ref<boolean>(getItem("fragmentSelector.showCode") ?? false);
 
 	// Internal state for edit mode toggle (only used when both selectionEnabled and editEnabled are true)
 	const isEditModeActive = ref(false);
@@ -53,11 +58,19 @@ export function useFragmentSelectorModes(
 		onModeChange?.();
 	}
 
+	// Toggle show code sidebar with persistence
+	function toggleShowCode(): void {
+		showCodeSidebar.value = !showCodeSidebar.value;
+		setItem("fragmentSelector.showCode", showCodeSidebar.value);
+	}
+
 	return {
 		isEditModeActive,
 		effectiveSelectionEnabled,
 		effectiveEditEnabled,
 		showPropertiesInternal,
-		toggleShowProperties
+		showCodeSidebar,
+		toggleShowProperties,
+		toggleShowCode
 	};
 }

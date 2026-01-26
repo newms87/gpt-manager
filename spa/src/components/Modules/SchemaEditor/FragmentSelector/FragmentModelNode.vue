@@ -1,6 +1,9 @@
 <template>
 	<div class="fragment-model-node min-w-56 relative">
-		<div class="bg-slate-800 border border-slate-600 rounded-lg shadow-lg">
+		<div
+			class="border rounded-lg shadow-lg transition-colors"
+			:class="isNodeSelected ? 'bg-sky-900/30 border-sky-500/40' : 'bg-slate-800 border-slate-600'"
+		>
 			<!-- Target Handles -->
 			<FragmentModelNodeHandles
 				type="target"
@@ -18,6 +21,7 @@
 				:edit-enabled="Boolean(data.editEnabled)"
 				:selection-enabled="Boolean(data.selectionEnabled)"
 				:is-root="data.path === 'root'"
+				:is-selected="isNodeSelected"
 				:checkbox-value="checkboxValue"
 				:should-focus="data.shouldFocus"
 				@toggle-all="onToggleAll"
@@ -127,6 +131,14 @@ const hasModelChildren = computed(() => {
 
 const isByModelMode = computed(() => {
 	return props.data.selectionMode === "by-model";
+});
+
+const isNodeSelected = computed(() => {
+	if (!props.data.selectionEnabled) return false;
+	if (isByModelMode.value) {
+		return props.data.isIncluded;
+	}
+	return props.data.isFullySelected;
 });
 
 const displayProperties = computed(() => {

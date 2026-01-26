@@ -1,7 +1,10 @@
 <template>
 	<div class="flex items-center group relative">
 		<!-- Main row container -->
-		<div class="flex items-center gap-2 px-3 py-1 hover:bg-slate-700/50 transition-colors flex-1 nodrag nopan">
+		<div
+			class="flex items-center gap-2 px-3 py-1 transition-colors flex-1 nodrag nopan"
+			:class="isSelected ? 'bg-sky-900/30' : 'hover:bg-slate-700/50'"
+		>
 			<!-- LEFT ELEMENT: Checkbox (select) / Drag Handle (edit) / Spacer (readonly) -->
 			<div class="w-5 flex-shrink-0 flex items-center justify-center">
 				<Transition name="fade" mode="out-in">

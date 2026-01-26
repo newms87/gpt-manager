@@ -1,21 +1,32 @@
 <template>
-	<div class="flex items-center gap-2">
+	<div class="flex items-center gap-1">
 		<!-- Edit/Select Mode Toggle (only when both modes are enabled) -->
 		<button
 			v-if="props.selectionEnabled && props.editEnabled"
-			class="px-3 py-1.5 text-xs rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
-			:class="props.isEditModeActive
-				? 'bg-blue-600/90 border-blue-500 text-white'
-				: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+			class="flex items-center justify-center w-8 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700"
+			:title="props.isEditModeActive ? 'Switch to Select Mode' : 'Switch to Edit Mode'"
 			@click="emit('update:isEditModeActive', !props.isEditModeActive)"
 		>
-			{{ props.isEditModeActive ? 'Edit Mode' : 'Select Mode' }}
+			<component :is="props.isEditModeActive ? SelectIcon : EditIcon" class="w-4" />
+		</button>
+
+		<!-- Code Sidebar Toggle (only when selection or edit mode is active) -->
+		<button
+			v-if="props.selectionEnabled || props.editEnabled"
+			class="flex items-center justify-center w-8 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+			:class="props.showCode
+				? 'bg-sky-900/90 border-sky-600 text-sky-300'
+				: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+			:title="props.showCode ? 'Hide Code' : 'Show Code'"
+			@click="emit('update:showCode', !props.showCode)"
+		>
+			<CodeIcon class="w-4" />
 		</button>
 
 		<!-- Show Properties Toggle (only in by-model mode) -->
 		<div
 			v-if="props.selectionMode === 'by-model'"
-			class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors"
+			class="flex items-center gap-2 px-3 py-1.5 rounded-lg border shadow-lg cursor-pointer transition-colors whitespace-nowrap"
 			:class="props.showProperties
 				? 'bg-sky-900/90 border-sky-600 text-sky-300'
 				: 'bg-slate-800/90 border-slate-600 text-slate-400'"
@@ -28,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { FaSolidListUl as PropertiesIcon } from "danx-icon";
+import { FaSolidCode as CodeIcon, FaSolidListCheck as SelectIcon, FaSolidListUl as PropertiesIcon, FaSolidPencil as EditIcon } from "danx-icon";
 import { SelectionMode } from "./types";
 
 const props = defineProps<{
@@ -36,11 +47,13 @@ const props = defineProps<{
 	editEnabled: boolean;
 	isEditModeActive: boolean;
 	showProperties: boolean;
+	showCode: boolean;
 	selectionMode: SelectionMode;
 }>();
 
 const emit = defineEmits<{
 	"update:isEditModeActive": [value: boolean];
 	"update:showProperties": [value: boolean];
+	"update:showCode": [value: boolean];
 }>();
 </script>

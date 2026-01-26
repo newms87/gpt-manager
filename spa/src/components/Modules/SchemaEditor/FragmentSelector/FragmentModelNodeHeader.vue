@@ -1,5 +1,8 @@
 <template>
-	<div class="relative flex items-center gap-2 bg-slate-700 px-3 py-2 rounded-t-lg group nodrag nopan">
+	<div
+		class="relative flex items-center gap-2 px-3 py-2 rounded-t-lg group nodrag nopan"
+		:class="isSelected ? 'bg-sky-800/40' : 'bg-slate-700'"
+	>
 		<!-- DELETE BUTTON: Container extends from header edge to button, no gap -->
 		<div
 			v-if="editEnabled && !isRoot"
@@ -81,6 +84,7 @@ const props = defineProps<{
 	editEnabled: boolean;
 	selectionEnabled: boolean;
 	isRoot: boolean;
+	isSelected: boolean;
 	checkboxValue: boolean | null;
 	shouldFocus?: boolean;
 }>();
