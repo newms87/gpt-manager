@@ -8,7 +8,7 @@ use App\Models\Task\TaskRun;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use App\Services\Task\TaskProcessDispatcherService;
 use App\Services\Task\TranscodePrerequisiteService;
-use App\Traits\HasDebugLogging;
+use Newms87\Danx\Traits\HasDebugLogging;
 use Illuminate\Support\Collection;
 
 /**
@@ -28,8 +28,6 @@ class FileOrganizationStateOrchestrator
      */
     public function advanceToNextPhase(TaskRun $taskRun): void
     {
-        static::logDebug('Advancing to next phase', ['task_run_id' => $taskRun->id]);
-
         // Phase 1: Resolve pages from input artifacts
         if ($this->needsPageResolution($taskRun)) {
             $this->resolvePages($taskRun);
@@ -66,7 +64,7 @@ class FileOrganizationStateOrchestrator
             return;
         }
 
-        static::logDebug('No more phases to advance - file organization complete');
+        static::logDebug('All phases complete', ['task_run_id' => $taskRun->id]);
     }
 
     /**
@@ -173,7 +171,7 @@ class FileOrganizationStateOrchestrator
 
     /**
      * Check if resolution phase is needed.
-     * Returns true after merge completes and resolution processes haven't been created.
+     * Returns true after merge completes and duplicate group resolution process hasn't been created.
      */
     protected function needsResolution(TaskRun $taskRun): bool
     {
@@ -186,18 +184,16 @@ class FileOrganizationStateOrchestrator
             return false;
         }
 
-        // Check if resolution processes already exist
-        $hasAllResolutions = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION)
-            ->exists()
-            && $taskRun->taskProcesses()
-                ->where('operation', FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION)
-                ->exists()
-            && $taskRun->taskProcesses()
+        // Check if groups_for_deduplication exists and duplicate resolution process hasn't been created
+        $meta = $mergeProcess->meta ?? [];
+
+        if (!empty($meta['groups_for_deduplication'])) {
+            return !$taskRun->taskProcesses()
                 ->where('operation', FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION)
                 ->exists();
+        }
 
-        return !$hasAllResolutions;
+        return false;
     }
 
     /**
@@ -351,29 +347,22 @@ class FileOrganizationStateOrchestrator
 
     /**
      * Phase 5: Create resolution processes based on merge process metadata.
+     * Only creates duplicate group resolution process (low confidence and null group resolution are dead code paths).
      */
     public function createResolutionProcesses(TaskRun $taskRun): void
     {
-        // Check if resolution processes already exist
-        $hasLowConfidenceResolution = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION)
-            ->exists();
-
-        $hasNullGroupResolution = $taskRun->taskProcesses()
-            ->where('operation', FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION)
-            ->exists();
-
+        // Check if duplicate group resolution process already exists
         $hasDuplicateGroupResolution = $taskRun->taskProcesses()
             ->where('operation', FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION)
             ->exists();
 
-        if ($hasLowConfidenceResolution && $hasNullGroupResolution && $hasDuplicateGroupResolution) {
-            static::logDebug('All resolution processes already exist or completed');
+        if ($hasDuplicateGroupResolution) {
+            static::logDebug('Duplicate group resolution process already exists');
 
             return;
         }
 
-        // Check if merge process has issues to resolve
+        // Check if merge process has groups to deduplicate
         $mergeProcess = $taskRun->taskProcesses()
             ->where('operation', FileOrganizationTaskRunner::OPERATION_MERGE)
             ->first();
@@ -384,116 +373,7 @@ class FileOrganizationStateOrchestrator
             return;
         }
 
-        // Create low-confidence resolution process if needed
-        if (!$hasLowConfidenceResolution) {
-            $this->createLowConfidenceResolutionProcess($taskRun, $mergeProcess);
-        }
-
-        // Create null group resolution process if needed
-        if (!$hasNullGroupResolution) {
-            $this->createNullGroupResolutionProcess($taskRun, $mergeProcess);
-        }
-
-        // Create duplicate group resolution process if needed
-        if (!$hasDuplicateGroupResolution) {
-            $this->createDuplicateGroupResolutionProcess($taskRun, $mergeProcess);
-        }
-    }
-
-    /**
-     * Create low confidence resolution process if needed.
-     */
-    protected function createLowConfidenceResolutionProcess(TaskRun $taskRun, TaskProcess $mergeProcess): void
-    {
-        if (!isset($mergeProcess->meta['low_confidence_files'])) {
-            return;
-        }
-
-        $lowConfidenceFiles = $mergeProcess->meta['low_confidence_files'];
-
-        if (empty($lowConfidenceFiles)) {
-            return;
-        }
-
-        static::logDebug('Creating resolution process for ' . count($lowConfidenceFiles) . ' low-confidence files');
-
-        // Get the uncertain files' artifacts
-        $uncertainFileIds   = array_column($lowConfidenceFiles, 'file_id');
-        $uncertainArtifacts = $taskRun->inputArtifacts()
-            ->whereIn('artifacts.id', $uncertainFileIds)
-            ->get();
-
-        // Create the resolution process
-        $resolutionProcess = $taskRun->taskProcesses()->create([
-            'name'      => 'Resolve Low Confidence Files',
-            'operation' => FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION,
-            'activity'  => 'Reviewing files with uncertain grouping',
-            'meta'      => [
-                'low_confidence_files' => $lowConfidenceFiles,
-            ],
-            'is_ready'  => true,
-        ]);
-
-        // Attach uncertain files as input artifacts
-        foreach ($uncertainArtifacts as $artifact) {
-            $resolutionProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-        }
-        $resolutionProcess->updateRelationCounter('inputArtifacts');
-
-        $taskRun->updateRelationCounter('taskProcesses');
-
-        static::logDebug("Created low confidence resolution process: $resolutionProcess");
-
-        // Dispatch the resolution process
-        TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
-    }
-
-    /**
-     * Create null group resolution process if needed.
-     */
-    protected function createNullGroupResolutionProcess(TaskRun $taskRun, TaskProcess $mergeProcess): void
-    {
-        if (!isset($mergeProcess->meta['null_groups_needing_llm'])) {
-            return;
-        }
-
-        $nullGroupFiles = $mergeProcess->meta['null_groups_needing_llm'];
-
-        if (empty($nullGroupFiles)) {
-            return;
-        }
-
-        static::logDebug('Creating null group resolution process for ' . count($nullGroupFiles) . ' files');
-
-        // Get the null group files' artifacts
-        $nullFileIds       = array_column($nullGroupFiles, 'file_id');
-        $nullFileArtifacts = $taskRun->inputArtifacts()
-            ->whereIn('artifacts.id', $nullFileIds)
-            ->get();
-
-        // Create the resolution process
-        $nullResolutionProcess = $taskRun->taskProcesses()->create([
-            'name'      => 'Resolve Null Group Files',
-            'operation' => FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION,
-            'activity'  => 'Determining group assignment for files with no clear identifier',
-            'meta'      => [
-                'null_groups_needing_llm' => $nullGroupFiles,
-            ],
-            'is_ready'  => true,
-        ]);
-
-        // Attach null group files as input artifacts
-        foreach ($nullFileArtifacts as $artifact) {
-            $nullResolutionProcess->inputArtifacts()->attach($artifact->id, ['category' => 'input']);
-        }
-        $nullResolutionProcess->updateRelationCounter('inputArtifacts');
-
-        $taskRun->updateRelationCounter('taskProcesses');
-
-        static::logDebug("Created null group resolution process: $nullResolutionProcess");
-
-        // Dispatch the resolution process
-        TaskProcessDispatcherService::dispatchForTaskRun($taskRun);
+        $this->createDuplicateGroupResolutionProcess($taskRun, $mergeProcess);
     }
 
     /**

@@ -3,7 +3,6 @@
 namespace App\Services\Task\FileOrganization;
 
 use App\Models\Agent\AgentThread;
-use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Repositories\ThreadRepository;
@@ -57,101 +56,6 @@ class AgentThreadService
         $this->addComparisonWindowInstructions($agentThread);
 
         static::logDebug("Comparison window thread setup completed: {$agentThread->id}");
-
-        return $agentThread;
-    }
-
-    /**
-     * Setup agent thread for low confidence file resolution.
-     * Provides all context from window comparisons to help agent make better decisions.
-     *
-     * @param  TaskDefinition  $taskDefinition  The task definition
-     * @param  TaskRun  $taskRun  The task run
-     * @param  Collection  $artifacts  Artifacts needing resolution
-     * @param  array  $lowConfidenceFiles  Low confidence file data
-     */
-    public function setupLowConfidenceResolutionThread(TaskDefinition $taskDefinition, TaskRun $taskRun, Collection $artifacts, array $lowConfidenceFiles): AgentThread
-    {
-        static::logDebug("Setting up low confidence resolution thread for TaskRun {$taskRun->id} with " . count($lowConfidenceFiles) . ' files');
-
-        if (!$taskDefinition->agent) {
-            throw new \Exception("Agent not found for TaskRun: $taskRun");
-        }
-
-        // Build the agent thread
-        $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $taskRun);
-        $agentThread = $builder->build();
-
-        static::logDebug("Built agent thread {$agentThread->id}");
-
-        // Add file messages
-        static::logDebug("Adding {$artifacts->count()} artifact messages to thread");
-        $this->addArtifactMessages($agentThread, $artifacts);
-
-        // Build context message showing ALL explanations from all windows
-        static::logDebug('Adding low confidence context to thread');
-        $this->addLowConfidenceContext($agentThread, $lowConfidenceFiles);
-
-        // Use the same schema as window comparisons
-        $schemaProvider   = app(SchemaProvider::class);
-        $schemaDefinition = $schemaProvider->getFileOrganizationSchema($taskDefinition->team_id, $taskDefinition);
-
-        $taskDefinition->schema_definition_id = $schemaDefinition->id;
-        $taskDefinition->save();
-
-        // Add resolution-specific instructions
-        static::logDebug('Adding low confidence resolution instructions to thread');
-        $this->addLowConfidenceResolutionInstructions($agentThread);
-
-        static::logDebug("Low confidence resolution thread setup completed: {$agentThread->id}");
-
-        return $agentThread;
-    }
-
-    /**
-     * Setup agent thread for null group resolution.
-     * Provides context about adjacent groups to help agent decide assignment.
-     *
-     * @param  TaskDefinition  $taskDefinition  The task definition
-     * @param  TaskRun  $taskRun  The task run
-     * @param  Collection  $artifacts  All artifacts (null files + context pages)
-     * @param  array  $nullGroupFiles  Null group file data
-     * @param  array  $nullFileIds  IDs of null files
-     */
-    public function setupNullGroupResolutionThread(TaskDefinition $taskDefinition, TaskRun $taskRun, Collection $artifacts, array $nullGroupFiles, array $nullFileIds): AgentThread
-    {
-        static::logDebug("Setting up null group resolution thread for TaskRun {$taskRun->id} with " . count($nullGroupFiles) . ' null files and ' . count($nullFileIds) . ' files needing context');
-
-        if (!$taskDefinition->agent) {
-            throw new \Exception("Agent not found for TaskRun: $taskRun");
-        }
-
-        // Build the agent thread
-        $builder     = TaskAgentThreadBuilderService::fromTaskDefinition($taskDefinition, $taskRun);
-        $agentThread = $builder->build();
-
-        static::logDebug("Built agent thread {$agentThread->id}");
-
-        // Add file messages with context/resolution markers
-        static::logDebug("Adding {$artifacts->count()} artifact messages to thread (null files + context pages)");
-        $this->addNullGroupArtifactMessages($agentThread, $artifacts, $nullFileIds);
-
-        // Build context message explaining the situation
-        static::logDebug('Adding null group context to thread');
-        $this->addNullGroupContext($agentThread, $nullGroupFiles);
-
-        // Use the same schema as window comparisons
-        $schemaProvider   = app(SchemaProvider::class);
-        $schemaDefinition = $schemaProvider->getFileOrganizationSchema($taskDefinition->team_id, $taskDefinition);
-
-        $taskDefinition->schema_definition_id = $schemaDefinition->id;
-        $taskDefinition->save();
-
-        // Add null group resolution instructions
-        static::logDebug('Adding null group resolution instructions to thread');
-        $this->addNullGroupResolutionInstructions($agentThread);
-
-        static::logDebug("Null group resolution thread setup completed: {$agentThread->id}");
 
         return $agentThread;
     }
@@ -233,39 +137,6 @@ class AgentThreadService
     }
 
     /**
-     * Add artifact messages for null group resolution.
-     * Marks null files differently from context pages.
-     *
-     * @param  AgentThread  $agentThread  The agent thread
-     * @param  Collection  $artifacts  All artifacts
-     * @param  array  $nullFileIds  IDs of null files
-     */
-    protected function addNullGroupArtifactMessages(AgentThread $agentThread, Collection $artifacts, array $nullFileIds): void
-    {
-        foreach ($artifacts as $artifact) {
-            $storedFile = $artifact->storedFiles ? $artifact->storedFiles->first() : null;
-            $pageNumber = $storedFile?->page_number ?? null;
-            $fileIds    = $artifact->storedFiles ? $artifact->storedFiles->pluck('id')->toArray() : [];
-            $isNullFile = in_array($artifact->id, $nullFileIds);
-
-            if ($pageNumber !== null) {
-                $label = $isNullFile ? "Page $pageNumber [NEEDS RESOLUTION]" : "Page $pageNumber [CONTEXT PAGE]";
-                app(ThreadRepository::class)->addMessageToThread(
-                    $agentThread,
-                    $label,
-                    $fileIds
-                );
-            } else {
-                app(ThreadRepository::class)->addMessageToThread(
-                    $agentThread,
-                    '',
-                    $fileIds
-                );
-            }
-        }
-    }
-
-    /**
      * Add comparison window instructions to thread.
      *
      * @param  AgentThread  $agentThread  The agent thread
@@ -333,88 +204,6 @@ class AgentThreadService
             "- group_explanation\n\n" .
             "Only analyze pages that were provided in the input messages.\n" .
             "Do not invent page numbers that weren't shown to you.";
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
-    }
-
-    /**
-     * Add low confidence context to thread.
-     *
-     * @param  AgentThread  $agentThread  The agent thread
-     * @param  array  $lowConfidenceFiles  Low confidence file data
-     */
-    protected function addLowConfidenceContext(AgentThread $agentThread, array $lowConfidenceFiles): void
-    {
-        $contextMessage = "CONTEXT: Low-confidence file assignments requiring review\n\n";
-        $contextMessage .= "These files were assigned with low confidence (< 3) during the windowed comparison process.\n";
-        $contextMessage .= "Below are ALL explanations from ALL comparison windows for each file:\n\n";
-
-        foreach ($lowConfidenceFiles as $fileData) {
-            $pageNumber      = $fileData['page_number'];
-            $bestAssignment  = $fileData['best_assignment'];
-            $allExplanations = $fileData['all_explanations'];
-
-            $contextMessage .= "--- Page $pageNumber ---\n";
-            $contextMessage .= "Best assignment: '{$bestAssignment['group_name']}' (confidence: {$bestAssignment['confidence']})\n";
-            $contextMessage .= "Description: {$bestAssignment['description']}\n\n";
-
-            $contextMessage .= "All explanations from comparison windows:\n";
-            foreach ($allExplanations as $idx => $explanation) {
-                $num            = $idx + 1;
-                $contextMessage .= "  $num. Group: '{$explanation['group_name']}' (confidence: {$explanation['confidence']})\n";
-                $contextMessage .= "     Explanation: {$explanation['explanation']}\n";
-            }
-            $contextMessage .= "\n";
-        }
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
-    }
-
-    /**
-     * Add low confidence resolution instructions to thread.
-     *
-     * @param  AgentThread  $agentThread  The agent thread
-     */
-    protected function addLowConfidenceResolutionInstructions(AgentThread $agentThread): void
-    {
-        $instructions = "TASK: Resolve uncertain file groupings\n\n" .
-            "You have been provided with files that had CONFLICTING LOW CONFIDENCE assignments from multiple windows.\n" .
-            "Above, you can see ALL explanations from ALL comparison windows that reviewed each file.\n\n" .
-            "Your task:\n" .
-            "1. Review each file carefully with the full context provided\n" .
-            "2. Look at the sequential context - which group did pages BEFORE and AFTER belong to?\n" .
-            "3. Make a FINAL DECISION on the correct group assignment\n" .
-            "4. Assign a NEW confidence score (0-5) based on your review\n" .
-            "5. Provide a detailed explanation for your decision\n\n" .
-            // ... (rest of instructions - truncated for brevity)
-            'Return your assignments using the same format as the comparison windows.';
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
-    }
-
-    /**
-     * Add null group context to thread.
-     *
-     * @param  AgentThread  $agentThread  The agent thread
-     * @param  array  $nullGroupFiles  Null group file data
-     */
-    protected function addNullGroupContext(AgentThread $agentThread, array $nullGroupFiles): void
-    {
-        $contextMessage = "CONTEXT: Files with no clear identifier that need group assignment\n\n";
-        // ... (build full context message as in runner)
-
-        app(ThreadRepository::class)->addMessageToThread($agentThread, $contextMessage);
-    }
-
-    /**
-     * Add null group resolution instructions to thread.
-     *
-     * @param  AgentThread  $agentThread  The agent thread
-     */
-    protected function addNullGroupResolutionInstructions(AgentThread $agentThread): void
-    {
-        $instructions = "TASK: Assign files with no clear identifier to the correct adjacent group\n\n";
-        // ... (full instructions as in runner)
 
         app(ThreadRepository::class)->addMessageToThread($agentThread, $instructions);
     }

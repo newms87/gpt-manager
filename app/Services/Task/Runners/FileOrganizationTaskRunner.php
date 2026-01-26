@@ -4,10 +4,8 @@ namespace App\Services\Task\Runners;
 
 use App\Models\Agent\AgentThread;
 use App\Services\Task\FileOrganization\AgentThreadService;
-use App\Services\Task\FileOrganization\ArtifactResolutionService;
 use App\Services\Task\FileOrganization\FileOrganizationStateOrchestrator;
 use App\Services\Task\FileOrganization\MergeProcessService;
-use App\Services\Task\FileOrganization\PageContextService;
 use App\Services\Task\FileOrganization\ValidationService;
 use App\Services\Task\FileOrganization\WindowProcessService;
 use App\Services\Task\Traits\HasTranscodePrerequisite;
@@ -21,10 +19,8 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     public const string RUNNER_NAME = 'File Organization';
 
     public const string OPERATION_COMPARISON_WINDOW = 'Comparison Window',
-        OPERATION_MERGE                      = 'Merge',
-        OPERATION_LOW_CONFIDENCE_RESOLUTION  = 'Low Confidence Resolution',
-        OPERATION_NULL_GROUP_RESOLUTION      = 'Null Group Resolution',
-        OPERATION_DUPLICATE_GROUP_RESOLUTION = 'Duplicate Group Resolution';
+        OPERATION_MERGE                             = 'Merge',
+        OPERATION_DUPLICATE_GROUP_RESOLUTION        = 'Duplicate Group Resolution';
 
     public const int DEFAULT_COMPARISON_WINDOW_SIZE = 5,
         DEFAULT_COMPARISON_WINDOW_OVERLAP           = 2;
@@ -40,12 +36,10 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
     public function run(): void
     {
         match ($this->taskProcess->operation) {
-            BaseTaskRunner::OPERATION_DEFAULT                => $this->runInitializeOperation(),
+            BaseTaskRunner::OPERATION_DEFAULT                 => $this->runInitializeOperation(),
             TranscodePrerequisiteService::OPERATION_TRANSCODE => $this->runTranscodeOperation(),
-            self::OPERATION_COMPARISON_WINDOW                => $this->runComparisonWindow(),
-            self::OPERATION_MERGE                            => $this->runMergeProcess(),
-            self::OPERATION_LOW_CONFIDENCE_RESOLUTION        => $this->runLowConfidenceResolution(),
-            self::OPERATION_NULL_GROUP_RESOLUTION             => $this->runNullGroupResolution(),
+            self::OPERATION_COMPARISON_WINDOW                 => $this->runComparisonWindow(),
+            self::OPERATION_MERGE                             => $this->runMergeProcess(),
             self::OPERATION_DUPLICATE_GROUP_RESOLUTION        => $this->runDuplicateGroupResolution(),
         };
     }
@@ -155,135 +149,6 @@ class FileOrganizationTaskRunner extends AgentThreadTaskRunner
         $this->taskProcess->agentThread()->associate($agentThread)->save();
 
         return $agentThread;
-    }
-
-    /**
-     * Run low confidence resolution process.
-     * Reviews files with uncertain grouping assignments and updates existing merged artifacts.
-     */
-    protected function runLowConfidenceResolution(): void
-    {
-        static::logDebug('Starting low confidence resolution');
-
-        $lowConfidenceFiles = $this->taskProcess->meta['low_confidence_files'] ?? [];
-
-        if (empty($lowConfidenceFiles)) {
-            static::logDebug('No low-confidence files to resolve');
-            $this->complete();
-
-            return;
-        }
-
-        static::logDebug('Resolving ' . count($lowConfidenceFiles) . ' low-confidence files');
-
-        // Setup agent thread with uncertain files and context
-        $uncertainFileIds   = array_column($lowConfidenceFiles, 'file_id');
-        $uncertainArtifacts = $this->taskProcess->inputArtifacts()
-            ->whereIn('artifacts.id', $uncertainFileIds)
-            ->get();
-
-        $agentThread = app(AgentThreadService::class)->setupLowConfidenceResolutionThread(
-            $this->taskRun->taskDefinition,
-            $this->taskRun,
-            $uncertainArtifacts,
-            $lowConfidenceFiles
-        );
-
-        $this->taskProcess->agentThread()->associate($agentThread)->save();
-
-        // Run the agent thread
-        $artifact = $this->runAgentThread($agentThread);
-
-        if (!$artifact || !$artifact->json_content) {
-            throw new ValidationError(static::class . ': No JSON content returned from resolution agent thread');
-        }
-
-        // Validate resolution has no duplicate pages
-        app(ValidationService::class)->validateNoDuplicatePages($artifact->json_content);
-
-        static::logDebug('Resolution completed successfully');
-
-        // Apply resolution decisions to existing merged artifacts
-        app(ArtifactResolutionService::class)->applyResolutionToMergedArtifacts($this->taskRun, $artifact->json_content);
-
-        // Delete the temporary resolution artifact - we don't need it as output
-        $artifact->delete();
-
-        $this->complete();
-    }
-
-    /**
-     * Run null group resolution process.
-     * These are files where no clear identifier was found, but they're between two different groups.
-     * Ask the LLM to decide which adjacent group they should belong to.
-     */
-    protected function runNullGroupResolution(): void
-    {
-        static::logDebug('Starting null group resolution');
-
-        $nullGroupFiles = $this->taskProcess->meta['null_groups_needing_llm'] ?? [];
-
-        if (empty($nullGroupFiles)) {
-            static::logDebug('No null group files to resolve');
-            $this->complete();
-
-            return;
-        }
-
-        static::logDebug('Resolving ' . count($nullGroupFiles) . ' null group files');
-
-        // Get null file IDs and page numbers
-        $nullFileIds     = array_column($nullGroupFiles, 'file_id');
-        $nullPageNumbers = array_column($nullGroupFiles, 'page_number');
-
-        // Gather context pages (2 before and 2 after each null file)
-        $contextPageNumbers = app(PageContextService::class)->gatherContextPageNumbers($nullPageNumbers);
-
-        static::logDebug('Including ' . count($contextPageNumbers) . ' context pages for better LLM decision making');
-
-        // Fetch all artifacts (null files + context pages)
-        $allPageNumbers = array_unique(array_merge($nullPageNumbers, $contextPageNumbers));
-        $allArtifacts   = $this->taskProcess->inputArtifacts()
-            ->join('stored_file_storables', function ($join) {
-                $join->on('artifacts.id', '=', 'stored_file_storables.storable_id')
-                    ->where('stored_file_storables.storable_type', '=', 'App\Models\Task\Artifact');
-            })
-            ->join('stored_files', 'stored_file_storables.stored_file_id', '=', 'stored_files.id')
-            ->whereIn('stored_files.page_number', $allPageNumbers)
-            ->select('artifacts.*', 'stored_files.page_number')
-            ->orderBy('stored_files.page_number')
-            ->get()
-            ->unique('id');
-
-        $agentThread = app(AgentThreadService::class)->setupNullGroupResolutionThread(
-            $this->taskRun->taskDefinition,
-            $this->taskRun,
-            $allArtifacts,
-            $nullGroupFiles,
-            $nullFileIds
-        );
-
-        $this->taskProcess->agentThread()->associate($agentThread)->save();
-
-        // Run the agent thread
-        $artifact = $this->runAgentThread($agentThread);
-
-        if (!$artifact || !$artifact->json_content) {
-            throw new ValidationError(static::class . ': No JSON content returned from null group resolution agent thread');
-        }
-
-        // Validate resolution has no duplicate pages
-        app(ValidationService::class)->validateNoDuplicatePages($artifact->json_content);
-
-        static::logDebug('Null group resolution completed successfully');
-
-        // Apply resolution decisions to existing merged artifacts
-        app(ArtifactResolutionService::class)->applyResolutionToMergedArtifacts($this->taskRun, $artifact->json_content);
-
-        // Delete the temporary resolution artifact - we don't need it as output
-        $artifact->delete();
-
-        $this->complete();
     }
 
     /**

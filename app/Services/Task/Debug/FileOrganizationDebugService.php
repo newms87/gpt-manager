@@ -479,8 +479,6 @@ class FileOrganizationDebugService
         // Define all resolution operations to delete
         $resolutionOps = [
             FileOrganizationTaskRunner::OPERATION_MERGE,
-            FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION,
-            FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION,
             FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION,
         ];
 
@@ -584,20 +582,11 @@ class FileOrganizationDebugService
      */
     protected function getResolutionProcesses(TaskRun $taskRun): array
     {
-        $operations = [
-            FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION,
-            FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION,
-            FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION,
+        return [
+            FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION => $taskRun->taskProcesses()
+                ->where('operation', FileOrganizationTaskRunner::OPERATION_DUPLICATE_GROUP_RESOLUTION)
+                ->first(),
         ];
-
-        $processes = [];
-        foreach ($operations as $op) {
-            $processes[$op] = $taskRun->taskProcesses()
-                ->where('operation', $op)
-                ->first();
-        }
-
-        return $processes;
     }
 
     /**
@@ -719,33 +708,6 @@ class FileOrganizationDebugService
                 $command->line('duplicate_group_candidates: NOT SET (good - using new format)');
             }
 
-            // Check for low confidence files
-            $lowConfFiles = $mergeProcess->meta['low_confidence_files'] ?? [];
-            if (!empty($lowConfFiles)) {
-                $command->warn('Low confidence files detected: ' . count($lowConfFiles));
-                foreach ($lowConfFiles as $fileData) {
-                    $page      = $fileData['page_number']                   ?? '?';
-                    $bestGroup = $fileData['best_assignment']['group_name'] ?? 'Unknown';
-                    $conf      = $fileData['best_assignment']['confidence'] ?? '?';
-                    $command->line("  Page $page -> $bestGroup (confidence $conf)");
-                }
-            } else {
-                $command->line('No low confidence files');
-            }
-
-            // Check for null group files needing LLM resolution
-            $nullGroupFiles = $mergeProcess->meta['null_groups_needing_llm'] ?? [];
-            if (!empty($nullGroupFiles)) {
-                $command->warn('Null group files needing LLM resolution: ' . count($nullGroupFiles));
-                foreach ($nullGroupFiles as $fileData) {
-                    $page      = $fileData['page_number']    ?? '?';
-                    $prevGroup = $fileData['previous_group'] ?? 'Unknown';
-                    $nextGroup = $fileData['next_group']     ?? 'Unknown';
-                    $command->line("  Page $page: between '$prevGroup' and '$nextGroup'");
-                }
-            } else {
-                $command->line('No null group files needing resolution');
-            }
         }
         $command->newLine();
     }
@@ -755,23 +717,8 @@ class FileOrganizationDebugService
      */
     protected function showResolutionProcessInfo(TaskRun $taskRun, Command $command): void
     {
-        $resolutionProcesses = $this->getResolutionProcesses($taskRun);
-
-        // Show low-confidence resolution process if exists
-        $resolutionProcess = $resolutionProcesses[FileOrganizationTaskRunner::OPERATION_LOW_CONFIDENCE_RESOLUTION] ?? null;
-        if ($resolutionProcess) {
-            $command->info('=== Low Confidence Resolution Process ===');
-            $command->line("Status: {$resolutionProcess->status}");
-            $command->newLine();
-        }
-
-        // Show null group resolution process if exists
-        $nullGroupResolutionProcess = $resolutionProcesses[FileOrganizationTaskRunner::OPERATION_NULL_GROUP_RESOLUTION] ?? null;
-        if ($nullGroupResolutionProcess) {
-            $command->info('=== Null Group Resolution Process ===');
-            $command->line("Status: {$nullGroupResolutionProcess->status}");
-            $command->newLine();
-        }
+        // Resolution processes are now only duplicate group resolution
+        // which is displayed in showDuplicateGroupInfo()
     }
 
     /**
