@@ -60,12 +60,12 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
         // Convert messages to proper Responses API input format
         $requestBody['input'] = $this->formatter()->convertRawMessagesToResponsesApiInput($messages);
 
-        // Set HTTP client timeout from options
+        // Set per-request timeout if specified in options
         if ($options->getTimeout()) {
-            $this->requestTimeout = $options->getTimeout();
+            $this->setNextTimeout($options->getTimeout());
         }
 
-        static::logDebug("OpenAI Making request to Responses API w/ timeout {$this->requestTimeout}s");
+        static::logDebug("OpenAI Making request to Responses API w/ timeout " . ($options->getTimeout() ?? $this->requestTimeout) . "s");
 
         // Regular request (no streaming in this method)
         $response = $this->post('responses', $requestBody)->json();
@@ -125,9 +125,9 @@ class OpenAiApi extends BearerTokenApi implements AgentApiContract
             },
         ];
 
-        // Set HTTP client timeout from options
+        // Set per-request timeout if specified in options
         if ($options->getTimeout()) {
-            $httpOptions['timeout'] = $options->getTimeout();
+            $this->setNextTimeout($options->getTimeout());
         }
 
         // Use streaming request with callback
