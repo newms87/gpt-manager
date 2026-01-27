@@ -27,8 +27,8 @@ async function refreshSchemaDefinitions(pager: ListControlsPagination = null): P
 	return schemaDefinitions.value;
 }
 
-async function refreshSchemaDefinition(schemaDefinition: SchemaDefinition): Promise<SchemaDefinition> {
-	return await dxSchemaDefinition.routes.details(schemaDefinition);
+async function refreshSchemaDefinition(schemaDefinition: SchemaDefinition, fields?: object): Promise<SchemaDefinition> {
+	return await dxSchemaDefinition.routes.details(schemaDefinition, fields);
 }
 
 export {

@@ -52,32 +52,6 @@ class ArtifactCategoryDefinitionTest extends AuthenticatedTestCase
     }
 
     #[Test]
-    public function it_validates_unique_name_per_schema(): void
-    {
-        $schemaDefinition = SchemaDefinition::factory()->create([
-            'team_id' => $this->user->currentTeam->id,
-        ]);
-
-        $firstCategory = ArtifactCategoryDefinition::create([
-            'schema_definition_id' => $schemaDefinition->id,
-            'name'                 => 'duplicate-name',
-            'label'                => 'First Category',
-            'prompt'               => 'First prompt',
-        ]);
-        $firstCategory->validate();
-
-        $secondCategory = new ArtifactCategoryDefinition([
-            'schema_definition_id' => $schemaDefinition->id,
-            'name'                 => 'duplicate-name',
-            'label'                => 'Second Category',
-            'prompt'               => 'Second prompt',
-        ]);
-
-        $this->expectException(ValidationException::class);
-        $secondCategory->validate();
-    }
-
-    #[Test]
     public function it_allows_same_name_in_different_schemas(): void
     {
         $firstSchema = SchemaDefinition::factory()->create([

@@ -1,4 +1,4 @@
-import { JsonSchema, JsonSchemaType } from "@/types";
+import { ArtifactCategoryDefinition, JsonSchema, JsonSchemaType } from "@/types";
 
 /**
  * Represents a ref, getter function, or reactive value.
@@ -54,6 +54,10 @@ export interface FragmentModelNodeData {
 	selectionMode: SelectionMode;
 	selectionEnabled?: boolean;
 	editEnabled?: boolean;
+	/** Whether artifacts can be added to model nodes */
+	artifactsEnabled?: boolean;
+	/** Whether this node is currently adding an artifact (loading state) */
+	addingArtifact?: boolean;
 	isIncluded: boolean;
 	showProperties: boolean;
 	/** Whether this node or any descendant has any selection */
@@ -62,4 +66,16 @@ export interface FragmentModelNodeData {
 	isFullySelected: boolean;
 	/** Whether this node's name input should receive focus */
 	shouldFocus?: boolean;
+}
+
+/**
+ * Data structure for the ArtifactCategoryNode VueFlow node component.
+ * Represents an Artifact Category Definition attached to a target model.
+ */
+export interface ArtifactCategoryNodeData {
+	acd: ArtifactCategoryDefinition;
+	direction: LayoutDirection;
+	editEnabled?: boolean;
+	/** Parent model path that this ACD targets */
+	parentModelPath: string;
 }

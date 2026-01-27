@@ -1,10 +1,13 @@
-import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
+import { ArtifactCategoryDefinition, FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { nextTick, Ref } from "vue";
 import { CENTER_ON_NODE_DURATION_MS, NODE_ADD_DELAY_MS } from "./constants";
 
 export interface FragmentSelectorEmit {
 	(event: "update:modelValue", value: FragmentSelector | null): void;
 	(event: "update:schema", schema: JsonSchema): void;
+	(event: "add-artifact", payload: { modelPath: string }): void;
+	(event: "update-artifact", acd: ArtifactCategoryDefinition, updates: Partial<ArtifactCategoryDefinition>): void;
+	(event: "delete-artifact", acd: ArtifactCategoryDefinition): void;
 }
 
 export interface SchemaEditor {
@@ -44,6 +47,9 @@ export interface FragmentSelectorEventHandlers {
 	handleAddChildModel: (payload: { path: string; type: "object" | "array"; baseName: string }) => Promise<void>;
 	handleUpdateModel: (payload: { path: string; updates: object }) => void;
 	handleRemoveModel: (payload: { path: string }) => void;
+	handleAddArtifact: (payload: { path: string }) => void;
+	handleEditArtifact: (acd: ArtifactCategoryDefinition, updates: Partial<ArtifactCategoryDefinition>) => void;
+	handleDeleteArtifact: (acd: ArtifactCategoryDefinition) => void;
 }
 
 /**
@@ -125,6 +131,20 @@ export function useFragmentSelectorEventHandlers(params: EventHandlersParams): F
 		nextTick(() => triggerRelayout());
 	}
 
+	// Artifact handlers
+	function handleAddArtifact(payload: { path: string }): void {
+		if (!effectiveEditEnabled.value) return;
+		emit("add-artifact", { modelPath: payload.path });
+	}
+
+	function handleEditArtifact(acd: ArtifactCategoryDefinition, updates: Partial<ArtifactCategoryDefinition>): void {
+		emit("update-artifact", acd, updates);
+	}
+
+	function handleDeleteArtifact(acd: ArtifactCategoryDefinition): void {
+		emit("delete-artifact", acd);
+	}
+
 	return {
 		handleToggleProperty,
 		handleToggleAll,
@@ -134,6 +154,9 @@ export function useFragmentSelectorEventHandlers(params: EventHandlersParams): F
 		handleReorderProperties,
 		handleAddChildModel,
 		handleUpdateModel,
-		handleRemoveModel
+		handleRemoveModel,
+		handleAddArtifact,
+		handleEditArtifact,
+		handleDeleteArtifact
 	};
 }

@@ -85,6 +85,14 @@
 			:direction="data.direction"
 			@add-child-model="emit('add-child-model', { path: data.path, type: 'object', baseName: 'model' })"
 		/>
+
+		<!-- Add Artifact Button (outside main container, near add model button) -->
+		<FragmentModelNodeAddArtifactButton
+			:edit-enabled="Boolean(data.editEnabled)"
+			:artifacts-enabled="Boolean(data.artifactsEnabled)"
+			:loading="Boolean(data.addingArtifact)"
+			@add-artifact="emit('add-artifact', { path: data.path })"
+		/>
 	</div>
 </template>
 
@@ -92,6 +100,7 @@
 import { JsonSchema } from "@/types";
 import { ListItemDraggable, ListTransition } from "quasar-ui-danx";
 import { computed } from "vue";
+import FragmentModelNodeAddArtifactButton from "./FragmentModelNodeAddArtifactButton.vue";
 import FragmentModelNodeAddButton from "./FragmentModelNodeAddButton.vue";
 import FragmentModelNodeFooter from "./FragmentModelNodeFooter.vue";
 import FragmentModelNodeHandles from "./FragmentModelNodeHandles.vue";
@@ -114,6 +123,7 @@ const emit = defineEmits<{
 	"add-child-model": [payload: { path: string; type: "object" | "array"; baseName: string }];
 	"update-model": [payload: { path: string; updates: object }];
 	"remove-model": [payload: { path: string }];
+	"add-artifact": [payload: { path: string }];
 }>();
 
 const editEnabled = computed(() => Boolean(props.data.editEnabled));

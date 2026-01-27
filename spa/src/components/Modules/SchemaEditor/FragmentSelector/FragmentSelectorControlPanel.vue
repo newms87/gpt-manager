@@ -1,5 +1,19 @@
 <template>
 	<div class="flex items-center gap-1">
+		<!-- Artifacts Toggle (when artifacts enabled and schema exists) -->
+		<button
+			v-if="artifactsEnabled"
+			class="flex items-center justify-center px-2 h-8 rounded-lg border shadow-lg cursor-pointer transition-colors nodrag nopan"
+			:class="artifactsVisible
+				? 'bg-violet-900 border-violet-600 text-violet-300'
+				: 'bg-slate-800/90 border-slate-600 text-slate-400 hover:bg-slate-700'"
+			title="Show/Hide Artifacts"
+			@click="emit('toggle-artifacts')"
+		>
+			<ArtifactIcon class="w-4" />
+			<span v-if="artifactCount > 0" class="ml-1 text-xs">{{ artifactCount }}</span>
+		</button>
+
 		<!-- Mode Toggle Buttons -->
 		<div v-if="props.modes.editEnabled.value || props.modes.selectionEnabled.value" class="flex">
 			<!-- When both modes available: radio button group -->
@@ -84,10 +98,23 @@
 </template>
 
 <script setup lang="ts">
-import { FaSolidCode as CodeIcon, FaSolidListCheck as SelectIcon, FaSolidListUl as PropertiesIcon, FaSolidPencil as EditIcon } from "danx-icon";
+import {
+	FaSolidCode as CodeIcon,
+	FaSolidFileLines as ArtifactIcon,
+	FaSolidListCheck as SelectIcon,
+	FaSolidListUl as PropertiesIcon,
+	FaSolidPencil as EditIcon
+} from "danx-icon";
 import { FragmentSelectorModesResult } from "./useFragmentSelectorModes";
 
 const props = defineProps<{
 	modes: FragmentSelectorModesResult;
+	artifactsEnabled?: boolean;
+	artifactsVisible?: boolean;
+	artifactCount?: number;
+}>();
+
+const emit = defineEmits<{
+	"toggle-artifacts": [];
 }>();
 </script>

@@ -2,7 +2,13 @@
 	<div class="absolute right-0 top-0 bottom-0 flex z-10">
 		<!-- Toggle Buttons (positioned to left of sidebar) -->
 		<div class="py-3 pr-2">
-			<FragmentSelectorControlPanel :modes="props.modes" />
+			<FragmentSelectorControlPanel
+				:modes="props.modes"
+				:artifacts-enabled="artifactsEnabled"
+				:artifacts-visible="artifactsVisible"
+				:artifact-count="artifactCount"
+				@toggle-artifacts="emit('toggle-artifacts')"
+			/>
 		</div>
 
 		<!-- Code Sidebar -->
@@ -37,5 +43,12 @@ const props = defineProps<{
 	modes: FragmentSelectorModesResult;
 	data: FragmentSelector | JsonSchema | null;
 	counts: { models: number; properties: number };
+	artifactsEnabled?: boolean;
+	artifactsVisible?: boolean;
+	artifactCount?: number;
+}>();
+
+const emit = defineEmits<{
+	"toggle-artifacts": [];
 }>();
 </script>

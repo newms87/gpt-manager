@@ -36,7 +36,11 @@ class ArtifactCategoryDefinitionRepository extends ActionRepository
         }
 
         $name = $input['name'] ?? 'New Category';
-        $name = ModelHelper::getNextUniqueValue($this->query()->where('schema_definition_id', $schemaDefinition->id), 'name', $name);
+        $name = ModelHelper::getNextUniqueValue(
+            ArtifactCategoryDefinition::withTrashed()->where('schema_definition_id', $schemaDefinition->id),
+            'name',
+            $name
+        );
 
         $label = $input['label'] ?? $name;
 

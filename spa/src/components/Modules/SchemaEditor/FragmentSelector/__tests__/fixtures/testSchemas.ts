@@ -1,4 +1,4 @@
-import { JsonSchema } from "@/types";
+import { ArtifactCategoryDefinition, JsonSchema } from "@/types";
 
 /**
  * Simple flat schema with 3 scalar properties.
@@ -177,3 +177,64 @@ export const multipleSiblingModelsSchema: JsonSchema = {
 		}
 	}
 };
+
+/**
+ * Test Artifact Category Definitions for use in ACD node tests.
+ * These represent different configurations of ACDs with various
+ * fragment_selector patterns.
+ */
+export const testAcds: ArtifactCategoryDefinition[] = [
+	{
+		id: "acd-1",
+		schema_definition_id: "schema-1",
+		name: "summary",
+		label: "Patient Summary",
+		prompt: "Generate a summary of the patient data including key demographics and conditions.",
+		fragment_selector: {
+			type: "object",
+			children: {
+				patient: { type: "object" }
+			}
+		},
+		editable: true,
+		deletable: true,
+		__type: "ArtifactCategoryDefinition"
+	},
+	{
+		id: "acd-2",
+		schema_definition_id: "schema-1",
+		name: "report",
+		label: "Clinical Report",
+		prompt: "Generate a clinical report.",
+		fragment_selector: null, // targets root
+		editable: true,
+		deletable: false,
+		__type: "ArtifactCategoryDefinition"
+	},
+	{
+		id: "acd-3",
+		schema_definition_id: "schema-1",
+		name: "deep_artifact",
+		label: "Deep Nested Artifact",
+		prompt: "Extract data from deeply nested structure.",
+		fragment_selector: {
+			type: "object",
+			children: {
+				hospitals: {
+					type: "array",
+					children: {
+						departments: {
+							type: "array",
+							children: {
+								staff: { type: "array" }
+							}
+						}
+					}
+				}
+			}
+		},
+		editable: true,
+		deletable: true,
+		__type: "ArtifactCategoryDefinition"
+	}
+];

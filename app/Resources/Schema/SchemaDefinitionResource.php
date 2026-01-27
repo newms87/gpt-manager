@@ -24,7 +24,8 @@ class SchemaDefinitionResource extends ActionResource
                 'edit' => $schemaDefinition->canEdit(),
             ],
 
-            'fragments' => fn($fields) => SchemaFragmentResource::collection($schemaDefinition->fragments, $fields),
+            'fragments'                     => fn($fields) => SchemaFragmentResource::collection($schemaDefinition->fragments, $fields),
+            'artifact_category_definitions' => fn($fields) => ArtifactCategoryDefinitionResource::collection($schemaDefinition->artifactCategoryDefinitions, $fields),
         ];
     }
 }

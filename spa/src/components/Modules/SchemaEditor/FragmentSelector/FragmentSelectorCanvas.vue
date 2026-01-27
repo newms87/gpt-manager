@@ -23,12 +23,27 @@
 					@add-child-model="handlers.handleAddChildModel"
 					@update-model="handlers.handleUpdateModel"
 					@remove-model="handlers.handleRemoveModel"
+					@add-artifact="handlers.handleAddArtifact"
+				/>
+			</template>
+
+			<template #node-artifact-category="nodeProps">
+				<ArtifactCategoryNode
+					:data="nodeProps.data"
+					@edit="handlers.handleEditArtifact"
+					@delete="handlers.handleDeleteArtifact"
 				/>
 			</template>
 
 			<!-- Top-right panel with mode toggle and Show Props button (only when sidebar is hidden) -->
 			<Panel v-if="!modes.showCodeSidebar.value" position="top-right">
-				<FragmentSelectorControlPanel :modes="modes" />
+				<FragmentSelectorControlPanel
+					:modes="modes"
+					:artifacts-enabled="props.artifactsEnabled"
+					:artifacts-visible="props.artifactsVisible"
+					:artifact-count="artifactCount"
+					@toggle-artifacts="toggleArtifactsVisible"
+				/>
 			</Panel>
 		</VueFlow>
 
@@ -38,11 +53,16 @@
 			:modes="modes"
 			:data="modes.effectiveSelectionEnabled.value ? selection.fragmentSelector.value : props.schema"
 			:counts="sidebarCounts"
+			:artifacts-enabled="props.artifactsEnabled"
+			:artifacts-visible="props.artifactsVisible"
+			:artifact-count="artifactCount"
+			@toggle-artifacts="toggleArtifactsVisible"
 		/>
 	</div>
 </template>
 
 <script setup lang="ts">
+import ArtifactCategoryNode from "./ArtifactCategoryNode.vue";
 import FragmentModelNode from "./FragmentModelNode.vue";
 import FragmentSelectorCodeSidebar from "./FragmentSelectorCodeSidebar.vue";
 import FragmentSelectorControlPanel from "./FragmentSelectorControlPanel.vue";
@@ -56,7 +76,7 @@ import { buildFragmentGraph } from "./useFragmentSelectorGraph";
 import { getHandlesByDirection } from "./useFragmentSelectorLayout";
 import { useFragmentSelectorModes } from "./useFragmentSelectorModes";
 import { useNodeEnrichment } from "./useNodeEnrichment";
-import { FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
+import { ArtifactCategoryDefinition, FragmentSelector, JsonSchema, JsonSchemaType } from "@/types";
 import { Background, BackgroundVariant } from "@vue-flow/background";
 import { Edge, Panel, VueFlow } from "@vue-flow/core";
 import "@vue-flow/core/dist/style.css";
@@ -71,19 +91,42 @@ const props = withDefaults(defineProps<{
 	selectionMode?: SelectionMode;
 	recursive?: boolean;
 	typeFilter?: JsonSchemaType | null;
+	/** Whether artifacts can be added to model nodes */
+	artifactsEnabled?: boolean;
+	/** Whether artifact category nodes are visible on the canvas */
+	artifactsVisible?: boolean;
+	/** Artifact Category Definitions to display as nodes */
+	artifactCategoryDefinitions?: ArtifactCategoryDefinition[];
+	/** Model path currently adding an artifact (for loading state) */
+	addingArtifactPath?: string | null;
 }>(), {
 	modelValue: null,
 	selectionEnabled: false,
 	editEnabled: false,
 	selectionMode: "by-property",
 	recursive: true,
-	typeFilter: null
+	typeFilter: null,
+	artifactsEnabled: false,
+	artifactsVisible: false,
+	artifactCategoryDefinitions: () => []
 });
 
 const emit = defineEmits<{
 	"update:modelValue": [value: FragmentSelector | null];
 	"update:schema": [schema: JsonSchema];
+	"update:artifactsVisible": [visible: boolean];
+	"add-artifact": [payload: { modelPath: string }];
+	"update-artifact": [acd: ArtifactCategoryDefinition, updates: Partial<ArtifactCategoryDefinition>];
+	"delete-artifact": [acd: ArtifactCategoryDefinition];
 }>();
+
+// Artifact count for control panel badge
+const artifactCount = computed(() => props.artifactCategoryDefinitions.length);
+
+// Toggle artifacts visibility handler
+function toggleArtifactsVisible(): void {
+	emit("update:artifactsVisible", !props.artifactsVisible);
+}
 
 // Container ref for measuring available space
 const canvasContainer = ref<HTMLElement | null>(null);
@@ -91,8 +134,11 @@ const canvasContainer = ref<HTMLElement | null>(null);
 // Track which node should receive focus (for newly created models)
 const focusedNodePath = ref<string | null>(null);
 
-// Build the graph from the schema
-const graph = computed(() => buildFragmentGraph(props.schema));
+// Build the graph from the schema (including ACD nodes when visible)
+const graph = computed(() => buildFragmentGraph(props.schema, {
+	artifactCategoryDefinitions: props.artifactCategoryDefinitions,
+	artifactsVisible: props.artifactsVisible
+}));
 
 // Schema editing composable
 const editor = useFragmentSchemaEditor(() => props.schema);
@@ -130,13 +176,23 @@ const enrichedNodes = useNodeEnrichment({
 	selectionMode: () => props.selectionMode,
 	recursive: () => props.recursive,
 	typeFilter: () => props.typeFilter,
-	focusedNodePath
+	focusedNodePath,
+	artifactsEnabled: () => props.artifactsEnabled,
+	addingArtifactPath: () => props.addingArtifactPath
 });
 
 // Compute filtered edges based on visible nodes (without direction-aware handles for layout)
 const baseFilteredEdges = computed<Edge[]>(() => {
 	const visibleNodeIds = new Set(enrichedNodes.value.map(n => n.id));
-	return graph.value.edges
+	const allEdges = graph.value.edges;
+	const acdEdges = allEdges.filter(e => e.target.startsWith("acd-"));
+	const acdNodeIds = Array.from(visibleNodeIds).filter(id => id.startsWith("acd-"));
+	console.log("[ACD DEBUG] baseFilteredEdges: visibleNodeIds includes ACD:", acdNodeIds);
+	console.log("[ACD DEBUG] baseFilteredEdges: graph has ACD edges:", acdEdges.map(e => `${e.source} -> ${e.target}`));
+	acdEdges.forEach(edge => {
+		console.log("[ACD DEBUG] ACD edge", edge.id, "- source in visible:", visibleNodeIds.has(edge.source), "target in visible:", visibleNodeIds.has(edge.target));
+	});
+	return allEdges
 		.filter(edge => visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target));
 });
 
@@ -150,9 +206,14 @@ watch(layoutDir, (dir) => { layoutDirection.value = dir; }, { immediate: true })
 watch(nodePos, (pos) => { nodePositions.value = pos; }, { immediate: true });
 
 // Final filtered edges with direction-aware handles for display
+// Preserves existing handles (e.g., ACD edges) and only applies defaults to edges without them
 const filteredEdges = computed<Edge[]>(() => {
 	const { sourceHandle, targetHandle } = getHandlesByDirection(layoutDirection.value);
-	return baseFilteredEdges.value.map(edge => ({ ...edge, sourceHandle, targetHandle }));
+	return baseFilteredEdges.value.map(edge => ({
+		...edge,
+		sourceHandle: edge.sourceHandle || sourceHandle,
+		targetHandle: edge.targetHandle || targetHandle
+	}));
 });
 
 // Event handlers composable

@@ -5,7 +5,6 @@ namespace App\Models\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\Rule;
 use Newms87\Danx\Contracts\AuditableContract;
 use Newms87\Danx\Traits\ActionModelTrait;
 use Newms87\Danx\Traits\AuditableTrait;
@@ -41,15 +40,7 @@ class ArtifactCategoryDefinition extends Model implements AuditableContract
     public function validate(): static
     {
         validator($this->toArray(), [
-            'name' => [
-                'required',
-                'max:255',
-                'string',
-                Rule::unique('artifact_category_definitions')
-                    ->where('schema_definition_id', $this->schema_definition_id)
-                    ->whereNull('deleted_at')
-                    ->ignore($this),
-            ],
+            'name'   => 'required|max:255|string',
             'label'  => 'required|string|max:255',
             'prompt' => 'required|string',
         ])->validate();

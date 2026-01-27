@@ -1,7 +1,7 @@
 import { FragmentSelector, JsonSchemaType } from "@/types";
 import { Node } from "@vue-flow/core";
 import { computed, ComputedRef, Ref, toValue } from "vue";
-import { FragmentModelNodeData, LayoutDirection, PropertyInfo, RefOrGetter, SelectionRollupState, SelectionMode } from "./types";
+import { ArtifactCategoryNodeData, FragmentModelNodeData, LayoutDirection, PropertyInfo, RefOrGetter, SelectionRollupState, SelectionMode } from "./types";
 
 export interface NodeEnrichmentParams {
 	graphNodes: ComputedRef<Node[]>;
@@ -17,13 +17,22 @@ export interface NodeEnrichmentParams {
 	recursive: RefOrGetter<boolean>;
 	typeFilter: RefOrGetter<JsonSchemaType | null>;
 	focusedNodePath: Ref<string | null>;
+	/** Whether artifacts can be added to model nodes */
+	artifactsEnabled?: RefOrGetter<boolean>;
+	/** Model path currently adding an artifact (for loading state) */
+	addingArtifactPath?: RefOrGetter<string | null>;
 }
+
+/** Union type for all node data types */
+type AnyNodeData = FragmentModelNodeData | ArtifactCategoryNodeData;
 
 /**
  * Composable that enriches graph nodes with selection/mode state for rendering.
  * Transforms raw graph nodes into VueFlow-ready nodes with all display properties.
+ * Fragment model nodes are enriched with selection/edit state.
+ * Artifact category nodes are passed through with position and direction updates.
  */
-export function useNodeEnrichment(params: NodeEnrichmentParams): ComputedRef<Node<FragmentModelNodeData>[]> {
+export function useNodeEnrichment(params: NodeEnrichmentParams): ComputedRef<Node<AnyNodeData>[]> {
 	const {
 		graphNodes,
 		selectionMap,
@@ -37,16 +46,34 @@ export function useNodeEnrichment(params: NodeEnrichmentParams): ComputedRef<Nod
 		selectionMode,
 		recursive,
 		typeFilter,
-		focusedNodePath
+		focusedNodePath,
+		artifactsEnabled,
+		addingArtifactPath
 	} = params;
 
-	return computed<Node<FragmentModelNodeData>[]>(() => {
+	return computed<Node<AnyNodeData>[]>(() => {
 		const filter = toValue(typeFilter);
 		const mode = toValue(selectionMode);
 		const isRecursive = toValue(recursive);
+		const showArtifacts = toValue(artifactsEnabled) ?? false;
+		const currentAddingPath = toValue(addingArtifactPath);
 
 		return graphNodes.value
 			.map(node => {
+				// Handle ACD nodes differently - just update position and direction
+				if (node.type === "artifact-category") {
+					return {
+						...node,
+						position: nodePositions.value.get(node.id) || node.position,
+						data: {
+							...node.data,
+							direction: layoutDirection.value,
+							editEnabled: effectiveEditEnabled.value
+						}
+					} as Node<ArtifactCategoryNodeData>;
+				}
+
+				// Enrich fragment model nodes with selection/mode state
 				const selectedProperties = selectionMap.get(node.data.path);
 				const properties = filter
 					? node.data.properties.filter((p: PropertyInfo) => p.type === filter || p.isModel)
@@ -77,6 +104,8 @@ export function useNodeEnrichment(params: NodeEnrichmentParams): ComputedRef<Nod
 						selectionMode: mode,
 						selectionEnabled: effectiveSelectionEnabled.value,
 						editEnabled: effectiveEditEnabled.value,
+						artifactsEnabled: showArtifacts,
+						addingArtifact: currentAddingPath === node.data.path,
 						isIncluded,
 						properties,
 						selectedProperties: selectedProperties ? Array.from(selectedProperties) : [],
@@ -85,11 +114,14 @@ export function useNodeEnrichment(params: NodeEnrichmentParams): ComputedRef<Nod
 						isFullySelected: rollupState.isFullySelected,
 						shouldFocus: focusedNodePath.value === node.data.path
 					}
-				};
+				} as Node<FragmentModelNodeData>;
 			})
 			.filter(node => {
+				// Don't filter ACD nodes
+				if (node.type === "artifact-category") return true;
+				// Filter fragment model nodes based on type filter
 				if (!filter) return true;
-				return node.data.properties.length > 0;
+				return (node.data as FragmentModelNodeData).properties.length > 0;
 			});
 	});
 }

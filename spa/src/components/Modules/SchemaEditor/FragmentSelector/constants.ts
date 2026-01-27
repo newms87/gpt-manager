@@ -18,7 +18,7 @@ export const HANDLE_UPDATE_DELAY_MS = 150;
  */
 
 /** Vertical/horizontal gap between sibling nodes */
-export const NODE_SEPARATION = 40;
+export const NODE_SEPARATION = 50;
 
 /** Default width for nodes when dimensions are unknown */
 export const NODE_WIDTH = 256;
@@ -67,3 +67,23 @@ export const EDGE_STROKE_WIDTH = 1.5;
 
 /** Border radius for edge paths */
 export const EDGE_BORDER_RADIUS = 12;
+
+/**
+ * Artifact Category Definition Node Constants
+ * Control the positioning of ACD nodes relative to their parent models.
+ */
+
+/** Offset for ACD node from parent (TB layout: right offset, LR layout: down offset) */
+export const ACD_NODE_OFFSET = 50;
+
+/** Gap between multiple ACD nodes on same parent */
+export const ACD_NODE_GAP = 20;
+
+/** Default width for ACD nodes */
+export const ACD_NODE_WIDTH = 192;
+
+/** Default height for ACD nodes when not measured */
+export const ACD_NODE_HEIGHT = 120;
+
+/** Stroke color for ACD edges */
+export const ACD_EDGE_STROKE_COLOR = "#7c3aed";
