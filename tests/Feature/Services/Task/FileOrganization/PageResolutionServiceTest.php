@@ -7,6 +7,7 @@ use App\Models\Task\Artifact;
 use App\Models\Task\TaskDefinition;
 use App\Models\Task\TaskRun;
 use App\Services\Task\FileOrganization\PageResolutionService;
+use App\Services\Task\FileResolutionService;
 use App\Services\Task\Runners\FileOrganizationTaskRunner;
 use Newms87\Danx\Exceptions\ValidationError;
 use Newms87\Danx\Models\Utilities\StoredFile;
@@ -319,11 +320,9 @@ class PageResolutionServiceTest extends AuthenticatedTestCase
 
         $this->taskRun->inputArtifacts()->attach($artifact->id);
 
-        // Use a partial mock to override the constants and skip actual sleep
-        $service = $this->partialMock(PageResolutionService::class, function ($mock) {
-            // Let resolvePages run normally but intercept waitForTranscoding
-            $mock->shouldAllowMockingProtectedMethods();
-            $mock->shouldReceive('waitForTranscoding')
+        // Mock FileResolutionService to throw timeout exception (skips actual sleep/wait)
+        $this->mock(FileResolutionService::class, function ($mock) {
+            $mock->shouldReceive('resolveStoredFile')
                 ->once()
                 ->andThrow(new ValidationError(
                     "Transcoding timeout after 120s for StoredFile (stuck.png)"
@@ -334,6 +333,6 @@ class PageResolutionServiceTest extends AuthenticatedTestCase
         $this->expectException(ValidationError::class);
         $this->expectExceptionMessage('Transcoding timeout');
 
-        $service->resolvePages($this->taskRun);
+        app(PageResolutionService::class)->resolvePages($this->taskRun);
     }
 }

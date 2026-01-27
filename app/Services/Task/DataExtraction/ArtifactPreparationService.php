@@ -4,8 +4,9 @@ namespace App\Services\Task\DataExtraction;
 
 use App\Models\Task\Artifact;
 use App\Models\Task\TaskRun;
-use Newms87\Danx\Traits\HasDebugLogging;
+use App\Services\Task\FileResolutionService;
 use Illuminate\Support\Collection;
+use Newms87\Danx\Traits\HasDebugLogging;
 
 /**
  * Handles artifact preparation for data extraction.
@@ -77,6 +78,7 @@ class ArtifactPreparationService
 
     /**
      * Resolve all pages from input artifacts.
+     * Uses FileResolutionService to handle PDF transcoding and direct images.
      * Returns array of page data with artifact_id, file_id, and page_number.
      */
     public function resolvePages(TaskRun $taskRun): array
@@ -87,20 +89,28 @@ class ArtifactPreparationService
         $pages     = [];
 
         foreach ($artifacts as $artifact) {
-            foreach ($artifact->storedFiles as $file) {
-                $pageNumber = $file->page_number ?? $file->position ?? 1;
+            foreach ($artifact->storedFiles as $storedFile) {
+                // Resolve through FileResolutionService to handle PDF transcoding
+                $resolvedFiles = app(FileResolutionService::class)->resolveStoredFile($storedFile);
 
-                $pages[] = [
-                    'artifact_id' => $artifact->id,
-                    'file_id'     => $file->id,
-                    'page_number' => $pageNumber,
-                ];
+                foreach ($resolvedFiles as $index => $file) {
+                    // PDF transcodes have page_number, direct images default to index + 1
+                    $pageNumber = $file->page_number ?? ($index + 1);
 
-                static::logDebug('Resolved page', [
-                    'artifact_id' => $artifact->id,
-                    'file_id'     => $file->id,
-                    'page_number' => $pageNumber,
-                ]);
+                    $pages[] = [
+                        'artifact_id' => $artifact->id,
+                        'file_id'     => $file->id,
+                        'page_number' => $pageNumber,
+                    ];
+
+                    static::logDebug('Resolved page', [
+                        'artifact_id'     => $artifact->id,
+                        'file_id'         => $file->id,
+                        'page_number'     => $pageNumber,
+                        'source_file_id'  => $storedFile->id,
+                        'is_pdf_transcode' => $file->id !== $storedFile->id,
+                    ]);
+                }
             }
         }
 
