@@ -11,7 +11,7 @@
 			@click="emit('toggle-artifacts')"
 		>
 			<ArtifactIcon class="w-4" />
-			<span v-if="artifactCount > 0" class="ml-1 text-xs">{{ artifactCount }}</span>
+			<span v-if="artifactCount > 0" class="ml-2 text-xs">{{ artifactCount }}</span>
 		</button>
 
 		<!-- Mode Toggle Buttons -->

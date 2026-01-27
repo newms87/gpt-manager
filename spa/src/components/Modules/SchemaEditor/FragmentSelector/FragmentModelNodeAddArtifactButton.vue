@@ -1,9 +1,9 @@
 <template>
 	<div
-		v-if="editEnabled && artifactsEnabled"
+		v-if="artifactsEnabled"
 		class="absolute z-20 right-0 top-1/2 translate-y-4 translate-x-1/2 pointer-events-auto nodrag nopan"
-		:class="loading ? '' : 'cursor-pointer'"
-		@click.stop.prevent="!loading && emit('add-artifact')"
+		:class="canClick ? 'cursor-pointer' : 'cursor-default'"
+		@click.stop.prevent="canClick && emit('add-artifact')"
 	>
 		<Handle
 			id="source-artifact"
@@ -13,8 +13,8 @@
 		>
 			<div
 				class="w-6 h-6 rounded-full flex items-center justify-center transition-colors"
-				:class="loading ? 'bg-violet-800' : 'bg-violet-600 hover:bg-violet-500'"
-				title="Add Artifact Category"
+				:class="buttonClasses"
+				:title="editEnabled ? 'Add Artifact Category' : ''"
 			>
 				<QSpinner v-if="loading" color="white" size="12px" />
 				<DocumentIcon v-else class="w-3 h-3 text-white" />
@@ -27,8 +27,9 @@
 import { Handle, Position } from "@vue-flow/core";
 import { FaSolidFileLines as DocumentIcon } from "danx-icon";
 import { QSpinner } from "quasar";
+import { computed } from "vue";
 
-defineProps<{
+const props = defineProps<{
 	editEnabled: boolean;
 	artifactsEnabled: boolean;
 	loading?: boolean;
@@ -37,4 +38,12 @@ defineProps<{
 const emit = defineEmits<{
 	"add-artifact": [];
 }>();
+
+const canClick = computed(() => props.editEnabled && !props.loading);
+
+const buttonClasses = computed(() => {
+	if (props.loading) return "bg-violet-800";
+	if (!props.editEnabled) return "bg-violet-900 opacity-50";
+	return "bg-violet-600 hover:bg-violet-500";
+});
 </script>

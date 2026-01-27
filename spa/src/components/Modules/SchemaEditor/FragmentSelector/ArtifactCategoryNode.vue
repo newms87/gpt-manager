@@ -15,8 +15,11 @@
 			</Handle>
 
 			<!-- Header -->
-			<div class="relative flex flex-col gap-1 px-3 py-2 rounded-t-lg nodrag nopan">
+			<div class="relative flex flex-col gap-1 px-3 py-2 rounded-lg nodrag nopan">
 				<div class="flex items-center gap-2">
+					<!-- Artifact Icon -->
+					<DocumentIcon class="w-3 h-3 text-violet-400 flex-shrink-0" />
+
 					<!-- Label (editable) -->
 					<EditableDiv
 						:model-value="data.acd.label || data.acd.name"
@@ -52,13 +55,6 @@
 					@update:model-value="onNameUpdate"
 				/>
 			</div>
-
-			<!-- Selection Badge -->
-			<div v-if="selectionSummary" class="px-3 pb-2">
-				<span class="text-[10px] bg-violet-800 text-violet-300 px-1.5 py-0.5 rounded">
-					{{ selectionSummary }}
-				</span>
-			</div>
 		</div>
 
 		<!-- Loading overlay when deleting -->
@@ -71,7 +67,7 @@
 
 		<!-- Delete button (hover outside right, centered vertically) -->
 		<div
-			v-if="data.editEnabled && data.acd.deletable && !isDeleting"
+			v-if="data.editEnabled && !isDeleting"
 			class="absolute -right-8 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
 		>
 			<ActionButton
@@ -89,9 +85,11 @@
 			@close="showEditDialog = false"
 		>
 			<template #title>
-				Edit {{ data.acd.label || data.acd.name }}
+				<div class="flex items-center justify-between w-full">
+					<span>{{ data.acd.label }}</span>
+					<SaveStateIndicator :saving="isSaving" :saved-at="data.acd.updated_at" />
+				</div>
 			</template>
-
 			<div class="flex flex-col gap-4 w-[60vw]">
 				<!-- Prompt Editor -->
 				<div>
@@ -101,31 +99,41 @@
 						min-height="200px"
 						@update:model-value="editForm.prompt = $event"
 					/>
+					<div class="bg-gray-900 rounded-full px-3 py-1 inline-flex items-center gap-1.5 mt-3">
+						<InfoIcon class="w-3 h-3 text-slate-400 flex-shrink-0" />
+						<span class="text-xs text-slate-400">Instructions for generating this artifact from the selected data fields</span>
+					</div>
 				</div>
 
 				<!-- Toggle Options -->
-				<div class="flex gap-6">
-					<QToggle
-						v-model="editForm.deletable"
-						label="Deletable"
-						color="violet"
-						dark
-					/>
-					<QToggle
-						v-model="editForm.is_editable"
-						label="Editable"
-						color="violet"
-						dark
-					/>
-				</div>
-
-				<!-- Save Button -->
-				<div class="flex justify-end">
-					<ActionButton
-						label="Save"
-						color="violet"
-						@click="saveChanges"
-					/>
+				<div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+					<div class="text-sm font-semibold text-slate-300 mb-3">Options</div>
+					<div class="flex flex-col gap-4">
+						<div class="flex flex-col">
+							<QToggle
+								v-model="editForm.deletable"
+								label="Deletable"
+								color="violet"
+								dark
+							/>
+							<div class="bg-gray-900 rounded-full px-3 py-1 flex items-center gap-1.5 w-fit">
+								<InfoIcon class="w-3 h-3 text-slate-400 flex-shrink-0" />
+								<span class="text-xs text-slate-400">Allow users to delete generated artifacts of this type</span>
+							</div>
+						</div>
+						<div class="flex flex-col">
+							<QToggle
+								v-model="editForm.is_editable"
+								label="Editable"
+								color="violet"
+								dark
+							/>
+							<div class="bg-gray-900 rounded-full px-3 py-1 flex items-center gap-1.5 w-fit">
+								<InfoIcon class="w-3 h-3 text-slate-400 flex-shrink-0" />
+								<span class="text-xs text-slate-400">Allow users to edit the content of generated artifacts</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</InfoDialog>
@@ -134,11 +142,12 @@
 
 <script setup lang="ts">
 import { ArtifactCategoryDefinition } from "@/types";
+import { useDebounceFn } from "@vueuse/core";
 import { Handle, Position } from "@vue-flow/core";
-import { FaSolidPen as EditIcon } from "danx-icon";
+import { FaSolidCircleInfo as InfoIcon, FaSolidFileLines as DocumentIcon, FaSolidPen as EditIcon } from "danx-icon";
 import { QSpinner, QToggle } from "quasar";
-import { ActionButton, EditableDiv, InfoDialog, MarkdownEditor } from "quasar-ui-danx";
-import { computed, reactive, ref, watch } from "vue";
+import { ActionButton, EditableDiv, InfoDialog, MarkdownEditor, SaveStateIndicator } from "quasar-ui-danx";
+import { reactive, ref, watch } from "vue";
 import AcdIndicatorDot from "./AcdIndicatorDot.vue";
 import { ArtifactCategoryNodeData } from "./types";
 
@@ -153,12 +162,27 @@ const emit = defineEmits<{
 
 const showEditDialog = ref(false);
 const isDeleting = ref(false);
+const isSaving = ref(false);
 
 const editForm = reactive({
 	prompt: props.data.acd.prompt || "",
 	deletable: props.data.acd.deletable ?? true,
 	is_editable: props.data.acd.is_editable ?? true
 });
+
+// Debounced autosave function
+const debouncedSave = useDebounceFn(() => {
+	isSaving.value = true;
+	emit("edit", props.data.acd, {
+		prompt: editForm.prompt,
+		deletable: editForm.deletable,
+		is_editable: editForm.is_editable
+	});
+	// Reset saving state after a short delay (parent handles actual save)
+	setTimeout(() => {
+		isSaving.value = false;
+	}, 500);
+}, 500);
 
 // Reset form when dialog opens
 watch(showEditDialog, (visible) => {
@@ -169,14 +193,12 @@ watch(showEditDialog, (visible) => {
 	}
 });
 
-function saveChanges() {
-	emit("edit", props.data.acd, {
-		prompt: editForm.prompt,
-		deletable: editForm.deletable,
-		is_editable: editForm.is_editable
-	});
-	showEditDialog.value = false;
-}
+// Watch form changes for autosave
+watch(editForm, () => {
+	if (showEditDialog.value) {
+		debouncedSave();
+	}
+}, { deep: true });
 
 function onLabelUpdate(label: string) {
 	emit("edit", props.data.acd, { label });
@@ -189,34 +211,5 @@ function onNameUpdate(name: string) {
 function onDelete() {
 	isDeleting.value = true;
 	emit("delete", props.data.acd);
-}
-
-/**
- * Computes a human-readable summary of the fragment selector's selections.
- * Shows the count of selected models/properties if any selections exist.
- */
-const selectionSummary = computed(() => {
-	const selector = props.data.acd.fragment_selector;
-	if (!selector?.children) return null;
-
-	const count = countSelections(selector);
-	if (count === 0) return null;
-
-	return `${count} ${count === 1 ? "selection" : "selections"}`;
-});
-
-/**
- * Recursively counts the number of selections in a fragment selector.
- */
-function countSelections(selector: { children?: Record<string, unknown> } | null): number {
-	if (!selector?.children) return 0;
-
-	let count = Object.keys(selector.children).length;
-	for (const child of Object.values(selector.children)) {
-		if (child && typeof child === "object" && "children" in child) {
-			count += countSelections(child as { children?: Record<string, unknown> });
-		}
-	}
-	return count;
 }
 </script>

@@ -89,7 +89,7 @@ async function createCategory() {
 				schema_definition_id: props.schemaDefinition.id,
 				name: "new_category",
 				label: "New Category",
-				prompt: "Describe how to generate this artifact...",
+				prompt: "",
 				editable: true,
 				deletable: true
 			}

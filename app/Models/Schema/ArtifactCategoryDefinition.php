@@ -42,7 +42,7 @@ class ArtifactCategoryDefinition extends Model implements AuditableContract
         validator($this->toArray(), [
             'name'   => 'required|max:255|string',
             'label'  => 'required|string|max:255',
-            'prompt' => 'required|string',
+            'prompt' => 'nullable|string',
         ])->validate();
 
         return $this;

@@ -105,9 +105,8 @@ function buildNodesRecursive(
 			id: `edge-${path}-${child.name}`,
 			source: path,
 			target: childPath,
-			type: "smoothstep",
-			style: { stroke: EDGE_STROKE_COLOR, strokeWidth: EDGE_STROKE_WIDTH },
-			pathOptions: { borderRadius: EDGE_BORDER_RADIUS }
+			type: "late-step",
+			style: { stroke: EDGE_STROKE_COLOR, strokeWidth: EDGE_STROKE_WIDTH }
 		});
 
 		buildNodesRecursive(childSchema, childPath, child.title || child.name, nodes, edges);
@@ -143,14 +142,14 @@ function buildAcdNodes(
 
 		// Create edge from target model to ACD
 		// Uses source-artifact handle on model, target-left handle on ACD
-		// Using bezier for smooth curves without stepped detours
+		// Using default (bezier) for smooth curves without stepped detours
 		edges.push({
 			id: `edge-acd-${acd.id}`,
 			source: targetPath,
 			target: acdNodeId,
 			sourceHandle: "source-artifact",
 			targetHandle: "target-left",
-			type: "bezier",
+			type: "default",
 			style: { stroke: ACD_EDGE_STROKE_COLOR, strokeWidth: EDGE_STROKE_WIDTH }
 		});
 	}

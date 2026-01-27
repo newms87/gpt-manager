@@ -386,18 +386,30 @@ async function onAddArtifact(payload: { modelPath: string }): Promise<void> {
 		// Build fragment_selector from modelPath
 		const fragmentSelector = buildFragmentSelectorFromPath(payload.modelPath, schema.value.schema);
 
-		// Generate unique name based on existing artifacts count
-		const existingCount = artifactCategoryDefinitions.value.length;
-		const uniqueSuffix = existingCount > 0 ? `_${existingCount + 1}` : "";
-		const name = `new_artifact${uniqueSuffix}`;
+		// Extract model name from path (e.g., "root.incident.provider" -> "provider")
+		const pathParts = payload.modelPath.split(".");
+		const modelName = pathParts[pathParts.length - 1] || "artifact";
+
+		// Count existing artifacts for this model to generate unique suffix
+		const baseName = `${modelName}_artifact`;
+		const existingForModel = artifactCategoryDefinitions.value.filter(acd =>
+			acd.name.startsWith(baseName)
+		);
+		const suffix = existingForModel.length > 0 ? `_${existingForModel.length + 1}` : "";
+		const name = `${baseName}${suffix}`;
+
+		// Generate label: "Model Artifact" or "Model Artifact 2"
+		const modelLabel = modelName.charAt(0).toUpperCase() + modelName.slice(1);
+		const labelSuffix = existingForModel.length > 0 ? ` ${existingForModel.length + 1}` : "";
+		const label = `${modelLabel} Artifact${labelSuffix}`;
 
 		const response = await request.post(apiUrls.schemas.artifactCategoryDefinitions + "/apply-action", {
 			action: "create",
 			data: {
 				schema_definition_id: schema.value.id,
 				name,
-				label: "New Artifact",
-				prompt: "Describe how to generate this artifact...",
+				label,
+				prompt: "",
 				fragment_selector: fragmentSelector,
 				editable: true,
 				deletable: true

@@ -35,6 +35,11 @@
 				/>
 			</template>
 
+			<!-- Custom edge type that steps late (closer to target) -->
+			<template #edge-late-step="edgeProps">
+				<LateStepEdge v-bind="edgeProps" />
+			</template>
+
 			<!-- Top-right panel with mode toggle and Show Props button (only when sidebar is hidden) -->
 			<Panel v-if="!modes.showCodeSidebar.value" position="top-right">
 				<FragmentSelectorControlPanel
@@ -64,6 +69,7 @@
 <script setup lang="ts">
 import ArtifactCategoryNode from "./ArtifactCategoryNode.vue";
 import FragmentModelNode from "./FragmentModelNode.vue";
+import LateStepEdge from "./LateStepEdge.vue";
 import FragmentSelectorCodeSidebar from "./FragmentSelectorCodeSidebar.vue";
 import FragmentSelectorControlPanel from "./FragmentSelectorControlPanel.vue";
 import { LayoutDirection, SelectionMode } from "./types";
@@ -239,6 +245,16 @@ watch(() => props.modelValue, (newVal) => {
 
 // Recalculate layout when switching between edit and select modes
 watch(modes.isEditModeActive, () => {
+	nextTick(() => triggerRelayout());
+});
+
+// Recalculate layout when toggling artifacts visibility (nodes added/removed)
+watch(() => props.artifactsVisible, () => {
+	nextTick(() => triggerRelayout());
+});
+
+// Recalculate layout when artifacts are added or deleted
+watch(artifactCount, () => {
 	nextTick(() => triggerRelayout());
 });
 
