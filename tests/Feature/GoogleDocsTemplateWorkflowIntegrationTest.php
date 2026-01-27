@@ -275,9 +275,14 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
     {
         // Given - Set up for multiple workflow runs using the same generated document
 
-        $uiDemand = UiDemand::factory()->create([
+        $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'team_object_id' => $teamObject->id,
         ]);
 
         $workflowDefinition = WorkflowDefinition::factory()->create([
@@ -496,9 +501,14 @@ class GoogleDocsTemplateWorkflowIntegrationTest extends AuthenticatedTestCase
         // Given - Create two teams with separate data
         $otherTeam = \App\Models\Team\Team::factory()->create();
 
-        $uiDemand = UiDemand::factory()->create([
+        $teamObject = TeamObject::factory()->create([
             'team_id' => $this->user->currentTeam->id,
-            'user_id' => $this->user->id,
+        ]);
+
+        $uiDemand = UiDemand::factory()->create([
+            'team_id'        => $this->user->currentTeam->id,
+            'user_id'        => $this->user->id,
+            'team_object_id' => $teamObject->id,
         ]);
 
         $otherTeamDemand = UiDemand::factory()->create([
