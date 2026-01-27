@@ -1,8 +1,6 @@
 # GPT Manager - Implementation Standards
 
-**This file contains technical implementation details for sub-agents.**
-
-**⚠️ ORCHESTRATOR DOES NOT READ THIS FILE** - These are implementation-level details for code-writing agents only.
+**This file contains technical implementation details.**
 
 Read this file to understand specific commands, syntax requirements, and technical conventions.
 
@@ -241,4 +239,4 @@ Always use Sail commands when working with Laravel.
 
 ---
 
-**These implementation standards apply to all code-writing agents. Follow them exactly.**
+**These implementation standards apply to all work in this project. Follow them exactly.**

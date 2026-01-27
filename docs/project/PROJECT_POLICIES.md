@@ -1,8 +1,6 @@
 # GPT Manager - Project Policies
 
-**This file contains high-level policies that apply to ALL agents and the orchestrator.**
-
-Read this file to understand the project's philosophy, architectural principles, and governance rules.
+**This file contains high-level policies that apply to ALL work in this project.**
 
 ---
 
@@ -33,30 +31,22 @@ If you find legacy code or old patterns:
 
 ## Git Operations Policy
 
-**🚨 CRITICAL: GIT OPERATIONS - READ ONLY!**
+**GIT OPERATIONS ARE READ-ONLY**
 
-**NEVER USE GIT COMMANDS THAT MAKE CHANGES**
+**Only read-only git commands allowed:**
+- `git status`
+- `git log`
+- `git diff`
+- `git show`
+- `git branch` (list only)
 
-**ONLY READ-ONLY GIT COMMANDS ALLOWED:**
-- `git status` ✅
-- `git log` ✅
-- `git diff` ✅
-- `git show` ✅
-- `git branch` (list only) ✅
+**Absolutely forbidden without explicit user request:**
+- `git add`, `git commit`, `git push`
+- `git pull`, `git merge`, `git rebase`
+- `git reset`, `git checkout`, `git stash`
+- ANY command that modifies repository state
 
-**ABSOLUTELY FORBIDDEN:**
-- `git add` ❌
-- `git commit` ❌
-- `git push` ❌
-- `git pull` ❌
-- `git merge` ❌
-- `git rebase` ❌
-- `git reset` ❌
-- `git checkout` ❌
-- `git stash` ❌
-- ANY command that modifies repository state ❌
-
-**Rationale:** User handles ALL git operations that modify the repository. This prevents accidental commits, branch switches, or repository state changes that could disrupt the user's workflow.
+**Rationale:** User handles ALL git operations that modify the repository. This prevents accidental commits or repository state changes.
 
 ---
 
@@ -70,18 +60,11 @@ If you find legacy code or old patterns:
 - **NEVER modify `vendor/newms87/danx`** - that's the installed package
 - **Modify `../danx/src/` directly** - it's our library, not a third-party dependency
 
-**Common danx modifications:**
-- `../danx/src/Events/ModelSavedEvent.php` - Base event class
-- `../danx/src/Resources/` - Base resource classes
-- `../danx/src/Services/` - Base service classes
-
-**Rationale:** Danx is an internal library we control. Don't treat it as a black-box dependency. If danx needs a feature, add it there rather than working around it in this codebase.
+**Rationale:** Danx is an internal library we control. Don't treat it as a black-box dependency. If danx needs a feature, add it there rather than working around it.
 
 ---
 
 ## Key Architecture Patterns
-
-These patterns are mandatory across the entire codebase:
 
 ### Laravel Backend
 - **Service-Repository-Controller pattern** with danx integration
@@ -101,11 +84,11 @@ These patterns are mandatory across the entire codebase:
 - Always scope queries by team context
 
 ### Testing
-- **Comprehensive test coverage** for business logic
+- **100% test coverage** for business logic
+- Bug fixes use TDD (write failing test first)
 - Focus on behavior, not implementation details
-- Test edge cases and error handling
 
-**Rationale:** Consistency enables developers to navigate the codebase quickly. Every service looks like every other service. Every component follows the same patterns.
+**Rationale:** Consistency enables developers to navigate the codebase quickly.
 
 ---
 
@@ -115,7 +98,6 @@ These patterns are mandatory across the entire codebase:
 - Read existing implementations BEFORE any code work
 - Follow established patterns exactly
 - Never create custom patterns when established ones exist
-- Each agent has comprehensive guidelines for their domain
 
 ### Never:
 - Create custom solutions when established patterns exist
@@ -123,36 +105,27 @@ These patterns are mandatory across the entire codebase:
 - Use deprecated features or syntax
 - Leave TODO comments without implementation plans
 
-**Rationale:** Pattern consistency >>> clever solutions. A "worse" solution that follows established patterns is better than a "better" solution that introduces new patterns.
-
----
-
-## Plan Formatting Policy
-
-**Plans must use natural language only - NO CODE BLOCKS**
-
-| Allowed | Not Allowed |
-|---------|-------------|
-| Natural language descriptions | Code snippets or examples |
-| Tables for structured data | Any code blocks (PHP, JS, SQL, Vue, etc.) |
-| Diagrams (ASCII or descriptions) | Implementation details in code |
-| Bullet points and numbered lists | Method signatures with bodies |
-
-**Rationale:** Plans describe WHAT to build and WHY. Implementation details (HOW) belong in the implementation phase, not planning. Code in plans creates confusion about what's finalized vs. exploratory.
+**Rationale:** Pattern consistency >>> clever solutions.
 
 ---
 
 ## Reference Documentation
 
-**Domain-Specific Guides:**
-- **Laravel Backend**: `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md`
-- **Vue Frontend**: `spa/SPA_PATTERNS_GUIDE.md`
-- **Agent Behaviors**: `docs/agents/AGENT_CORE_BEHAVIORS.md`
-- **Implementation Details**: `docs/project/PROJECT_IMPLEMENTATION.md` (sub-agents only)
+**Patterns & Standards:**
+- Laravel: `docs/guides/LARAVEL_BACKEND_PATTERNS_GUIDE.md`
+- Vue: `spa/SPA_PATTERNS_GUIDE.md`
 
-**Agent Locations:**
-- Agent files are located at: `.claude/agents/*.md`
-- Available agents: `laravel-backend-architect`, `laravel-backend-engineer`, `laravel-backend-qa-tester`, `vue-spa-architect`, `vue-spa-engineer`, `vue-spa-reviewer`
+**Agent Behaviors:**
+- `docs/agents/AGENT_BEHAVIORS.md`
+
+**Implementation Details:**
+- `docs/project/PROJECT_IMPLEMENTATION.md`
+
+**Available Agents:**
+- `laravel-backend-architect` - Backend exploration and planning (READ-ONLY)
+- `vue-spa-architect` - Frontend exploration and planning (READ-ONLY)
+- `code-reviewer` - Refactoring plans (READ-ONLY)
+- `test-reviewer` - Test coverage auditing (READ-ONLY)
 
 ---
 

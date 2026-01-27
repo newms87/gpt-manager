@@ -1,8 +1,6 @@
 # Core Engineering Principles
 
-**Add this reminder to your todo list for EVERY task:**
-
-`Core Principles: SOLID/DRY/Zero-Debt/One-Way/Read-First/Test-First`
+`SOLID / DRY / Zero-Debt / One-Way / Read-First / 100%-Tests`
 
 ## The Principles
 
@@ -16,7 +14,7 @@
 
 5. **Read First** - Always read existing implementations before writing new code. Understand patterns before implementing.
 
-6. **Test-First Debugging** - For bug fixes: evaluate the problem, write a failing unit test, fix to make test pass, verify.
+6. **100% Test Coverage** - All features and bug fixes require comprehensive tests. Bug fixes use TDD (write failing test first).
 
 ## Zero Backwards Compatibility
 
