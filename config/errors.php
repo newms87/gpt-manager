@@ -84,8 +84,8 @@ return [
         ApiRequestException::class => [
             // Always retry 5xx errors
             fn(ApiRequestException $e) => $e->getStatusCode() >= 500,
-            // Retry 422 errors - often indicate transient processing failures
-            fn(ApiRequestException $e) => $e->getStatusCode() === 422,
+            // Retry 422 only if message suggests it's transient (placeholder until specific cases identified)
+            fn(ApiRequestException $e) => $e->getStatusCode() === 422 && stripos($e->getMessage(), 'retry') !== false,
             // Retry specific 400-level errors using helper function
             'isRetryable400ApiError',
         ],
